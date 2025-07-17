@@ -71,6 +71,23 @@ CodeDocSync is a CLI tool that automatically detects inconsistencies between Pyt
 - **CI/CD:** GitHub Actions, GitLab CI, pre-commit hooks
 - **Configuration:** YAML config files, environment variables for API keys
 
+## Code Quality and Formatting
+
+**Ruff Integration**: This project uses Ruff for code linting and formatting. All code must be Ruff-compliant before commits. Pre-commit hooks enforce this standard. Use `ruff format` and `ruff check --fix` to ensure compliance.
+
+**Static Type Checking**: MyPy is used for static type analysis. All code must pass `mypy codedocsync/` without errors. Key type safety patterns:
+- Use `Union[ast.FunctionDef, ast.AsyncFunctionDef]` for functions handling both sync and async functions
+- Handle `Optional[ast.expr]` types properly with null checks before passing to functions expecting non-optional types
+- Use `# type: ignore` comments sparingly and only for third-party imports without type stubs
+
+**Pre-commit Quality Gates**: Before any commit, the following commands must pass:
+- `ruff check . --fix` - Fix all linting issues
+- `ruff format .` - Format all code consistently
+- `mypy codedocsync/` - Pass all type checks
+- `python -m pytest tests/` - All tests must pass
+
+**IDE Integration**: Install the Ruff extension in your IDE for real-time linting feedback. Configure your IDE to run these checks on save to catch issues early.
+
 ## AI Guardrails
 
 Use ARCHITECTURE.md as canonical context for all AI-assisted development. Do not invent components or modify the 3-layer matching approach (direct 90%, contextual 8%, semantic 2%) without updating this document.
