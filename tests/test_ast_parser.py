@@ -78,7 +78,7 @@ class TestBasicParsing:
         assert params[3].type_annotation == "Any"
         assert not params[3].is_required
 
-        assert params[4].name == "*keyword_only"
+        assert params[4].name == "keyword_only"
         assert params[4].type_annotation == "bool"
         assert not params[4].is_required
         assert params[4].default_value == "True"

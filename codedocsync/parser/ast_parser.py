@@ -506,7 +506,7 @@ def _extract_signature(
                 is_required = False
 
             param = FunctionParameter(
-                name=f"*{arg.arg}",  # Mark as keyword-only
+                name=arg.arg,  # Keyword-only parameter name (without * prefix)
                 type_annotation=(
                     _get_annotation_string(arg.annotation) if arg.annotation else None
                 ),

@@ -78,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nothing yet
 
 ### Fixed
-- Nothing yet
+- Fixed incorrect default value assignment for positional-only and regular arguments in AST parser - the logic now correctly handles `args.defaults` as containing defaults for trailing positional parameters (both positional-only and regular combined)
+- Fixed incorrect keyword-only parameter name formatting in `_extract_signature()` - keyword-only parameters now have correct names without `*` prefix (the `*` is a syntax marker, not part of the parameter name)
 
 ### Security
 - Nothing yet
