@@ -7,11 +7,13 @@ signatures, parameters, and docstrings.
 """
 
 import ast
+import hashlib
 import logging
 import re
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from functools import lru_cache
+from typing import List, Optional, Union, Generator
 
 from ..utils.errors import (
     ValidationError,
@@ -137,6 +139,14 @@ class ParsedFunction:
             )
 
 
+@lru_cache(maxsize=100)
+def _get_cached_ast(
+    file_content_hash: str, file_path: str, source_content: str
+) -> ast.AST:
+    """Cache parsed AST trees for repeated analysis."""
+    return ast.parse(source_content, filename=file_path)
+
+
 def parse_python_file(file_path: str) -> List[ParsedFunction]:
     """
     Parse Python file with comprehensive error handling.
@@ -195,8 +205,11 @@ def parse_python_file(file_path: str) -> List[ParsedFunction]:
         logger.info(f"File contains only imports/comments: {file_path}")
         return []
 
+    # Create hash for caching
+    file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
+
     try:
-        tree = ast.parse(source_content, filename=file_path)
+        tree = _get_cached_ast(file_content_hash, file_path, source_content)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(
@@ -236,6 +249,110 @@ def parse_python_file(file_path: str) -> List[ParsedFunction]:
     )
 
     return functions
+
+
+def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, None]:
+    """
+    Lazy parsing using generators for memory efficiency.
+
+    This function yields ParsedFunction objects one at a time instead of loading
+    all functions into memory at once. Useful for large files or when processing
+    many files.
+
+    Args:
+        file_path: Path to the Python file to parse
+
+    Yields:
+        ParsedFunction objects one at a time
+
+    Raises:
+        ParsingError: If file cannot be parsed or accessed
+    """
+    start_time = time.time()
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            source_content = f.read()
+    except FileNotFoundError:
+        error_msg = f"File not found: {file_path}"
+        logger.error(error_msg)
+        raise FileAccessError(
+            error_msg, recovery_hint="Check the file path and ensure the file exists"
+        )
+    except PermissionError:
+        error_msg = f"Permission denied: {file_path}"
+        logger.error(error_msg)
+        raise FileAccessError(
+            error_msg, recovery_hint="Check file permissions and ensure read access"
+        )
+    except UnicodeDecodeError as e:
+        # Try alternative encodings
+        try:
+            with open(file_path, "r", encoding="latin-1") as f:
+                source_content = f.read()
+            logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
+        except Exception:
+            error_msg = f"Encoding error in {file_path}: {e}"
+            logger.error(error_msg)
+            raise ParsingError(
+                error_msg,
+                recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
+            )
+
+    if not source_content.strip():
+        logger.info(f"Empty file: {file_path}")
+        return  # Empty file
+
+    # Check if file contains only imports and comments
+    if _is_imports_only(source_content):
+        logger.info(f"File contains only imports/comments: {file_path}")
+        return
+
+    # Create hash for caching
+    file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
+
+    try:
+        tree = _get_cached_ast(file_content_hash, file_path, source_content)
+    except SyntaxError as e:
+        # Attempt partial parsing up to the error line
+        logger.warning(
+            f"Syntax error in {file_path}:{e.lineno}: {e.msg}. Attempting partial parse."
+        )
+        functions = _parse_partial_file(file_path, source_content, e.lineno or 1)
+
+        if functions:
+            logger.info(
+                f"Partial parse successful for {file_path}: found {len(functions)} functions"
+            )
+            for func in functions:
+                yield func
+            return
+        else:
+            raise SyntaxParsingError(
+                f"Syntax error in {file_path}:{e.lineno}: {e.msg}",
+                recovery_hint="Fix the syntax error and try again",
+            )
+
+    function_count = 0
+
+    # Walk through all nodes in the AST
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            try:
+                parsed_func = _extract_function(node, file_path, source_content)
+                function_count += 1
+                yield parsed_func
+            except Exception as e:
+                # Log warning but continue parsing other functions
+                logger.warning(
+                    f"Failed to extract function {getattr(node, 'name', 'unknown')} from {file_path}: {e}"
+                )
+                continue
+
+    parse_duration = time.time() - start_time
+    logger.info(
+        f"Lazy parsed {file_path} in {parse_duration:.3f}s: found {function_count} functions"
+    )
 
 
 def _extract_function(
