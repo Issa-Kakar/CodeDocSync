@@ -12,6 +12,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ARCHITECTURE.md documenting system design and components
 - CHANGELOG.md for tracking project evolution
 - Core module structure: cli/, parser/, matcher/, analyzer/, storage/, integrations/, utils/
+- AST Parser implementation with comprehensive data models:
+  - `FunctionParameter` dataclass with validation for parameter names and type annotations
+  - `FunctionSignature` dataclass with `to_string()` method for readable output
+  - `ParsedFunction` dataclass representing complete function metadata
+  - `parse_python_file()` function with error handling and performance targets
+- Custom exception hierarchy in `utils/errors.py`:
+  - `ParsingError` base class with recovery hints
+  - `ValidationError` for data validation issues
+  - `FileAccessError` for file system errors
+  - `SyntaxParsingError` for syntax parsing errors
+- Parser module public API in `parser/__init__.py`
+- Core AST parsing functionality with comprehensive error handling:
+  - `parse_python_file()` function with performance targets (<10ms for small files, <50ms for medium files, <200ms for large files)
+  - `_extract_function()` helper for extracting function details from AST nodes with error recovery
+  - `_extract_signature()` helper for extracting complete function signatures including parameters, return types, and decorators
+  - Support for both regular and async functions with proper metadata extraction
+  - Robust error handling for file access, syntax errors, and encoding issues
+  - Helper functions for decorator extraction (`_get_decorator_names()`) and annotation parsing (`_get_annotation_string()`)
+  - Default value extraction with fallback for complex expressions
+- Enhanced error handling and edge case support:
+  - Syntax error recovery with partial parsing up to error line
+  - Alternative encoding support (fallback to latin-1 from utf-8)
+  - Empty file and imports-only file detection
+  - Permission error handling with recovery hints
+  - Comprehensive logging throughout parsing process with timing benchmarks
+  - Enhanced function parameter extraction supporting *args, **kwargs, positional-only, and keyword-only parameters
+  - Complex type annotation handling (Union, Optional, List, Dict, custom generics)
+  - Default value extraction for function calls, lambda expressions, and complex expressions
+  - Property decorator support (@property, @setter, @getter, @deleter)
+  - Class method and static method detection
+  - Nested function context preservation
+  - Lambda function handling in default values
+  - Fallback mechanisms for older Python versions without ast.unparse()
+  - Enhanced method detection considering decorators and parameter patterns
+- Comprehensive test suite for AST parser (Chunk 4):
+  - 25 test cases covering basic parsing, edge cases, error handling, and performance
+  - Test fixtures for various Python syntax patterns and edge cases
+  - Validation tests for data models (FunctionParameter, FunctionSignature, ParsedFunction)
+  - Performance tests ensuring <50ms for small files, <200ms for large files
+  - Error handling tests for file access, syntax errors, and encoding issues
+  - Support for complex parameter types (*args, **kwargs, keyword-only, positional-only)
+  - Unicode content testing and malformed syntax recovery
+  - Comprehensive decorator testing including complex decorator patterns
+  - Cross-platform compatibility (Windows permission handling)
+- Enhanced parameter validation to support special syntax markers
+- Ruff compliance and formatting integration with pre-commit hooks
+- Updated ARCHITECTURE.MD with Ruff integration guidelines
 
 ### Changed
 - Nothing yet
