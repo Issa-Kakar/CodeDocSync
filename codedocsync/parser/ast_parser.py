@@ -140,10 +140,16 @@ class ParsedFunction:
 
 
 @lru_cache(maxsize=100)
-def _get_cached_ast(
-    file_content_hash: str, file_path: str, source_content: str
-) -> ast.AST:
+def _get_cached_ast(file_content_hash: str, file_path: str) -> ast.AST:
     """Cache parsed AST trees for repeated analysis."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            source_content = f.read()
+    except UnicodeDecodeError:
+        # Try alternative encodings
+        with open(file_path, "r", encoding="latin-1") as f:
+            source_content = f.read()
+        logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
     return ast.parse(source_content, filename=file_path)
 
 
@@ -209,7 +215,7 @@ def parse_python_file(file_path: str) -> List[ParsedFunction]:
     file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
 
     try:
-        tree = _get_cached_ast(file_content_hash, file_path, source_content)
+        tree = _get_cached_ast(file_content_hash, file_path)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(
@@ -312,7 +318,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
 
     try:
-        tree = _get_cached_ast(file_content_hash, file_path, source_content)
+        tree = _get_cached_ast(file_content_hash, file_path)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(
@@ -419,41 +425,22 @@ def _extract_signature(
     parameters = []
     args = node.args
 
-    # Handle regular arguments
-    defaults = args.defaults
-    num_defaults = len(defaults)
-    num_args = len(args.args)
-
-    for i, arg in enumerate(args.args):
-        # Check if this argument has a default value
-        default_index = i - (num_args - num_defaults)
-        default_value = None
-        is_required = True
-
-        if default_index >= 0:
-            default_value = _get_default_value(defaults[default_index])
-            is_required = False
-
-        param = FunctionParameter(
-            name=arg.arg,
-            type_annotation=(
-                _get_annotation_string(arg.annotation) if arg.annotation else None
-            ),
-            default_value=default_value,
-            is_required=is_required,
-        )
-        parameters.append(param)
-
     # Handle positional-only arguments (Python 3.8+)
     if hasattr(args, "posonlyargs") and args.posonlyargs:
+        # Calculate defaults for positional-only args
+        # args.defaults contains defaults for both positional-only and regular args
+        num_defaults = len(args.defaults)
+        posonly_defaults_start = max(0, len(args.posonlyargs) - num_defaults)
+
         for i, arg in enumerate(args.posonlyargs):
-            default_index = i - (len(args.posonlyargs) - len(args.defaults))
             default_value = None
             is_required = True
 
-            if default_index >= 0 and default_index < len(args.defaults):
-                default_value = _get_default_value(args.defaults[default_index])
-                is_required = False
+            if i >= posonly_defaults_start:
+                default_index = i - posonly_defaults_start
+                if default_index < num_defaults:
+                    default_value = _get_default_value(args.defaults[default_index])
+                    is_required = False
 
             param = FunctionParameter(
                 name=f"{arg.arg}/",  # Mark as positional-only
@@ -464,6 +451,47 @@ def _extract_signature(
                 is_required=is_required,
             )
             parameters.append(param)
+
+    # Handle regular positional arguments
+    if args.args:
+        # Calculate defaults for regular args
+        # args.defaults contains defaults for trailing positional args (posonly + regular)
+        posonly_count = len(args.posonlyargs) if hasattr(args, "posonlyargs") else 0
+        num_defaults = len(args.defaults)
+        regular_defaults_start = max(0, len(args.args) - (num_defaults - posonly_count))
+
+        for i, arg in enumerate(args.args):
+            default_value = None
+            is_required = True
+
+            if i >= regular_defaults_start:
+                default_index = posonly_count + i - regular_defaults_start
+                if default_index < num_defaults:
+                    default_value = _get_default_value(args.defaults[default_index])
+                    is_required = False
+
+            param = FunctionParameter(
+                name=arg.arg,
+                type_annotation=(
+                    _get_annotation_string(arg.annotation) if arg.annotation else None
+                ),
+                default_value=default_value,
+                is_required=is_required,
+            )
+            parameters.append(param)
+
+    # Handle *args
+    if args.vararg:
+        param = FunctionParameter(
+            name=f"*{args.vararg.arg}",
+            type_annotation=(
+                _get_annotation_string(args.vararg.annotation)
+                if args.vararg.annotation
+                else None
+            ),
+            is_required=False,
+        )
+        parameters.append(param)
 
     # Handle keyword-only arguments
     if args.kwonlyargs:
@@ -485,19 +513,6 @@ def _extract_signature(
                 is_required=is_required,
             )
             parameters.append(param)
-
-    # Handle *args
-    if args.vararg:
-        param = FunctionParameter(
-            name=f"*{args.vararg.arg}",
-            type_annotation=(
-                _get_annotation_string(args.vararg.annotation)
-                if args.vararg.annotation
-                else None
-            ),
-            is_required=False,
-        )
-        parameters.append(param)
 
     # Handle **kwargs
     if args.kwarg:
@@ -682,11 +697,21 @@ def _is_imports_only(source_content: str) -> bool:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 return False
             # Check for any substantial code beyond imports
-            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.Expr)):
-                # Allow simple assignments and expressions but not complex ones
-                if not isinstance(node, ast.Expr) or not isinstance(
-                    node.value, ast.Constant
-                ):
+            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                # Allow simple constant assignments like VERSION = "1.0.0"
+                if isinstance(node, ast.Assign):
+                    if not isinstance(node.value, ast.Constant):
+                        return False
+                elif isinstance(node, ast.AnnAssign):
+                    if node.value is not None and not isinstance(
+                        node.value, ast.Constant
+                    ):
+                        return False
+                else:  # ast.AugAssign
+                    return False
+            elif isinstance(node, ast.Expr):
+                # Allow simple constant expressions but not complex ones
+                if not isinstance(node.value, ast.Constant):
                     return False
         return True
     except Exception:

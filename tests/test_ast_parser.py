@@ -74,14 +74,14 @@ class TestBasicParsing:
         assert not params[2].is_required
         assert params[2].default_value == "None"
 
-        assert params[3].name == "*keyword_only"
-        assert params[3].type_annotation == "bool"
+        assert params[3].name == "*args"
+        assert params[3].type_annotation == "Any"
         assert not params[3].is_required
-        assert params[3].default_value == "True"
 
-        assert params[4].name == "*args"
-        assert params[4].type_annotation == "Any"
+        assert params[4].name == "*keyword_only"
+        assert params[4].type_annotation == "bool"
         assert not params[4].is_required
+        assert params[4].default_value == "True"
 
         assert params[5].name == "**kwargs"
         assert params[5].type_annotation == "Dict[str, Any]"

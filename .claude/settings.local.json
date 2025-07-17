@@ -5,7 +5,9 @@
       "Bash(python:*)",
       "Bash(ruff format:*)",
       "Bash(ruff check:*)",
-      "Bash(mypy:*)"
+      "Bash(mypy:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
