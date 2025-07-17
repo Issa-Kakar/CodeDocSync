@@ -425,60 +425,61 @@ def _extract_signature(
     parameters = []
     args = node.args
 
-    # Handle positional-only arguments (Python 3.8+)
-    if hasattr(args, "posonlyargs") and args.posonlyargs:
-        # Calculate defaults for positional-only args
-        # args.defaults contains defaults for both positional-only and regular args
-        num_defaults = len(args.defaults)
-        posonly_defaults_start = max(0, len(args.posonlyargs) - num_defaults)
+    # Handle positional-only and regular arguments together
+    # args.defaults contains defaults for trailing positional parameters (both posonly and regular combined)
+    posonly_args = args.posonlyargs if hasattr(args, "posonlyargs") else []
+    regular_args = args.args if args.args else []
+    all_positional_args = posonly_args + regular_args
 
-        for i, arg in enumerate(args.posonlyargs):
-            default_value = None
-            is_required = True
+    num_defaults = len(args.defaults)
+    num_positional = len(all_positional_args)
 
-            if i >= posonly_defaults_start:
-                default_index = i - posonly_defaults_start
-                if default_index < num_defaults:
-                    default_value = _get_default_value(args.defaults[default_index])
-                    is_required = False
+    # Defaults apply to the last N positional arguments where N = len(args.defaults)
+    defaults_start_index = max(0, num_positional - num_defaults)
 
-            param = FunctionParameter(
-                name=f"{arg.arg}/",  # Mark as positional-only
-                type_annotation=(
-                    _get_annotation_string(arg.annotation) if arg.annotation else None
-                ),
-                default_value=default_value,
-                is_required=is_required,
-            )
-            parameters.append(param)
+    # Process positional-only arguments
+    for i, arg in enumerate(posonly_args):
+        default_value = None
+        is_required = True
 
-    # Handle regular positional arguments
-    if args.args:
-        # Calculate defaults for regular args
-        # args.defaults contains defaults for trailing positional args (posonly + regular)
-        posonly_count = len(args.posonlyargs) if hasattr(args, "posonlyargs") else 0
-        num_defaults = len(args.defaults)
-        regular_defaults_start = max(0, len(args.args) - (num_defaults - posonly_count))
+        if i >= defaults_start_index:
+            default_index = i - defaults_start_index
+            if default_index < num_defaults:
+                default_value = _get_default_value(args.defaults[default_index])
+                is_required = False
 
-        for i, arg in enumerate(args.args):
-            default_value = None
-            is_required = True
+        param = FunctionParameter(
+            name=f"{arg.arg}/",  # Mark as positional-only
+            type_annotation=(
+                _get_annotation_string(arg.annotation) if arg.annotation else None
+            ),
+            default_value=default_value,
+            is_required=is_required,
+        )
+        parameters.append(param)
 
-            if i >= regular_defaults_start:
-                default_index = posonly_count + i - regular_defaults_start
-                if default_index < num_defaults:
-                    default_value = _get_default_value(args.defaults[default_index])
-                    is_required = False
+    # Process regular positional arguments
+    for i, arg in enumerate(regular_args):
+        # Calculate index in the combined positional args list
+        combined_index = len(posonly_args) + i
+        default_value = None
+        is_required = True
 
-            param = FunctionParameter(
-                name=arg.arg,
-                type_annotation=(
-                    _get_annotation_string(arg.annotation) if arg.annotation else None
-                ),
-                default_value=default_value,
-                is_required=is_required,
-            )
-            parameters.append(param)
+        if combined_index >= defaults_start_index:
+            default_index = combined_index - defaults_start_index
+            if default_index < num_defaults:
+                default_value = _get_default_value(args.defaults[default_index])
+                is_required = False
+
+        param = FunctionParameter(
+            name=arg.arg,
+            type_annotation=(
+                _get_annotation_string(arg.annotation) if arg.annotation else None
+            ),
+            default_value=default_value,
+            is_required=is_required,
+        )
+        parameters.append(param)
 
     # Handle *args
     if args.vararg:
