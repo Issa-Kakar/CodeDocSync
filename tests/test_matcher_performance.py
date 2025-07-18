@@ -15,7 +15,7 @@ class TestMatcherPerformance:
         for i in range(1000):
             func = ParsedFunction(
                 signature=FunctionSignature(name=f"function_{i}"),
-                docstring=RawDocstring(f"Docstring {i}", i + 1),
+                docstring=RawDocstring(raw_text=f"Docstring {i}", line_number=i + 1),
                 file_path="test.py",
                 line_number=i * 3,
                 end_line_number=i * 3 + 2,
@@ -47,7 +47,9 @@ class TestMatcherPerformance:
 
             func = ParsedFunction(
                 signature=FunctionSignature(name=name),
-                docstring=RawDocstring(f"Function {i} description", i + 1),
+                docstring=RawDocstring(
+                    raw_text=f"Function {i} description", line_number=i + 1
+                ),
                 file_path="test.py",
                 line_number=i * 3,
                 end_line_number=i * 3 + 2,
@@ -79,7 +81,11 @@ class TestMatcherPerformance:
                     name=f"func_{i}",
                     parameters=[],  # Keep it simple
                 ),
-                docstring=RawDocstring(f"Doc {i}", i + 1) if i % 2 == 0 else None,
+                docstring=(
+                    RawDocstring(raw_text=f"Doc {i}", line_number=i + 1)
+                    if i % 2 == 0
+                    else None
+                ),
                 file_path=f"file_{i % 100}.py",  # 100 different files
                 line_number=i,
                 end_line_number=i + 1,
@@ -102,7 +108,9 @@ class TestMatcherPerformance:
         for i in range(500):  # 500 functions in one file
             func = ParsedFunction(
                 signature=FunctionSignature(name=f"large_file_func_{i}"),
-                docstring=RawDocstring(f"Function {i} in large file", i * 10 + 2),
+                docstring=RawDocstring(
+                    raw_text=f"Function {i} in large file", line_number=i * 10 + 2
+                ),
                 file_path="large_file.py",
                 line_number=i * 10,
                 end_line_number=i * 10 + 8,
@@ -129,7 +137,9 @@ class TestMatcherPerformance:
             for func_idx in range(10):  # 10 functions per file
                 func = ParsedFunction(
                     signature=FunctionSignature(name=f"func_{func_idx}"),
-                    docstring=RawDocstring(f"Function {func_idx}", func_idx * 5 + 2),
+                    docstring=RawDocstring(
+                        raw_text=f"Function {func_idx}", line_number=func_idx * 5 + 2
+                    ),
                     file_path=f"file_{file_idx}.py",
                     line_number=func_idx * 5,
                     end_line_number=func_idx * 5 + 4,

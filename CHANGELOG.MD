@@ -215,6 +215,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed incorrect default value assignment for positional-only and regular arguments in AST parser - the logic now correctly handles `args.defaults` as containing defaults for trailing positional parameters (both positional-only and regular combined)
 - Fixed incorrect keyword-only parameter name formatting in `_extract_signature()` - keyword-only parameters now have correct names without `*` prefix (the `*` is a syntax marker, not part of the parameter name)
 - Fixed RawDocstring serialization bugs in CLI parse command - replaced `str(docstring)` with `docstring.raw_text` in both JSON serialization and pretty-print output to prevent object representation display instead of actual docstring content
+- Fixed inconsistent RawDocstring constructor calls in performance test file - standardized all constructor calls to use keyword arguments (`raw_text=`, `line_number=`) for consistency with rest of codebase
 
 **Note**: Always use `.raw_text` attribute when displaying RawDocstring objects, never `str()` which returns object representation.
 

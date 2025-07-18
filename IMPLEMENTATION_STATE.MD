@@ -108,7 +108,7 @@ MatchingFacade.match_project() -> MatchResult
 ### tests/test_matcher_performance.py ✅
 **Status**: Complete (Chunk 5 of Direct Matcher - Final)
 **Features**: 5 performance test cases validating all performance requirements (<1ms exact, memory optimization)
-**Corrections**: Fixed RawDocstring constructor calls, removed fuzzy matching tests (moved to ContextualMatcher scope)
+**Corrections**: Fixed RawDocstring constructor calls to use consistent keyword arguments (raw_text=, line_number=)
 
 ### DirectMatcher Implementation ✅ COMPLETE
 **Status**: All chunks (1-5) completed with architecture corrections
