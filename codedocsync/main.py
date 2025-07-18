@@ -11,6 +11,8 @@ from rich.table import Table
 
 from codedocsync import __version__
 from codedocsync.parser import IntegratedParser, ParsingError, ParsedDocstring
+from codedocsync.matcher import MatchingFacade, MatchResult
+from codedocsync.utils.config import CodeDocSyncConfig
 
 app = typer.Typer(
     help="CodeDocSync: An intelligent tool to find and fix documentation drift."
@@ -130,6 +132,72 @@ def check(
 
 
 @app.command()
+def match(
+    path: Annotated[Path, typer.Argument(help="File or directory to match")],
+    config: Annotated[Path, typer.Option("--config", "-c", help="Config file")] = None,
+    show_unmatched: Annotated[
+        bool, typer.Option("--show-unmatched", help="Show unmatched functions")
+    ] = False,
+    output_format: Annotated[
+        str, typer.Option("--format", "-f", help="Output format (terminal/json)")
+    ] = "terminal",
+):
+    """
+    Match functions to their documentation.
+
+    Example:
+        codedocsync match ./myproject --show-unmatched
+    """
+    # Load configuration
+    if config and config.exists():
+        config_obj = CodeDocSyncConfig.from_yaml(str(config))
+    else:
+        config_obj = CodeDocSyncConfig()
+
+    # Create matching facade
+    facade = MatchingFacade(config_obj)
+
+    # Match based on path type
+    if path.is_file():
+        result = facade.match_file(path)
+    elif path.is_dir():
+        result = facade.match_project(path)
+    else:
+        console.print(f"[red]Error: {path} is not a valid file or directory[/red]")
+        raise typer.Exit(1)
+
+    # Display results
+    if output_format == "json":
+        output = {
+            "summary": result.get_summary(),
+            "matched_pairs": [
+                {
+                    "function": pair.function.signature.name,
+                    "file": pair.function.file_path,
+                    "line": pair.function.line_number,
+                    "match_type": pair.match_type.value,
+                    "confidence": pair.confidence.overall,
+                    "reason": pair.match_reason,
+                }
+                for pair in result.matched_pairs
+            ],
+        }
+        if show_unmatched:
+            output["unmatched"] = [
+                {
+                    "function": func.signature.name,
+                    "file": func.file_path,
+                    "line": func.line_number,
+                }
+                for func in result.unmatched_functions
+            ]
+        print(json.dumps(output, indent=2))
+    else:
+        # Terminal output with Rich
+        _display_match_results(result, show_unmatched)
+
+
+@app.command()
 def parse(
     file: Annotated[Path, typer.Argument(help="Python file to parse")],
     json_output: Annotated[
@@ -244,6 +312,46 @@ def parse(
     except Exception as e:
         console.print(f"[red]Unexpected error:[/red] {str(e)}")
         raise typer.Exit(1)
+
+
+def _display_match_results(result: MatchResult, show_unmatched: bool):
+    """Display match results in terminal with Rich."""
+    console.print("\n[bold]Matching Results[/bold]")
+    console.print("=" * 50)
+
+    # Summary table
+    summary = result.get_summary()
+    table = Table(title="Summary")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Total Functions", str(summary["total_functions"]))
+    table.add_row("Matched", str(summary["matched"]))
+    table.add_row("Unmatched", str(summary["unmatched"]))
+    table.add_row("Match Rate", summary["match_rate"])
+    table.add_row("Duration", f"{summary['duration_ms']:.1f}ms")
+
+    console.print(table)
+
+    # Match type breakdown
+    if summary["matched"] > 0:
+        console.print("\n[bold]Match Types:[/bold]")
+        for match_type, count in summary["match_types"].items():
+            if count > 0:
+                console.print(f"  • {match_type}: {count}")
+
+    # Show unmatched if requested
+    if show_unmatched and result.unmatched_functions:
+        console.print(
+            f"\n[bold red]Unmatched Functions ({len(result.unmatched_functions)}):[/bold red]"
+        )
+        for func in result.unmatched_functions[:10]:  # Show first 10
+            console.print(
+                f"  • {func.signature.name} "
+                f"([dim]{func.file_path}:{func.line_number}[/dim])"
+            )
+        if len(result.unmatched_functions) > 10:
+            console.print(f"  ... and {len(result.unmatched_functions) - 10} more")
 
 
 if __name__ == "__main__":

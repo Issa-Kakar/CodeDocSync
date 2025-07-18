@@ -167,6 +167,94 @@ class ParsedFunction:
     file_path: str
     line_number: int
 
+## Data Handling Guidelines (CRITICAL)
+
+### Union Type Handling
+When working with Union types, ALWAYS check the actual type before accessing attributes:
+
+```python
+# WRONG - This caused bugs!
+if func.docstring:
+    text = str(func.docstring)  # NO! Returns object representation
+
+# CORRECT
+if func.docstring:
+    if isinstance(func.docstring, RawDocstring):
+        text = func.docstring.raw_text
+    elif isinstance(func.docstring, ParsedDocstring):
+        text = func.docstring.raw_text
+Serialization Rules
+
+Never use str() on custom objects for serialization
+Always access the specific attribute containing the data
+For JSON serialization, create explicit serialization methods
+
+Example:
+pythondef _serialize_docstring(docstring: Optional[Union[RawDocstring, ParsedDocstring]]) -> Optional[Dict[str, Any]]:
+    if docstring is None:
+        return None
+
+    if isinstance(docstring, RawDocstring):
+        return {
+            "type": "raw",
+            "text": docstring.raw_text,  # NOT str(docstring)!
+            "line_number": docstring.line_number
+        }
+    elif isinstance(docstring, ParsedDocstring):
+        return {
+            "type": "parsed",
+            "format": docstring.format,
+            "summary": docstring.summary,
+            "raw_text": docstring.raw_text
+        }
+Component Pipeline & Data Flow
+Complete Pipeline
+1. AST Parser extracts:
+   - FunctionSignature (parameters, types, decorators)
+   - RawDocstring (raw text + basic metadata)
+
+2. Docstring Parser converts:
+   - RawDocstring → ParsedDocstring (structured data)
+
+3. Matcher finds relationships:
+   - Direct: Same name, same file
+   - Contextual: Import/module aware
+   - Semantic: Embedding similarity
+
+4. Analyzer checks consistency:
+   - Rule Engine: Fast structural checks
+   - LLM: Semantic understanding
+Matcher Component Contract
+The matcher MUST:
+
+Accept List[ParsedFunction] as input
+Return List[MatchedPair] where each pair links function to its documentation
+Handle cases where documentation exists in different locations (class docstrings, module docstrings)
+Provide confidence scores for each match
+
+Performance Contracts
+Component performance requirements:
+
+Matcher (Direct): <1ms per function
+Matcher (Fuzzy): <5ms per function
+Matcher (Semantic): <50ms per function (includes embedding time)
+Memory: <100MB for 10,000 functions
+
+Common Pitfalls & Prevention
+AST Line Number Calculation
+WRONG: Assuming docstring is always at node.lineno + 1
+RIGHT: Use ast.get_docstring() which handles multi-line definitions correctly
+Type Checking Before Access
+ALWAYS check instance type before accessing Union type attributes:
+python# Every function handling Union types MUST have explicit type checks
+if isinstance(obj, SpecificType):
+    # Now safe to access SpecificType attributes
+Caching Keys
+WRONG: Using mutable objects or file paths as cache keys
+RIGHT: Use content hash (MD5/SHA) for cache keys to prevent cache poisoning
+
+
+
 ## Existing Interfaces (Must Honor)
 
 ### From parser/ast_parser.py
