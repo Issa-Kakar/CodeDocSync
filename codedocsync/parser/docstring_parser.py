@@ -31,7 +31,7 @@ class DocstringParser:
     FORMAT_MAPPING = {
         DocstringFormat.GOOGLE: DocstringStyle.GOOGLE,
         DocstringFormat.NUMPY: DocstringStyle.NUMPYDOC,
-        DocstringFormat.SPHINX: DocstringStyle.EPYDOC,  # Sphinx uses EPYDOC style
+        DocstringFormat.SPHINX: DocstringStyle.REST,  # Sphinx-style works better with REST parser
         DocstringFormat.REST: DocstringStyle.REST,
     }
 
