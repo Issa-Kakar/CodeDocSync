@@ -253,7 +253,77 @@ Caching Keys
 WRONG: Using mutable objects or file paths as cache keys
 RIGHT: Use content hash (MD5/SHA) for cache keys to prevent cache poisoning
 
+## Contextual Matcher Architecture
 
+### Import Resolution System
+The contextual matcher MUST track and resolve imports to understand cross-file relationships:
+
+```python
+# Import tracking requirements:
+1. Standard imports: import module, from module import name
+2. Relative imports: from . import module, from ..package import name
+3. Aliased imports: import module as alias, from module import name as alias
+4. Wildcard imports: from module import * (track with warning)
+Module Resolution Rules
+python# Resolution priority order:
+1. Explicit imports in the same file
+2. Module-level __all__ exports
+3. Package __init__.py exports
+4. Parent package imports (for relative imports)
+5. Standard library modules (ignore for matching)
+Function Relocation Detection
+Functions may move between files during refactoring. Detection strategy:
+python# Relocation indicators (in priority order):
+1. Same function name + similar signature (>80% parameter match)
+2. Import statement changes pointing to new location
+3. Git history showing file moves (optional enhancement)
+4. Deprecation decorators with forwarding imports
+Cross-File Reference Tracking
+python@dataclass
+class CrossFileReference:
+    source_file: str          # File containing the reference
+    source_line: int          # Line number of reference
+    target_function: str      # Referenced function name
+    import_chain: List[str]   # Import path to reach function
+    confidence: float         # Confidence in reference resolution
+Performance Constraints for Contextual Matching
+
+Import parsing: <10ms per file
+Reference resolution: <20ms per function
+Module tree building: <100ms for 100 files
+Memory: <10MB per 1000 imports
+
+State Management for Multi-File Analysis
+The contextual matcher MUST maintain state across files:
+pythonclass ContextualMatcherState:
+    # Module-level state
+    module_tree: Dict[str, ModuleInfo]      # Full module hierarchy
+    import_graph: Dict[str, Set[str]]       # Import dependencies
+    function_index: Dict[str, FunctionInfo]  # Global function registry
+
+    # File-level caches
+    import_cache: Dict[str, List[Import]]   # Parsed imports per file
+    export_cache: Dict[str, Set[str]]       # Exported names per module
+Error Recovery for Import Resolution
+python# Import resolution failures MUST be handled gracefully:
+1. Circular imports: Track visited modules, break cycles
+2. Missing modules: Log warning, continue with partial info
+3. Dynamic imports: Mark as unresolved, use heuristics
+4. Import errors: Fallback to string matching
+Critical Invariants for Contextual Matching
+
+Never modify AST: Contextual matcher is read-only
+Preserve function identity: A function has ONE canonical location
+Import precedence: Local imports override global imports
+Module boundaries: Respect all and private conventions
+Performance first: Skip deep analysis if confidence is already high
+
+Integration Points with Direct Matcher
+python# Contextual matcher enhances direct matcher results:
+1. If direct match confidence < 0.8, try contextual
+2. Validate direct matches against import structure
+3. Upgrade match confidence based on import evidence
+4. Never downgrade a high-confidence direct match
 
 ## Existing Interfaces (Must Honor)
 

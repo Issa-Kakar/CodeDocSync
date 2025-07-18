@@ -14,7 +14,9 @@
       "Bash(pip install:*)",
       "Bash(git reset:*)",
       "Bash(rm:*)",
-      "Bash(poetry add:*)"
+      "Bash(poetry add:*)",
+      "Bash(find:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }

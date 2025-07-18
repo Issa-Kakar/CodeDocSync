@@ -201,6 +201,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All integration tests now pass with corrected expectations
   - All performance tests pass with <1ms per function requirement met
   - DirectMatcher now correctly implements the architecture: each function is matched to its own docstring documentation
+- Contextual Matcher foundation (Chunk 1):
+  - Created `matcher/contextual_models.py` with comprehensive data models for contextual matching:
+    - `ImportType` enum supporting STANDARD, FROM, RELATIVE, and WILDCARD import types
+    - `ImportStatement` dataclass with validation for import statement parsing including module paths, imported names, aliases, and line numbers
+    - `ModuleInfo` dataclass tracking module metadata including file path, imports, exports, functions, and package status
+    - `FunctionLocation` dataclass for tracking function definitions and import paths across modules
+    - `CrossFileMatch` dataclass for matches between functions and documentation in different files with confidence scoring
+    - `ContextualMatcherState` dataclass for global state management across multi-file analysis with module tree and import graph
+  - Created `matcher/import_parser.py` with comprehensive AST-based import extraction:
+    - `ImportParser` class with `parse_imports()` method supporting all Python import types (standard, from, relative, wildcard)
+    - Robust error handling for encoding issues (UTF-8 fallback to latin-1) and syntax errors
+    - `build_module_info()` method creating complete module metadata including package detection
+    - Export detection from `__all__` declarations and automatic public name extraction
+    - Line number tracking for all import statements for debugging and analysis
+  - Created comprehensive test suite in `tests/test_contextual_models.py` with 25+ test cases covering:
+    - Import type validation and enum values
+    - Import statement creation and validation including wildcard and relative import constraints
+    - Module info creation with defaults and canonical name generation
+    - Function location tracking with import paths and export status
+    - Cross-file match validation with confidence scoring
+    - Contextual matcher state management with module addition and import graph updates
+    - Integration workflows testing complete component interactions
+  - Created comprehensive test suite in `tests/test_import_parser.py` with 20+ test cases covering:
+    - All Python import types (standard, from, relative, wildcard) with proper parsing
+    - Export detection from `__all__` declarations and public name extraction
+    - Module info building for regular files and package `__init__.py` files
+    - Complex import combinations with aliases and multiple imported names
+    - Error handling for empty files, syntax errors, and encoding issues
+    - Integration scenarios with complete module analysis workflows
+  - Foundation infrastructure ready for contextual matching implementation (Chunks 2-5)
+- Contextual Matcher Module Resolution and Function Registry (Chunk 2):
+  - Created `matcher/module_resolver.py` with comprehensive module path resolution and import chain building:
+    - `ModuleResolver` class with Python module search path calculation and caching
+    - `resolve_module_path()` method converting file paths to module paths (e.g., `/project/src/utils/helpers.py` → `src.utils.helpers`)
+    - `resolve_import()` method handling all import types including relative imports with level calculation
+    - `build_import_chain()` method constructing import access paths for cross-module function access
+    - `find_module_file()` method locating file paths from module paths with package detection
+    - Robust error handling for missing modules, circular imports, and invalid relative imports
+  - Created `matcher/function_registry.py` with global function tracking and lookup capabilities:
+    - `FunctionRegistry` class with efficient multi-index function storage and retrieval
+    - `register_function()` method creating canonical function names and updating all indices
+    - `find_function()` method with relevance-based sorting using module hints and hierarchy awareness
+    - `find_moved_function()` method for detecting function relocations across modules
+    - `get_module_functions()` method for retrieving all functions within a specific module
+    - Secondary indices for fast lookup by module path and function name
+    - Export status tracking for public/private function classification
+  - Created comprehensive test suite in `tests/test_module_resolver.py` with 20+ test cases covering:
+    - Module path resolution for various file structures and package hierarchies
+    - Import resolution including relative imports, wildcards, and alias handling
+    - Import chain building for direct imports, module imports, and access path construction
+    - Error handling for nonexistent modules, invalid paths, and circular dependencies
+    - Python path calculation and search prioritization
+  - Created comprehensive test suite in `tests/test_function_registry.py` with 15+ test cases covering:
+    - Function registration with canonical naming and index updates
+    - Function lookup by name and canonical path with relevance scoring
+    - Moved function detection with single/multiple candidate handling
+    - Module function retrieval and export status tracking
+    - Duplicate registration handling and private function classification
+  - Performance targets met: <20ms for import resolution per function
+  - Foundation ready for contextual matching core implementation (Chunks 3-5)
+- Contextual Matcher Core Implementation (Chunk 3):
+  - Created `matcher/contextual_matcher.py` with complete ContextualMatcher class implementation:
+    - `ContextualMatcher` class with project-wide analysis capabilities and multi-file state management
+    - `analyze_project()` method for building complete project context with module discovery and function registry
+    - `match_with_context()` method for contextual matching that enhances direct match results
+    - `_find_contextual_match()` method implementing three-strategy matching approach:
+      1. Imported function matching for functions imported from other modules
+      2. Moved function detection for functions relocated between files
+      3. Cross-file documentation matching (placeholder for Chunk 4)
+    - `_match_imported_function()` method with import statement analysis and source module resolution
+    - `_match_moved_function()` method with signature similarity validation and confidence scoring
+    - Project file discovery with exclusion filtering (skips .git, __pycache__, venv directories)
+    - Comprehensive performance metrics tracking including files analyzed, imports resolved, and match counts
+    - Robust error handling for file analysis failures and missing module paths
+  - Created comprehensive test suite in `tests/test_contextual_matcher.py` with 25+ test cases covering:
+    - ContextualMatcher initialization and project analysis workflows
+    - Contextual matching with and without previous direct match results
+    - Imported function matching with module resolution and import chain building
+    - Moved function detection with signature similarity validation
+    - File analysis error handling and graceful degradation
+    - Python file discovery with proper exclusion filtering
+    - Performance metrics tracking and statistics collection
+    - Mock-based testing for complex integration scenarios
+  - Enhanced matcher module exports in `__init__.py` to include all contextual matching components
+  - Performance targets met: <100ms for 100-file project analysis preparation
+  - Foundation ready for cross-file documentation matching (Chunk 4) and integration optimization (Chunk 5)
 
 ### Changed
 - Nothing yet
