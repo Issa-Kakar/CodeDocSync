@@ -58,7 +58,7 @@ def _serialize_docstring(docstring):
         }
     else:
         # Raw docstring
-        return {"raw_text": str(docstring)}
+        return {"raw_text": docstring.raw_text}
 
 
 def version_callback(value: bool):
@@ -215,7 +215,9 @@ def parse(
                         docstring_format = func.docstring.format.value
                     else:
                         # Raw docstring - use first line
-                        docstring_preview = str(func.docstring).split("\n")[0].strip()
+                        docstring_preview = func.docstring.raw_text.split("\n")[
+                            0
+                        ].strip()
                         docstring_format = "raw"
 
                     if len(docstring_preview) > 37:
