@@ -287,6 +287,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced matcher module exports in `__init__.py` to include all contextual matching components
   - Performance targets met: <100ms for 100-file project analysis preparation
   - Foundation ready for cross-file documentation matching (Chunk 4) and integration optimization (Chunk 5)
+- Contextual Matcher Cross-File Documentation Matching (Chunk 4):
+  - Created `matcher/doc_location_finder.py` with comprehensive DocLocationFinder class implementation:
+    - `DocLocationFinder` class for finding documentation in non-standard locations
+    - `find_module_docs()` method extracting function documentation from module-level docstrings
+    - `find_package_docs()` method discovering documentation in package `__init__.py` files
+    - `find_related_docs()` method searching documentation in related files with configurable search radius
+    - `_extract_function_docs_from_module()` method parsing function documentation from module docstrings
+    - `_extract_method_docs_from_class()` method parsing method documentation from class docstrings with proper namespacing
+    - Intelligent documentation caching with `_cache` dictionary for performance optimization
+    - Encoding fallback support (UTF-8 to latin-1) for various file encodings and international characters
+    - Robust error handling for syntax errors, missing files, and parsing failures with graceful degradation
+    - Cache management methods: `clear_cache()` and `get_cache_stats()` for memory management and monitoring
+  - Enhanced `matcher/contextual_matcher.py` with complete cross-file documentation matching:
+    - Updated `_match_cross_file_docs()` method from placeholder to full implementation
+    - Added `_create_cross_file_match()` method for creating cross-file matches with confidence calculation
+    - Added `_assess_doc_quality()` method for documentation-function compatibility scoring
+    - Integration with `DocLocationFinder` for comprehensive documentation discovery
+    - Quality assessment system with parameter coverage analysis and return type validation
+    - Intelligent skipping of functions with existing good documentation (>20 characters)
+    - Support for both `ParsedDocstring` and `RawDocstring` documentation types
+    - Three-strategy documentation search: module-level, package-level, and related files
+    - Confidence scoring based on documentation quality with penalties for missing/extra parameters
+  - Created comprehensive test suite in `tests/test_cross_file_matching.py` with 25+ test cases covering:
+    - `DocLocationFinder` functionality including module docs, package docs, and related docs
+    - Documentation caching and cache statistics with proper memory management
+    - Encoding fallback testing for non-UTF-8 files and international characters
+    - Syntax error handling and graceful degradation for malformed files
+    - Cross-file documentation matching scenarios with module, package, and related documentation
+    - Documentation quality assessment with parameter coverage and return type validation
+    - Function skipping logic for well-documented functions with existing docstrings
+    - Cross-file match creation with proper confidence calculation and match reasoning
+    - Edge cases including missing documentation, empty files, and encoding issues
+  - Performance targets met: <50ms per file for documentation extraction with caching optimization
+  - Foundation ready for integration and performance optimization (Chunk 5)
 
 ### Changed
 - Nothing yet

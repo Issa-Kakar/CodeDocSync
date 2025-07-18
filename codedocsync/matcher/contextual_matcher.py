@@ -7,7 +7,8 @@ from .contextual_models import ContextualMatcherState, ImportStatement, Function
 from .module_resolver import ModuleResolver
 from .function_registry import FunctionRegistry
 from .import_parser import ImportParser
-from ..parser import ParsedFunction, IntegratedParser
+from .doc_location_finder import DocLocationFinder
+from ..parser import ParsedFunction, IntegratedParser, ParsedDocstring, RawDocstring
 
 logger = logging.getLogger(__name__)
 
@@ -231,11 +232,64 @@ class ContextualMatcher:
 
     def _match_cross_file_docs(self, function: ParsedFunction) -> Optional[MatchedPair]:
         """Find documentation in a different file."""
-        # For now, this is a placeholder - will be implemented in Chunk 4
-        # This would search for documentation in:
-        # - Module-level docstrings
-        # - Package __init__.py files
-        # - Related documentation files
+        # Skip if function already has good documentation
+        if function.docstring:
+            if isinstance(function.docstring, ParsedDocstring):
+                if function.docstring.summary and len(function.docstring.summary) > 20:
+                    return None
+            elif isinstance(function.docstring, RawDocstring):
+                if (
+                    function.docstring.raw_text
+                    and len(function.docstring.raw_text) > 20
+                ):
+                    return None
+
+        # Initialize doc finder
+        if not hasattr(self, "doc_finder"):
+            self.doc_finder = DocLocationFinder()
+
+        # Search strategies:
+
+        # 1. Check module-level documentation
+        module_docs = self.doc_finder.find_module_docs(function.file_path)
+        if function.signature.name in module_docs:
+            return self._create_cross_file_match(
+                function,
+                module_docs[function.signature.name],
+                function.file_path,
+                "module docstring",
+            )
+
+        # 2. Check parent package documentation
+        module_path = self.module_resolver.resolve_module_path(function.file_path)
+        if module_path and "." in module_path:
+            parent_package = ".".join(module_path.split(".")[:-1])
+            parent_file = self.module_resolver.find_module_file(parent_package)
+
+            if parent_file:
+                package_docs = self.doc_finder.find_package_docs(
+                    str(Path(parent_file).parent)
+                )
+                if function.signature.name in package_docs:
+                    return self._create_cross_file_match(
+                        function,
+                        package_docs[function.signature.name],
+                        parent_file,
+                        "package __init__.py",
+                    )
+
+        # 3. Check related documentation files
+        related_docs = self.doc_finder.find_related_docs(
+            function.signature.name, function.file_path
+        )
+
+        if related_docs:
+            # Use the first matching documentation
+            doc_file, docstring = related_docs[0]
+            return self._create_cross_file_match(
+                function, docstring, doc_file, "related documentation file"
+            )
+
         return None
 
     def _calculate_signature_similarity(
@@ -305,3 +359,54 @@ class ContextualMatcher:
         # For now, track basic stats
         for module_info in self.state.module_tree.values():
             self.stats["imports_resolved"] += len(module_info.imports)
+
+    def _create_cross_file_match(
+        self,
+        function: ParsedFunction,
+        docstring: ParsedDocstring,
+        doc_location: str,
+        location_type: str,
+    ) -> MatchedPair:
+        """Create a match for cross-file documentation."""
+        # Calculate confidence based on documentation quality
+        doc_quality = self._assess_doc_quality(docstring, function)
+
+        return MatchedPair(
+            function=function,
+            docstring=docstring,
+            match_type=MatchType.CONTEXTUAL,
+            confidence=MatchConfidence(
+                overall=0.7 * doc_quality,  # Lower base confidence for cross-file
+                name_similarity=1.0,  # Exact name match required
+                location_score=0.5,  # Different file
+                signature_similarity=doc_quality,  # Based on parameter matching
+            ),
+            match_reason=f"Documentation found in {location_type} at {doc_location}",
+        )
+
+    def _assess_doc_quality(
+        self, docstring: ParsedDocstring, function: ParsedFunction
+    ) -> float:
+        """Assess how well documentation matches the function."""
+        score = 1.0
+
+        # Check parameter coverage
+        if hasattr(docstring, "parameters") and docstring.parameters:
+            doc_params = {p.name for p in docstring.parameters}
+            func_params = {p.name for p in function.signature.parameters}
+
+            # Penalize missing or extra parameters
+            missing = func_params - doc_params
+            extra = doc_params - func_params
+
+            score -= 0.1 * len(missing)
+            score -= 0.05 * len(extra)
+
+        # Check if return type is documented
+        if function.signature.return_type and not (
+            hasattr(docstring, "returns") and docstring.returns
+        ):
+            score -= 0.1
+
+        # Ensure score is between 0 and 1
+        return max(0.0, min(1.0, score))
