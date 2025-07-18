@@ -307,7 +307,6 @@ class ContextualMatcher:
         """Create a match for an imported function."""
         return MatchedPair(
             function=function,
-            docstring=function.docstring,  # Will be enhanced in full impl
             match_type=MatchType.CONTEXTUAL,
             confidence=MatchConfidence(
                 overall=0.9,
@@ -324,7 +323,6 @@ class ContextualMatcher:
         """Create a match for a moved function."""
         return MatchedPair(
             function=function,
-            docstring=function.docstring,
             match_type=MatchType.CONTEXTUAL,
             confidence=MatchConfidence(
                 overall=0.85,
@@ -370,7 +368,6 @@ class ContextualMatcher:
 
         return MatchedPair(
             function=function,
-            docstring=docstring,
             match_type=MatchType.CONTEXTUAL,
             confidence=MatchConfidence(
                 overall=0.7 * doc_quality,  # Lower base confidence for cross-file

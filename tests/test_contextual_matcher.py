@@ -3,16 +3,25 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from matcher.contextual_matcher import ContextualMatcher
-from matcher.models import MatchResult, MatchedPair, MatchType, MatchConfidence
-from matcher.contextual_models import (
+from codedocsync.matcher.contextual_matcher import ContextualMatcher
+from codedocsync.matcher.models import (
+    MatchResult,
+    MatchedPair,
+    MatchType,
+    MatchConfidence,
+)
+from codedocsync.matcher.contextual_models import (
     ImportStatement,
     ImportType,
     ModuleInfo,
     FunctionLocation,
 )
-from parser.ast_parser import FunctionSignature, FunctionParameter, ParsedFunction
-from parser.docstring_models import RawDocstring
+from codedocsync.parser.ast_parser import (
+    FunctionSignature,
+    FunctionParameter,
+    ParsedFunction,
+)
+from codedocsync.parser import RawDocstring
 
 
 class TestContextualMatcher:
@@ -138,8 +147,7 @@ def helper_function():
             result = contextual_matcher.match_with_context(functions)
 
             assert result.total_functions == 1
-            assert result.total_docs == 1
-            assert len(result.matches) == 0
+            assert len(result.matched_pairs) == 0
             assert len(result.unmatched_functions) == 1
             assert result.unmatched_functions[0] == sample_function
 
@@ -152,7 +160,6 @@ def helper_function():
         # Create a previous match result with high confidence
         previous_match = MatchedPair(
             function=sample_function,
-            docstring=sample_function.docstring,
             match_type=MatchType.EXACT,
             confidence=MatchConfidence(
                 overall=0.9,
@@ -165,17 +172,15 @@ def helper_function():
 
         direct_result = MatchResult(
             total_functions=1,
-            total_docs=1,
-            matches=[previous_match],
+            matched_pairs=[previous_match],
             unmatched_functions=[],
-            unmatched_docs=[],
         )
 
         result = contextual_matcher.match_with_context(functions, direct_result)
 
         # Should keep the previous high-confidence match
-        assert len(result.matches) == 1
-        assert result.matches[0] == previous_match
+        assert len(result.matched_pairs) == 1
+        assert result.matched_pairs[0] == previous_match
 
     def test_match_with_context_low_confidence_previous(
         self, contextual_matcher, sample_function
@@ -186,7 +191,6 @@ def helper_function():
         # Create a previous match result with low confidence
         previous_match = MatchedPair(
             function=sample_function,
-            docstring=sample_function.docstring,
             match_type=MatchType.FUZZY,
             confidence=MatchConfidence(
                 overall=0.5,  # Low confidence
@@ -199,16 +203,13 @@ def helper_function():
 
         direct_result = MatchResult(
             total_functions=1,
-            total_docs=1,
-            matches=[previous_match],
+            matched_pairs=[previous_match],
             unmatched_functions=[],
-            unmatched_docs=[],
         )
 
         # Mock contextual match finding
         contextual_match = MatchedPair(
             function=sample_function,
-            docstring=sample_function.docstring,
             match_type=MatchType.CONTEXTUAL,
             confidence=MatchConfidence(
                 overall=0.9,
@@ -225,8 +226,8 @@ def helper_function():
             result = contextual_matcher.match_with_context(functions, direct_result)
 
             # Should include both previous and contextual matches
-            assert len(result.matches) == 2
-            assert contextual_match in result.matches
+            assert len(result.matched_pairs) == 2
+            assert contextual_match in result.matched_pairs
 
     def test_analyze_file_success(self, contextual_matcher, temp_project):
         """Test successful file analysis."""
@@ -301,7 +302,6 @@ def helper_function():
         ) as mock_import:
             mock_match = MatchedPair(
                 function=sample_function,
-                docstring=sample_function.docstring,
                 match_type=MatchType.CONTEXTUAL,
                 confidence=MatchConfidence(
                     overall=0.9,
@@ -331,7 +331,6 @@ def helper_function():
             ) as mock_moved:
                 mock_match = MatchedPair(
                     function=sample_function,
-                    docstring=sample_function.docstring,
                     match_type=MatchType.CONTEXTUAL,
                     confidence=MatchConfidence(
                         overall=0.85,

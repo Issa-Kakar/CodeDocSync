@@ -379,6 +379,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed RawDocstring serialization bugs in CLI parse command - replaced `str(docstring)` with `docstring.raw_text` in both JSON serialization and pretty-print output to prevent object representation display instead of actual docstring content
 - Fixed inconsistent RawDocstring constructor calls in performance test file - standardized all constructor calls to use keyword arguments (`raw_text=`, `line_number=`) for consistency with rest of codebase
 - Fixed unreachable dead code in `DirectMatcher._calculate_signature_similarity()` method - removed redundant `hasattr` check that made the RawDocstring handling branch unreachable, replaced with proper `isinstance` type checking for RawDocstring vs ParsedDocstring
+- Fixed inconsistent MatchResult and MatchedPair class usage in contextual matcher implementation and tests:
+  - Fixed MatchedPair constructor calls to remove non-existent `docstring` parameter in `codedocsync/matcher/contextual_matcher.py`
+  - Fixed MatchResult constructor calls in `tests/test_contextual_matcher.py` to use `matched_pairs` instead of `matches` parameter
+  - Fixed MatchResult constructor calls to remove non-existent `total_docs` and `unmatched_docs` parameters
+  - Fixed all attribute access in tests to use `matched_pairs` instead of non-existent `matches` attribute
+  - Resolves TypeError during object creation and AttributeError during attribute access
 
 **Note**: Always use `.raw_text` attribute when displaying RawDocstring objects, never `str()` which returns object representation.
 
