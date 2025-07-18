@@ -15,7 +15,7 @@ class TestMatcherPerformance:
         for i in range(1000):
             func = ParsedFunction(
                 signature=FunctionSignature(name=f"function_{i}"),
-                docstring=RawDocstring(f"Docstring {i}", i + 1, 4),
+                docstring=RawDocstring(f"Docstring {i}", i + 1),
                 file_path="test.py",
                 line_number=i * 3,
                 end_line_number=i * 3 + 2,
@@ -38,20 +38,16 @@ class TestMatcherPerformance:
         assert len(result.matched_pairs) == 1000
         assert all(p.match_type.value == "exact" for p in result.matched_pairs)
 
-    def test_fuzzy_match_performance(self):
-        """Test fuzzy matching meets <5ms per function requirement."""
-        # Create functions with fuzzy-matchable names
+    def test_basic_match_performance(self):
+        """Test basic matching performance."""
+        # Create functions with docstrings
         functions = []
         for i in range(100):
-            # Half snake_case, half camelCase
-            if i % 2 == 0:
-                name = f"get_item_{i}"
-            else:
-                name = f"getItem{i}"
+            name = f"function_{i}"
 
             func = ParsedFunction(
                 signature=FunctionSignature(name=name),
-                docstring=RawDocstring(f"Get item {i}", i + 1, 4),
+                docstring=RawDocstring(f"Function {i} description", i + 1),
                 file_path="test.py",
                 line_number=i * 3,
                 end_line_number=i * 3 + 2,
@@ -59,16 +55,19 @@ class TestMatcherPerformance:
             )
             functions.append(func)
 
-        matcher = DirectMatcher(fuzzy_threshold=0.8)
+        matcher = DirectMatcher()
 
         # Time the matching
         start_time = time.time()
-        matcher.match_functions(functions)
+        result = matcher.match_functions(functions)
         duration = time.time() - start_time
 
         # Check performance
         ms_per_function = (duration * 1000) / len(functions)
         assert ms_per_function < 5.0, f"Too slow: {ms_per_function:.2f}ms per function"
+
+        # Verify that all functions matched (they all have docstrings)
+        assert len(result.matched_pairs) == 100
 
     def test_memory_usage(self):
         """Test memory usage stays reasonable for large numbers of functions."""
@@ -80,7 +79,7 @@ class TestMatcherPerformance:
                     name=f"func_{i}",
                     parameters=[],  # Keep it simple
                 ),
-                docstring=RawDocstring(f"Doc {i}", i + 1, 4) if i % 2 == 0 else None,
+                docstring=RawDocstring(f"Doc {i}", i + 1) if i % 2 == 0 else None,
                 file_path=f"file_{i % 100}.py",  # 100 different files
                 line_number=i,
                 end_line_number=i + 1,
@@ -103,7 +102,7 @@ class TestMatcherPerformance:
         for i in range(500):  # 500 functions in one file
             func = ParsedFunction(
                 signature=FunctionSignature(name=f"large_file_func_{i}"),
-                docstring=RawDocstring(f"Function {i} in large file", i * 10 + 2, 4),
+                docstring=RawDocstring(f"Function {i} in large file", i * 10 + 2),
                 file_path="large_file.py",
                 line_number=i * 10,
                 end_line_number=i * 10 + 8,
@@ -130,7 +129,7 @@ class TestMatcherPerformance:
             for func_idx in range(10):  # 10 functions per file
                 func = ParsedFunction(
                     signature=FunctionSignature(name=f"func_{func_idx}"),
-                    docstring=RawDocstring(f"Function {func_idx}", func_idx * 5 + 2, 4),
+                    docstring=RawDocstring(f"Function {func_idx}", func_idx * 5 + 2),
                     file_path=f"file_{file_idx}.py",
                     line_number=func_idx * 5,
                     end_line_number=func_idx * 5 + 4,

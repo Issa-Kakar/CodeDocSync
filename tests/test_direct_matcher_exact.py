@@ -175,7 +175,6 @@ class TestExactMatching:
         assert stats["exact_matches"] == 1
         assert stats["no_matches"] == 1
         assert stats["total_processed"] == 2
-        assert stats["fuzzy_matches"] == 0
 
     def test_signature_similarity_edge_cases(self):
         """Test edge cases in signature similarity calculation."""

@@ -45,7 +45,7 @@ class TestBasicParsing:
         assert func.signature.return_type is None
         assert not func.signature.is_async
         assert not func.signature.is_method
-        assert func.docstring == "A simple function."
+        assert func.docstring.raw_text == "A simple function."
         assert func.line_number == 1
         assert "def simple_function():" in func.source_code
 
@@ -162,7 +162,7 @@ class TestEdgeCases:
         assert len(functions) == 1
         func = functions[0]
         assert func.signature.name == "unicode_function"
-        assert "Unicode content: 你好" in func.docstring
+        assert "Unicode content: 你好" in func.docstring.raw_text
 
     def test_parse_complex_annotations(self, complex_annotations_file):
         """Test complex type annotations (Union, Optional, etc)."""

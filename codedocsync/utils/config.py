@@ -1,6 +1,6 @@
 """Configuration management for CodeDocSync."""
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict
 import re
 
@@ -28,7 +28,8 @@ class MatcherConfig(BaseModel):
         description="Custom regex patterns for name transformation",
     )
 
-    @validator("custom_patterns")
+    @field_validator("custom_patterns")
+    @classmethod
     def validate_patterns(cls, patterns):
         """Validate regex patterns are valid."""
         for pattern_dict in patterns:

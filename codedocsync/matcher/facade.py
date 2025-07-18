@@ -19,13 +19,7 @@ class MatchingFacade:
         self.config = config or CodeDocSyncConfig()
 
         # Initialize matchers based on config
-        self.direct_matcher = DirectMatcher(
-            fuzzy_threshold=self.config.matcher.fuzzy_threshold
-        )
-
-        # Add custom patterns if provided
-        if self.config.matcher.custom_patterns:
-            self._add_custom_patterns()
+        self.direct_matcher = DirectMatcher()
 
     def match_file(self, file_path: Union[str, Path]) -> MatchResult:
         """
@@ -91,11 +85,3 @@ class MatchingFacade:
 
         # Match all functions
         return self.direct_matcher.match_functions(all_functions)
-
-    def _add_custom_patterns(self):
-        """Add custom naming patterns from config."""
-        for pattern_dict in self.config.matcher.custom_patterns:
-            pattern = pattern_dict["pattern"]
-            replacement = pattern_dict["replacement"]
-            self.direct_matcher.naming_patterns.append((pattern, replacement))
-            logger.debug(f"Added custom pattern: {pattern} -> {replacement}")

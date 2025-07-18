@@ -2,9 +2,7 @@
 
 import time
 import logging
-import re
 from typing import List, Dict, Optional, Tuple
-from rapidfuzz import fuzz, process
 from codedocsync.parser import ParsedFunction
 from .models import MatchedPair, MatchConfidence, MatchType, MatchResult
 
@@ -14,30 +12,13 @@ logger = logging.getLogger(__name__)
 class DirectMatcher:
     """Matches functions to documentation within the same file."""
 
-    def __init__(self, fuzzy_threshold: float = 0.85):
-        """
-        Initialize the direct matcher.
-
-        Args:
-            fuzzy_threshold: Minimum similarity score for fuzzy matches (0.0-1.0)
-        """
-        self.fuzzy_threshold = fuzzy_threshold
+    def __init__(self):
+        """Initialize the direct matcher."""
         self.stats = {
             "exact_matches": 0,
-            "fuzzy_matches": 0,
             "no_matches": 0,
             "total_processed": 0,
         }
-
-        # Common naming patterns for fuzzy matching
-        self.naming_patterns = [
-            (r"get_(\w+)", r"get\1"),  # get_user -> getUser
-            (r"set_(\w+)", r"set\1"),  # set_value -> setValue
-            (r"is_(\w+)", r"is\1"),  # is_valid -> isValid
-            (r"has_(\w+)", r"has\1"),  # has_data -> hasData
-            (r"(\w+)_id", r"\1Id"),  # user_id -> userId
-            (r"(\w+)_url", r"\1Url"),  # api_url -> apiUrl
-        ]
 
     def match_functions(self, functions: List[ParsedFunction]) -> MatchResult:
         """
@@ -96,12 +77,8 @@ class DirectMatcher:
     def _match_functions_in_file(
         self, functions: List[ParsedFunction]
     ) -> Dict[int, Tuple[ParsedFunction, Optional[MatchedPair]]]:
-        """Match functions within a single file."""
+        """Match functions to their own documentation within a single file."""
         matches = {}
-
-        # Build index of functions with docstrings for fuzzy matching
-        documented_functions = [f for f in functions if f.docstring]
-        function_names = [f.signature.name for f in documented_functions]
 
         for i, func in enumerate(functions):
             self.stats["total_processed"] += 1
@@ -111,20 +88,13 @@ class DirectMatcher:
                 self.stats["no_matches"] += 1
                 continue
 
-            # Try exact match first
+            # Try exact match (function matches its own docstring)
             match = self._try_exact_match(func)
-
-            # If no exact match, try fuzzy match
-            if not match and function_names:
-                match = self._try_fuzzy_match(func, documented_functions)
 
             matches[i] = (func, match)
 
             if match:
-                if match.match_type == MatchType.EXACT:
-                    self.stats["exact_matches"] += 1
-                else:
-                    self.stats["fuzzy_matches"] += 1
+                self.stats["exact_matches"] += 1
             else:
                 self.stats["no_matches"] += 1
 
@@ -223,137 +193,6 @@ class DirectMatcher:
         """Reset statistics for a new matching run."""
         for key in self.stats:
             self.stats[key] = 0
-
-    def _try_fuzzy_match(
-        self, func: ParsedFunction, candidates: List[ParsedFunction]
-    ) -> Optional[MatchedPair]:
-        """
-        Try fuzzy matching for function names.
-
-        Handles common variations:
-        - snake_case vs camelCase
-        - Abbreviations (calc vs calculate)
-        - Common prefixes/suffixes
-        """
-        func_name = func.signature.name
-
-        # Try pattern-based transformations first
-        for pattern, replacement in self.naming_patterns:
-            transformed = re.sub(pattern, replacement, func_name)
-            if transformed != func_name:
-                # Check if transformed name matches any candidate
-                for candidate in candidates:
-                    if candidate.signature.name == transformed:
-                        return self._create_fuzzy_match(
-                            func,
-                            candidate,
-                            f"Pattern match: {func_name} → {transformed}",
-                        )
-
-        # Try fuzzy string matching
-        candidate_names = [c.signature.name for c in candidates]
-
-        # Get best matches using rapidfuzz
-        matches = process.extract(
-            func_name,
-            candidate_names,
-            scorer=fuzz.ratio,
-            limit=3,  # Top 3 matches
-        )
-
-        for match_name, score, _ in matches:
-            if score >= self.fuzzy_threshold * 100:  # rapidfuzz uses 0-100 scale
-                # Find the candidate function
-                candidate = next(
-                    c for c in candidates if c.signature.name == match_name
-                )
-
-                # Additional validation for fuzzy matches
-                if self._validate_fuzzy_match(func, candidate):
-                    return self._create_fuzzy_match(
-                        func,
-                        candidate,
-                        f"Fuzzy match: {func_name} → {match_name} (score: {score}%)",
-                    )
-
-        return None
-
-    def _validate_fuzzy_match(
-        self, func1: ParsedFunction, func2: ParsedFunction
-    ) -> bool:
-        """
-        Validate that a fuzzy match is likely correct.
-
-        Checks:
-        - Similar parameter count
-        - Similar line location (within same class/module section)
-        - No exact match already exists
-        """
-        # Check parameter count similarity
-        param_count1 = len(func1.signature.parameters)
-        param_count2 = len(func2.signature.parameters)
-
-        if abs(param_count1 - param_count2) > 2:
-            return False  # Too different
-
-        # Check if they're in the same general area of the file
-        line_distance = abs(func1.line_number - func2.line_number)
-        if line_distance > 100:  # Arbitrary threshold
-            return False
-
-        # Check return type similarity if available
-        if func1.signature.return_type and func2.signature.return_type:
-            if func1.signature.return_type != func2.signature.return_type:
-                return False
-
-        return True
-
-    def _create_fuzzy_match(
-        self, func: ParsedFunction, matched_func: ParsedFunction, reason: str
-    ) -> MatchedPair:
-        """Create a fuzzy match pair with confidence scoring."""
-        # Calculate detailed confidence
-        name_sim = fuzz.ratio(func.signature.name, matched_func.signature.name) / 100.0
-
-        # Location score based on line distance
-        line_distance = abs(func.line_number - matched_func.line_number)
-        location_score = max(0.0, 1.0 - (line_distance / 100.0))
-
-        # Signature similarity
-        sig_score = self._calculate_signature_similarity_between(func, matched_func)
-
-        # Overall confidence for fuzzy match (weighted)
-        overall = (name_sim * 0.5) + (location_score * 0.2) + (sig_score * 0.3)
-
-        return MatchedPair(
-            function=func,
-            match_type=MatchType.FUZZY,
-            confidence=MatchConfidence(
-                overall=overall,
-                name_similarity=name_sim,
-                location_score=location_score,
-                signature_similarity=sig_score,
-            ),
-            match_reason=reason,
-        )
-
-    def _calculate_signature_similarity_between(
-        self, func1: ParsedFunction, func2: ParsedFunction
-    ) -> float:
-        """Calculate signature similarity between two functions."""
-        params1 = {p.name for p in func1.signature.parameters}
-        params2 = {p.name for p in func2.signature.parameters}
-
-        if not params1 and not params2:
-            return 1.0
-
-        if not params1 or not params2:
-            return 0.0
-
-        intersection = params1 & params2
-        union = params1 | params2
-
-        return len(intersection) / len(union)
 
     def get_stats(self) -> Dict[str, int]:
         """Get matching statistics."""

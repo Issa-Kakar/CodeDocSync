@@ -2,6 +2,7 @@
 
 from .models import MatchedPair, MatchConfidence, MatchType, MatchResult, MatchingError
 from .direct_matcher import DirectMatcher
+from .facade import MatchingFacade
 
 __all__ = [
     "MatchedPair",
@@ -10,4 +11,5 @@ __all__ = [
     "MatchResult",
     "DirectMatcher",
     "MatchingError",
+    "MatchingFacade",
 ]
