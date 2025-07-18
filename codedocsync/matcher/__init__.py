@@ -12,9 +12,11 @@ from .contextual_models import (
     ContextualMatcherState,
 )
 from .contextual_matcher import ContextualMatcher
+from .contextual_facade import ContextualMatchingFacade
 from .import_parser import ImportParser
 from .module_resolver import ModuleResolver
 from .function_registry import FunctionRegistry
+from .doc_location_finder import DocLocationFinder
 
 __all__ = [
     "MatchedPair",
@@ -31,7 +33,9 @@ __all__ = [
     "CrossFileMatch",
     "ContextualMatcherState",
     "ContextualMatcher",
+    "ContextualMatchingFacade",
     "ImportParser",
     "ModuleResolver",
     "FunctionRegistry",
+    "DocLocationFinder",
 ]

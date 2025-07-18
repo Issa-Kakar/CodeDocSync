@@ -87,15 +87,14 @@ class ContextualMatcher:
         """
         matches = []
         unmatched_functions = []
-        unmatched_docs = []
 
         # Start with direct match results if provided
         if direct_match_result:
-            matches.extend(direct_match_result.matches)
+            matches.extend(direct_match_result.matched_pairs)
             # Track which functions need contextual matching
             matched_function_ids = {
                 m.function.signature.name
-                for m in direct_match_result.matches
+                for m in direct_match_result.matched_pairs
                 if m.confidence.overall >= 0.8
             }
         else:
@@ -118,10 +117,8 @@ class ContextualMatcher:
         # Build result
         return MatchResult(
             total_functions=len(functions),
-            total_docs=len(functions),  # Assuming integrated parsing
-            matches=matches,
+            matched_pairs=matches,
             unmatched_functions=unmatched_functions,
-            unmatched_docs=unmatched_docs,
         )
 
     def _analyze_file(self, file_path: str) -> None:

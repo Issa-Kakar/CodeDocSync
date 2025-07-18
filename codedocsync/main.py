@@ -11,7 +11,7 @@ from rich.table import Table
 
 from codedocsync import __version__
 from codedocsync.parser import IntegratedParser, ParsingError, ParsedDocstring
-from codedocsync.matcher import MatchingFacade, MatchResult
+from codedocsync.matcher import MatchingFacade, MatchResult, ContextualMatchingFacade
 from codedocsync.utils.config import CodeDocSyncConfig
 
 app = typer.Typer(
@@ -339,6 +339,222 @@ def _display_match_results(result: MatchResult, show_unmatched: bool):
         for match_type, count in summary["match_types"].items():
             if count > 0:
                 console.print(f"  • {match_type}: {count}")
+
+    # Show unmatched if requested
+    if show_unmatched and result.unmatched_functions:
+        console.print(
+            f"\n[bold red]Unmatched Functions ({len(result.unmatched_functions)}):[/bold red]"
+        )
+        for func in result.unmatched_functions[:10]:  # Show first 10
+            console.print(
+                f"  • {func.signature.name} "
+                f"([dim]{func.file_path}:{func.line_number}[/dim])"
+            )
+        if len(result.unmatched_functions) > 10:
+            console.print(f"  ... and {len(result.unmatched_functions) - 10} more")
+
+
+@app.command()
+def match_contextual(
+    path: Annotated[Path, typer.Argument(help="Project directory to analyze")],
+    output_format: Annotated[
+        str, typer.Option("--format", "-f", help="Output format (terminal/json)")
+    ] = "terminal",
+    output_file: Annotated[
+        Path, typer.Option("--output", "-o", help="Output file path")
+    ] = None,
+    config: Annotated[
+        Path, typer.Option("--config", "-c", help="Configuration file path")
+    ] = None,
+    show_stats: Annotated[
+        bool, typer.Option("--stats", help="Show performance statistics")
+    ] = False,
+    use_cache: Annotated[
+        bool, typer.Option("--cache/--no-cache", help="Use parsing cache")
+    ] = True,
+    show_unmatched: Annotated[
+        bool, typer.Option("--show-unmatched", help="Show unmatched functions")
+    ] = False,
+):
+    """
+    Perform contextual matching on a project.
+
+    Uses both direct and contextual matching for best results.
+    This command analyzes the entire project structure, resolves imports,
+    and finds documentation across files.
+
+    Example:
+        codedocsync match-contextual ./myproject --stats --show-unmatched
+    """
+    # Load configuration
+    if config and config.exists():
+        config_obj = CodeDocSyncConfig.from_yaml(str(config))
+    else:
+        config_obj = CodeDocSyncConfig()
+
+    # Validate path
+    if not path.exists():
+        console.print(f"[red]Error: {path} does not exist[/red]")
+        raise typer.Exit(1)
+
+    if not path.is_dir():
+        console.print(f"[red]Error: {path} is not a directory[/red]")
+        raise typer.Exit(1)
+
+    # Create facade and run matching
+    facade = ContextualMatchingFacade(config_obj)
+
+    console.print(f"[cyan]Analyzing project: {path}[/cyan]")
+    console.print("[dim]Building project context and matching functions...[/dim]")
+
+    try:
+        result = facade.match_project(str(path), use_cache=use_cache)
+    except Exception as e:
+        console.print(f"[red]Error during analysis: {str(e)}[/red]")
+        raise typer.Exit(1)
+
+    # Format output
+    if output_format == "json":
+        output = _format_json_contextual_result(result, show_unmatched)
+    else:
+        output = _format_terminal_contextual_result(result, show_unmatched)
+
+    # Save or print
+    if output_file:
+        output_file.write_text(output)
+        console.print(f"✅ Results saved to {output_file}")
+    else:
+        if output_format == "json":
+            console.print(output)
+        else:
+            console.print(output)
+
+    # Show statistics if requested
+    if show_stats:
+        facade.print_summary()
+
+    # Print final summary
+    summary = result.get_summary()
+    console.print("\n[green]✅ Analysis complete![/green]")
+    console.print(
+        f"Matched {summary['matched']}/{summary['total_functions']} functions ({summary['match_rate']})"
+    )
+
+
+def _format_json_contextual_result(result: MatchResult, show_unmatched: bool) -> str:
+    """Format contextual matching result as JSON."""
+    import json
+
+    output = {
+        "summary": result.get_summary(),
+        "matched_pairs": [
+            {
+                "function": pair.function.signature.name,
+                "file": pair.function.file_path,
+                "line": pair.function.line_number,
+                "match_type": pair.match_type.value,
+                "confidence": pair.confidence.overall,
+                "reason": pair.match_reason,
+                "docstring": _serialize_docstring(pair.docstring),
+            }
+            for pair in result.matched_pairs
+        ],
+    }
+
+    if show_unmatched:
+        output["unmatched"] = [
+            {
+                "function": func.signature.name,
+                "file": func.file_path,
+                "line": func.line_number,
+            }
+            for func in result.unmatched_functions
+        ]
+
+    # Add performance metrics if available
+    if hasattr(result, "metadata") and result.metadata:
+        output["metadata"] = result.metadata
+
+    return json.dumps(output, indent=2)
+
+
+def _format_terminal_contextual_result(
+    result: MatchResult, show_unmatched: bool
+) -> str:
+    """Format contextual matching result for terminal."""
+    from io import StringIO
+    import sys
+
+    # Capture console output
+    old_stdout = sys.stdout
+    sys.stdout = captured_output = StringIO()
+
+    try:
+        _display_contextual_results(result, show_unmatched)
+        return captured_output.getvalue()
+    finally:
+        sys.stdout = old_stdout
+
+
+def _display_contextual_results(result: MatchResult, show_unmatched: bool):
+    """Display contextual matching results in terminal with Rich."""
+    console.print("\n[bold]Contextual Matching Results[/bold]")
+    console.print("=" * 60)
+
+    # Summary table
+    summary = result.get_summary()
+    table = Table(title="Summary")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Total Functions", str(summary["total_functions"]))
+    table.add_row("Matched", str(summary["matched"]))
+    table.add_row("Unmatched", str(summary["unmatched"]))
+    table.add_row("Match Rate", summary["match_rate"])
+
+    console.print(table)
+
+    # Match type breakdown
+    if summary["matched"] > 0:
+        console.print("\n[bold]Match Types:[/bold]")
+        for match_type, count in summary["match_types"].items():
+            if count > 0:
+                console.print(f"  • {match_type}: {count}")
+
+    # Show performance metrics if available
+    if (
+        hasattr(result, "metadata")
+        and result.metadata
+        and "performance" in result.metadata
+    ):
+        console.print("\n[bold]Performance Metrics:[/bold]")
+        perf = result.metadata["performance"]
+        console.print(f"  • Total time: {perf['total_time']:.2f}s")
+        console.print(f"  • Files processed: {perf['files_processed']}")
+        console.print(f"  • Parsing time: {perf['parsing_time']:.2f}s")
+        console.print(f"  • Direct matching: {perf['direct_matching_time']:.2f}s")
+        console.print(
+            f"  • Contextual matching: {perf['contextual_matching_time']:.2f}s"
+        )
+
+    # Show detailed matches
+    if result.matched_pairs:
+        console.print(
+            f"\n[bold]Matched Functions ({len(result.matched_pairs)}):[/bold]"
+        )
+        for pair in result.matched_pairs[:10]:  # Show first 10
+            confidence_color = "green" if pair.confidence.overall >= 0.8 else "yellow"
+            console.print(
+                f"  • {pair.function.signature.name} "
+                f"([{confidence_color}]{pair.confidence.overall:.2f}[/{confidence_color}]) "
+                f"- {pair.match_type.value} "
+                f"([dim]{pair.function.file_path}:{pair.function.line_number}[/dim])"
+            )
+            if pair.match_reason:
+                console.print(f"    {pair.match_reason}")
+
+        if len(result.matched_pairs) > 10:
+            console.print(f"  ... and {len(result.matched_pairs) - 10} more")
 
     # Show unmatched if requested
     if show_unmatched and result.unmatched_functions:
