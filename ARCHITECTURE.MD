@@ -1,16 +1,15 @@
 # CodeDocSync Architecture
 
-**Version: 0.1.0**
+**Version: 0.1.1**
 
 ## Project Overview
 
 CodeDocSync is a CLI tool that automatically detects inconsistencies between Python code and its documentation. It uses AST parsing, rule-based analysis, and minimal semantic search to identify when functions have changed but their docstrings haven't, preventing documentation drift that causes developer confusion and AI tool inefficiency.
 
 ## High-Level Architecture
-
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
 │   CLI       │────▶│   Parser     │────▶│  Matcher    │
-│  (Typer)    │     │  (AST/TS)    │     │  (3-Layer)  │
+│  (Typer)    │     │  (AST/DS)    │     │  (3-Layer)  │
 └─────────────┘     └──────────────┘     └─────────────┘
 │                     │
 ▼                     ▼
@@ -25,69 +24,173 @@ CodeDocSync is a CLI tool that automatically detects inconsistencies between Pyt
 │(Term/JSON/HTML)
 └──────────────┘
 
-## Component List
+## Implementation Invariants (NEVER VIOLATE)
 
-| Component | Purpose | Key Interfaces |
-|-----------|---------|----------------|
-| **cli/** | Command-line interface with analyze/watch/check modes | `main.py`: Entry point, `formatters.py`: Output formatting |
-| **parser/** | Extract code structure and docstrings from Python files | `ast_parser.py`: AST traversal, `docstring_parser.py`: Parse Google/NumPy/Sphinx styles |
-| **matcher/** | Match code to documentation using 3-layer approach | `direct_matcher.py`: 90% name-based, `semantic_matcher.py`: 2% embedding fallback |
-| **analyzer/** | Detect inconsistencies using rules and LLM | `llm_analyzer.py`: Semantic checking, `rule_engine.py`: Fast pre-checks |
-| **storage/** | Manage embeddings and configuration | `vector_store.py`: ChromaDB abstraction, `embedding_cache.py`: LRU cache |
-| **integrations/** | CI/CD and editor integration | `github_actions.py`: Pipeline templates, `git_hooks.py`: Pre-commit |
-| **utils/** | Performance and parallelization utilities | `parallel.py`: Multiprocessing, `cache.py`: File hash caching |
+1. **Data Flow**: AST Parser → Docstring Parser → Matcher (never reverse)
+2. **Model Ownership**:
+   - parser/ owns all parsing models
+   - analyzer/ owns all analysis models
+   - Never create models outside their modules
+3. **Function Naming**: parse_* for parsing, analyze_* for analysis, match_* for matching
+4. **Error Handling**: Every public function must handle None inputs gracefully
+5. **Testing**: Each chunk must have tests BEFORE moving to next chunk
 
-## Key Architectural Decisions
+## Component Specifications
 
-### ADR-001: Python 3.10+ Requirement
-**Context:** Need modern features for type hints and performance
-**Decision:** Require Python 3.10+
-**Alternatives:** Support 3.8+ (rejected - limits features)
-**Reason:** Match statements, better typing, performance improvements worth the restriction
+### Parser Module (`parser/`)
 
-### ADR-002: AST Parser Choice
-**Context:** Need fast, reliable Python code parsing
-**Decision:** Primary: built-in `ast`, Secondary: tree-sitter for watch mode
-**Alternatives:** Only tree-sitter (rejected - overhead for simple parsing)
-**Reason:** AST module 2.4x faster for batch processing; tree-sitter adds incremental parsing
+**Purpose**: Extract code structure and documentation from Python files with high accuracy.
 
-### ADR-003: Minimal RAG with ChromaDB
-**Context:** Need semantic fallback for renamed functions
-**Decision:** ChromaDB for 2% of matches requiring embeddings
-**Alternatives:** No semantic matching (rejected - misses refactorings)
-**Reason:** Zero-config setup, handles 1M embeddings, built for AI applications
+**Subcomponents**:
+- `ast_parser.py`: Parse Python files into structured function data (~450 lines)
+- `docstring_parser.py`: Parse docstrings in multiple formats (~380 lines)
+- `code_analyzer.py`: Extract behavioral patterns and exceptions (~290 lines)
 
-### ADR-004: LLM Provider Abstraction
-**Context:** Support multiple LLM providers for flexibility
-**Decision:** Use litellm for unified interface
-**Alternatives:** Direct OpenAI only (rejected - vendor lock-in)
-**Reason:** Automatic fallbacks, cost tracking, provider switching without code changes
+**Key Data Models**:
+```python
+@dataclass
+class FunctionParameter:
+    name: str                      # Valid Python identifier
+    type_annotation: Optional[str] # String representation of type
+    default_value: Optional[str]   # String representation of default
+    is_required: bool             # True if no default value
+    kind: ParameterKind           # POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, etc.
 
-## Integration Points
+@dataclass
+class ParsedDocstring:
+    format: str                    # 'google', 'numpy', 'sphinx', 'rest'
+    summary: str                   # First line(s) of docstring
+    description: Optional[str]     # Extended description
+    parameters: List[DocParam]     # Parsed parameter documentation
+    returns: Optional[DocReturn]   # Return value documentation
+    raises: List[DocRaises]        # Documented exceptions
+    examples: List[str]           # Code examples if present
+    raw_text: str                 # Original docstring text
+Python Parameter Rules (Critical for correctness):
 
-- **External APIs:** OpenAI/Anthropic via litellm for semantic analysis
-- **Databases:** ChromaDB/hnswlib for vector similarity search
-- **File System:** Watch mode monitoring, Git integration for incremental analysis
-- **CI/CD:** GitHub Actions, GitLab CI, pre-commit hooks
-- **Configuration:** YAML config files, environment variables for API keys
+Parameter order in signatures MUST be: positional-only, positional-or-keyword, *args, keyword-only, **kwargs
+args.defaults contains defaults for ALL positional parameters (both positional-only AND regular)
+Keyword-only parameters have their own kw_defaults list with None for required params
+The * separator is syntax, not a parameter name
 
-## Code Quality and Formatting
+Error Handling Requirements:
 
-**Ruff Integration**: This project uses Ruff for code linting and formatting. All code must be Ruff-compliant before commits. Pre-commit hooks enforce this standard. Use `ruff format` and `ruff check --fix` to ensure compliance.
+Syntax errors: Parse up to error line, log warning, continue
+Encoding issues: Try UTF-8 first, fallback to latin-1
+Missing docstrings: Return None, not empty string
+Malformed docstrings: Best-effort parsing with logged warnings
 
-**Static Type Checking**: MyPy is used for static type analysis. All code must pass `mypy codedocsync/` without errors. Key type safety patterns:
-- Use `Union[ast.FunctionDef, ast.AsyncFunctionDef]` for functions handling both sync and async functions
-- Handle `Optional[ast.expr]` types properly with null checks before passing to functions expecting non-optional types
-- Use `# type: ignore` comments sparingly and only for third-party imports without type stubs
+Cache Strategy
+Three-Layer Caching (prevents memory leaks):
 
-**Pre-commit Quality Gates**: Before any commit, the following commands must pass:
-- `ruff check . --fix` - Fix all linting issues
-- `ruff format .` - Format all code consistently
-- `mypy codedocsync/` - Pass all type checks
-- `python -m pytest tests/` - All tests must pass
+File Hash Cache: MD5(content) → parsed AST (disk-based)
+Function Cache: function_signature → parsed docstring (LRU in-memory, max 1000)
+Embedding Cache: text+model → vector (disk-based with memory LRU layer)
 
-**IDE Integration**: Install the Ruff extension in your IDE for real-time linting feedback. Configure your IDE to run these checks on save to catch issues early.
+Cache Keys: Use content hash, NOT file path + content (prevents duplication)
+Docstring Format Detection
+Auto-detection Priority:
 
-## AI Guardrails
+Check for explicit format markers (e.g., :param: for Sphinx)
+Analyze structure patterns (e.g., Args: section for Google)
+Use project-wide default from config
+Fallback to 'google' style
 
-Use ARCHITECTURE.md as canonical context for all AI-assisted development. Do not invent components or modify the 3-layer matching approach (direct 90%, contextual 8%, semantic 2%) without updating this document.
+Format Indicators:
+
+Google: Sections like Args:, Returns:, Raises:
+NumPy: Sections with underlines like Parameters\n----------
+Sphinx: reST directives like :param name:, :returns:
+REST: Similar to Sphinx but with different conventions
+
+Key Architectural Decisions
+ADR-001: Python 3.10+ Requirement
+Context: Need modern features for type hints and performance
+Decision: Require Python 3.10+
+Reason: Match statements, better typing, ast.unparse() for defaults
+ADR-002: AST Parser Choice
+Context: Need fast, reliable Python code parsing
+Decision: Primary: built-in ast, Secondary: tree-sitter for watch mode
+Reason: AST module 2.4x faster for batch processing; tree-sitter adds incremental parsing
+ADR-003: Minimal RAG with ChromaDB
+Context: Need semantic fallback for renamed functions (2% of cases)
+Decision: ChromaDB for embedding-based matching
+Reason: Zero-config setup, handles 1M embeddings, built for AI applications
+ADR-004: Docstring Parser Library
+Context: Need robust multi-format docstring parsing
+Decision: Use docstring_parser library with custom enhancements
+Reason: Actively maintained, supports all major formats, extensible
+ADR-005: Parameter Validation Strategy
+Context: Prevent bugs from invalid parameter names or types
+Decision: Validate at data model creation with regex patterns
+Reason: Fail fast with clear errors rather than propagate invalid data
+Integration Points
+
+External APIs: OpenAI/Anthropic via litellm for semantic analysis
+Libraries: docstring_parser>=0.16 for parsing, ast for code analysis
+File System: Watch mode monitoring, Git integration for incremental analysis
+CI/CD: GitHub Actions, GitLab CI, pre-commit hooks
+
+Code Quality Standards
+Type Safety: All functions handling AST nodes must use proper Union types and None checks. Example:
+pythondef process_node(node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> ParsedFunction:
+    # Handle both sync and async functions
+Validation First: Validate data at boundaries. Use Pydantic models or manual validation in __post_init__.
+Error Context: All errors must include recovery hints and context:
+pythonraise ParsingError(
+    f"Failed to parse {file_path}",
+    recovery_hint="Check file encoding or syntax",
+    line_number=error_line
+)
+Performance Targets:
+
+Small file (<100 lines): <10ms
+Medium file (100-1000 lines): <50ms
+Large file (>1000 lines): <200ms
+Docstring parsing: <5ms per docstring
+
+AI Development Guidelines
+
+No Component Invention: Only implement components listed in this document
+Test-First for Edge Cases: Write tests before implementing complex parsing logic
+Explicit Over Implicit: When in doubt, be explicit about behavior
+Incremental Progress: Each chunk should be testable independently
+
+## Critical Interfaces
+
+### ParsedFunction (from AST parser)
+```python
+@dataclass
+class ParsedFunction:
+    signature: FunctionSignature
+    docstring: Optional[Union[RawDocstring, ParsedDocstring]]  # <-- Critical!
+    file_path: str
+    line_number: int
+
+## Existing Interfaces (Must Honor)
+
+### From parser/ast_parser.py
+```python
+# These exist and cannot be changed:
+def parse_python_file(file_path: str) -> List[ParsedFunction]
+def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, None]
+
+@dataclass
+class ParsedFunction:
+    signature: FunctionSignature
+    docstring: Optional[RawDocstring]  # Will accept ParsedDocstring after integration
+    file_path: str
+    line_number: int
+    end_line_number: int
+    source_code: str
+
+
+    Integration Contract
+When docstring parser is complete, modify ParsedFunction.docstring to accept:
+Union[RawDocstring, ParsedDocstring]
+Module Public APIs (What's Exposed)
+parser/init.py exports:
+
+parse_python_file, parse_python_file_lazy
+ParsedFunction, FunctionSignature, FunctionParameter
+ParsingError (base exception)
