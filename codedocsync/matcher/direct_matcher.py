@@ -3,7 +3,7 @@
 import time
 import logging
 from typing import List, Dict, Optional, Tuple
-from codedocsync.parser import ParsedFunction
+from codedocsync.parser import ParsedFunction, RawDocstring, ParsedDocstring
 from .models import MatchedPair, MatchConfidence, MatchType, MatchResult
 
 logger = logging.getLogger(__name__)
@@ -133,10 +133,8 @@ class DirectMatcher:
         name_score = 1.0  # Same function, so name matches
         location_score = 1.0  # Docstring is in expected location
 
-        # Calculate signature similarity if we have parsed docstring
-        sig_score = 1.0
-        if hasattr(func.docstring, "parameters"):
-            sig_score = self._calculate_signature_similarity(func)
+        # Calculate signature similarity (handles all docstring types)
+        sig_score = self._calculate_signature_similarity(func)
 
         # Overall confidence is weighted average
         overall = (name_score + location_score + sig_score) / 3.0
@@ -154,17 +152,19 @@ class DirectMatcher:
 
         Returns a score from 0.0 to 1.0.
         """
-        if not hasattr(func.docstring, "parameters"):
-            return 1.0  # No parameters to check
+        if not func.docstring:
+            return 1.0  # No docstring to check
+
+        # Only ParsedDocstring has parameters attribute
+        if isinstance(func.docstring, RawDocstring):
+            return 1.0  # RawDocstring - can't check parameters
+
+        # Must be ParsedDocstring with parameters
+        if not isinstance(func.docstring, ParsedDocstring):
+            return 1.0  # Unknown type, can't check
 
         func_params = {p.name for p in func.signature.parameters}
-
-        # Handle both RawDocstring and ParsedDocstring
-        if hasattr(func.docstring, "parameters"):
-            doc_params = {p.name for p in func.docstring.parameters}
-        else:
-            # RawDocstring - can't check parameters
-            return 1.0
+        doc_params = {p.name for p in func.docstring.parameters}
 
         if not func_params and not doc_params:
             return 1.0  # Both empty
