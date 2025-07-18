@@ -123,6 +123,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimized batch processing for large-scale docstring parsing with thread-safe operations
   - Enhanced `IntegratedParser` compatibility with all new caching features
   - Performance targets: <5ms per docstring parse with cache hits, <50ms for batch processing
+- Direct Matcher foundation (Chunk 1):
+  - Created `matcher/models.py` with comprehensive data models for matching results
+  - Added `MatchType` enum supporting EXACT, FUZZY, CONTEXTUAL, SEMANTIC, and NO_MATCH match types
+  - Implemented `MatchConfidence` dataclass with validation for confidence scores including name similarity, location score, and signature similarity
+  - Added `MatchedPair` dataclass linking functions to their documentation with confidence scoring and match reasoning
+  - Created `MatchResult` dataclass with summary statistics including match rate calculation and match type counting
+  - Built `MatchingError` exception class with recovery hints for robust error handling
+  - Updated matcher module `__init__.py` to export all new models and matcher classes
+  - Added comprehensive test suite in `tests/test_matcher_models.py` with validation and summary testing
 
 ### Changed
 - Nothing yet
@@ -136,6 +145,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed incorrect default value assignment for positional-only and regular arguments in AST parser - the logic now correctly handles `args.defaults` as containing defaults for trailing positional parameters (both positional-only and regular combined)
 - Fixed incorrect keyword-only parameter name formatting in `_extract_signature()` - keyword-only parameters now have correct names without `*` prefix (the `*` is a syntax marker, not part of the parameter name)
+- Fixed RawDocstring serialization bugs in CLI parse command - replaced `str(docstring)` with `docstring.raw_text` in both JSON serialization and pretty-print output to prevent object representation display instead of actual docstring content
+
+**Note**: Always use `.raw_text` attribute when displaying RawDocstring objects, never `str()` which returns object representation.
 
 ### Security
 - Nothing yet
