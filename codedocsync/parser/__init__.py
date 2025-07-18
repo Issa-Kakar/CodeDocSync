@@ -10,6 +10,7 @@ from .ast_parser import (
     ParsedFunction,
     FunctionSignature,
     FunctionParameter,
+    RawDocstring,
 )
 from .docstring_models import (
     DocstringFormat,
@@ -19,6 +20,7 @@ from .docstring_models import (
     ParsedDocstring,
 )
 from .docstring_parser import DocstringParser
+from .integrated_parser import IntegratedParser
 from ..utils.errors import ParsingError, ValidationError
 
 __all__ = [
@@ -27,12 +29,14 @@ __all__ = [
     "ParsedFunction",
     "FunctionSignature",
     "FunctionParameter",
+    "RawDocstring",
     "DocstringFormat",
     "DocstringParameter",
     "DocstringReturns",
     "DocstringRaises",
     "ParsedDocstring",
     "DocstringParser",
+    "IntegratedParser",
     "ParsingError",
     "ValidationError",
 ]

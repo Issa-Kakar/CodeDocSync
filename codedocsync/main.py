@@ -10,12 +10,55 @@ from rich.console import Console
 from rich.table import Table
 
 from codedocsync import __version__
-from codedocsync.parser import parse_python_file, ParsingError
+from codedocsync.parser import IntegratedParser, ParsingError, ParsedDocstring
 
 app = typer.Typer(
     help="CodeDocSync: An intelligent tool to find and fix documentation drift."
 )
 console = Console()
+
+
+def _serialize_docstring(docstring):
+    """Serialize docstring for JSON output."""
+    if docstring is None:
+        return None
+    if isinstance(docstring, ParsedDocstring):
+        return {
+            "format": docstring.format.value,
+            "summary": docstring.summary,
+            "description": docstring.description,
+            "parameters": [
+                {
+                    "name": p.name,
+                    "type": p.type_str,
+                    "description": p.description,
+                    "is_optional": p.is_optional,
+                    "default_value": p.default_value,
+                }
+                for p in docstring.parameters
+            ],
+            "returns": (
+                {
+                    "type": docstring.returns.type_str,
+                    "description": docstring.returns.description,
+                }
+                if docstring.returns
+                else None
+            ),
+            "raises": [
+                {
+                    "exception_type": r.exception_type,
+                    "description": r.description,
+                }
+                for r in docstring.raises
+            ],
+            "examples": docstring.examples,
+            "is_valid": docstring.is_valid,
+            "parse_errors": docstring.parse_errors,
+        }
+    else:
+        # Raw docstring
+        return {"raw_text": docstring.raw_text}
 
 
 def version_callback(value: bool):
@@ -102,7 +145,9 @@ def parse(
     signatures, parameters, and docstrings.
     """
     try:
-        functions = parse_python_file(str(file))
+        # Use IntegratedParser for complete parsing with docstring analysis
+        parser = IntegratedParser()
+        functions = parser.parse_file(str(file))
 
         if json_output:
             # Convert to JSON-serializable format
@@ -125,7 +170,7 @@ def parse(
                     ],
                     "return_type": func.signature.return_type,
                     "decorators": func.signature.decorators,
-                    "docstring": func.docstring,
+                    "docstring": _serialize_docstring(func.docstring),
                     "signature_string": func.signature.to_string(),
                 }
                 json_data.append(func_data)
@@ -144,6 +189,7 @@ def parse(
             table.add_column("Return Type", style="blue")
             table.add_column("Lines", style="yellow")
             table.add_column("Docstring", style="white", max_width=40)
+            table.add_column("Format", style="cyan", max_width=10)
 
             for func in functions:
                 func_type = "async" if func.signature.is_async else "sync"
@@ -161,9 +207,19 @@ def parse(
                 line_range = f"{func.line_number}-{func.end_line_number}"
 
                 docstring_preview = ""
+                docstring_format = ""
                 if func.docstring:
-                    # First line of docstring for preview
-                    docstring_preview = func.docstring.split("\n")[0].strip()
+                    if isinstance(func.docstring, ParsedDocstring):
+                        # Use parsed docstring summary
+                        docstring_preview = func.docstring.summary
+                        docstring_format = func.docstring.format.value
+                    else:
+                        # Raw docstring - use first line
+                        docstring_preview = func.docstring.raw_text.split("\n")[
+                            0
+                        ].strip()
+                        docstring_format = "raw"
+
                     if len(docstring_preview) > 37:
                         docstring_preview = docstring_preview[:37] + "..."
 
@@ -174,6 +230,7 @@ def parse(
                     return_type,
                     line_range,
                     docstring_preview,
+                    docstring_format,
                 )
 
             console.print(table)
