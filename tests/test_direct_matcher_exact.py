@@ -27,9 +27,7 @@ class TestExactMatching:
                 return_type="int",
             ),
             docstring=RawDocstring(
-                raw_text='"""Calculate sum of two numbers."""',
-                line_number=2,
-                indentation=4,
+                raw_text='"""Calculate sum of two numbers."""', line_number=2
             ),
             file_path="math_utils.py",
             line_number=1,
@@ -101,7 +99,7 @@ class TestExactMatching:
             # File 1
             ParsedFunction(
                 signature=FunctionSignature(name="func1"),
-                docstring=RawDocstring("Doc1", 2, 4),
+                docstring=RawDocstring(raw_text="Doc1", line_number=2),
                 file_path="file1.py",
                 line_number=1,
                 end_line_number=3,
@@ -110,7 +108,7 @@ class TestExactMatching:
             # File 2
             ParsedFunction(
                 signature=FunctionSignature(name="func2"),
-                docstring=RawDocstring("Doc2", 2, 4),
+                docstring=RawDocstring(raw_text="Doc2", line_number=2),
                 file_path="file2.py",
                 line_number=1,
                 end_line_number=3,
@@ -154,7 +152,7 @@ class TestExactMatching:
         functions = [
             ParsedFunction(
                 signature=FunctionSignature(name="documented_func"),
-                docstring=RawDocstring("Documentation", 2, 4),
+                docstring=RawDocstring(raw_text="Documentation", line_number=2),
                 file_path="test.py",
                 line_number=1,
                 end_line_number=3,
@@ -207,7 +205,7 @@ class TestExactMatching:
                 name="raw_doc_func",
                 parameters=[FunctionParameter("x", "int", None, True)],
             ),
-            docstring=RawDocstring("Raw docstring", 2, 4),
+            docstring=RawDocstring(raw_text="Raw docstring", line_number=2),
             file_path="test.py",
             line_number=1,
             end_line_number=3,
