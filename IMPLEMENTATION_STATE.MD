@@ -279,6 +279,9 @@ match_contextual command for advanced contextual matching with full feature set
 - Fixed `AttributeError` in `match-contextual` command JSON output by removing non-existent `pair.docstring` attribute access
 - Fixed type annotation errors in CLI command parameters (changed `Path` to `Optional[Path]` for optional parameters)
 - Fixed `MatchResult.metadata` attribute access issues by replacing direct access with `getattr()` for dynamic attributes
+- ✅ **NEW: Fixed missing `docstring` attribute in `MatchedPair` model** - added `docstring: Optional[Union[RawDocstring, ParsedDocstring]] = None` attribute to support cross-file documentation matching and test expectations
+- ✅ **NEW: Fixed contextual matcher `MatchedPair` constructor calls** - updated `_create_cross_file_match`, `_create_import_match`, and `_create_moved_match` methods to include `docstring` parameter, resolving TypeError during object creation
+- ✅ **NEW: Fixed cross-file matching tests accessing `docstring` attribute** - tests can now access `result.docstring` on `MatchedPair` objects after adding the missing attribute to the model
 - All contextual matcher tests now pass without AttributeError or TypeError issues
 - CLI contextual matching commands now work correctly with both JSON and terminal output formats
 

@@ -315,6 +315,7 @@ class ContextualMatcher:
                 signature_similarity=0.9,
             ),
             match_reason=f"Imported from {original_location.canonical_module}",
+            docstring=function.docstring,
         )
 
     def _create_moved_match(
@@ -331,6 +332,7 @@ class ContextualMatcher:
                 signature_similarity=0.85,
             ),
             match_reason=f"Function moved from {new_location.canonical_module}",
+            docstring=function.docstring,
         )
 
     def _discover_python_files(self) -> List[str]:
@@ -376,6 +378,7 @@ class ContextualMatcher:
                 signature_similarity=doc_quality,  # Based on parameter matching
             ),
             match_reason=f"Documentation found in {location_type} at {doc_location}",
+            docstring=docstring,
             doc_location=doc_location,
         )
 

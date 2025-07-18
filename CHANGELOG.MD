@@ -391,6 +391,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `AttributeError` in `match-contextual` command JSON output - removed non-existent `pair.docstring` attribute access in `_format_json_contextual_result` function to match regular match command behavior
 - Fixed type annotation errors in CLI command parameters - changed `Path` to `Optional[Path]` for optional configuration and output file parameters
 - Fixed `MatchResult.metadata` attribute access issues - replaced direct attribute access with `getattr()` to handle dynamically added metadata attributes safely
+- Fixed missing `docstring` attribute in `MatchedPair` model - added `docstring: Optional[Union[RawDocstring, ParsedDocstring]] = None` attribute to `MatchedPair` dataclass to support cross-file documentation matching and test expectations
+- Fixed contextual matcher `MatchedPair` constructor calls to pass `docstring` parameter - updated `_create_cross_file_match`, `_create_import_match`, and `_create_moved_match` methods to include `docstring` parameter in constructor calls, resolving TypeError during object creation
+- Fixed cross-file matching tests accessing non-existent `docstring` attribute - tests in `test_cross_file_matching.py` can now access `result.docstring` on `MatchedPair` objects after adding the missing attribute to the model
 
 **Note**: Always use `.raw_text` attribute when displaying RawDocstring objects, never `str()` which returns object representation.
 
