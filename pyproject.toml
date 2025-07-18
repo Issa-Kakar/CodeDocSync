@@ -11,7 +11,8 @@ dependencies = [
     "typer (>=0.16.0,<0.17.0)",
     "rich (>=14.0.0,<15.0.0)",
     "pydantic (>=2.11.7,<3.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "docstring_parser (>=0.16,<1.0.0)"
 ]
 
 

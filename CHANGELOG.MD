@@ -85,6 +85,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Built `_extract_parameters_fallback()` method with regex patterns for each docstring format
   - Enhanced error recovery with best-effort parameter extraction when primary parsing fails
   - Integrated with `docstring_parser` library for reliable multi-format docstring parsing
+- Docstring Parser integration and AST compatibility (Chunk 3 & 4):
+  - Created `RawDocstring` dataclass for structured storage of raw docstring text with metadata
+  - Updated `ParsedFunction.docstring` field to accept `Union[RawDocstring, ParsedDocstring]` for seamless integration
+  - Built complete `IntegratedParser` class combining AST and docstring parsing capabilities
+  - Implemented caching mechanism in `IntegratedParser` for improved parsing performance
+  - Added lazy parsing support with `parse_file_lazy()` method for memory-efficient large file processing
+  - Enhanced parser module exports to include all new models and parsers
+  - Added `docstring_parser>=0.16` dependency for reliable multi-format docstring parsing
+  - Fixed docstring style mapping to use correct enum values (NUMPYDOC vs NUMPY, EPYDOC for Sphinx)
 
 ### Changed
 - Nothing yet

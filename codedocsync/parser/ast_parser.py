@@ -13,7 +13,10 @@ import re
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import List, Optional, Union, Generator
+from typing import List, Optional, Union, Generator, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .docstring_models import ParsedDocstring
 
 from ..utils.errors import (
     ValidationError,
@@ -114,11 +117,27 @@ class FunctionSignature:
 
 
 @dataclass
+class RawDocstring:
+    """Raw docstring extracted from source code."""
+
+    raw_text: str
+    line_number: int = 0
+
+    def __post_init__(self):
+        """Validate raw docstring data."""
+        if not isinstance(self.raw_text, str):
+            raise ValidationError(
+                f"Docstring must be a string, got {type(self.raw_text)}",
+                recovery_hint="Ensure docstring is extracted as string from AST",
+            )
+
+
+@dataclass
 class ParsedFunction:
     """Represents a parsed function with all metadata."""
 
     signature: FunctionSignature
-    docstring: Optional[str] = None  # Raw docstring for now
+    docstring: Optional[Union[RawDocstring, "ParsedDocstring"]] = None
     file_path: str = ""
     line_number: int = 0
     end_line_number: int = 0
@@ -385,7 +404,12 @@ def _extract_function(
         signature = _extract_signature(node)
 
         # Extract docstring
-        docstring = ast.get_docstring(node)
+        docstring_text = ast.get_docstring(node)
+        docstring = (
+            RawDocstring(raw_text=docstring_text, line_number=node.lineno + 1)
+            if docstring_text
+            else None
+        )
 
         # Calculate line numbers
         line_number = node.lineno

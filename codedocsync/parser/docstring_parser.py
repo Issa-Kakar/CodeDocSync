@@ -27,8 +27,8 @@ class DocstringParser:
     # Mapping of our formats to docstring_parser styles
     FORMAT_MAPPING = {
         DocstringFormat.GOOGLE: DocstringStyle.GOOGLE,
-        DocstringFormat.NUMPY: DocstringStyle.NUMPY,
-        DocstringFormat.SPHINX: DocstringStyle.SPHINX,
+        DocstringFormat.NUMPY: DocstringStyle.NUMPYDOC,
+        DocstringFormat.SPHINX: DocstringStyle.EPYDOC,  # Sphinx uses EPYDOC style
         DocstringFormat.REST: DocstringStyle.REST,
     }
 
