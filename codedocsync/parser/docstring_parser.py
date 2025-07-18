@@ -4,8 +4,11 @@ This module provides the main DocstringParser class that can automatically
 detect and parse docstrings in multiple formats: Google, NumPy, Sphinx, and REST.
 """
 
+import functools
+import hashlib
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Any
 from docstring_parser import parse as third_party_parse
 from docstring_parser.common import DocstringStyle
@@ -22,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class DocstringParser:
-    """Main docstring parser with format auto-detection."""
+    """Main docstring parser with format auto-detection and performance optimizations."""
 
     # Mapping of our formats to docstring_parser styles
     FORMAT_MAPPING = {
@@ -32,6 +35,16 @@ class DocstringParser:
         DocstringFormat.REST: DocstringStyle.REST,
     }
 
+    def __init__(self, cache_size: int = 500):
+        """Initialize parser with caching configuration.
+
+        Args:
+            cache_size: Maximum number of parsed docstrings to cache
+        """
+        self._parse_cache = {}  # Cache full parse results
+        self._cache_size = cache_size
+
+    @functools.lru_cache(maxsize=1000)
     def detect_format(self, docstring: str) -> DocstringFormat:
         """Auto-detect docstring format using heuristics.
 
@@ -81,7 +94,7 @@ class DocstringParser:
         return DocstringFormat.GOOGLE
 
     def parse(self, docstring: Optional[str]) -> Optional[ParsedDocstring]:
-        """Parse docstring with auto-detection and error handling."""
+        """Parse docstring with caching and error handling."""
         if not docstring:
             return None
 
@@ -90,6 +103,27 @@ class DocstringParser:
         if not docstring:
             return None
 
+        # Generate cache key
+        cache_key = hashlib.md5(docstring.encode()).hexdigest()
+
+        # Check cache
+        if cache_key in self._parse_cache:
+            return self._parse_cache[cache_key]
+
+        # Parse (delegated to uncached method)
+        result = self._parse_uncached(docstring)
+
+        # Cache result
+        if len(self._parse_cache) >= self._cache_size:
+            # Simple FIFO eviction
+            oldest = next(iter(self._parse_cache))
+            del self._parse_cache[oldest]
+
+        self._parse_cache[cache_key] = result
+        return result
+
+    def _parse_uncached(self, docstring: str) -> Optional[ParsedDocstring]:
+        """Parse docstring without caching."""
         # Detect format
         detected_format = self.detect_format(docstring)
 
@@ -284,3 +318,44 @@ class DocstringParser:
                 )
 
         return parameters
+
+    def parse_batch(
+        self, docstrings: List[Optional[str]]
+    ) -> List[Optional[ParsedDocstring]]:
+        """Parse multiple docstrings efficiently using thread pool.
+
+        Args:
+            docstrings: List of docstring texts to parse
+
+        Returns:
+            List of parsed docstrings in the same order as input
+        """
+        results = []
+
+        # Use thread pool for CPU-bound parsing
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(self.parse, ds) for ds in docstrings]
+            for future in futures:
+                results.append(future.result())
+
+        return results
+
+    def get_cache_stats(self) -> dict:
+        """Get cache statistics for debugging and monitoring.
+
+        Returns:
+            Dictionary with cache information
+        """
+        return {
+            "cache_size": len(self._parse_cache),
+            "cache_limit": self._cache_size,
+            "cache_hit_ratio": getattr(
+                self.detect_format, "cache_info", lambda: None
+            )(),
+        }
+
+    def clear_cache(self):
+        """Clear all caches to free memory."""
+        self._parse_cache.clear()
+        if hasattr(self.detect_format, "cache_clear"):
+            self.detect_format.cache_clear()
