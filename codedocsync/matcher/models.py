@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from codedocsync.parser import ParsedFunction
+from typing import Optional, List, Dict, Any, Union
+from codedocsync.parser import ParsedFunction, RawDocstring, ParsedDocstring
 
 
 class MatchType(Enum):
@@ -46,6 +46,9 @@ class MatchedPair:
     match_type: MatchType
     confidence: MatchConfidence
     match_reason: str  # Human-readable explanation
+
+    # Optional: The matched documentation (for cross-file matches)
+    docstring: Optional[Union[RawDocstring, ParsedDocstring]] = None
 
     # Optional: If documentation is in a different location
     doc_location: Optional[str] = None  # e.g., "class docstring", "module docstring"
