@@ -386,6 +386,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed all attribute access in tests to use `matched_pairs` instead of non-existent `matches` attribute
   - Resolves TypeError during object creation and AttributeError during attribute access
 - Fixed incorrect code examples in CURRENT_SPRINT.MD documentation - corrected `direct_match_result.matches` references to use proper `direct_match_result.matched_pairs` attribute in contextual matcher implementation examples
+- Fixed `_create_cross_file_match` method in contextual matcher to properly pass `doc_location` parameter to `MatchedPair` constructor
+- Fixed tests accessing non-existent `docstring` attribute on `MatchedPair` objects in `tests/test_cross_file_matching.py` - removed incorrect attribute access attempts in `test_match_cross_file_docs_with_module_documentation`, `test_match_cross_file_docs_with_package_documentation`, and `test_create_cross_file_match` tests
+- Fixed `AttributeError` in `match-contextual` command JSON output - removed non-existent `pair.docstring` attribute access in `_format_json_contextual_result` function to match regular match command behavior
+- Fixed type annotation errors in CLI command parameters - changed `Path` to `Optional[Path]` for optional configuration and output file parameters
+- Fixed `MatchResult.metadata` attribute access issues - replaced direct attribute access with `getattr()` to handle dynamically added metadata attributes safely
 
 **Note**: Always use `.raw_text` attribute when displaying RawDocstring objects, never `str()` which returns object representation.
 

@@ -392,7 +392,6 @@ class TestContextualMatcherCrossFile:
 
         assert result is not None
         assert result.function == function
-        assert result.docstring == mock_parsed_doc
         assert result.match_type.value == "contextual"
         assert "module docstring" in result.match_reason
 
@@ -444,7 +443,6 @@ class TestContextualMatcherCrossFile:
 
         assert result is not None
         assert result.function == function
-        assert result.docstring == mock_parsed_doc
         assert "package __init__.py" in result.match_reason
 
     def test_match_cross_file_docs_with_related_documentation(self):
@@ -755,7 +753,6 @@ class TestContextualMatcherCrossFile:
         )
 
         assert match.function == function
-        assert match.docstring == docstring
         assert match.match_type.value == "contextual"
         assert match.confidence.name_similarity == 1.0
         assert match.confidence.location_score == 0.5

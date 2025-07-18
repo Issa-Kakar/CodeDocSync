@@ -5,6 +5,7 @@ Main entry point for the CodeDocSync CLI application.
 import json
 import typer
 from pathlib import Path
+from typing import Optional
 from typing_extensions import Annotated
 from rich.console import Console
 from rich.table import Table
@@ -134,7 +135,9 @@ def check(
 @app.command()
 def match(
     path: Annotated[Path, typer.Argument(help="File or directory to match")],
-    config: Annotated[Path, typer.Option("--config", "-c", help="Config file")] = None,
+    config: Annotated[
+        Optional[Path], typer.Option("--config", "-c", help="Config file")
+    ] = None,
     show_unmatched: Annotated[
         bool, typer.Option("--show-unmatched", help="Show unmatched functions")
     ] = False,
@@ -361,10 +364,10 @@ def match_contextual(
         str, typer.Option("--format", "-f", help="Output format (terminal/json)")
     ] = "terminal",
     output_file: Annotated[
-        Path, typer.Option("--output", "-o", help="Output file path")
+        Optional[Path], typer.Option("--output", "-o", help="Output file path")
     ] = None,
     config: Annotated[
-        Path, typer.Option("--config", "-c", help="Configuration file path")
+        Optional[Path], typer.Option("--config", "-c", help="Configuration file path")
     ] = None,
     show_stats: Annotated[
         bool, typer.Option("--stats", help="Show performance statistics")
@@ -455,7 +458,6 @@ def _format_json_contextual_result(result: MatchResult, show_unmatched: bool) ->
                 "match_type": pair.match_type.value,
                 "confidence": pair.confidence.overall,
                 "reason": pair.match_reason,
-                "docstring": _serialize_docstring(pair.docstring),
             }
             for pair in result.matched_pairs
         ],
@@ -472,8 +474,8 @@ def _format_json_contextual_result(result: MatchResult, show_unmatched: bool) ->
         ]
 
     # Add performance metrics if available
-    if hasattr(result, "metadata") and result.metadata:
-        output["metadata"] = result.metadata
+    if hasattr(result, "metadata") and getattr(result, "metadata", None):
+        output["metadata"] = getattr(result, "metadata", {})
 
     return json.dumps(output, indent=2)
 
@@ -524,11 +526,11 @@ def _display_contextual_results(result: MatchResult, show_unmatched: bool):
     # Show performance metrics if available
     if (
         hasattr(result, "metadata")
-        and result.metadata
-        and "performance" in result.metadata
+        and getattr(result, "metadata", None)
+        and "performance" in getattr(result, "metadata", {})
     ):
         console.print("\n[bold]Performance Metrics:[/bold]")
-        perf = result.metadata["performance"]
+        perf = getattr(result, "metadata", {})["performance"]
         console.print(f"  • Total time: {perf['total_time']:.2f}s")
         console.print(f"  • Files processed: {perf['files_processed']}")
         console.print(f"  • Parsing time: {perf['parsing_time']:.2f}s")

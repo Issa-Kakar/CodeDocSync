@@ -376,6 +376,7 @@ class ContextualMatcher:
                 signature_similarity=doc_quality,  # Based on parameter matching
             ),
             match_reason=f"Documentation found in {location_type} at {doc_location}",
+            doc_location=doc_location,
         )
 
     def _assess_doc_quality(
