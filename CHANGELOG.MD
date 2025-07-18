@@ -67,6 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive CLI `parse` command with Rich table formatting and JSON output options
   - Integrated performance monitoring and benchmarking throughout parser lifecycle
   - Added function count tracking in lazy parsing mode
+- Docstring Parser foundation (Chunk 1):
+  - Created `docstring_models.py` with comprehensive data models for parsed docstrings
+  - Added `DocstringFormat` enum supporting Google, NumPy, Sphinx, REST, and Unknown formats
+  - Implemented `DocstringParameter` dataclass with validation for parameter names including *args/**kwargs support
+  - Added `DocstringReturns` and `DocstringRaises` dataclasses for return and exception documentation
+  - Created `ParsedDocstring` main dataclass with metadata including validity flags and parse errors
+  - Built base `DocstringParser` class structure with format mapping to third-party library
+  - Updated parser module `__init__.py` to export all new docstring models and parser class
 
 ### Changed
 - Nothing yet
