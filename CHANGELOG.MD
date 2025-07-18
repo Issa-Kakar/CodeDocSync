@@ -385,6 +385,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed MatchResult constructor calls to remove non-existent `total_docs` and `unmatched_docs` parameters
   - Fixed all attribute access in tests to use `matched_pairs` instead of non-existent `matches` attribute
   - Resolves TypeError during object creation and AttributeError during attribute access
+- Fixed incorrect code examples in CURRENT_SPRINT.MD documentation - corrected `direct_match_result.matches` references to use proper `direct_match_result.matched_pairs` attribute in contextual matcher implementation examples
 
 **Note**: Always use `.raw_text` attribute when displaying RawDocstring objects, never `str()` which returns object representation.
 

@@ -725,10 +725,10 @@ class ContextualMatcher:
 
         # Start with direct match results if provided
         if direct_match_result:
-            matches.extend(direct_match_result.matches)
+            matches.extend(direct_match_result.matched_pairs)
             # Track which functions need contextual matching
             matched_function_ids = {
-                m.function.signature.name for m in direct_match_result.matches
+                m.function.signature.name for m in direct_match_result.matched_pairs
                 if m.confidence.overall >= 0.8
             }
         else:
