@@ -75,6 +75,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created `ParsedDocstring` main dataclass with metadata including validity flags and parse errors
   - Built base `DocstringParser` class structure with format mapping to third-party library
   - Updated parser module `__init__.py` to export all new docstring models and parser class
+- Docstring Parser format detection and parsing logic (Chunk 2):
+  - Implemented comprehensive `detect_format()` method with hierarchical detection heuristics
+  - Added format-specific pattern matching for Google, NumPy, Sphinx, and REST docstring styles
+  - Built complete `parse()` method with automatic format detection and error handling
+  - Created `_convert_to_parsed_docstring()` method to bridge third-party parser to internal models
+  - Implemented robust `_extract_examples()` method for extracting code examples across formats
+  - Added fallback parsing with `_create_error_docstring()` for graceful handling of malformed docstrings
+  - Built `_extract_parameters_fallback()` method with regex patterns for each docstring format
+  - Enhanced error recovery with best-effort parameter extraction when primary parsing fails
+  - Integrated with `docstring_parser` library for reliable multi-format docstring parsing
 
 ### Changed
 - Nothing yet
