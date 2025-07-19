@@ -1,8 +1,12 @@
 import tempfile
 from pathlib import Path
 
-from matcher.module_resolver import ModuleResolver
-from matcher.contextual_models import ImportStatement, ImportType, ModuleInfo
+from codedocsync.matcher.module_resolver import ModuleResolver
+from codedocsync.matcher.contextual_models import (
+    ImportStatement,
+    ImportType,
+    ModuleInfo,
+)
 
 
 class TestModuleResolver:

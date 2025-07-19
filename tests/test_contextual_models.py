@@ -3,7 +3,7 @@
 import pytest
 from dataclasses import dataclass
 
-from matcher.contextual_models import (
+from codedocsync.matcher.contextual_models import (
     ImportType,
     ImportStatement,
     ModuleInfo,

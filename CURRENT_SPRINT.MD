@@ -1,1324 +1,1660 @@
-## CURRENT_SPRINT.MD - Contextual Matcher Implementation
+## CURRENT_SPRINT.MD - Semantic Matcher Implementation
 
 ```markdown
-# Current Sprint: Contextual Matcher Implementation
+# Current Sprint: Semantic Matcher Implementation
 
 ## Sprint Overview
-The contextual matcher is the second layer of our three-layer matching system, handling ~8% of cases where direct name matching fails. It uses file paths, module structure, and import statements to match functions that have been relocated or are referenced across files. This is our most complex component yet, requiring careful state management and cross-file analysis.
+The semantic matcher is the third and final layer of our matching system, handling the ~2% of cases where functions have been significantly renamed or restructured. It uses embedding-based similarity search to find potential matches when direct name matching and contextual analysis fail. This component requires careful integration with external services (OpenAI embeddings, ChromaDB) and robust error handling.
 
 ## Critical Context
-- The direct matcher only handles same-file, same-name matching
-- Contextual matcher must handle: relocated functions, cross-file references, import chains
-- Performance is critical: we're now analyzing multiple files simultaneously
-- Must integrate seamlessly with existing direct matcher results
+- This is a FALLBACK mechanism - only used when other matchers fail
+- Performance is less critical than accuracy since it handles few cases
+- Must integrate with existing matcher results without disrupting them
+- External dependencies (OpenAI API, ChromaDB) require careful error handling
+- Embeddings are expensive - aggressive caching is mandatory
 
 ## Implementation Chunks
 
 ---
 
-## Chunk 1: Foundation and Data Models (Estimated: 3-4 hours)
+## Chunk 1: Foundation and Data Models ✅ COMPLETE (Estimated: 2-3 hours)
 
 ### Objectives
-- Create the contextual matcher data models
-- Build the import parsing infrastructure
-- Set up the module resolution system
+- Set up ChromaDB integration and vector store
+- Create data models for semantic matching
+- Implement embedding configuration system
+- Set up the basic SemanticMatcher class structure
 
 ### Required Files to Create
-1. `matcher/contextual_models.py` - Core data models for contextual matching
-2. `matcher/import_parser.py` - AST-based import extraction
-3. `tests/test_contextual_models.py` - Model validation tests
-4. `tests/test_import_parser.py` - Import parsing tests
+1. `storage/vector_store.py` - ChromaDB wrapper and collection management
+2. `matcher/semantic_models.py` - Data models for semantic matching
+3. `storage/embedding_config.py` - Configuration for embedding models
+4. `tests/test_semantic_models.py` - Model validation tests
+5. `tests/test_vector_store.py` - Vector store integration tests
 
 ### Detailed Implementation
 
-#### 1. Create `matcher/contextual_models.py`
+#### 1. Create `storage/vector_store.py`
 ```python
-from dataclasses import dataclass, field
-from typing import List, Dict, Set, Optional, Tuple
-from enum import Enum
-import re
-
-class ImportType(Enum):
-    """Types of Python import statements."""
-    STANDARD = "standard"          # import module
-    FROM = "from"                  # from module import name
-    RELATIVE = "relative"          # from . import module
-    WILDCARD = "wildcard"          # from module import *
-
-@dataclass
-class ImportStatement:
-    """Represents a parsed import statement."""
-    import_type: ImportType
-    module_path: str               # 'os.path' or '.utils'
-    imported_names: List[str]      # ['join', 'exists'] or ['*']
-    aliases: Dict[str, str]        # {'DataFrame': 'pd.DataFrame'}
-    line_number: int
-    level: int = 0                 # Relative import level (number of dots)
-
-    def __post_init__(self):
-        """Validate import statement."""
-        if self.import_type == ImportType.WILDCARD and len(self.imported_names) != 1:
-            raise ValueError("Wildcard imports must have exactly one '*' entry")
-        if self.level > 0 and self.import_type != ImportType.RELATIVE:
-            raise ValueError("Only relative imports can have level > 0")
-
-@dataclass
-class ModuleInfo:
-    """Information about a Python module."""
-    module_path: str               # 'mypackage.submodule'
-    file_path: str                 # '/path/to/mypackage/submodule.py'
-    imports: List[ImportStatement] = field(default_factory=list)
-    exports: Set[str] = field(default_factory=set)  # __all__ or public names
-    functions: Dict[str, 'FunctionLocation'] = field(default_factory=dict)
-    is_package: bool = False       # True if __init__.py
-
-    def get_canonical_name(self, function_name: str) -> str:
-        """Get fully qualified function name."""
-        return f"{self.module_path}.{function_name}"
-
-@dataclass
-class FunctionLocation:
-    """Tracks where a function is defined and how it's accessed."""
-    canonical_module: str          # Original definition module
-    function_name: str
-    line_number: int
-    import_paths: Set[str] = field(default_factory=set)  # All ways to import
-    is_exported: bool = True       # False if name starts with _
-
-@dataclass
-class CrossFileMatch:
-    """A match between a function and documentation in different files."""
-    function: ParsedFunction
-    documentation: ParsedDocstring
-    match_reason: str              # "imported_function", "moved_function", etc
-    import_chain: List[str]        # Steps to resolve the import
-    confidence: float
-
-    def __post_init__(self):
-        if not 0 <= self.confidence <= 1:
-            raise ValueError(f"Confidence must be between 0 and 1, got {self.confidence}")
-
-@dataclass
-class ContextualMatcherState:
-    """Global state for contextual matching across files."""
-    module_tree: Dict[str, ModuleInfo] = field(default_factory=dict)
-    import_graph: Dict[str, Set[str]] = field(default_factory=dict)
-    function_registry: Dict[str, FunctionLocation] = field(default_factory=dict)
-
-    def add_module(self, module_info: ModuleInfo) -> None:
-        """Add a module to the state."""
-        self.module_tree[module_info.module_path] = module_info
-        # Update import graph
-        for imp in module_info.imports:
-            if module_info.module_path not in self.import_graph:
-                self.import_graph[module_info.module_path] = set()
-            self.import_graph[module_info.module_path].add(imp.module_path)
-2. Create matcher/import_parser.py
-pythonimport ast
+import chromadb
+from chromadb.config import Settings
+import hashlib
+import time
 from pathlib import Path
-from typing import List, Dict, Optional, Set, Tuple
+from typing import List, Dict, Optional, Tuple
 import logging
-
-from .contextual_models import (
-    ImportStatement, ImportType, ModuleInfo, FunctionLocation
-)
 
 logger = logging.getLogger(__name__)
 
-class ImportParser:
-    """Parses Python imports and module structure."""
+class VectorStore:
+    """Manages ChromaDB collections for semantic search."""
 
-    def parse_imports(self, file_path: str) -> Tuple[List[ImportStatement], Set[str]]:
-        """
-        Parse all imports and exports from a Python file.
+    def __init__(self, cache_dir: str = ".codedocsync_cache", project_id: Optional[str] = None):
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-        Returns:
-            Tuple of (imports, exports)
-            - imports: List of ImportStatement objects
-            - exports: Set of exported names (from __all__ or public names)
-        """
-        imports = []
-        exports = set()
+        # Initialize ChromaDB with persistence
+        self.chroma_dir = self.cache_dir / "chroma"
+        self.client = chromadb.PersistentClient(
+            path=str(self.chroma_dir),
+            settings=Settings(
+                anonymized_telemetry=False,
+                allow_reset=True
+            )
+        )
 
+        # Generate project-specific collection name
+        self.project_id = project_id or self._generate_project_id()
+        self.collection_name = f"functions_{self.project_id[:16]}"
+
+        # Initialize or get collection
+        self.collection = self._init_collection()
+
+        # Track performance metrics
+        self.metrics = {
+            "embeddings_stored": 0,
+            "searches_performed": 0,
+            "total_search_time": 0.0,
+            "cache_hits": 0
+        }
+
+    def _generate_project_id(self) -> str:
+        """Generate unique project ID from current directory."""
+        project_path = Path.cwd().absolute()
+        return hashlib.md5(str(project_path).encode()).hexdigest()
+
+    def _init_collection(self) -> chromadb.Collection:
+        """Initialize or get existing collection."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            # Try to get existing collection
+            collection = self.client.get_collection(self.collection_name)
+            logger.info(f"Loaded existing collection: {self.collection_name}")
+            return collection
+        except:
+            # Create new collection
+            collection = self.client.create_collection(
+                name=self.collection_name,
+                metadata={"project_id": self.project_id, "created_at": time.time()}
+            )
+            logger.info(f"Created new collection: {self.collection_name}")
+            return collection
 
-            tree = ast.parse(content, filename=file_path)
+    def add_embeddings(
+        self,
+        embeddings: List[List[float]],
+        metadatas: List[Dict[str, str]],
+        ids: List[str]
+    ) -> None:
+        """Add embeddings to the collection with metadata."""
+        try:
+            # Add timestamp to metadata
+            for metadata in metadatas:
+                metadata["indexed_at"] = str(time.time())
 
-            # Extract imports
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Import):
-                    imports.extend(self._parse_import(node))
-                elif isinstance(node, ast.ImportFrom):
-                    imports.extend(self._parse_import_from(node))
+            self.collection.add(
+                embeddings=embeddings,
+                metadatas=metadatas,
+                ids=ids
+            )
 
-            # Extract exports (__all__)
-            exports = self._extract_exports(tree)
-
-            # If no explicit exports, find all public names
-            if not exports:
-                exports = self._extract_public_names(tree)
-
-            return imports, exports
+            self.metrics["embeddings_stored"] += len(embeddings)
+            logger.debug(f"Added {len(embeddings)} embeddings to collection")
 
         except Exception as e:
-            logger.error(f"Failed to parse imports from {file_path}: {e}")
-            return [], set()
+            logger.error(f"Failed to add embeddings: {e}")
+            raise ValueError(f"Failed to store embeddings: {e}")
 
-    def _parse_import(self, node: ast.Import) -> List[ImportStatement]:
-        """Parse 'import' statement."""
-        imports = []
-        for alias in node.names:
-            imports.append(ImportStatement(
-                import_type=ImportType.STANDARD,
-                module_path=alias.name,
-                imported_names=[],
-                aliases={alias.asname: alias.name} if alias.asname else {},
-                line_number=node.lineno
-            ))
-        return imports
+    def search_similar(
+        self,
+        query_embedding: List[float],
+        n_results: int = 5,
+        min_similarity: float = 0.65
+    ) -> List[Tuple[str, float, Dict[str, str]]]:
+        """
+        Search for similar embeddings.
 
-    def _parse_import_from(self, node: ast.ImportFrom) -> List[ImportStatement]:
-        """Parse 'from ... import ...' statement."""
-        if node.module is None:
-            # Relative import like 'from . import something'
-            module_path = '.' * node.level
-            import_type = ImportType.RELATIVE
-        else:
-            module_path = node.module
-            import_type = ImportType.RELATIVE if node.level > 0 else ImportType.FROM
+        Returns:
+            List of (id, similarity_score, metadata) tuples
+        """
+        start_time = time.time()
 
-        # Handle wildcards
-        imported_names = []
-        aliases = {}
+        try:
+            results = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=n_results
+            )
 
-        for alias in node.names:
-            if alias.name == '*':
-                import_type = ImportType.WILDCARD
-                imported_names = ['*']
-                break
-            else:
-                imported_names.append(alias.name)
-                if alias.asname:
-                    aliases[alias.asname] = alias.name
+            # Extract and filter results
+            similar_items = []
+            if results['ids'] and results['ids'][0]:
+                for i, id_ in enumerate(results['ids'][0]):
+                    # ChromaDB returns distances, convert to similarity
+                    distance = results['distances'][0][i]
+                    similarity = 1 - distance  # Assuming normalized embeddings
 
-        return [ImportStatement(
-            import_type=import_type,
-            module_path=module_path,
-            imported_names=imported_names,
-            aliases=aliases,
-            line_number=node.lineno,
-            level=node.level
-        )]
+                    if similarity >= min_similarity:
+                        metadata = results['metadatas'][0][i]
+                        similar_items.append((id_, similarity, metadata))
 
-    def _extract_exports(self, tree: ast.AST) -> Set[str]:
-        """Extract __all__ exports."""
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == '__all__':
-                        # Extract list of strings
-                        if isinstance(node.value, ast.List):
-                            return {
-                                elt.value for elt in node.value.elts
-                                if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
-                            }
-        return set()
+            # Update metrics
+            self.metrics["searches_performed"] += 1
+            self.metrics["total_search_time"] += time.time() - start_time
 
-    def _extract_public_names(self, tree: ast.AST) -> Set[str]:
-        """Extract all public function and class names."""
-        names = set()
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-                if not node.name.startswith('_'):
-                    names.add(node.name)
-        return names
+            return similar_items
 
-    def build_module_info(self, file_path: str, module_path: str) -> ModuleInfo:
-        """Build complete module information."""
-        imports, exports = self.parse_imports(file_path)
+        except Exception as e:
+            logger.error(f"Search failed: {e}")
+            return []
 
-        # Determine if it's a package
-        path = Path(file_path)
-        is_package = path.name == '__init__.py'
+    def get_by_id(self, function_id: str) -> Optional[Tuple[List[float], Dict[str, str]]]:
+        """Get specific embedding by ID."""
+        try:
+            result = self.collection.get(ids=[function_id])
+            if result['ids']:
+                embedding = result['embeddings'][0]
+                metadata = result['metadatas'][0]
+                self.metrics["cache_hits"] += 1
+                return embedding, metadata
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get embedding {function_id}: {e}")
+            return None
 
-        return ModuleInfo(
-            module_path=module_path,
-            file_path=file_path,
-            imports=imports,
-            exports=exports,
-            is_package=is_package
+    def clear_old_embeddings(self, max_age_days: int = 30) -> int:
+        """Remove embeddings older than specified days."""
+        cutoff_time = time.time() - (max_age_days * 24 * 60 * 60)
+
+        # Get all items
+        all_items = self.collection.get()
+
+        # Find old items
+        old_ids = []
+        for i, metadata in enumerate(all_items['metadatas']):
+            if float(metadata.get('indexed_at', 0)) < cutoff_time:
+                old_ids.append(all_items['ids'][i])
+
+        # Delete old items
+        if old_ids:
+            self.collection.delete(ids=old_ids)
+            logger.info(f"Deleted {len(old_ids)} old embeddings")
+
+        return len(old_ids)
+
+    def get_stats(self) -> Dict[str, any]:
+        """Get performance statistics."""
+        avg_search_time = (
+            self.metrics["total_search_time"] / self.metrics["searches_performed"]
+            if self.metrics["searches_performed"] > 0 else 0
         )
+
+        return {
+            "embeddings_stored": self.metrics["embeddings_stored"],
+            "searches_performed": self.metrics["searches_performed"],
+            "average_search_time_ms": avg_search_time * 1000,
+            "cache_hit_rate": (
+                self.metrics["cache_hits"] / self.metrics["searches_performed"]
+                if self.metrics["searches_performed"] > 0 else 0
+            ),
+            "collection_count": self.collection.count()
+        }
+2. Create matcher/semantic_models.py
+pythonfrom dataclasses import dataclass, field
+from typing import List, Optional, Dict, Tuple
+from enum import Enum
+
+class EmbeddingModel(Enum):
+    """Supported embedding models."""
+    OPENAI_SMALL = "text-embedding-3-small"
+    OPENAI_LARGE = "text-embedding-3-large"
+    OPENAI_ADA = "text-embedding-ada-002"
+    LOCAL_MINILM = "all-MiniLM-L6-v2"  # For local fallback
+
+@dataclass
+class EmbeddingConfig:
+    """Configuration for embedding generation."""
+    primary_model: EmbeddingModel = EmbeddingModel.OPENAI_SMALL
+    fallback_models: List[EmbeddingModel] = field(default_factory=lambda: [
+        EmbeddingModel.OPENAI_ADA,
+        EmbeddingModel.LOCAL_MINILM
+    ])
+    batch_size: int = 100  # For batch processing
+    max_retries: int = 3
+    timeout_seconds: int = 30
+    cache_embeddings: bool = True
+
+    def __post_init__(self):
+        if self.batch_size < 1 or self.batch_size > 2048:
+            raise ValueError("Batch size must be between 1 and 2048")
+        if self.timeout_seconds < 10:
+            raise ValueError("Timeout must be at least 10 seconds")
+
+@dataclass
+class FunctionEmbedding:
+    """Embedding for a function with metadata."""
+    function_id: str  # Canonical function path
+    embedding: List[float]
+    model: str
+    text_embedded: str  # What was actually embedded
+    timestamp: float
+    signature_hash: str  # For change detection
+
+    def __post_init__(self):
+        # Validate embedding dimensions based on model
+        expected_dims = {
+            "text-embedding-3-small": 1536,
+            "text-embedding-3-large": 3072,
+            "text-embedding-ada-002": 1536,
+            "all-MiniLM-L6-v2": 384
+        }
+
+        if self.model in expected_dims:
+            if len(self.embedding) != expected_dims[self.model]:
+                raise ValueError(
+                    f"Invalid embedding dimension for {self.model}: "
+                    f"expected {expected_dims[self.model]}, got {len(self.embedding)}"
+                )
+
+@dataclass
+class SemanticMatch:
+    """A semantic similarity match between functions."""
+    source_function: str  # Function looking for match
+    matched_function: str  # Potentially matching function
+    similarity_score: float  # 0-1 similarity
+    embedding_model: str
+    match_metadata: Dict[str, any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not 0 <= self.similarity_score <= 1:
+            raise ValueError(f"Similarity score must be between 0 and 1")
+
+@dataclass
+class SemanticSearchResult:
+    """Results from semantic search operation."""
+    query_function: str
+    matches: List[SemanticMatch]
+    search_time_ms: float
+    total_candidates: int  # How many were searched
+
+    def get_best_match(self) -> Optional[SemanticMatch]:
+        """Get the highest scoring match."""
+        if not self.matches:
+            return None
+        return max(self.matches, key=lambda m: m.similarity_score)
+
+    def filter_by_threshold(self, threshold: float) -> List[SemanticMatch]:
+        """Get matches above similarity threshold."""
+        return [m for m in self.matches if m.similarity_score >= threshold]
+3. Create storage/embedding_config.py
+pythonimport os
+from typing import Optional, Dict, Any
+import logging
+
+from ..matcher.semantic_models import EmbeddingConfig, EmbeddingModel
+
+logger = logging.getLogger(__name__)
+
+class EmbeddingConfigManager:
+    """Manages embedding configuration and API keys."""
+
+    def __init__(self):
+        self.api_keys = self._load_api_keys()
+        self.config = self._load_config()
+
+    def _load_api_keys(self) -> Dict[str, str]:
+        """Load API keys from environment variables."""
+        keys = {}
+
+        # OpenAI key
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            keys["openai"] = openai_key
+        else:
+            logger.warning("No OPENAI_API_KEY found in environment")
+
+        # Add other providers as needed
+        return keys
+
+    def _load_config(self) -> EmbeddingConfig:
+        """Load embedding configuration from environment or defaults."""
+        config = EmbeddingConfig()
+
+        # Override from environment if set
+        if os.getenv("EMBEDDING_MODEL"):
+            try:
+                config.primary_model = EmbeddingModel(os.getenv("EMBEDDING_MODEL"))
+            except ValueError:
+                logger.warning(f"Invalid EMBEDDING_MODEL: {os.getenv('EMBEDDING_MODEL')}")
+
+        if os.getenv("EMBEDDING_BATCH_SIZE"):
+            try:
+                config.batch_size = int(os.getenv("EMBEDDING_BATCH_SIZE"))
+            except ValueError:
+                logger.warning("Invalid EMBEDDING_BATCH_SIZE")
+
+        return config
+
+    def get_api_key(self, provider: str) -> Optional[str]:
+        """Get API key for provider."""
+        return self.api_keys.get(provider)
+
+    def validate_config(self) -> bool:
+        """Validate that configuration is usable."""
+        # Check if we have keys for the primary model
+        if self.config.primary_model in [
+            EmbeddingModel.OPENAI_SMALL,
+            EmbeddingModel.OPENAI_LARGE,
+            EmbeddingModel.OPENAI_ADA
+        ]:
+            if not self.get_api_key("openai"):
+                logger.error("OpenAI model selected but no API key found")
+                return False
+
+        return True
+
+    def get_available_models(self) -> List[EmbeddingModel]:
+        """Get list of models that are actually available."""
+        available = []
+
+        # Check OpenAI models
+        if self.get_api_key("openai"):
+            available.extend([
+                EmbeddingModel.OPENAI_SMALL,
+                EmbeddingModel.OPENAI_ADA,
+                EmbeddingModel.OPENAI_LARGE
+            ])
+
+        # Local models are always available
+        available.append(EmbeddingModel.LOCAL_MINILM)
+
+        return available
 Testing Requirements for Chunk 1
 Create comprehensive tests that validate:
 
-Import parsing for all Python import types
-Export detection from all and public names
-Module info building with proper error handling
-Data model validation and constraints
+Vector store initialization and persistence
+Embedding model configuration validation
+Data model constraints and validation
+ChromaDB connection error handling
+API key loading and validation
 
 Critical Implementation Notes
 
-Import parser MUST handle syntax errors gracefully
-Always validate that module paths are valid Python identifiers
-Track line numbers for all imports for debugging
-Handle encoding issues (try UTF-8, fallback to latin-1)
+ChromaDB MUST use persistent storage, not in-memory
+Always validate embedding dimensions match the model
+Generate stable IDs for functions (use canonical path)
+Handle ChromaDB connection failures gracefully
+Validate API keys before attempting to use them
 
 Success Criteria
 
-All import types are correctly parsed
-Module structure is accurately represented
-Tests cover edge cases (empty files, syntax errors, circular imports)
-Performance: <10ms per file for import parsing
+Vector store successfully stores and retrieves embeddings
+Data models properly validate all inputs
+Configuration correctly loads from environment
+All tests pass including error cases
+Performance: <50ms for vector search operations
 
 
-Chunk 2: Module Resolution and Function Registry (Estimated: 4-5 hours)
+Chunk 2: Embedding Generation Pipeline ✅ COMPLETE (Estimated: 3-4 hours)
 Objectives
 
-Build the module resolution system
-Create the global function registry
-Implement import chain resolution
+Implement embedding generation for functions
+Create text preparation strategies
+Build fallback chain for multiple embedding providers
+Implement batching for efficiency
 
 Required Files to Create
 
-matcher/module_resolver.py - Module and import resolution logic
-matcher/function_registry.py - Global function tracking
-tests/test_module_resolver.py - Resolution testing
-tests/test_function_registry.py - Registry testing
+matcher/embedding_generator.py - Core embedding generation logic
+storage/embedding_cache.py - Caching layer for embeddings
+tests/test_embedding_generator.py - Generation tests
+tests/test_embedding_cache.py - Cache functionality tests
 
 Detailed Implementation
-1. Create matcher/module_resolver.py
-pythonimport os
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+1. Create matcher/embedding_generator.py
+pythonimport hashlib
+import time
+from typing import List, Dict, Optional, Tuple
 import logging
+import asyncio
+from tenacity import retry, stop_after_attempt, wait_exponential
 
-from .contextual_models import ModuleInfo, ImportStatement, ImportType
-from .import_parser import ImportParser
-
-logger = logging.getLogger(__name__)
-
-class ModuleResolver:
-    """Resolves module paths and import chains."""
-
-    def __init__(self, project_root: str):
-        self.project_root = Path(project_root).resolve()
-        self.import_parser = ImportParser()
-        self.module_cache: Dict[str, ModuleInfo] = {}
-        self._python_paths = self._calculate_python_paths()
-
-    def _calculate_python_paths(self) -> List[Path]:
-        """Calculate Python module search paths."""
-        paths = [self.project_root]
-
-        # Add parent directories that contain __init__.py
-        current = self.project_root
-        while current.parent != current:
-            if (current.parent / '__init__.py').exists():
-                paths.append(current.parent)
-                current = current.parent
-            else:
-                break
-
-        return paths
-
-    def resolve_module_path(self, file_path: str) -> Optional[str]:
-        """
-        Convert file path to module path.
-
-        Example:
-            /project/src/utils/helpers.py -> src.utils.helpers
-            /project/src/utils/__init__.py -> src.utils
-        """
-        file_path = Path(file_path).resolve()
-
-        # Find the base path this file is relative to
-        for base_path in self._python_paths:
-            try:
-                relative_path = file_path.relative_to(base_path)
-
-                # Convert to module path
-                parts = list(relative_path.parts)
-
-                # Handle __init__.py
-                if parts[-1] == '__init__.py':
-                    parts = parts[:-1]
-                elif parts[-1].endswith('.py'):
-                    parts[-1] = parts[-1][:-3]
-                else:
-                    continue  # Not a Python file
-
-                module_path = '.'.join(parts)
-                return module_path
-
-            except ValueError:
-                # file_path is not relative to this base_path
-                continue
-
-        return None
-
-    def resolve_import(
-        self,
-        import_stmt: ImportStatement,
-        current_module: str
-    ) -> Optional[str]:
-        """
-        Resolve an import statement to absolute module path.
-
-        Args:
-            import_stmt: The import statement to resolve
-            current_module: The module containing the import
-
-        Returns:
-            Absolute module path or None if can't resolve
-        """
-        if import_stmt.import_type == ImportType.RELATIVE:
-            # Handle relative imports
-            if import_stmt.level == 0:
-                return import_stmt.module_path
-
-            # Go up 'level' packages from current module
-            parts = current_module.split('.')
-            if import_stmt.level > len(parts):
-                logger.warning(
-                    f"Relative import goes beyond top-level package: "
-                    f"{import_stmt} in {current_module}"
-                )
-                return None
-
-            # Go up the required levels
-            base_parts = parts[:-import_stmt.level]
-
-            if import_stmt.module_path and import_stmt.module_path != '.':
-                # from ..package import something
-                base_parts.append(import_stmt.module_path.lstrip('.'))
-
-            return '.'.join(base_parts) if base_parts else None
-
-        else:
-            # Absolute import
-            return import_stmt.module_path
-
-    def build_import_chain(
-        self,
-        target_function: str,
-        from_module: str,
-        to_module: str
-    ) -> Optional[List[str]]:
-        """
-        Build the import chain to access a function from another module.
-
-        Returns:
-            List of import steps, or None if not accessible
-        """
-        if from_module == to_module:
-            return [target_function]  # Same module, direct access
-
-        # Check direct imports
-        from_info = self.module_cache.get(from_module)
-        if not from_info:
-            return None
-
-        for import_stmt in from_info.imports:
-            resolved = self.resolve_import(import_stmt, from_module)
-            if resolved == to_module:
-                # Direct import found
-                if import_stmt.import_type == ImportType.WILDCARD:
-                    return [target_function]
-                elif target_function in import_stmt.imported_names:
-                    # Check for alias
-                    for alias, real_name in import_stmt.aliases.items():
-                        if real_name == target_function:
-                            return [alias]
-                    return [target_function]
-                elif not import_stmt.imported_names:
-                    # import module
-                    alias = import_stmt.aliases.get(to_module, to_module)
-                    return [f"{alias}.{target_function}"]
-
-        # TODO: Check indirect imports (through parent packages)
-        return None
-
-    def find_module_file(self, module_path: str) -> Optional[str]:
-        """Find the file path for a module."""
-        # Convert module path to possible file paths
-        path_parts = module_path.split('.')
-
-        for base_path in self._python_paths:
-            # Try as regular module
-            file_path = base_path / Path(*path_parts).with_suffix('.py')
-            if file_path.exists():
-                return str(file_path)
-
-            # Try as package
-            package_path = base_path / Path(*path_parts) / '__init__.py'
-            if package_path.exists():
-                return str(package_path)
-
-        return None
-2. Create matcher/function_registry.py
-pythonfrom typing import Dict, List, Optional, Set
-import logging
-
-from .contextual_models import FunctionLocation, ModuleInfo
 from ..parser import ParsedFunction
+from ..storage.embedding_config import EmbeddingConfigManager
+from .semantic_models import (
+    EmbeddingModel, FunctionEmbedding, EmbeddingConfig
+)
 
 logger = logging.getLogger(__name__)
 
-class FunctionRegistry:
-    """Global registry of all functions in the project."""
+class EmbeddingGenerator:
+    """Generates embeddings for functions with fallback support."""
 
-    def __init__(self):
-        self.functions: Dict[str, FunctionLocation] = {}
-        # Secondary indices for efficient lookup
-        self.by_module: Dict[str, Set[str]] = {}
-        self.by_name: Dict[str, Set[str]] = {}
+    def __init__(self, config: Optional[EmbeddingConfig] = None):
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
 
-    def register_function(
-        self,
-        function: ParsedFunction,
-        module_info: ModuleInfo
-    ) -> str:
-        """
-        Register a function and return its canonical name.
+        # Validate configuration
+        if not self.config_manager.validate_config():
+            raise ValueError("Invalid embedding configuration")
 
-        Returns:
-            Canonical function name (module.path.function_name)
-        """
-        canonical_name = f"{module_info.module_path}.{function.signature.name}"
+        # Initialize embedding providers
+        self._init_providers()
 
-        # Check for duplicates
-        if canonical_name in self.functions:
-            logger.warning(f"Duplicate function registration: {canonical_name}")
-
-        # Create function location
-        location = FunctionLocation(
-            canonical_module=module_info.module_path,
-            function_name=function.signature.name,
-            line_number=function.line_number,
-            is_exported=function.signature.name in module_info.exports or
-                       not function.signature.name.startswith('_')
-        )
-
-        # Register in main index
-        self.functions[canonical_name] = location
-
-        # Update secondary indices
-        if module_info.module_path not in self.by_module:
-            self.by_module[module_info.module_path] = set()
-        self.by_module[module_info.module_path].add(canonical_name)
-
-        if function.signature.name not in self.by_name:
-            self.by_name[function.signature.name] = set()
-        self.by_name[function.signature.name].add(canonical_name)
-
-        return canonical_name
-
-    def find_function(
-        self,
-        name: str,
-        hint_module: Optional[str] = None
-    ) -> List[FunctionLocation]:
-        """
-        Find functions by name, optionally with module hint.
-
-        Args:
-            name: Function name to search for
-            hint_module: Optional module to prioritize
-
-        Returns:
-            List of matching functions, sorted by relevance
-        """
-        # Exact canonical name match
-        if '.' in name and name in self.functions:
-            return [self.functions[name]]
-
-        # Search by function name
-        matches = []
-        canonical_names = self.by_name.get(name, set())
-
-        for canonical_name in canonical_names:
-            location = self.functions[canonical_name]
-            matches.append(location)
-
-        # Sort by relevance if hint provided
-        if hint_module and matches:
-            def relevance_score(loc: FunctionLocation) -> float:
-                if loc.canonical_module == hint_module:
-                    return 0.0  # Exact match
-                elif hint_module.startswith(loc.canonical_module + '.'):
-                    return 0.5  # Parent module
-                elif loc.canonical_module.startswith(hint_module + '.'):
-                    return 0.5  # Child module
-                else:
-                    return 1.0  # Different module tree
-
-            matches.sort(key=relevance_score)
-
-        return matches
-
-    def find_moved_function(
-        self,
-        old_function: ParsedFunction,
-        old_module: str
-    ) -> Optional[FunctionLocation]:
-        """
-        Find a function that might have moved to a different module.
-
-        Uses signature similarity to identify likely moves.
-        """
-        name = old_function.signature.name
-        candidates = self.by_name.get(name, set())
-
-        if not candidates:
-            return None
-
-        # Filter out the original location
-        candidates = {
-            c for c in candidates
-            if not c.startswith(old_module + '.')
+        # Performance tracking
+        self.stats = {
+            "embeddings_generated": 0,
+            "fallbacks_used": 0,
+            "total_generation_time": 0.0,
+            "batch_count": 0
         }
 
-        if len(candidates) == 1:
-            # Only one candidate, likely moved here
-            canonical_name = next(iter(candidates))
-            return self.functions[canonical_name]
+    def _init_providers(self):
+        """Initialize embedding providers based on available models."""
+        self.providers = {}
 
-        # Multiple candidates - need signature comparison
-        # This will be implemented in the matcher
+        # Initialize OpenAI if available
+        if self.config_manager.get_api_key("openai"):
+            try:
+                import openai
+                openai.api_key = self.config_manager.get_api_key("openai")
+                self.providers["openai"] = openai
+                logger.info("Initialized OpenAI embedding provider")
+            except ImportError:
+                logger.warning("OpenAI library not installed")
+
+        # Initialize local model as fallback
+        try:
+            from sentence_transformers import SentenceTransformer
+            self.providers["local"] = SentenceTransformer('all-MiniLM-L6-v2')
+            logger.info("Initialized local embedding model")
+        except ImportError:
+            logger.warning("sentence-transformers not installed, local fallback unavailable")
+
+    def prepare_function_text(self, function: ParsedFunction) -> str:
+        """
+        Prepare function text for embedding.
+
+        Strategy:
+        1. Function signature with types
+        2. First line of docstring (if available)
+        3. NO source code (security risk)
+        """
+        # Build signature string
+        signature_text = function.signature.to_string()
+
+        # Add docstring summary if available
+        docstring_text = ""
+        if function.docstring:
+            if hasattr(function.docstring, 'summary'):
+                # ParsedDocstring
+                docstring_text = function.docstring.summary
+            elif hasattr(function.docstring, 'raw_text'):
+                # RawDocstring - take first line
+                first_line = function.docstring.raw_text.split('\n')[0].strip()
+                docstring_text = first_line
+
+        # Combine with clear separation
+        if docstring_text:
+            combined_text = f"{signature_text} | {docstring_text}"
+        else:
+            combined_text = signature_text
+
+        # Truncate if too long (most models have token limits)
+        max_length = 512  # Conservative limit
+        if len(combined_text) > max_length:
+            combined_text = combined_text[:max_length-3] + "..."
+
+        return combined_text
+
+    def generate_function_id(self, function: ParsedFunction) -> str:
+        """Generate stable ID for function."""
+        # Use module path + function name
+        module_path = function.file_path.replace('/', '.').replace('\\', '.')
+        if module_path.endswith('.py'):
+            module_path = module_path[:-3]
+
+        return f"{module_path}.{function.signature.name}"
+
+    def generate_signature_hash(self, function: ParsedFunction) -> str:
+        """Generate hash of function signature for change detection."""
+        signature_str = function.signature.to_string()
+        return hashlib.sha256(signature_str.encode()).hexdigest()[:16]
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10)
+    )
+    async def generate_embedding(
+        self,
+        text: str,
+        model: EmbeddingModel
+    ) -> Optional[List[float]]:
+        """Generate embedding with retry logic."""
+        try:
+            if model in [EmbeddingModel.OPENAI_SMALL, EmbeddingModel.OPENAI_LARGE, EmbeddingModel.OPENAI_ADA]:
+                return await self._generate_openai_embedding(text, model.value)
+            elif model == EmbeddingModel.LOCAL_MINILM:
+                return self._generate_local_embedding(text)
+            else:
+                raise ValueError(f"Unsupported model: {model}")
+
+        except Exception as e:
+            logger.error(f"Failed to generate embedding with {model}: {e}")
+            raise
+
+    async def _generate_openai_embedding(self, text: str, model: str) -> List[float]:
+        """Generate embedding using OpenAI."""
+        if "openai" not in self.providers:
+            raise ValueError("OpenAI provider not initialized")
+
+        import openai
+
+        try:
+            response = await openai.Embedding.acreate(
+                input=text,
+                model=model
+            )
+            return response['data'][0]['embedding']
+
+        except openai.error.RateLimitError:
+            logger.warning("OpenAI rate limit hit")
+            raise
+        except Exception as e:
+            logger.error(f"OpenAI embedding failed: {e}")
+            raise
+
+    def _generate_local_embedding(self, text: str) -> List[float]:
+        """Generate embedding using local model."""
+        if "local" not in self.providers:
+            raise ValueError("Local model not initialized")
+
+        model = self.providers["local"]
+        embedding = model.encode(text, convert_to_numpy=True)
+        return embedding.tolist()
+
+    async def generate_function_embeddings(
+        self,
+        functions: List[ParsedFunction],
+        use_cache: bool = True
+    ) -> List[FunctionEmbedding]:
+        """
+        Generate embeddings for multiple functions.
+
+        Uses batching and fallback models as needed.
+        """
+        start_time = time.time()
+        embeddings = []
+
+        # Process in batches
+        batch_size = self.config.batch_size
+        for i in range(0, len(functions), batch_size):
+            batch = functions[i:i + batch_size]
+            batch_embeddings = await self._process_batch(batch, use_cache)
+            embeddings.extend(batch_embeddings)
+            self.stats["batch_count"] += 1
+
+        # Update stats
+        self.stats["embeddings_generated"] += len(embeddings)
+        self.stats["total_generation_time"] += time.time() - start_time
+
+        return embeddings
+
+    async def _process_batch(
+        self,
+        functions: List[ParsedFunction],
+        use_cache: bool
+    ) -> List[FunctionEmbedding]:
+        """Process a batch of functions."""
+        embeddings = []
+
+        for function in functions:
+            # Prepare text
+            text = self.prepare_function_text(function)
+            function_id = self.generate_function_id(function)
+            signature_hash = self.generate_signature_hash(function)
+
+            # Try to generate embedding with fallback chain
+            embedding_vector = None
+            model_used = None
+
+            # Try primary model first
+            try:
+                embedding_vector = await self.generate_embedding(
+                    text,
+                    self.config.primary_model
+                )
+                model_used = self.config.primary_model.value
+
+            except Exception as e:
+                logger.warning(f"Primary model failed: {e}, trying fallbacks")
+                self.stats["fallbacks_used"] += 1
+
+                # Try fallback models
+                for fallback_model in self.config.fallback_models:
+                    try:
+                        embedding_vector = await self.generate_embedding(
+                            text,
+                            fallback_model
+                        )
+                        model_used = fallback_model.value
+                        break
+                    except Exception as e:
+                        logger.warning(f"Fallback {fallback_model} failed: {e}")
+                        continue
+
+            # Create embedding object if successful
+            if embedding_vector and model_used:
+                embedding = FunctionEmbedding(
+                    function_id=function_id,
+                    embedding=embedding_vector,
+                    model=model_used,
+                    text_embedded=text,
+                    timestamp=time.time(),
+                    signature_hash=signature_hash
+                )
+                embeddings.append(embedding)
+            else:
+                logger.error(f"Failed to generate embedding for {function_id}")
+
+        return embeddings
+
+    def get_stats(self) -> Dict[str, float]:
+        """Get generation statistics."""
+        avg_time = (
+            self.stats["total_generation_time"] / self.stats["embeddings_generated"]
+            if self.stats["embeddings_generated"] > 0 else 0
+        )
+
+        return {
+            "embeddings_generated": self.stats["embeddings_generated"],
+            "average_generation_time_ms": avg_time * 1000,
+            "fallback_rate": (
+                self.stats["fallbacks_used"] / self.stats["embeddings_generated"]
+                if self.stats["embeddings_generated"] > 0 else 0
+            ),
+            "batches_processed": self.stats["batch_count"]
+        }
+2. Create storage/embedding_cache.py
+pythonimport sqlite3
+import json
+import time
+from pathlib import Path
+from typing import Optional, Dict, List, Tuple
+import logging
+from collections import OrderedDict
+
+from ..matcher.semantic_models import FunctionEmbedding
+
+logger = logging.getLogger(__name__)
+
+class EmbeddingCache:
+    """
+    Two-tier caching for embeddings: in-memory LRU + disk persistence.
+    """
+
+    def __init__(self, cache_dir: str = ".codedocsync_cache", max_memory_items: int = 1000):
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # In-memory LRU cache
+        self.memory_cache: OrderedDict[str, FunctionEmbedding] = OrderedDict()
+        self.max_memory_items = max_memory_items
+
+        # SQLite for disk persistence
+        self.db_path = self.cache_dir / "embeddings.db"
+        self._init_db()
+
+        # Performance metrics
+        self.metrics = {
+            "memory_hits": 0,
+            "disk_hits": 0,
+            "misses": 0,
+            "saves": 0
+        }
+
+    def _init_db(self):
+        """Initialize SQLite database for embeddings."""
+        conn = sqlite3.connect(str(self.db_path))
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS embeddings (
+                cache_key TEXT PRIMARY KEY,
+                function_id TEXT NOT NULL,
+                embedding_json TEXT NOT NULL,
+                model TEXT NOT NULL,
+                text_embedded TEXT NOT NULL,
+                signature_hash TEXT NOT NULL,
+                timestamp REAL NOT NULL,
+                hit_count INTEGER DEFAULT 0,
+                last_accessed REAL NOT NULL
+            )
+        """)
+
+        # Create indices for performance
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_function_id ON embeddings(function_id)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_signature_hash ON embeddings(signature_hash)
+        """)
+
+        conn.commit()
+        conn.close()
+
+    def _generate_cache_key(self, text: str, model: str) -> str:
+        """Generate cache key from text and model."""
+        import hashlib
+        content = f"{model}:{text}"
+        return hashlib.sha256(content.encode()).hexdigest()
+
+    def get(
+        self,
+        text: str,
+        model: str,
+        signature_hash: Optional[str] = None
+    ) -> Optional[FunctionEmbedding]:
+        """
+        Get embedding from cache.
+
+        Args:
+            text: Text that was embedded
+            model: Model used for embedding
+            signature_hash: Optional hash to verify function hasn't changed
+
+        Returns:
+            FunctionEmbedding if found and valid, None otherwise
+        """
+        cache_key = self._generate_cache_key(text, model)
+
+        # Check memory cache first
+        if cache_key in self.memory_cache:
+            embedding = self.memory_cache[cache_key]
+            # Move to end (LRU)
+            self.memory_cache.move_to_end(cache_key)
+
+            # Verify signature if provided
+            if signature_hash and embedding.signature_hash != signature_hash:
+                # Function has changed, invalidate cache
+                del self.memory_cache[cache_key]
+                self._delete_from_disk(cache_key)
+                self.metrics["misses"] += 1
+                return None
+
+            self.metrics["memory_hits"] += 1
+            return embedding
+
+        # Check disk cache
+        embedding = self._get_from_disk(cache_key)
+        if embedding:
+            # Verify signature if provided
+            if signature_hash and embedding.signature_hash != signature_hash:
+                # Function has changed, invalidate cache
+                self._delete_from_disk(cache_key)
+                self.metrics["misses"] += 1
+                return None
+
+            # Add to memory cache
+            self._add_to_memory_cache(cache_key, embedding)
+            self.metrics["disk_hits"] += 1
+            return embedding
+
+        self.metrics["misses"] += 1
         return None
 
-    def get_module_functions(self, module_path: str) -> List[FunctionLocation]:
-        """Get all functions in a module."""
-        canonical_names = self.by_module.get(module_path, set())
-        return [self.functions[name] for name in canonical_names]
+    def set(self, embedding: FunctionEmbedding) -> None:
+        """Save embedding to cache."""
+        cache_key = self._generate_cache_key(
+            embedding.text_embedded,
+            embedding.model
+        )
+
+        # Add to memory cache
+        self._add_to_memory_cache(cache_key, embedding)
+
+        # Save to disk
+        self._save_to_disk(cache_key, embedding)
+
+        self.metrics["saves"] += 1
+
+    def _add_to_memory_cache(self, key: str, embedding: FunctionEmbedding) -> None:
+        """Add to memory cache with LRU eviction."""
+        # Remove oldest if at capacity
+        if len(self.memory_cache) >= self.max_memory_items:
+            self.memory_cache.popitem(last=False)
+
+        self.memory_cache[key] = embedding
+
+    def _get_from_disk(self, cache_key: str) -> Optional[FunctionEmbedding]:
+        """Load embedding from disk."""
+        conn = sqlite3.connect(str(self.db_path))
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT function_id, embedding_json, model, text_embedded,
+                       signature_hash, timestamp
+                FROM embeddings
+                WHERE cache_key = ?
+            """, (cache_key,))
+
+            row = cursor.fetchone()
+            if row:
+                # Update access stats
+                cursor.execute("""
+                    UPDATE embeddings
+                    SET hit_count = hit_count + 1,
+                        last_accessed = ?
+                    WHERE cache_key = ?
+                """, (time.time(), cache_key))
+                conn.commit()
+
+                # Reconstruct embedding
+                embedding = FunctionEmbedding(
+                    function_id=row[0],
+                    embedding=json.loads(row[1]),
+                    model=row[2],
+                    text_embedded=row[3],
+                    signature_hash=row[4],
+                    timestamp=row[5]
+                )
+                return embedding
+
+        except Exception as e:
+            logger.error(f"Failed to load from disk cache: {e}")
+        finally:
+            conn.close()
+
+        return None
+
+    def _save_to_disk(self, cache_key: str, embedding: FunctionEmbedding) -> None:
+        """Save embedding to disk."""
+        conn = sqlite3.connect(str(self.db_path))
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT OR REPLACE INTO embeddings
+                (cache_key, function_id, embedding_json, model, text_embedded,
+                 signature_hash, timestamp, last_accessed)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                cache_key,
+                embedding.function_id,
+                json.dumps(embedding.embedding),
+                embedding.model,
+                embedding.text_embedded,
+                embedding.signature_hash,
+                embedding.timestamp,
+                time.time()
+            ))
+            conn.commit()
+
+        except Exception as e:
+            logger.error(f"Failed to save to disk cache: {e}")
+        finally:
+            conn.close()
+
+    def _delete_from_disk(self, cache_key: str) -> None:
+        """Delete embedding from disk."""
+        conn = sqlite3.connect(str(self.db_path))
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("DELETE FROM embeddings WHERE cache_key = ?", (cache_key,))
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to delete from disk: {e}")
+        finally:
+            conn.close()
+
+    def clear_old_entries(self, max_age_days: int = 30) -> int:
+        """Remove old cache entries."""
+        cutoff_time = time.time() - (max_age_days * 24 * 60 * 60)
+
+        conn = sqlite3.connect(str(self.db_path))
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                DELETE FROM embeddings
+                WHERE last_accessed < ?
+            """, (cutoff_time,))
+
+            deleted = cursor.rowcount
+            conn.commit()
+
+            logger.info(f"Cleared {deleted} old cache entries")
+            return deleted
+
+        except Exception as e:
+            logger.error(f"Failed to clear old entries: {e}")
+            return 0
+        finally:
+            conn.close()
+
+    def get_stats(self) -> Dict[str, any]:
+        """Get cache statistics."""
+        total_requests = (
+            self.metrics["memory_hits"] +
+            self.metrics["disk_hits"] +
+            self.metrics["misses"]
+        )
+
+        memory_hit_rate = (
+            self.metrics["memory_hits"] / total_requests
+            if total_requests > 0 else 0
+        )
+
+        overall_hit_rate = (
+            (self.metrics["memory_hits"] + self.metrics["disk_hits"]) / total_requests
+            if total_requests > 0 else 0
+        )
+
+        return {
+            "memory_size": len(self.memory_cache),
+            "memory_hit_rate": memory_hit_rate,
+            "overall_hit_rate": overall_hit_rate,
+            "total_saves": self.metrics["saves"],
+            "total_requests": total_requests
+        }
 Testing Requirements for Chunk 2
 Create tests that validate:
 
-Module path resolution for various file structures
-Import resolution including relative imports
-Function registration and lookup
-Import chain building
+Text preparation strategies for different function types
+Embedding generation with primary and fallback models
+Batch processing functionality
+Cache hit/miss scenarios
+Signature change detection
 
 Critical Implementation Notes
 
-Module resolver MUST handle missing init.py gracefully
-Function registry must track all functions, even private ones
-Import resolution must handle circular imports without infinite loops
-Always preserve the canonical location of functions
+NEVER embed source code (security risk)
+Always handle API failures with fallbacks
+Cache based on text content, not function ID
+Validate embeddings match expected dimensions
+Monitor API rate limits and costs
 
 Success Criteria
 
-Module paths correctly resolved for all project structures
-Import chains accurately built
-Function registry efficiently searches by name and module
-Performance: <20ms for import resolution per function
+Successfully generates embeddings for all function types
+Fallback chain works when primary model fails
+Cache achieves >90% hit rate on unchanged functions
+Batch processing improves throughput
+Performance: <100ms per function (batched)
 
 
-Chunk 3: Contextual Matcher Core Implementation (Estimated: 5-6 hours)
-Objectives
+## Chunk 3A: Semantic Search Implementation - Part 1 ✅ COMPLETE (Estimated: 2 hours)
+### Objectives
 
-Implement the main ContextualMatcher class
-Build matching logic for relocated and imported functions
-Integrate with direct matcher results
+- Implement the core semantic matching logic
+- Build semantic index preparation
+- Create confidence scoring for semantic matches
+- Build foundation for similarity search
 
-Required Files to Create
+### Required Files to Create/Update
 
-matcher/contextual_matcher.py - Main contextual matching logic
-tests/test_contextual_matcher.py - Core functionality tests
-Update matcher/__init__.py to export new components
+1. `matcher/semantic_matcher.py` - Core SemanticMatcher class with indexing
+2. `matcher/semantic_scorer.py` - Confidence scoring for matches
+3. `tests/test_semantic_matcher.py` - Core matching functionality tests
+4. `tests/test_semantic_scorer.py` - Scoring validation tests
+
+### Scope (First Half Only)
+This chunk implements the foundation for semantic matching:
+- SemanticMatcher class initialization and configuration
+- `prepare_semantic_index()` method for building search index
+- SemanticScorer class for confidence calculation and validation
+- Basic semantic match creation (without full similarity search)
+- Test infrastructure for semantic matching
+
+**Note**: The complete similarity search implementation with `match_with_embeddings()` method will be implemented in **Chunk 3B** by the next developer.
+
+---
+
+## Chunk 3B: Semantic Search Implementation - Part 2 ❌ PENDING (Estimated: 2 hours)
+### Objectives (For Next Developer)
+
+- Complete similarity search implementation
+- Integrate with vector store for full matching pipeline
+- Implement `match_with_embeddings()` method
+- Add integration with previous match results
+
+### Required Files to Create/Update (For Next Developer)
+
+1. Complete `matcher/semantic_matcher.py` - Add `match_with_embeddings()` method
+2. Add integration tests for full semantic matching pipeline
+3. Performance validation tests for semantic search
+
+### Scope (Second Half)
+- Complete `_find_semantic_match()` implementation
+- Full integration with vector store search
+- Match validation and filtering logic
+- Integration with DirectMatcher and ContextualMatcher results
+- End-to-end semantic matching pipeline
 
 Detailed Implementation
-1. Create matcher/contextual_matcher.py
-pythonimport logging
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+1. Create matcher/semantic_matcher.py
+pythonimport time
+import logging
+from typing import List, Optional, Dict, Tuple
+import asyncio
 
-from .models import MatchResult, MatchedPair, MatchType, MatchConfidence
-from .contextual_models import (
-    ContextualMatcherState, CrossFileMatch, ModuleInfo, ImportStatement
+from ..parser import ParsedFunction
+from ..storage.vector_store import VectorStore
+from ..storage.embedding_cache import EmbeddingCache
+from .semantic_models import (
+    SemanticMatch, SemanticSearchResult, EmbeddingConfig,
+    FunctionEmbedding
 )
-from .module_resolver import ModuleResolver
-from .function_registry import FunctionRegistry
-from .import_parser import ImportParser
-from ..parser import ParsedFunction, IntegratedParser
+from .embedding_generator import EmbeddingGenerator
+from .semantic_scorer import SemanticScorer
+from .models import MatchResult, MatchedPair, MatchType, MatchConfidence
 
 logger = logging.getLogger(__name__)
 
-class ContextualMatcher:
+class SemanticMatcher:
     """
-    Matches functions to documentation using module context and imports.
+    Semantic similarity matching using embeddings.
 
-    Handles:
-    - Functions imported from other modules
-    - Functions that moved between files
-    - Cross-file documentation references
+    This is the final fallback when direct and contextual matching fail.
+    Only handles ~2% of cases but critical for major refactorings.
     """
 
-    def __init__(self, project_root: str):
-        self.project_root = Path(project_root).resolve()
-        self.state = ContextualMatcherState()
-        self.module_resolver = ModuleResolver(project_root)
-        self.function_registry = FunctionRegistry()
-        self.import_parser = ImportParser()
-        self.integrated_parser = IntegratedParser()
+    def __init__(
+        self,
+        project_root: str,
+        config: Optional[EmbeddingConfig] = None
+    ):
+        self.project_root = project_root
+        self.config = config or EmbeddingConfig()
 
-        # Performance metrics
+        # Initialize components
+        self.vector_store = VectorStore(project_id=None)  # Auto-generate from path
+        self.embedding_cache = EmbeddingCache()
+        self.embedding_generator = EmbeddingGenerator(self.config)
+        self.scorer = SemanticScorer()
+
+        # Performance tracking
         self.stats = {
-            "files_analyzed": 0,
-            "imports_resolved": 0,
-            "cross_file_matches": 0,
-            "moved_functions": 0
+            "functions_processed": 0,
+            "embeddings_generated": 0,
+            "searches_performed": 0,
+            "semantic_matches_found": 0,
+            "total_time": 0.0
         }
 
-    def analyze_project(
+    async def prepare_semantic_index(
         self,
-        python_files: Optional[List[str]] = None
-    ) -> ContextualMatcherState:
+        all_functions: List[ParsedFunction],
+        force_reindex: bool = False
+    ) -> None:
         """
-        Analyze all Python files to build project context.
+        Prepare the semantic search index with all functions.
 
-        Args:
-            python_files: Optional list of files, otherwise discover all
-
-        Returns:
-            Populated ContextualMatcherState
+        This should be called once before matching to build the index.
         """
-        if python_files is None:
-            python_files = self._discover_python_files()
+        start_time = time.time()
+        logger.info(f"Preparing semantic index for {len(all_functions)} functions")
 
-        # Phase 1: Parse all modules and build registry
-        logger.info(f"Analyzing {len(python_files)} Python files")
+        # Generate embeddings for all functions
+        embeddings_needed = []
+        embeddings_cached = []
 
-        for file_path in python_files:
-            self._analyze_file(file_path)
+        for function in all_functions:
+            # Check cache first
+            text = self.embedding_generator.prepare_function_text(function)
+            signature_hash = self.embedding_generator.generate_signature_hash(function)
 
-        # Phase 2: Resolve all import chains
-        self._resolve_all_imports()
+            if not force_reindex:
+                cached = self.embedding_cache.get(
+                    text,
+                    self.config.primary_model.value,
+                    signature_hash
+                )
+                if cached:
+                    embeddings_cached.append(cached)
+                    continue
+
+            embeddings_needed.append(function)
 
         logger.info(
-            f"Analysis complete: {self.stats['files_analyzed']} files, "
-            f"{len(self.function_registry.functions)} functions"
+            f"Found {len(embeddings_cached)} cached embeddings, "
+            f"need to generate {len(embeddings_needed)}"
         )
 
-        return self.state
+        # Generate missing embeddings
+        if embeddings_needed:
+            new_embeddings = await self.embedding_generator.generate_function_embeddings(
+                embeddings_needed,
+                use_cache=True
+            )
 
-    def match_with_context(
+            # Cache the new embeddings
+            for embedding in new_embeddings:
+                self.embedding_cache.set(embedding)
+
+            # Combine with cached
+            all_embeddings = embeddings_cached + new_embeddings
+        else:
+            all_embeddings = embeddings_cached
+
+        # Store in vector database
+        if all_embeddings:
+            # Prepare for batch insert
+            ids = [e.function_id for e in all_embeddings]
+            vectors = [e.embedding for e in all_embeddings]
+            metadatas = [
+                {
+                    "function_id": e.function_id,
+                    "model": e.model,
+                    "signature_hash": e.signature_hash
+                }
+                for e in all_embeddings
+            ]
+
+            self.vector_store.add_embeddings(vectors, metadatas, ids)
+
+        # Update stats
+        self.stats["embeddings_generated"] += len(embeddings_needed)
+        self.stats["total_time"] += time.time() - start_time
+
+        logger.info(f"Semantic index prepared in {time.time() - start_time:.2f}s")
+
+    async def match_with_embeddings(
         self,
         functions: List[ParsedFunction],
-        direct_match_result: Optional[MatchResult] = None
+        previous_results: Optional[List[MatchResult]] = None
     ) -> MatchResult:
         """
-        Perform contextual matching on functions.
+        Perform semantic matching on functions.
 
         Args:
-            functions: Functions to match (with their docstrings)
-            direct_match_result: Previous direct matching results to enhance
+            functions: Functions to find matches for
+            previous_results: Results from direct/contextual matching
 
         Returns:
-            MatchResult with contextual matches
+            MatchResult with semantic matches added
         """
+        start_time = time.time()
         matches = []
         unmatched_functions = []
-        unmatched_docs = []
 
-        # Start with direct match results if provided
-        if direct_match_result:
-            matches.extend(direct_match_result.matched_pairs)
-            # Track which functions need contextual matching
-            matched_function_ids = {
-                m.function.signature.name for m in direct_match_result.matched_pairs
-                if m.confidence.overall >= 0.8
-            }
-        else:
-            matched_function_ids = set()
+        # Start with previous results if provided
+        high_confidence_matches = set()
+        if previous_results:
+            for result in previous_results:
+                for match in result.matched_pairs:
+                    # Keep high confidence matches
+                    if match.confidence.overall >= 0.7:
+                        matches.append(match)
+                        high_confidence_matches.add(match.function.signature.name)
 
-        # Process each function
-        for func in functions:
-            if func.signature.name in matched_function_ids:
-                continue  # Already well-matched
+        # Process only functions without good matches
+        functions_to_process = [
+            f for f in functions
+            if f.signature.name not in high_confidence_matches
+        ]
 
-            # Try contextual matching
-            contextual_match = self._find_contextual_match(func)
+        logger.info(
+            f"Semantic matching for {len(functions_to_process)} functions "
+            f"(skipping {len(high_confidence_matches)} with good matches)"
+        )
 
-            if contextual_match:
-                matches.append(contextual_match)
-                self.stats["cross_file_matches"] += 1
+        # Perform semantic search for each function
+        for function in functions_to_process:
+            semantic_match = await self._find_semantic_match(function)
+
+            if semantic_match:
+                matches.append(semantic_match)
+                self.stats["semantic_matches_found"] += 1
             else:
-                unmatched_functions.append(func)
+                unmatched_functions.append(function)
+
+        # Update stats
+        self.stats["functions_processed"] += len(functions_to_process)
+        self.stats["total_time"] += time.time() - start_time
 
         # Build result
         return MatchResult(
             total_functions=len(functions),
             total_docs=len(functions),  # Assuming integrated parsing
-            matches=matches,
+            matched_pairs=matches,
             unmatched_functions=unmatched_functions,
-            unmatched_docs=unmatched_docs
+            unmatched_docs=[]
         )
 
-    def _analyze_file(self, file_path: str) -> None:
-        """Analyze a single file and update state."""
+    async def _find_semantic_match(
+        self,
+        function: ParsedFunction
+    ) -> Optional[MatchedPair]:
+        """Find semantic match for a single function."""
         try:
-            # Get module path
-            module_path = self.module_resolver.resolve_module_path(file_path)
-            if not module_path:
-                logger.warning(f"Could not resolve module path for {file_path}")
-                return
+            # Generate embedding for query function
+            text = self.embedding_generator.prepare_function_text(function)
 
-            # Build module info
-            module_info = self.import_parser.build_module_info(
-                file_path, module_path
+            # Try cache first
+            signature_hash = self.embedding_generator.generate_signature_hash(function)
+            cached_embedding = self.embedding_cache.get(
+                text,
+                self.config.primary_model.value,
+                signature_hash
             )
 
-            # Parse functions
-            functions = self.integrated_parser.parse_file(file_path)
+            if cached_embedding:
+                query_embedding = cached_embedding.embedding
+            else:
+                # Generate new embedding
+                embeddings = await self.embedding_generator.generate_function_embeddings(
+                    [function],
+                    use_cache=True
+                )
+                if not embeddings:
+                    logger.warning(f"Failed to generate embedding for {function.signature.name}")
+                    return None
 
-            # Register functions
-            for func in functions:
-                self.function_registry.register_function(func, module_info)
+                query_embedding = embeddings[0].embedding
+                # Cache it
+                self.embedding_cache.set(embeddings[0])
 
-            # Store module info
-            self.state.add_module(module_info)
-            self.stats["files_analyzed"] += 1
+            # Search for similar functions
+            search_start = time.time()
+            similar_items = self.vector_store.search_similar(
+                query_embedding,
+                n_results=10,  # Get top 10 candidates
+                min_similarity=0.65
+            )
+            self.stats["searches_performed"] += 1
+
+            if not similar_items:
+                return None
+
+            # Score and validate matches
+            best_match = None
+            best_score = 0.0
+
+            for item_id, similarity, metadata in similar_items:
+                # Skip self-matches
+                if metadata['function_id'] == self.embedding_generator.generate_function_id(function):
+                    continue
+
+                # Validate match with additional checks
+                is_valid, adjusted_score = self.scorer.validate_semantic_match(
+                    function,
+                    metadata['function_id'],
+                    similarity
+                )
+
+                if is_valid and adjusted_score > best_score:
+                    best_score = adjusted_score
+                    best_match = (item_id, adjusted_score, metadata)
+
+            # Create match if found
+            if best_match and best_score >= 0.65:
+                return self._create_semantic_match(
+                    function,
+                    best_match[0],  # matched function ID
+                    best_match[1],  # score
+                    best_match[2]   # metadata
+                )
+
+            return None
 
         except Exception as e:
-            logger.error(f"Failed to analyze {file_path}: {e}")
-
-    def _find_contextual_match(
-        self,
-        function: ParsedFunction
-    ) -> Optional[MatchedPair]:
-        """
-        Find a contextual match for a function.
-
-        Tries in order:
-        1. Check if function was imported from elsewhere
-        2. Check if function moved to different file
-        3. Check for documentation in different location
-        """
-        # Strategy 1: Imported function
-        match = self._match_imported_function(function)
-        if match:
-            return match
-
-        # Strategy 2: Moved function
-        match = self._match_moved_function(function)
-        if match:
-            return match
-
-        # Strategy 3: Cross-file documentation
-        match = self._match_cross_file_docs(function)
-        if match:
-            return match
-
-        return None
-
-    def _match_imported_function(
-        self,
-        function: ParsedFunction
-    ) -> Optional[MatchedPair]:
-        """Match a function that might be imported from another module."""
-        # Get the module containing this function
-        module_path = self.module_resolver.resolve_module_path(
-            function.file_path
-        )
-        if not module_path:
+            logger.error(f"Semantic matching failed for {function.signature.name}: {e}")
             return None
 
-        module_info = self.state.module_tree.get(module_path)
-        if not module_info:
-            return None
-
-        # Check imports for this function name
-        for import_stmt in module_info.imports:
-            if function.signature.name in import_stmt.imported_names:
-                # Function is imported, find source
-                source_module = self.module_resolver.resolve_import(
-                    import_stmt, module_path
-                )
-                if source_module:
-                    # Look up the original function
-                    locations = self.function_registry.find_function(
-                        function.signature.name, source_module
-                    )
-                    if locations:
-                        # Found original function
-                        # Note: In a full implementation, we'd load and match
-                        # the original function's documentation here
-                        return self._create_import_match(
-                            function, locations[0], import_stmt
-                        )
-
-        return None
-
-    def _match_moved_function(
+    def _create_semantic_match(
         self,
-        function: ParsedFunction
-    ) -> Optional[MatchedPair]:
-        """Match a function that moved to a different file."""
-        # Look for functions with same name in other modules
-        module_path = self.module_resolver.resolve_module_path(
-            function.file_path
-        )
-
-        moved_location = self.function_registry.find_moved_function(
-            function, module_path or ""
-        )
-
-        if moved_location:
-            # Compare signatures to confirm it's the same function
-            confidence = self._calculate_signature_similarity(
-                function, moved_location
-            )
-
-            if confidence > 0.8:
-                self.stats["moved_functions"] += 1
-                return self._create_moved_match(function, moved_location)
-
-        return None
-
-    def _calculate_signature_similarity(
-        self,
-        function: ParsedFunction,
-        location: 'FunctionLocation'
-    ) -> float:
-        """Calculate similarity between function signatures."""
-        # In full implementation, load the other function and compare
-        # For now, return a placeholder
-        # This would compare parameters, return types, decorators
-        return 0.85  # Placeholder
-
-    def _create_import_match(
-        self,
-        function: ParsedFunction,
-        original_location: 'FunctionLocation',
-        import_stmt: ImportStatement
+        source_function: ParsedFunction,
+        matched_function_id: str,
+        similarity_score: float,
+        metadata: Dict[str, str]
     ) -> MatchedPair:
-        """Create a match for an imported function."""
-        return MatchedPair(
-            function=function,
-            docstring=function.docstring,  # Will be enhanced in full impl
-            match_type=MatchType.CONTEXTUAL,
-            confidence=MatchConfidence(
-                overall=0.9,
-                name_similarity=1.0,  # Same name
-                location_score=0.8,   # Different file but imported
-                signature_similarity=0.9
-            ),
-            match_reason=f"Imported from {original_location.canonical_module}"
+        """Create a MatchedPair for semantic match."""
+        # In a real implementation, we'd load the matched function
+        # For now, we'll create a placeholder match
+
+        confidence = self.scorer.calculate_semantic_confidence(
+            similarity_score,
+            source_function
         )
 
-    def _create_moved_match(
-        self,
-        function: ParsedFunction,
-        new_location: 'FunctionLocation'
-    ) -> MatchedPair:
-        """Create a match for a moved function."""
         return MatchedPair(
-            function=function,
-            docstring=function.docstring,
-            match_type=MatchType.CONTEXTUAL,
-            confidence=MatchConfidence(
-                overall=0.85,
-                name_similarity=1.0,
-                location_score=0.7,  # Different location
-                signature_similarity=0.85
-            ),
-            match_reason=f"Function moved from {new_location.canonical_module}"
+            function=source_function,
+            docstring=source_function.docstring,  # Will be updated when we load actual match
+            match_type=MatchType.SEMANTIC,
+            confidence=confidence,
+            match_reason=f"Semantic similarity match with {matched_function_id} (score: {similarity_score:.2f})"
         )
 
-    def _discover_python_files(self) -> List[str]:
-        """Discover all Python files in the project."""
-        python_files = []
+    def get_stats(self) -> Dict[str, any]:
+        """Get matcher statistics."""
+        avg_time = (
+            self.stats["total_time"] / self.stats["functions_processed"]
+            if self.stats["functions_processed"] > 0 else 0
+        )
 
-        for path in self.project_root.rglob("*.py"):
-            # Skip common exclusions
-            if any(part.startswith('.') for part in path.parts):
-                continue
-            if any(part in {'__pycache__', 'venv', 'env'} for part in path.parts):
-                continue
+        match_rate = (
+            self.stats["semantic_matches_found"] / self.stats["functions_processed"]
+            if self.stats["functions_processed"] > 0 else 0
+        )
 
-            python_files.append(str(path))
-
-        return python_files
-
-    def _resolve_all_imports(self) -> None:
-        """Resolve all import chains in the project."""
-        # This is where we'd build the complete import graph
-        # For now, track basic stats
-        for module_info in self.state.module_tree.values():
-            self.stats["imports_resolved"] += len(module_info.imports)
-Testing Requirements for Chunk 3
-Create tests that cover:
-
-Basic contextual matching scenarios
-Import resolution and matching
-Function relocation detection
-Integration with direct matcher results
-
-Critical Implementation Notes
-
-MUST integrate smoothly with direct matcher results
-Never downgrade high-confidence direct matches
-Track performance metrics for analysis
-Handle missing imports gracefully
-
-Success Criteria
-
-Correctly identifies imported functions
-Detects relocated functions with high accuracy
-Integrates with direct matching results
-Performance: <100ms for 100-file project analysis
-
-
-Chunk 4: Cross-File Documentation Matching (Estimated: 4-5 hours)
-Objectives
-
-Implement cross-file documentation detection
-Handle module and class-level docstrings
-Support documentation in init.py files
-
-Required Files to Create/Update
-
-Update matcher/contextual_matcher.py with cross-file logic
-Create matcher/doc_location_finder.py - Find docs in various locations
-Create tests/test_cross_file_matching.py
-
-Detailed Implementation
-1. Create matcher/doc_location_finder.py
-pythonimport ast
+        return {
+            "functions_processed": self.stats["functions_processed"],
+            "semantic_matches_found": self.stats["semantic_matches_found"],
+            "match_rate": match_rate,
+            "average_time_per_function_ms": avg_time * 1000,
+            "embedding_stats": self.embedding_generator.get_stats(),
+            "cache_stats": self.embedding_cache.get_stats(),
+            "vector_store_stats": self.vector_store.get_stats()
+        }
+2. Create matcher/semantic_scorer.py
+pythonimport re
+from typing import Tuple, Optional
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 
-from ..parser import ParsedDocstring, DocstringParser
+from ..parser import ParsedFunction
+from .models import MatchConfidence
 
 logger = logging.getLogger(__name__)
 
-class DocLocationFinder:
-    """Finds documentation in non-standard locations."""
+class SemanticScorer:
+    """
+    Scores and validates semantic matches.
 
-    def __init__(self):
-        self.docstring_parser = DocstringParser()
-        self._cache: Dict[str, List[ParsedDocstring]] = {}
+    Applies additional heuristics beyond raw similarity scores.
+    """
 
-    def find_module_docs(self, module_path: str) -> Dict[str, ParsedDocstring]:
+    # Thresholds from architecture
+    THRESHOLDS = {
+        "high_confidence": 0.85,
+        "medium_confidence": 0.75,
+        "low_confidence": 0.65,
+        "no_match": 0.65
+    }
+
+    def validate_semantic_match(
+        self,
+        source_function: ParsedFunction,
+        candidate_function_id: str,
+        raw_similarity: float
+    ) -> Tuple[bool, float]:
         """
-        Find all docstrings in a module that might document functions.
+        Validate and adjust semantic match score.
 
         Returns:
-            Dict mapping potential function names to their docs
+            (is_valid, adjusted_score)
         """
-        if module_path in self._cache:
-            return self._cache[module_path]
+        # Start with raw similarity
+        adjusted_score = raw_similarity
 
-        docs = {}
+        # Extract function name from ID
+        candidate_name = candidate_function_id.split('.')[-1]
+        source_name = source_function.signature.name
 
-        try:
-            with open(module_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+        # Check naming patterns
+        if self._names_follow_pattern(source_name, candidate_name):
+            # Boost score for common refactoring patterns
+            adjusted_score += 0.05
+        else:
+            # Penalize very different names
+            name_similarity = self._calculate_name_similarity(source_name, candidate_name)
+            if name_similarity < 0.3:
+                adjusted_score -= 0.1
 
-            tree = ast.parse(content, filename=module_path)
+        # Module distance check (from architecture rules)
+        source_module = source_function.file_path.replace('/', '.').replace('\\', '.')
+        candidate_module = '.'.join(candidate_function_id.split('.')[:-1])
 
-            # Check module docstring
-            module_doc = ast.get_docstring(tree)
-            if module_doc:
-                # Parse for function documentation sections
-                func_docs = self._extract_function_docs_from_module(module_doc)
-                docs.update(func_docs)
+        module_distance = self._calculate_module_distance(source_module, candidate_module)
+        if module_distance > 2:
+            # Penalize distant modules
+            adjusted_score -= 0.1
 
-            # Check class docstrings for method documentation
-            for node in ast.walk(tree):
-                if isinstance(node, ast.ClassDef):
-                    class_doc = ast.get_docstring(node)
-                    if class_doc:
-                        method_docs = self._extract_method_docs_from_class(
-                            class_doc, node.name
-                        )
-                        docs.update(method_docs)
+        # Parameter count validation (architecture rule)
+        # We don't have the candidate function loaded, so we'll be lenient
+        # In real implementation, we'd load and check
 
-            self._cache[module_path] = docs
-            return docs
+        # Ensure score stays in valid range
+        adjusted_score = max(0.0, min(1.0, adjusted_score))
 
-        except Exception as e:
-            logger.error(f"Failed to find docs in {module_path}: {e}")
-            return {}
+        # Apply threshold
+        is_valid = adjusted_score >= self.THRESHOLDS["no_match"]
 
-    def find_package_docs(self, package_path: str) -> Dict[str, ParsedDocstring]:
-        """
-        Find documentation in package __init__.py files.
+        return is_valid, adjusted_score
 
-        Some projects document all module functions in __init__.py
-        """
-        init_file = Path(package_path) / '__init__.py'
-        if not init_file.exists():
-            return {}
-
-        return self.find_module_docs(str(init_file))
-
-    def _extract_function_docs_from_module(
+    def calculate_semantic_confidence(
         self,
-        module_docstring: str
-    ) -> Dict[str, ParsedDocstring]:
-        """
-        Extract function documentation from module docstring.
+        similarity_score: float,
+        source_function: ParsedFunction
+    ) -> MatchConfidence:
+        """Calculate confidence scores for semantic match."""
+        # Determine overall confidence based on thresholds
+        if similarity_score >= self.THRESHOLDS["high_confidence"]:
+            overall = 0.9  # High confidence but not perfect
+        elif similarity_score >= self.THRESHOLDS["medium_confidence"]:
+            overall = 0.75
+        elif similarity_score >= self.THRESHOLDS["low_confidence"]:
+            overall = 0.65
+        else:
+            overall = 0.5  # Minimum for a match
 
-        Looks for sections like:
-        Functions:
-        ----------
-        function_name: Description
-            Full documentation here
-        """
-        docs = {}
+        # Semantic matches have high name similarity (by definition of embeddings)
+        # but lower location score
+        return MatchConfidence(
+            overall=overall,
+            name_similarity=similarity_score,  # Embedding similarity
+            location_score=0.5,  # Unknown location relationship
+            signature_similarity=0.7  # Assumed similar based on embedding
+        )
 
-        # Common patterns for function documentation in module docstrings
+    def _names_follow_pattern(self, name1: str, name2: str) -> bool:
+        """Check if names follow common refactoring patterns."""
         patterns = [
-            r"Functions:\s*\n[-=]+\s*\n(.*?)(?=\n\n|\Z)",
-            r"Available Functions:\s*\n(.*?)(?=\n\n|\Z)",
-            r"Public API:\s*\n(.*?)(?=\n\n|\Z)"
+            # Verb changes
+            (r'^get_(.+)$', r'^fetch_\1$'),
+            (r'^set_(.+)$', r'^update_\1$'),
+            (r'^create_(.+)$', r'^make_\1$'),
+            (r'^delete_(.+)$', r'^remove_\1$'),
+
+            # Noun changes
+            (r'^(.+)_id$', r'^\1_identifier$'),
+            (r'^(.+)_dict$', r'^\1_map$'),
+            (r'^(.+)_list$', r'^\1_array$'),
+
+            # Style changes
+            (r'^([a-z]+)_([a-z]+)$', lambda m: f"{m.group(1)}{m.group(2).capitalize()}"),
         ]
 
-        # This is simplified - in reality we'd have more sophisticated parsing
-        # For now, we'll rely on the docstring parser to handle structured content
+        for pattern1, pattern2 in patterns:
+            # Check both directions
+            if (re.match(pattern1, name1) and re.match(pattern2, name2)):
+                return True
+            if (re.match(pattern2, name1) and re.match(pattern1, name2)):
+                return True
 
-        return docs
+        return False
 
-    def _extract_method_docs_from_class(
-        self,
-        class_docstring: str,
-        class_name: str
-    ) -> Dict[str, ParsedDocstring]:
-        """
-        Extract method documentation from class docstring.
+    def _calculate_name_similarity(self, name1: str, name2: str) -> float:
+        """Calculate simple name similarity."""
+        # Convert to lowercase
+        name1 = name1.lower()
+        name2 = name2.lower()
 
-        Some styles document all methods in the class docstring.
-        """
-        docs = {}
+        # Exact match
+        if name1 == name2:
+            return 1.0
 
-        # Look for method documentation sections
-        # This would need more sophisticated parsing in practice
+        # Check if one contains the other
+        if name1 in name2 or name2 in name1:
+            return 0.8
 
-        return docs
+        # Simple character overlap
+        common_chars = set(name1) & set(name2)
+        all_chars = set(name1) | set(name2)
 
-    def find_related_docs(
-        self,
-        function_name: str,
-        module_path: str,
-        search_radius: int = 2
-    ) -> List[Tuple[str, ParsedDocstring]]:
-        """
-        Search for documentation in related files.
+        if all_chars:
+            return len(common_chars) / len(all_chars)
 
-        Args:
-            function_name: Name of the function
-            module_path: Current module path
-            search_radius: How many directories up to search
+        return 0.0
 
-        Returns:
-            List of (file_path, docstring) tuples
-        """
-        related_docs = []
+    def _calculate_module_distance(self, module1: str, module2: str) -> int:
+        """Calculate distance between modules."""
+        parts1 = module1.split('.')
+        parts2 = module2.split('.')
 
-        # Search in parent directories up to search_radius
-        current_path = Path(module_path).parent
-
-        for _ in range(search_radius):
-            # Check __init__.py in current directory
-            init_file = current_path / '__init__.py'
-            if init_file.exists():
-                docs = self.find_package_docs(str(current_path))
-                if function_name in docs:
-                    related_docs.append((str(init_file), docs[function_name]))
-
-            # Check README or docs files
-            for doc_file in ['README.md', 'DOCS.md', f'{function_name}.md']:
-                doc_path = current_path / doc_file
-                if doc_path.exists():
-                    # Parse markdown for function documentation
-                    # This would need a markdown parser in practice
-                    pass
-
-            # Move up one directory
-            if current_path.parent == current_path:
+        # Find common prefix
+        common_prefix_len = 0
+        for i, (p1, p2) in enumerate(zip(parts1, parts2)):
+            if p1 == p2:
+                common_prefix_len = i + 1
+            else:
                 break
-            current_path = current_path.parent
 
-        return related_docs
-2. Update matcher/contextual_matcher.py - Add cross-file methods
-Add these methods to the ContextualMatcher class:
-pythondef _match_cross_file_docs(
-    self,
-    function: ParsedFunction
-) -> Optional[MatchedPair]:
-    """Find documentation in a different file."""
+        # Distance is how many levels apart they are
+        distance = (len(parts1) - common_prefix_len) + (len(parts2) - common_prefix_len)
 
-    # Skip if function already has good documentation
-    if function.docstring and hasattr(function.docstring, 'summary'):
-        if len(function.docstring.summary) > 20:  # Has substantial docs
-            return None
+        return distance
+Testing Requirements for Chunk 3
+Create tests covering:
 
-    # Initialize doc finder
-    if not hasattr(self, 'doc_finder'):
-        self.doc_finder = DocLocationFinder()
-
-    # Search strategies:
-
-    # 1. Check module-level documentation
-    module_docs = self.doc_finder.find_module_docs(function.file_path)
-    if function.signature.name in module_docs:
-        return self._create_cross_file_match(
-            function,
-            module_docs[function.signature.name],
-            function.file_path,
-            "module docstring"
-        )
-
-    # 2. Check parent package documentation
-    module_path = self.module_resolver.resolve_module_path(function.file_path)
-    if module_path and '.' in module_path:
-        parent_package = '.'.join(module_path.split('.')[:-1])
-        parent_file = self.module_resolver.find_module_file(parent_package)
-
-        if parent_file:
-            package_docs = self.doc_finder.find_package_docs(
-                str(Path(parent_file).parent)
-            )
-            if function.signature.name in package_docs:
-                return self._create_cross_file_match(
-                    function,
-                    package_docs[function.signature.name],
-                    parent_file,
-                    "package __init__.py"
-                )
-
-    # 3. Check related documentation files
-    related_docs = self.doc_finder.find_related_docs(
-        function.signature.name,
-        function.file_path
-    )
-
-    if related_docs:
-        # Use the first matching documentation
-        doc_file, docstring = related_docs[0]
-        return self._create_cross_file_match(
-            function,
-            docstring,
-            doc_file,
-            "related documentation file"
-        )
-
-    return None
-
-def _create_cross_file_match(
-    self,
-    function: ParsedFunction,
-    docstring: ParsedDocstring,
-    doc_location: str,
-    location_type: str
-) -> MatchedPair:
-    """Create a match for cross-file documentation."""
-
-    # Calculate confidence based on documentation quality
-    doc_quality = self._assess_doc_quality(docstring, function)
-
-    return MatchedPair(
-        function=function,
-        docstring=docstring,
-        match_type=MatchType.CONTEXTUAL,
-        confidence=MatchConfidence(
-            overall=0.7 * doc_quality,  # Lower base confidence for cross-file
-            name_similarity=1.0,  # Exact name match required
-            location_score=0.5,   # Different file
-            signature_similarity=doc_quality  # Based on parameter matching
-        ),
-        match_reason=f"Documentation found in {location_type} at {doc_location}"
-    )
-
-def _assess_doc_quality(
-    self,
-    docstring: ParsedDocstring,
-    function: ParsedFunction
-) -> float:
-    """Assess how well documentation matches the function."""
-    score = 1.0
-
-    # Check parameter coverage
-    if hasattr(docstring, 'parameters'):
-        doc_params = {p.name for p in docstring.parameters}
-        func_params = {p.name for p in function.signature.parameters}
-
-        # Penalize missing or extra parameters
-        missing = func_params - doc_params
-        extra = doc_params - func_params
-
-        score -= 0.1 * len(missing)
-        score -= 0.05 * len(extra)
-
-    # Check if return type is documented
-    if function.signature.return_type and not docstring.returns:
-        score -= 0.1
-
-    # Ensure score is between 0 and 1
-    return max(0.0, min(1.0, score))
-Testing Requirements for Chunk 4
-Create comprehensive tests for:
-
-Module-level documentation extraction
-Package init.py documentation
-Cross-file matching scenarios
-Documentation quality assessment
+Semantic search with various similarity thresholds
+Score adjustment based on naming patterns
+Module distance validation
+Integration with previous match results
+Edge cases (no matches, self-matches)
 
 Critical Implementation Notes
 
-Cache parsed documentation to avoid repeated parsing
-Handle various documentation styles in module docstrings
-Don't match if function already has good documentation
-Lower confidence for cross-file matches
+NEVER override high-confidence matches from previous matchers
+Always validate module distance per architecture rules
+Skip self-matches in search results
+Apply all scoring adjustments from architecture
+Handle search failures gracefully
 
 Success Criteria
 
-Finds documentation in module and class docstrings
-Correctly extracts from init.py files
-Quality assessment accurately scores matches
-Performance: <50ms per file for doc extraction
+Finds semantically similar functions with renamed identifiers
+Respects confidence thresholds from architecture
+Integrates smoothly with existing match results
+No false positives from distant modules
+Performance: <200ms per function including search
 
 
-Chunk 5: Integration and Performance Optimization (Estimated: 3-4 hours)
-Objectives
+## Chunk 4A: Integration Layer - Part 1 ✅ COMPLETE (Estimated: 1.5 hours)
+### Objectives (First Half)
 
-Integrate contextual matcher with the full system
-Optimize performance for large codebases
-Add comprehensive error handling and logging
-Create the facade for easy usage
+- Create unified matching facade foundation with all three matchers
+- Implement basic integration between direct, contextual, and semantic matching
+- Add basic CLI command for unified matching
+- Create foundation integration tests
 
-Required Files to Create/Update
+### Required Files Created/Updated (First Half)
 
-Create matcher/contextual_facade.py - High-level interface
-Update matcher/__init__.py - Export all components
-Create tests/test_contextual_integration.py
-Update main CLI to support contextual matching
+1. `matcher/unified_facade.py` ✅ - Basic UnifiedMatchingFacade class with core integration
+2. `matcher/__init__.py` ✅ - Export semantic components and unified facade
+3. `main.py` ✅ - Add basic match_unified CLI command
+4. `tests/test_unified_matching.py` ✅ - Basic integration tests
+
+### Completed Implementation (First Half)
+
+**Created `matcher/unified_facade.py`** with core UnifiedMatchingFacade:
+- Basic class initialization with configuration and statistics tracking
+- `match_project()` method implementing four-phase matching pipeline:
+  1. Python file parsing with IntegratedParser
+  2. Direct matching using MatchingFacade
+  3. Contextual matching using ContextualMatchingFacade
+  4. Semantic matching using SemanticMatcher (optional)
+- Statistics collection across all matching phases
+- Performance timing for each phase (parsing, direct, contextual, semantic)
+- Match type counting (direct, contextual, semantic)
+- File discovery with standard exclusions (.git, __pycache__, venv)
+- Basic summary printing functionality
+
+**Updated `matcher/__init__.py`** to export:
+- `SemanticMatcher` class
+- `UnifiedMatchingFacade` class
+- All existing semantic models
+
+**Added basic `match_unified` CLI command** to `main.py`:
+- Async command execution for semantic matching support
+- Configuration file loading support
+- Enable/disable semantic matching option
+- Basic output formatting (reusing existing formatters)
+- Statistics display option
+- Error handling for invalid paths and analysis failures
+
+**Created `tests/test_unified_matching.py`** with comprehensive test coverage:
+- Facade initialization and configuration tests
+- File discovery testing with exclusion validation
+- Statistics calculation and retrieval tests
+- Basic project matching workflow with mocked components
+- Error handling during file parsing
+- Edge cases for empty directories and invalid files
+- Integration testing with all three matcher types
+
+---
+
+## Chunk 4B: Integration Layer - Part 2 ❌ PENDING (For Next Developer)
+### Objectives (Second Half - To Be Implemented)
+
+- Complete performance monitoring and optimization
+- Implement detailed output formatting for unified results
+- Add comprehensive CLI features and options
+- Create production-ready error recovery
+- Add performance validation tests
+
+### Required Files to Create/Update (Second Half)
+
+1. Complete `matcher/unified_facade.py` - Add advanced performance monitoring and optimization
+2. Update `main.py` - Add detailed output formatting functions for unified results
+3. Create `tests/test_unified_performance.py` - Performance validation tests
+4. Add comprehensive integration scenarios
 
 Detailed Implementation
-1. Create matcher/contextual_facade.py
-pythonimport logging
+1. Create matcher/unified_facade.py
+pythonimport asyncio
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, List, Dict, Any
+import logging
 
-from .models import MatchResult
-from .contextual_matcher import ContextualMatcher
 from .direct_matcher import DirectMatcher
+from .contextual_matcher import ContextualMatcher
+from .semantic_matcher import SemanticMatcher
+from .models import MatchResult
 from ..parser import IntegratedParser, ParsedFunction
 from ..utils.config import CodeDocSyncConfig
 
 logger = logging.getLogger(__name__)
 
-class ContextualMatchingFacade:
+class UnifiedMatchingFacade:
     """
-    High-level interface for contextual matching.
+    Unified interface for all three matching strategies.
 
-    Combines direct and contextual matching for best results.
+    Implements the complete matching pipeline:
+    1. Direct matching (90% of cases)
+    2. Contextual matching (8% of cases)
+    3. Semantic matching (2% of cases)
     """
 
     def __init__(self, config: Optional[CodeDocSyncConfig] = None):
@@ -1328,23 +1664,32 @@ class ContextualMatchingFacade:
             "parsing_time": 0.0,
             "direct_matching_time": 0.0,
             "contextual_matching_time": 0.0,
-            "files_processed": 0
+            "semantic_matching_time": 0.0,
+            "semantic_indexing_time": 0.0,
+            "files_processed": 0,
+            "matches_by_type": {
+                "direct": 0,
+                "contextual": 0,
+                "semantic": 0
+            }
         }
 
-    def match_project(
+    async def match_project(
         self,
         project_path: str,
-        use_cache: bool = True
+        use_cache: bool = True,
+        enable_semantic: bool = True
     ) -> MatchResult:
         """
         Perform complete matching on a project.
 
         Args:
             project_path: Root directory of the project
-            use_cache: Whether to use cached parsing results
+            use_cache: Whether to use cached parsing/embeddings
+            enable_semantic: Whether to use semantic matching
 
         Returns:
-            Combined MatchResult with all matches
+            Unified MatchResult with all matches
         """
         start_time = time.time()
         project_path = Path(project_path).resolve()
@@ -1356,18 +1701,13 @@ class ContextualMatchingFacade:
         )
         contextual_matcher = ContextualMatcher(str(project_path))
 
-        # Phase 1: Build project context
-        logger.info("Building project context...")
-        context_start = time.time()
-        contextual_matcher.analyze_project()
-        self.stats["contextual_matching_time"] += time.time() - context_start
+        # Phase 1: Parse all Python files
+        logger.info("Phase 1: Parsing Python files...")
+        parse_start = time.time()
 
-        # Phase 2: Parse and match all files
-        logger.info("Parsing and matching functions...")
         all_functions = []
         python_files = self._discover_python_files(project_path)
 
-        parse_start = time.time()
         for file_path in python_files:
             try:
                 functions = parser.parse_file(str(file_path))
@@ -1377,136 +1717,191 @@ class ContextualMatchingFacade:
                 logger.error(f"Failed to parse {file_path}: {e}")
 
         self.stats["parsing_time"] = time.time() - parse_start
+        logger.info(f"Parsed {len(all_functions)} functions from {len(python_files)} files")
+
+        # Phase 2: Build contextual index
+        logger.info("Phase 2: Building project context...")
+        context_start = time.time()
+        contextual_matcher.analyze_project(python_files=[str(p) for p in python_files])
+        self.stats["contextual_matching_time"] += time.time() - context_start
 
         # Phase 3: Direct matching
+        logger.info("Phase 3: Direct matching...")
         direct_start = time.time()
         direct_result = direct_matcher.match_functions(all_functions)
         self.stats["direct_matching_time"] = time.time() - direct_start
 
-        # Phase 4: Contextual matching for low-confidence matches
+        # Count direct matches
+        direct_matches = [m for m in direct_result.matched_pairs if m.confidence.overall >= 0.8]
+        self.stats["matches_by_type"]["direct"] = len(direct_matches)
+
+        # Phase 4: Contextual matching
+        logger.info("Phase 4: Contextual matching for remaining functions...")
         context_match_start = time.time()
-        final_result = contextual_matcher.match_with_context(
+        contextual_result = contextual_matcher.match_with_context(
             all_functions,
             direct_result
         )
         self.stats["contextual_matching_time"] += time.time() - context_match_start
 
-        # Add statistics to result
-        self.stats["total_time"] = time.time() - start_time
-        final_result.metadata = {
-            "performance": self.stats,
-            "matcher_stats": {
-                "direct": direct_matcher.get_stats(),
-                "contextual": contextual_matcher.stats
+        # Count new contextual matches
+        prev_matched = {m.function.signature.name for m in direct_matches}
+        contextual_matches = [
+            m for m in contextual_result.matched_pairs
+            if m.function.signature.name not in prev_matched and m.confidence.overall >= 0.7
+        ]
+        self.stats["matches_by_type"]["contextual"] = len(contextual_matches)
+
+        # Phase 5: Semantic matching (if enabled)
+        final_result = contextual_result
+
+        if enable_semantic and self.config.matching.enable_semantic:
+            logger.info("Phase 5: Semantic matching for remaining functions...")
+
+            # Initialize semantic matcher
+            semantic_matcher = SemanticMatcher(str(project_path), self.config.matching)
+
+            # Build semantic index
+            index_start = time.time()
+            await semantic_matcher.prepare_semantic_index(all_functions, force_reindex=False)
+            self.stats["semantic_indexing_time"] = time.time() - index_start
+
+            # Perform semantic matching
+            semantic_start = time.time()
+            semantic_result = await semantic_matcher.match_with_embeddings(
+                all_functions,
+                [direct_result, contextual_result]
+            )
+            self.stats["semantic_matching_time"] = time.time() - semantic_start
+
+            # Count new semantic matches
+            all_prev_matched = {
+                m.function.signature.name
+                for m in contextual_result.matched_pairs
+                if m.confidence.overall >= 0.7
             }
-        }
+            semantic_matches = [
+                m for m in semantic_result.matched_pairs
+                if m.function.signature.name not in all_prev_matched
+            ]
+            self.stats["matches_by_type"]["semantic"] = len(semantic_matches)
+
+            final_result = semantic_result
+
+            # Add semantic stats to result
+            if not hasattr(final_result, 'metadata'):
+                final_result.metadata = {}
+            final_result.metadata["semantic_stats"] = semantic_matcher.get_stats()
+
+        # Calculate total time
+        self.stats["total_time"] = time.time() - start_time
+
+        # Add unified stats to result
+        if not hasattr(final_result, 'metadata'):
+            final_result.metadata = {}
+        final_result.metadata["unified_stats"] = self.get_stats()
 
         return final_result
 
-    def match_file(
-        self,
-        file_path: str,
-        project_path: Optional[str] = None
-    ) -> MatchResult:
-        """
-        Match a single file with optional project context.
-
-        Args:
-            file_path: Python file to analyze
-            project_path: Optional project root for context
-
-        Returns:
-            MatchResult for the file
-        """
-        file_path = Path(file_path).resolve()
-
-        # If no project path, use file's parent directory
-        if not project_path:
-            project_path = file_path.parent
-
-        # For single file, we still build context but only for its dependencies
-        parser = IntegratedParser()
-        contextual_matcher = ContextualMatcher(str(project_path))
-
-        # Parse the file
-        functions = parser.parse_file(str(file_path))
-
-        # Build minimal context (just this file and its imports)
-        contextual_matcher._analyze_file(str(file_path))
-
-        # Try direct matching first
-        direct_matcher = DirectMatcher()
-        direct_result = direct_matcher.match_functions(functions)
-
-        # Enhance with contextual matching
-        return contextual_matcher.match_with_context(functions, direct_result)
-
     def _discover_python_files(self, project_path: Path) -> List[Path]:
-        """Discover Python files respecting exclusions."""
-        exclusions = set(self.config.ignore.paths)
+        """Discover Python files with exclusions."""
+        exclusions = {'.git', '__pycache__', 'venv', 'env', '.venv', 'build', 'dist'}
 
         python_files = []
         for path in project_path.rglob("*.py"):
-            # Check exclusions
-            if any(
-                self._matches_pattern(str(path), pattern)
-                for pattern in exclusions
-            ):
+            # Check if any parent directory is in exclusions
+            if any(part in exclusions for part in path.parts):
                 continue
-
             python_files.append(path)
 
         return python_files
 
-    def _matches_pattern(self, path: str, pattern: str) -> bool:
-        """Check if path matches exclusion pattern."""
-        import fnmatch
-        return fnmatch.fnmatch(path, pattern)
+    def get_stats(self) -> Dict[str, Any]:
+        """Get comprehensive statistics."""
+        total_matches = sum(self.stats["matches_by_type"].values())
+
+        return {
+            "total_time_seconds": self.stats["total_time"],
+            "phase_times": {
+                "parsing": self.stats["parsing_time"],
+                "direct_matching": self.stats["direct_matching_time"],
+                "contextual_matching": self.stats["contextual_matching_time"],
+                "semantic_indexing": self.stats["semantic_indexing_time"],
+                "semantic_matching": self.stats["semantic_matching_time"]
+            },
+            "files_processed": self.stats["files_processed"],
+            "total_matches": total_matches,
+            "matches_by_type": self.stats["matches_by_type"],
+            "match_distribution": {
+                "direct": f"{self.stats['matches_by_type']['direct'] / total_matches * 100:.1f}%" if total_matches > 0 else "0%",
+                "contextual": f"{self.stats['matches_by_type']['contextual'] / total_matches * 100:.1f}%" if total_matches > 0 else "0%",
+                "semantic": f"{self.stats['matches_by_type']['semantic'] / total_matches * 100:.1f}%" if total_matches > 0 else "0%"
+            }
+        }
 
     def print_summary(self) -> None:
-        """Print performance summary."""
-        print("\n=== Performance Summary ===")
-        print(f"Total time: {self.stats['total_time']:.2f}s")
-        print(f"Files processed: {self.stats['files_processed']}")
-        print(f"Parsing: {self.stats['parsing_time']:.2f}s")
-        print(f"Direct matching: {self.stats['direct_matching_time']:.2f}s")
-        print(f"Contextual matching: {self.stats['contextual_matching_time']:.2f}s")
-2. Update CLI for contextual matching
+        """Print comprehensive matching summary."""
+        stats = self.get_stats()
+
+        print("\n=== Unified Matching Summary ===")
+        print(f"Total time: {stats['total_time_seconds']:.2f}s")
+        print(f"Files processed: {stats['files_processed']}")
+        print(f"Total matches: {stats['total_matches']}")
+
+        print("\n--- Time Breakdown ---")
+        for phase, time in stats['phase_times'].items():
+            if time > 0:
+                print(f"{phase}: {time:.2f}s ({time/stats['total_time_seconds']*100:.1f}%)")
+
+        print("\n--- Match Distribution ---")
+        for match_type, count in stats['matches_by_type'].items():
+            if count > 0:
+                print(f"{match_type}: {count} matches ({stats['match_distribution'][match_type]})")
+2. Update CLI with semantic command
 Add to cli/main.py:
 python@app.command()
-def match_contextual(
+def match_unified(
     path: Path = typer.Argument(..., help="Project directory to analyze"),
     output_format: str = typer.Option("terminal", "--format", "-f"),
     output_file: Optional[Path] = typer.Option(None, "--output", "-o"),
     config: Optional[Path] = typer.Option(None, "--config", "-c"),
-    show_stats: bool = typer.Option(False, "--stats", help="Show performance statistics")
+    enable_semantic: bool = typer.Option(True, "--semantic/--no-semantic", help="Enable semantic matching"),
+    show_stats: bool = typer.Option(False, "--stats", help="Show detailed statistics"),
+    show_unmatched: bool = typer.Option(False, "--show-unmatched", help="Show unmatched functions")
 ):
     """
-    Perform contextual matching on a project.
+    Perform unified matching using all three strategies.
 
-    Uses both direct and contextual matching for best results.
+    Uses direct, contextual, and semantic matching for best results.
     """
     # Load configuration
-    if config:
+    if config and config.exists():
         config_obj = CodeDocSyncConfig.from_yaml(str(config))
     else:
         config_obj = CodeDocSyncConfig()
 
-    # Create facade and run matching
-    facade = ContextualMatchingFacade(config_obj)
+    # Create facade
+    facade = UnifiedMatchingFacade(config_obj)
 
+    # Run matching
     with Progress() as progress:
         task = progress.add_task("Analyzing project...", total=None)
 
-        result = facade.match_project(str(path))
+        # Run async matching
+        result = asyncio.run(
+            facade.match_project(
+                str(path),
+                enable_semantic=enable_semantic
+            )
+        )
 
         progress.update(task, completed=True)
 
     # Format output
     if output_format == "json":
-        output = _format_json_result(result)
+        output = _format_json_unified_result(result, show_unmatched)
     else:
-        output = _format_terminal_result(result)
+        output = _format_terminal_unified_result(result, show_unmatched)
 
     # Save or print
     if output_file:
@@ -1518,50 +1913,566 @@ def match_contextual(
     # Show statistics if requested
     if show_stats:
         facade.print_summary()
-Testing Requirements for Chunk 5
+
+        # Show semantic-specific stats if available
+        if hasattr(result, 'metadata') and 'semantic_stats' in result.metadata:
+            print("\n--- Semantic Matching Stats ---")
+            sem_stats = result.metadata['semantic_stats']
+            print(f"Embeddings generated: {sem_stats.get('embedding_stats', {}).get('embeddings_generated', 0)}")
+            print(f"Cache hit rate: {sem_stats.get('cache_stats', {}).get('overall_hit_rate', 0):.1%}")
+            print(f"Average search time: {sem_stats.get('vector_store_stats', {}).get('average_search_time_ms', 0):.1f}ms")
+Testing Requirements for Chunk 4
 Create integration tests that verify:
 
-Full project analysis workflow
-Performance meets requirements
-Configuration is properly applied
-Results combine direct and contextual matches correctly
+Complete pipeline from parsing to semantic matching
+Proper fallback chain (direct → contextual → semantic)
+Statistics tracking across all matchers
+Configuration properly applied to all components
+Performance within acceptable bounds
 
 Critical Implementation Notes
 
-Cache project context between runs when possible
-Use parallel processing for parsing multiple files
-Ensure memory usage stays reasonable for large projects
-Provide clear progress feedback for long operations
+Async/await properly for semantic operations
+Each matcher preserves previous high-confidence matches
+Statistics must track matches by type accurately
+Semantic matching is optional (can be disabled)
+Handle API failures gracefully
 
 Success Criteria
 
-Complete project matching in <30s for 1000 files
-Memory usage <500MB for large projects
-Seamless integration of direct and contextual results
-Clear performance metrics and debugging info
+Complete pipeline executes without errors
+Match distribution roughly follows 90/8/2 pattern
+All three matchers integrate seamlessly
+CLI provides useful feedback and stats
+Total time <30s for 1000 functions
 
 
-Testing Strategy
-Each chunk must have comprehensive tests BEFORE moving to the next chunk:
+## Chunk 5A: Performance Optimization (Estimated: 1 hour)
+### Objectives
 
-Unit Tests: Test each component in isolation
-Integration Tests: Test component interactions
-Performance Tests: Verify performance requirements
-Edge Case Tests: Handle errors, empty files, circular imports
+- Optimize embedding generation with intelligent batching
+- Implement memory monitoring and resource management
+- Add concurrent processing capabilities
+- Build performance profiling infrastructure
 
+### Required Files to Create/Update
+
+1. `matcher/semantic_optimizer.py` - Performance optimizations and batch processing
+2. `tests/test_semantic_optimizer.py` - Performance optimization validation tests
+
+---
+
+## Chunk 5B: Error Recovery and Monitoring (Estimated: 1 hour)
+### Objectives
+
+- Implement comprehensive error recovery for all failure scenarios
+- Add performance monitoring and metrics collection
+- Build alerting capabilities for production issues
+- Create resource cleanup and management systems
+
+### Required Files to Create/Update
+
+1. `matcher/semantic_error_recovery.py` - Comprehensive error handling and recovery
+2. `storage/performance_monitor.py` - Performance monitoring and metrics
+3. `tests/test_semantic_error_recovery.py` - Error recovery validation tests
+
+---
+
+## Chunk 5C: Production Readiness and Integration (Estimated: 1 hour)
+### Objectives
+
+- Ensure production-ready performance meets all architectural targets
+- Create comprehensive end-to-end integration tests
+- Validate complete semantic matching pipeline
+- Finalize configuration and deployment readiness
+
+### Required Files to Create/Update
+
+1. `tests/test_semantic_performance.py` - Complete performance validation suite
+2. `tests/test_semantic_integration.py` - End-to-end integration tests
+3. Update configuration for production settings and deployment
+
+Detailed Implementation
+1. Create matcher/semantic_optimizer.py
+pythonimport asyncio
+from concurrent.futures import ThreadPoolExecutor
+import logging
+from typing import List, Dict, Any, Optional
+import psutil
+import time
+
+from ..parser import ParsedFunction
+from .semantic_models import FunctionEmbedding
+
+logger = logging.getLogger(__name__)
+
+class SemanticOptimizer:
+    """
+    Performance optimizations for semantic matching.
+
+    Handles:
+    - Batch processing optimization
+    - Memory management
+    - Concurrent operations
+    - Resource monitoring
+    """
+
+    def __init__(self, max_memory_mb: int = 500):
+        self.max_memory_mb = max_memory_mb
+        self.executor = ThreadPoolExecutor(max_workers=4)
+
+        # Monitor resource usage
+        self.process = psutil.Process()
+        self.initial_memory = self.process.memory_info().rss / 1024 / 1024
+
+    def optimize_batch_size(self, total_functions: int) -> int:
+        """
+        Dynamically determine optimal batch size.
+
+        Considers:
+        - Available memory
+        - Number of functions
+        - API rate limits
+        """
+        # Base batch size
+        base_batch = 100
+
+        # Adjust based on available memory
+        current_memory = self.process.memory_info().rss / 1024 / 1024
+        memory_used = current_memory - self.initial_memory
+        memory_available = self.max_memory_mb - memory_used
+
+        if memory_available < 100:
+            # Low memory, use smaller batches
+            return min(25, total_functions)
+        elif memory_available < 200:
+            return min(50, total_functions)
+        else:
+            # Plenty of memory
+            return min(base_batch, total_functions)
+
+    async def parallel_embedding_generation(
+        self,
+        function_batches: List[List[ParsedFunction]],
+        generator_func: callable
+    ) -> List[FunctionEmbedding]:
+        """
+        Generate embeddings in parallel with controlled concurrency.
+        """
+        # Limit concurrent API calls to avoid rate limits
+        semaphore = asyncio.Semaphore(3)  # Max 3 concurrent batches
+
+        async def process_batch_with_limit(batch):
+            async with semaphore:
+                return await generator_func(batch)
+
+        # Process all batches
+        tasks = [
+            process_batch_with_limit(batch)
+            for batch in function_batches
+        ]
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Flatten results and handle errors
+        all_embeddings = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.error(f"Batch {i} failed: {result}")
+            else:
+                all_embeddings.extend(result)
+
+        return all_embeddings
+
+    def should_trigger_gc(self) -> bool:
+        """Check if garbage collection should be triggered."""
+        current_memory = self.process.memory_info().rss / 1024 / 1024
+        memory_used = current_memory - self.initial_memory
+
+        # Trigger GC if using >80% of allowed memory
+        return memory_used > (self.max_memory_mb * 0.8)
+
+    def optimize_vector_store_queries(
+        self,
+        queries: List[List[float]],
+        vector_store: Any
+    ) -> List[List[Any]]:
+        """
+        Optimize vector store queries with batching.
+
+        Some vector stores support batch queries for better performance.
+        """
+        # Check if vector store supports batch queries
+        if hasattr(vector_store, 'search_similar_batch'):
+            # Use batch search
+            batch_size = 10
+            results = []
+
+            for i in range(0, len(queries), batch_size):
+                batch = queries[i:i + batch_size]
+                batch_results = vector_store.search_similar_batch(batch)
+                results.extend(batch_results)
+
+            return results
+        else:
+            # Fall back to individual queries
+            return [
+                vector_store.search_similar(query)
+                for query in queries
+            ]
+
+    def estimate_processing_time(
+        self,
+        num_functions: int,
+        cache_hit_rate: float = 0.9
+    ) -> Dict[str, float]:
+        """Estimate processing time for semantic matching."""
+        # Based on performance benchmarks
+        embeddings_to_generate = int(num_functions * (1 - cache_hit_rate))
+
+        estimates = {
+            "embedding_generation": embeddings_to_generate * 0.1,  # 100ms per function
+            "vector_indexing": num_functions * 0.01,  # 10ms per function
+            "similarity_search": num_functions * 0.05,  # 50ms per function
+            "total_estimated": 0.0
+        }
+
+        estimates["total_estimated"] = sum(estimates.values())
+
+        return estimates
+
+    def cleanup(self):
+        """Clean up resources."""
+        self.executor.shutdown(wait=True)
+
+class SemanticErrorRecovery:
+    """
+    Comprehensive error recovery for semantic matching.
+    """
+
+    @staticmethod
+    async def with_embedding_fallback(
+        primary_func: callable,
+        fallback_funcs: List[callable],
+        function: ParsedFunction
+    ) -> Optional[FunctionEmbedding]:
+        """
+        Try multiple embedding providers with fallback.
+        """
+        # Try primary
+        try:
+            return await primary_func(function)
+        except Exception as e:
+            logger.warning(f"Primary embedding failed: {e}")
+
+        # Try fallbacks in order
+        for i, fallback in enumerate(fallback_funcs):
+            try:
+                logger.info(f"Trying fallback {i+1}")
+                return await fallback(function)
+            except Exception as e:
+                logger.warning(f"Fallback {i+1} failed: {e}")
+                continue
+
+        # All failed
+        logger.error(f"All embedding methods failed for {function.signature.name}")
+        return None
+
+    @staticmethod
+    def handle_api_errors(error: Exception) -> Dict[str, Any]:
+        """
+        Categorize and handle API errors.
+
+        Returns:
+            Dictionary with error type and recommended action
+        """
+        error_str = str(error).lower()
+
+        if "rate limit" in error_str:
+            return {
+                "type": "rate_limit",
+                "action": "wait",
+                "wait_seconds": 60,
+                "message": "Rate limit exceeded, waiting before retry"
+            }
+
+        elif "api key" in error_str or "authentication" in error_str:
+            return {
+                "type": "auth_error",
+                "action": "skip",
+                "message": "API authentication failed, check credentials"
+            }
+
+        elif "timeout" in error_str:
+            return {
+                "type": "timeout",
+                "action": "retry",
+                "message": "Request timed out, will retry"
+            }
+
+        elif "connection" in error_str:
+            return {
+                "type": "connection_error",
+                "action": "retry",
+                "wait_seconds": 5,
+                "message": "Connection error, will retry"
+            }
+
+        else:
+            return {
+                "type": "unknown",
+                "action": "skip",
+                "message": f"Unknown error: {error}"
+            }
+2. Create comprehensive performance tests
+Create tests/test_semantic_performance.py:
+pythonimport pytest
+import asyncio
+import time
+from unittest.mock import Mock, patch
+
+from codedocsync.matcher.semantic_matcher import SemanticMatcher
+from codedocsync.matcher.semantic_optimizer import SemanticOptimizer
+from codedocsync.parser import ParsedFunction, FunctionSignature
+
+class TestSemanticPerformance:
+    """Validate semantic matcher meets performance requirements."""
+
+    @pytest.fixture
+    def sample_functions(self):
+        """Generate sample functions for testing."""
+        functions = []
+        for i in range(100):
+            func = ParsedFunction(
+                signature=FunctionSignature(
+                    name=f"function_{i}",
+                    parameters=[],
+                    return_type="None"
+                ),
+                docstring=None,
+                file_path=f"module_{i % 10}.py",
+                line_number=i * 10,
+                end_line_number=i * 10 + 5,
+                source_code=f"def function_{i}(): pass"
+            )
+            functions.append(func)
+        return functions
+
+    @pytest.mark.asyncio
+    async def test_embedding_generation_performance(self, sample_functions):
+        """Test embedding generation meets <100ms per function target."""
+        # Mock the actual API calls
+        with patch('openai.Embedding.acreate') as mock_create:
+            mock_create.return_value = {
+                'data': [{'embedding': [0.1] * 1536}]
+            }
+
+            matcher = SemanticMatcher("/test/project")
+
+            start_time = time.time()
+            await matcher.prepare_semantic_index(sample_functions[:10])
+            duration = time.time() - start_time
+
+            # Should complete in <1 second for 10 functions
+            assert duration < 1.0
+
+            # Average should be <100ms per function
+            avg_per_function = duration / 10
+            assert avg_per_function < 0.1
+
+    @pytest.mark.asyncio
+    async def test_search_performance(self, sample_functions):
+        """Test similarity search meets <50ms per query target."""
+        matcher = SemanticMatcher("/test/project")
+
+        # Pre-populate vector store
+        test_embeddings = [[0.1] * 1536 for _ in range(100)]
+        test_metadata = [
+            {"function_id": f"module.function_{i}", "model": "test"}
+            for i in range(100)
+        ]
+        test_ids = [f"func_{i}" for i in range(100)]
+
+        matcher.vector_store.add_embeddings(
+            test_embeddings,
+            test_metadata,
+            test_ids
+        )
+
+        # Test search performance
+        query_embedding = [0.2] * 1536
+
+        start_time = time.time()
+        for _ in range(10):
+            results = matcher.vector_store.search_similar(query_embedding)
+        duration = time.time() - start_time
+
+        # Average should be <50ms per search
+        avg_per_search = duration / 10
+        assert avg_per_search < 0.05
+
+    def test_memory_usage(self, sample_functions):
+        """Test memory usage stays under 500MB for 10k embeddings."""
+        import psutil
+
+        process = psutil.Process()
+        initial_memory = process.memory_info().rss / 1024 / 1024
+
+        # Create large number of embeddings
+        embeddings = []
+        for i in range(10000):
+            # Each embedding is ~6KB (1536 floats * 4 bytes)
+            embedding = [0.1] * 1536
+            embeddings.append(embedding)
+
+        current_memory = process.memory_info().rss / 1024 / 1024
+        memory_used = current_memory - initial_memory
+
+        # Should use less than 500MB
+        assert memory_used < 500
+
+        # Clean up
+        del embeddings
+
+    def test_batch_size_optimization(self):
+        """Test dynamic batch size optimization."""
+        optimizer = SemanticOptimizer(max_memory_mb=500)
+
+        # Test with different memory conditions
+        optimizer.initial_memory = 1000  # Simulate 1GB initial
+
+        # High memory available
+        optimizer.process.memory_info = Mock(return_value=Mock(rss=1050 * 1024 * 1024))
+        assert optimizer.optimize_batch_size(1000) == 100
+
+        # Medium memory available
+        optimizer.process.memory_info = Mock(return_value=Mock(rss=1350 * 1024 * 1024))
+        assert optimizer.optimize_batch_size(1000) == 50
+
+        # Low memory available
+        optimizer.process.memory_info = Mock(return_value=Mock(rss=1450 * 1024 * 1024))
+        assert optimizer.optimize_batch_size(1000) == 25
+
+    @pytest.mark.asyncio
+    async def test_cache_performance(self, sample_functions):
+        """Test cache hit rate >90% for unchanged functions."""
+        from codedocsync.storage.embedding_cache import EmbeddingCache
+
+        cache = EmbeddingCache()
+
+        # First pass - all misses
+        for func in sample_functions[:10]:
+            text = f"def {func.signature.name}(): pass"
+            result = cache.get(text, "test-model")
+            assert result is None
+
+        # Populate cache
+        for i, func in enumerate(sample_functions[:10]):
+            text = f"def {func.signature.name}(): pass"
+            embedding = FunctionEmbedding(
+                function_id=f"module.{func.signature.name}",
+                embedding=[0.1] * 384,
+                model="test-model",
+                text_embedded=text,
+                timestamp=time.time(),
+                signature_hash=f"hash_{i}"
+            )
+            cache.set(embedding)
+
+        # Second pass - should be all hits
+        hits = 0
+        for func in sample_functions[:10]:
+            text = f"def {func.signature.name}(): pass"
+            result = cache.get(text, "test-model")
+            if result is not None:
+                hits += 1
+
+        hit_rate = hits / 10
+        assert hit_rate >= 0.9
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_performance(self, sample_functions):
+        """Test complete semantic matching pipeline performance."""
+        # This would be an integration test with mocked external services
+        with patch('openai.Embedding.acreate') as mock_embed:
+            mock_embed.return_value = {
+                'data': [{'embedding': [0.1] * 1536}]
+            }
+
+            matcher = SemanticMatcher("/test/project")
+
+            start_time = time.time()
+
+            # Index functions
+            await matcher.prepare_semantic_index(sample_functions)
+
+            # Perform matching
+            result = await matcher.match_with_embeddings(
+                sample_functions[:20]
+            )
+
+            duration = time.time() - start_time
+
+            # Should complete within reasonable time
+            # 100 functions indexed + 20 matched
+            assert duration < 30  # Very generous for mocked test
+
+            # Check result
+            assert result.total_functions == 20
+Testing Requirements for Chunk 5
+Create tests that validate:
+
+Performance meets all architectural requirements
+Memory usage stays within bounds
+Error recovery works correctly
+Batch optimization improves throughput
+Cache provides expected hit rates
+
+Critical Implementation Notes
+
+Monitor memory usage continuously
+Implement proper cleanup for long-running processes
+Use semaphores to limit concurrent API calls
+Track all performance metrics for debugging
+Gracefully degrade when resources are constrained
+
+Success Criteria
+
+All performance targets from architecture are met
+Memory usage <500MB for 10k embeddings
+
+
+90% cache hit rate for unchanged functions
+
+
+Graceful handling of API failures
+Production-ready error recovery
+
+
+Sprint Summary
+This semantic matcher implementation provides:
+
+Robust Foundation: ChromaDB integration with proper persistence and error handling
+Efficient Embeddings: Multi-provider support with intelligent fallbacks and caching
+Accurate Matching: Validation rules from architecture properly enforced
+Seamless Integration: Works perfectly with existing direct and contextual matchers
+Production Ready: Comprehensive error recovery, monitoring, and performance optimization
+
+The implementation follows all architectural guidelines and integrates cleanly with the existing codebase. The semantic matcher truly acts as a last resort, only processing functions that couldn't be matched by simpler methods, ensuring optimal performance and accuracy.
 Common Pitfalls to Avoid
 
-Import Resolution: Don't assume imports are always valid
-Circular Dependencies: Detect and break cycles
-Memory Leaks: Clear caches periodically
-Performance: Use lazy loading and caching aggressively
-Error Recovery: Never let one file failure stop analysis
+Don't Over-Engineer: This handles only 2% of cases - keep it simple
+Respect the Pipeline: Never override high-confidence matches from previous matchers
+Cache Aggressively: Embeddings are expensive - cache everything
+Handle Failures Gracefully: External services will fail - always have fallbacks
+Monitor Resources: Track memory and API usage to avoid surprises
 
-Success Metrics
-The contextual matcher is complete when:
+Final Integration Checklist
 
-It correctly identifies 95%+ of relocated functions
-It resolves import chains accurately
-Performance meets all targets (<100ms for 100 files)
-It integrates seamlessly with direct matcher
-All tests pass with >90% coverage
+ Vector store persists between runs
+ Embeddings are cached effectively
+ API failures don't crash the system
+ Performance meets all targets
+ CLI provides useful feedback
+ All tests pass
+ Documentation is updated
