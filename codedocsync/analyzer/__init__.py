@@ -42,10 +42,18 @@ from .config import (
     get_development_config,
 )
 
+# Import LLM components (now implemented)
+from .llm_analyzer import LLMAnalyzer, LLMAnalysisResult, LLMCache, LLMAnalysisError
+from .prompt_templates import (
+    get_prompt_template,
+    format_prompt,
+    get_available_analysis_types,
+    validate_llm_response,
+)
+
 # TYPE_CHECKING imports for future components
 if TYPE_CHECKING:
-    from .llm_analyzer import LLMAnalyzer
-    from .models import AnalysisConfig, AnalysisCache
+    from .models import AnalysisCache
 
 # Import matcher models we depend on
 from codedocsync.matcher import MatchedPair
@@ -95,6 +103,7 @@ __all__ = [
     "InconsistencyIssue",
     "RuleCheckResult",
     "AnalysisResult",
+    "LLMAnalysisResult",
     # Constants
     "ISSUE_TYPES",
     "SEVERITY_WEIGHTS",
@@ -102,6 +111,10 @@ __all__ = [
     "RULE_CATEGORIES",
     # Components
     "RuleEngine",
+    "LLMAnalyzer",
+    "LLMCache",
+    # Exceptions
+    "LLMAnalysisError",
     # Utility functions
     "normalize_type_string",
     "compare_types",
@@ -110,6 +123,11 @@ __all__ = [
     "generate_docstring_template",
     "format_code_suggestion",
     "get_parameter_statistics",
+    # LLM utilities
+    "get_prompt_template",
+    "format_prompt",
+    "get_available_analysis_types",
+    "validate_llm_response",
     # Configuration
     "RuleEngineConfig",
     "AnalysisConfig",
