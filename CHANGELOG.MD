@@ -558,6 +558,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Intelligent resource management preventing memory leaks
     - Concurrent processing improving throughput while respecting API limits
   - Integration ready for Chunk 5B (Error Recovery) and 5C (Production Integration)
+- Semantic Matcher Error Recovery and Monitoring ✅ COMPLETE (Chunk 5B):
+  - Created `matcher/semantic_error_recovery.py` with comprehensive error handling and recovery system:
+    - `SemanticErrorRecovery` class with intelligent error analysis and categorization (rate limits, auth, timeout, connection, memory errors)
+    - Multi-provider fallback chain with `with_embedding_fallback()` method supporting graceful degradation
+    - Intelligent retry logic with `with_retry()` method using exponential backoff and error-specific strategies
+    - Error type classification system with `ErrorType` and `RecoveryAction` enums for structured error handling
+    - Circuit breaker pattern implementation with `CircuitBreaker` class for preventing cascading failures
+    - Comprehensive error statistics tracking including error counts by type, recovery success rates, and wait times
+    - Production-ready error recovery strategies: wait for rate limits, skip auth errors, retry timeouts, abort on memory errors
+    - Thread-safe operation with proper async/await support and concurrent error handling
+  - Created `storage/performance_monitor.py` with advanced performance monitoring and alerting:
+    - `PerformanceMonitor` class with real-time operation tracking and metrics collection
+    - `OperationTracker` context manager for automatic performance measurement with memory peak monitoring
+    - Configurable performance thresholds with `PerformanceThresholds` dataclass for alerting
+    - System resource monitoring with psutil integration (CPU, memory, disk usage tracking)
+    - Performance alert system with customizable callback functions for production monitoring
+    - Comprehensive metrics collection: operation timing, memory usage, success rates, error breakdown
+    - Performance issue identification and optimization recommendations engine
+    - Thread-safe statistics aggregation with operation history and trend analysis
+    - Export capabilities for metrics data with JSON serialization for external monitoring
+  - Created comprehensive test suite `tests/test_semantic_error_recovery.py` with 35+ test cases:
+    - Error analysis testing for all error types (rate limit, auth, timeout, connection, memory, unknown)
+    - Fallback chain testing with primary and multiple fallback provider scenarios
+    - Retry logic testing with exponential backoff and non-retryable error handling
+    - Circuit breaker testing with failure threshold, recovery time, and manual control scenarios
+    - Integration testing for complex error recovery scenarios and cascading failure protection
+    - Statistics tracking validation and error summary generation testing
+    - Convenience function testing for common error recovery patterns
+    - Mock-based testing ensuring isolated unit tests without external dependencies
+  - Production-ready error recovery features:
+    - Intelligent error categorization with appropriate recovery actions for each error type
+    - Circuit breaker protection preventing system overload during service outages
+    - Comprehensive performance monitoring with real-time alerting for production environments
+    - Graceful degradation ensuring system continues operating even with partial failures
+    - Memory leak prevention with automatic cleanup and resource management
+    - Performance optimization recommendations based on real-time system metrics
 
 ### Changed
 - Nothing yet
