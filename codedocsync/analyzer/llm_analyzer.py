@@ -17,8 +17,10 @@ import sqlite3
 import time
 import hashlib
 import asyncio
+import json
+import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 
 try:
     import openai
@@ -28,6 +30,12 @@ except ImportError:
     HAS_OPENAI = False
 
 from .llm_config import LLMConfig
+from .llm_models import LLMAnalysisRequest, LLMAnalysisResponse
+from .models import InconsistencyIssue, RuleCheckResult
+from .prompt_templates import format_prompt
+from .llm_output_parser import parse_llm_response
+
+logger = logging.getLogger(__name__)
 
 
 class TokenBucket:
@@ -376,6 +384,531 @@ class LLMAnalyzer:
             },
             "validation_results": self.validate_configuration(),
         }
+
+    # ========== CHUNK 3: Core LLM Analysis Logic ==========
+
+    async def analyze_function(
+        self, request: LLMAnalysisRequest, cache: Optional[Dict[str, Any]] = None
+    ) -> LLMAnalysisResponse:
+        """
+        Perform LLM analysis with caching and error handling.
+
+        Args:
+            request: LLM analysis request with function and docstring
+            cache: Optional analysis cache (reserved for future use)
+
+        Returns:
+            LLMAnalysisResponse with structured results
+
+        Raises:
+            ValueError: If request is invalid
+            openai.APIError: If API call fails after retries
+            asyncio.TimeoutError: If request times out
+        """
+        start_time = time.time()
+
+        # Validate request
+        if not request:
+            raise ValueError("LLMAnalysisRequest cannot be None")
+
+        # Validate token estimate to prevent context overflow
+        estimated_tokens = request.estimate_tokens()
+        if estimated_tokens > self.config.max_context_tokens:
+            raise ValueError(
+                f"Request too large: {estimated_tokens} tokens exceeds "
+                f"limit of {self.config.max_context_tokens}"
+            )
+
+        # Generate cache key
+        cache_key = self._generate_cache_key(
+            function_signature=request.get_function_signature_str(),
+            docstring=request.docstring.raw_text,
+            analysis_types=request.analysis_types,
+            model=self.config.model,
+        )
+
+        # Check cache first
+        cached_response = await self._check_cache(cache_key)
+        if cached_response:
+            logger.debug(f"Cache hit for function {request.function.signature.name}")
+            self.performance_stats["cache_hits"] += 1
+            return cached_response
+
+        self.performance_stats["cache_misses"] += 1
+
+        # Check rate limits before making API call
+        await self.rate_limiter.wait_for_tokens(1)
+
+        try:
+            # Build prompts for requested analysis types
+            system_prompt, user_prompt = self._build_analysis_prompt(
+                request.function,
+                request.docstring,
+                request.analysis_types,
+                {
+                    "rule_results": request.rule_results,
+                    "related_functions": request.related_functions,
+                },
+            )
+
+            # Call OpenAI API
+            raw_response, token_usage = await self._call_openai(
+                user_prompt=user_prompt, system_prompt=system_prompt
+            )
+
+            # Parse response
+            parse_result = parse_llm_response(raw_response, strict=False)
+
+            if not parse_result.success:
+                logger.warning(
+                    f"Failed to parse LLM response for {request.function.signature.name}: "
+                    f"{parse_result.error_message}"
+                )
+
+            # Create response object
+            response_time_ms = (time.time() - start_time) * 1000
+            response = LLMAnalysisResponse(
+                issues=parse_result.issues,
+                raw_response=raw_response,
+                model_used=self.config.model,
+                prompt_tokens=token_usage.get("prompt_tokens", 0),
+                completion_tokens=token_usage.get("completion_tokens", 0),
+                response_time_ms=response_time_ms,
+                cache_hit=False,
+            )
+
+            # Cache the response
+            await self._store_cache(cache_key, response)
+
+            # Update performance stats
+            self.performance_stats["requests_made"] += 1
+            self.performance_stats["total_tokens_used"] += response.total_tokens
+            self.performance_stats["total_response_time_ms"] += response_time_ms
+
+            logger.debug(
+                f"LLM analysis completed for {request.function.signature.name}: "
+                f"{len(response.issues)} issues found in {response_time_ms:.1f}ms"
+            )
+
+            return response
+
+        except Exception as e:
+            self.performance_stats["errors_encountered"] += 1
+            logger.error(
+                f"LLM analysis failed for {request.function.signature.name}: {e}"
+            )
+            raise
+
+    async def _call_openai(
+        self, user_prompt: str, system_prompt: Optional[str] = None
+    ) -> Tuple[str, Dict[str, int]]:
+        """
+        Make OpenAI API call with retry logic.
+
+        Args:
+            user_prompt: The main prompt for analysis
+            system_prompt: Optional system prompt for role definition
+
+        Returns:
+            Tuple of (response_text, token_usage_dict)
+
+        Raises:
+            openai.APIError: If API call fails after retries
+            asyncio.TimeoutError: If request times out
+        """
+        messages = []
+
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        messages.append({"role": "user", "content": user_prompt})
+
+        # Retry logic with exponential backoff
+        max_retries = self.config.max_retries
+        base_delay = 1.0
+
+        for attempt in range(max_retries + 1):
+            try:
+                # Apply timeout to the entire operation
+                async with asyncio.timeout(self.config.timeout_seconds):
+                    response = await self.openai_client.chat.completions.create(
+                        model=self.config.model,
+                        messages=messages,
+                        temperature=self.config.temperature,
+                        max_tokens=self.config.max_tokens,
+                    )
+
+                # Extract response text
+                response_text = response.choices[0].message.content
+
+                # Extract token usage
+                token_usage = {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                }
+
+                total_tokens = (
+                    token_usage["prompt_tokens"] + token_usage["completion_tokens"]
+                )
+                logger.debug(f"OpenAI API call successful: {total_tokens} tokens used")
+
+                return response_text, token_usage
+
+            except asyncio.TimeoutError:
+                logger.warning(f"OpenAI API call timed out (attempt {attempt + 1})")
+                if attempt == max_retries:
+                    raise
+                await asyncio.sleep(base_delay * (2**attempt))
+
+            except openai.RateLimitError as e:
+                logger.warning(f"Rate limit exceeded (attempt {attempt + 1}): {e}")
+                if attempt == max_retries:
+                    raise
+
+                # Extract retry-after from headers if available
+                retry_after = getattr(e, "retry_after", None) or (
+                    base_delay * (2**attempt)
+                )
+                await asyncio.sleep(min(retry_after, 60))  # Cap at 60 seconds
+
+            except openai.APIError as e:
+                logger.warning(f"OpenAI API error (attempt {attempt + 1}): {e}")
+                if attempt == max_retries:
+                    raise
+                await asyncio.sleep(base_delay * (2**attempt))
+
+            except Exception as e:
+                logger.error(f"Unexpected error in OpenAI API call: {e}")
+                raise
+
+    def _build_analysis_prompt(
+        self, function, docstring, analysis_types: List[str], context: Dict[str, Any]
+    ) -> Tuple[str, str]:
+        """
+        Build optimized prompt for analysis type.
+
+        Args:
+            function: ParsedFunction object
+            docstring: ParsedDocstring object
+            analysis_types: List of analysis types to perform
+            context: Additional context (rule_results, related_functions, etc.)
+
+        Returns:
+            Tuple of (system_prompt, user_prompt)
+        """
+        # For multiple analysis types, use behavior analysis as primary template
+        # and mention other types in context
+        primary_analysis = analysis_types[0] if analysis_types else "behavior"
+
+        # Map analysis types to prompt template names
+        analysis_mapping = {
+            "behavior": "behavior_analysis",
+            "examples": "example_validation",
+            "edge_cases": "edge_case_analysis",
+            "version_info": "version_analysis",
+            "type_consistency": "type_consistency",
+            "performance": "performance_analysis",
+        }
+
+        template_name = analysis_mapping.get(primary_analysis, "behavior_analysis")
+
+        # Get function signature string
+        signature = function.signature
+        params = []
+        for param in signature.parameters:
+            param_str = param.name
+            if param.type_annotation:
+                param_str += f": {param.type_annotation}"
+            if param.default_value:
+                param_str += f" = {param.default_value}"
+            params.append(param_str)
+
+        param_str = ", ".join(params)
+        return_str = f" -> {signature.return_type}" if signature.return_type else ""
+        signature_str = f"def {signature.name}({param_str}){return_str}:"
+
+        # Get source code if available (truncate if too long)
+        source_code = (
+            getattr(function, "source_code", "") or "# Source code not available"
+        )
+        if len(source_code) > 2000:
+            source_code = source_code[:2000] + "\n# ... (truncated)"
+
+        # Build rule issues summary
+        rule_results = context.get("rule_results", [])
+        if rule_results:
+            rule_issues = []
+            for result in rule_results:
+                if not result.passed:
+                    for issue in result.issues:
+                        rule_issues.append(f"- {result.rule_name}: {issue.description}")
+            rule_issues_str = (
+                "\n".join(rule_issues) if rule_issues else "No rule violations found"
+            )
+        else:
+            rule_issues_str = "No rule analysis performed"
+
+        # Build the prompt
+        try:
+            user_prompt = format_prompt(
+                analysis_type=template_name,
+                signature=signature_str,
+                source_code=source_code,
+                docstring=docstring.raw_text,
+                rule_issues=rule_issues_str,
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to format prompt with template {template_name}: {e}"
+            )
+            # Fallback to basic prompt
+            user_prompt = self._build_fallback_prompt(
+                signature_str, source_code, docstring.raw_text
+            )
+
+        # System prompt for role definition
+        system_prompt = (
+            "You are an expert Python documentation analyzer. "
+            "Your job is to identify semantic inconsistencies between function "
+            "implementations and their documentation that automated rules cannot catch. "
+            "Always respond with valid JSON only, no additional text."
+        )
+
+        # Add analysis type context if multiple types requested
+        if len(analysis_types) > 1:
+            other_types = [t for t in analysis_types[1:]]
+            user_prompt += f"\n\nADDITIONAL ANALYSIS: Also consider {', '.join(other_types)} if relevant."
+
+        return system_prompt, user_prompt
+
+    def _build_fallback_prompt(
+        self, signature: str, source_code: str, docstring: str
+    ) -> str:
+        """Build a basic fallback prompt when template formatting fails."""
+        return f"""
+        Analyze this Python function for documentation inconsistencies:
+
+        FUNCTION SIGNATURE:
+        {signature}
+
+        IMPLEMENTATION:
+        {source_code}
+
+        CURRENT DOCUMENTATION:
+        {docstring}
+
+        Find issues where the documentation doesn't match the implementation.
+        Return JSON with this format:
+        {{
+            "issues": [
+                {{
+                    "type": "description_outdated",
+                    "description": "Issue description",
+                    "suggestion": "Specific fix suggestion",
+                    "confidence": 0.8,
+                    "line_number": 1,
+                    "details": {{}}
+                }}
+            ],
+            "analysis_notes": "Summary of analysis",
+            "confidence": 0.8
+        }}
+        """
+
+    def merge_with_rule_results(
+        self, llm_issues: List[InconsistencyIssue], rule_results: List[RuleCheckResult]
+    ) -> List[InconsistencyIssue]:
+        """
+        Merge LLM and rule engine results intelligently.
+
+        Args:
+            llm_issues: Issues found by LLM analysis
+            rule_results: Results from rule engine
+
+        Returns:
+            Combined and deduplicated list of issues
+        """
+        merged_issues = []
+
+        # First, add all high-confidence rule issues
+        for rule_result in rule_results:
+            if rule_result.passed:
+                continue
+
+            for issue in rule_result.issues:
+                if issue.is_high_confidence():
+                    merged_issues.append(issue)
+
+        # Add LLM issues, avoiding duplicates
+        for llm_issue in llm_issues:
+            # Check if similar issue already exists from rules
+            is_duplicate = False
+            for existing_issue in merged_issues:
+                if self._is_similar_issue(llm_issue, existing_issue):
+                    # Combine suggestions if both have them
+                    if (
+                        llm_issue.suggestion
+                        and existing_issue.suggestion
+                        and llm_issue.suggestion != existing_issue.suggestion
+                    ):
+                        combined_suggestion = (
+                            f"{existing_issue.suggestion} "
+                            f"Additionally: {llm_issue.suggestion}"
+                        )
+                        existing_issue.suggestion = combined_suggestion
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                merged_issues.append(llm_issue)
+
+        # Add low-confidence rule issues if no LLM equivalent found
+        for rule_result in rule_results:
+            if rule_result.passed:
+                continue
+
+            for issue in rule_result.issues:
+                if not issue.is_high_confidence():
+                    # Check if LLM provided better analysis for this issue
+                    has_llm_equivalent = any(
+                        self._is_similar_issue(issue, llm_issue)
+                        for llm_issue in llm_issues
+                    )
+
+                    if not has_llm_equivalent:
+                        merged_issues.append(issue)
+
+        # Sort by severity and line number
+        merged_issues.sort(key=lambda x: (-x.severity_weight, x.line_number))
+
+        logger.debug(
+            f"Merged {len(llm_issues)} LLM issues with "
+            f"{sum(len(r.issues) for r in rule_results)} rule issues -> "
+            f"{len(merged_issues)} total"
+        )
+
+        return merged_issues
+
+    def _is_similar_issue(
+        self, issue1: InconsistencyIssue, issue2: InconsistencyIssue
+    ) -> bool:
+        """
+        Check if two issues are similar enough to be considered duplicates.
+
+        Args:
+            issue1: First issue to compare
+            issue2: Second issue to compare
+
+        Returns:
+            True if issues are similar enough to merge
+        """
+        # Same issue type and close line numbers
+        if (
+            issue1.issue_type == issue2.issue_type
+            and abs(issue1.line_number - issue2.line_number) <= 2
+        ):
+            return True
+
+        # Similar descriptions (basic check)
+        desc1_words = set(issue1.description.lower().split())
+        desc2_words = set(issue2.description.lower().split())
+
+        if len(desc1_words) > 0 and len(desc2_words) > 0:
+            overlap = len(desc1_words & desc2_words)
+            similarity = overlap / max(len(desc1_words), len(desc2_words))
+            if similarity > 0.6:  # 60% word overlap
+                return True
+
+        return False
+
+    async def _check_cache(self, cache_key: str) -> Optional[LLMAnalysisResponse]:
+        """Check if cached response exists and is not expired."""
+        try:
+            with sqlite3.connect(self.cache_db_path) as conn:
+                cursor = conn.execute(
+                    """
+                    SELECT response_json, model, created_at
+                    FROM llm_cache
+                    WHERE cache_key = ?
+                    """,
+                    (cache_key,),
+                )
+                row = cursor.fetchone()
+
+                if not row:
+                    return None
+
+                response_json, model, created_at = row
+
+                # Check if expired
+                ttl_seconds = self.config.cache_ttl_days * 24 * 3600
+                if time.time() - created_at > ttl_seconds:
+                    # Entry expired, remove it
+                    conn.execute(
+                        "DELETE FROM llm_cache WHERE cache_key = ?", (cache_key,)
+                    )
+                    return None
+
+                # Update access statistics
+                conn.execute(
+                    """
+                    UPDATE llm_cache
+                    SET accessed_at = CURRENT_TIMESTAMP, access_count = access_count + 1
+                    WHERE cache_key = ?
+                    """,
+                    (cache_key,),
+                )
+
+                # Deserialize response
+                response_data = json.loads(response_json)
+                response_data["cache_hit"] = True
+
+                return LLMAnalysisResponse(**response_data)
+
+        except Exception as e:
+            logger.warning(f"Cache lookup failed: {e}")
+            return None
+
+    async def _store_cache(self, cache_key: str, response: LLMAnalysisResponse) -> None:
+        """Store response in cache."""
+        try:
+            # Convert response to JSON-serializable dict
+            response_dict = {
+                "issues": [
+                    {
+                        "issue_type": issue.issue_type,
+                        "severity": issue.severity,
+                        "description": issue.description,
+                        "suggestion": issue.suggestion,
+                        "line_number": issue.line_number,
+                        "confidence": issue.confidence,
+                        "details": issue.details,
+                    }
+                    for issue in response.issues
+                ],
+                "raw_response": response.raw_response,
+                "model_used": response.model_used,
+                "prompt_tokens": response.prompt_tokens,
+                "completion_tokens": response.completion_tokens,
+                "response_time_ms": response.response_time_ms,
+                "cache_hit": False,
+            }
+
+            response_json = json.dumps(response_dict)
+            request_hash = hashlib.md5(cache_key.encode()).hexdigest()
+
+            with sqlite3.connect(self.cache_db_path) as conn:
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO llm_cache
+                    (cache_key, request_hash, response_json, model, created_at, accessed_at)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    """,
+                    (cache_key, request_hash, response_json, response.model_used),
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to cache response: {e}")
 
 
 # Factory functions for different use cases

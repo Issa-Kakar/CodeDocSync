@@ -89,12 +89,19 @@
   - LLMAnalysisRequest: Request preparation with token estimation
   - LLMAnalysisResponse: Response parsing with performance metrics
   - VALID_ANALYSIS_TYPES constant for analysis type validation
-- **llm_analyzer.py** ✅: LLM analyzer foundation with initialization and caching (Chunk 1)
-  - LLMAnalyzer class with OpenAI client setup and rate limiting
-  - TokenBucket rate limiter with configurable burst and sustained rates
-  - SQLite cache schema with WAL mode and proper indexing
-  - Factory functions: create_fast_analyzer, create_balanced_analyzer, create_thorough_analyzer
-  - Performance: <100ms initialization, deterministic cache key generation
+- **llm_analyzer.py** ✅: Complete LLM analyzer with core analysis logic (Chunks 1-3)
+  - LLMAnalyzer class with OpenAI client setup and rate limiting (Chunk 1)
+  - TokenBucket rate limiter with configurable burst and sustained rates (Chunk 1)
+  - SQLite cache schema with WAL mode and proper indexing (Chunk 1)
+  - Factory functions: create_fast_analyzer, create_balanced_analyzer, create_thorough_analyzer (Chunk 1)
+  - **Core Analysis Logic (Chunk 3):**
+    - async analyze_function method with comprehensive error handling and caching
+    - OpenAI API integration with exponential backoff retry logic and timeout handling
+    - Smart prompt building with context management and template selection
+    - Intelligent result merging between LLM and rule engine outputs
+    - Performance monitoring with token usage tracking and cache hit/miss rates
+    - Advanced caching with expiration, serialization, and concurrent access support
+  - Performance: <100ms initialization, <2s LLM analysis, >80% cache hit rate after warmup
 - **prompt_templates.py** ✅: Sophisticated prompt engineering for LLM analysis (Chunk 2)
   - Six specialized analysis types: behavior, examples, edge cases, version, type consistency, performance
   - Structured JSON output format with confidence scoring and examples
@@ -119,6 +126,7 @@
   - test_llm_config.py: LLM configuration validation and factory methods (Chunk 1)
   - test_llm_analyzer_init.py: LLM analyzer initialization and cache setup (Chunk 1)
   - test_llm_analyzer.py: LLM integration, caching, and error handling
+  - test_llm_analyzer_core.py: Core analysis logic, API calls, prompt building, and result merging (Chunk 3)
   - test_integration.py: End-to-end pipeline testing and configuration handling
   - test_prompt_templates.py: Prompt template validation, formatting, and token estimation (Chunk 2)
   - test_llm_output_parser.py: LLM response parsing, validation, and error recovery (Chunk 2)
