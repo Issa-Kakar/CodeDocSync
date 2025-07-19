@@ -42,13 +42,15 @@ from .config import (
     get_development_config,
 )
 
-# Import LLM components (now implemented)
-from .llm_analyzer import LLMAnalyzer, LLMAnalysisResult, LLMCache, LLMAnalysisError
-from .prompt_templates import (
-    get_prompt_template,
-    format_prompt,
-    get_available_analysis_types,
-    validate_llm_response,
+# Import LLM components (Chunk 1 foundation)
+from .llm_config import LLMConfig
+from .llm_models import LLMAnalysisRequest, LLMAnalysisResponse, VALID_ANALYSIS_TYPES
+from .llm_analyzer import (
+    LLMAnalyzer,
+    TokenBucket,
+    create_fast_analyzer,
+    create_balanced_analyzer,
+    create_thorough_analyzer,
 )
 
 # TYPE_CHECKING imports for future components
@@ -73,20 +75,21 @@ __all__ = [
     "InconsistencyIssue",
     "RuleCheckResult",
     "AnalysisResult",
-    "LLMAnalysisResult",
+    "LLMAnalysisRequest",
+    "LLMAnalysisResponse",
     # Constants
     "ISSUE_TYPES",
     "SEVERITY_WEIGHTS",
     "CONFIDENCE_THRESHOLDS",
     "RULE_CATEGORIES",
+    "VALID_ANALYSIS_TYPES",
     # Components
     "RuleEngine",
     "LLMAnalyzer",
-    "LLMCache",
-    # Integration components
+    "TokenBucket",
+    # Integration components (future chunks)
     "AnalysisCache",
-    # Exceptions
-    "LLMAnalysisError",
+    # Exceptions (future chunks)
     "AnalysisError",
     # Utility functions
     "normalize_type_string",
@@ -96,18 +99,18 @@ __all__ = [
     "generate_docstring_template",
     "format_code_suggestion",
     "get_parameter_statistics",
-    # LLM utilities
-    "get_prompt_template",
-    "format_prompt",
-    "get_available_analysis_types",
-    "validate_llm_response",
     # Configuration
     "RuleEngineConfig",
     "AnalysisConfig",
+    "LLMConfig",
     "get_fast_config",
     "get_thorough_config",
     "get_development_config",
-    # Main entry points
+    # LLM factory functions
+    "create_fast_analyzer",
+    "create_balanced_analyzer",
+    "create_thorough_analyzer",
+    # Main entry points (future chunks)
     "analyze_matched_pair",
     "analyze_multiple_pairs",
     # Re-exported dependency

@@ -164,22 +164,26 @@ class TestCrossFileMatch:
 
         # We'll use mock objects since we don't have actual ParsedFunction/ParsedDocstring
         @dataclass
-        class MockFunction:
+        class MockSignature:
             name: str
+
+        @dataclass
+        class MockFunction:
+            signature: MockSignature
 
         @dataclass
         class MockDocstring:
             summary: str
 
         match = CrossFileMatch(
-            function=MockFunction("test_func"),
+            function=MockFunction(MockSignature("test_func")),
             documentation=MockDocstring("Test function"),
             match_reason="imported_function",
             import_chain=["from utils import test_func"],
             confidence=0.9,
         )
 
-        assert match.function.name == "test_func"
+        assert match.function.signature.name == "test_func"
         assert match.documentation.summary == "Test function"
         assert match.match_reason == "imported_function"
         assert match.import_chain == ["from utils import test_func"]
@@ -189,8 +193,12 @@ class TestCrossFileMatch:
         """Test confidence validation."""
 
         @dataclass
-        class MockFunction:
+        class MockSignature:
             name: str
+
+        @dataclass
+        class MockFunction:
+            signature: MockSignature
 
         @dataclass
         class MockDocstring:
@@ -198,7 +206,7 @@ class TestCrossFileMatch:
 
         # Valid confidence
         match = CrossFileMatch(
-            function=MockFunction("test_func"),
+            function=MockFunction(MockSignature("test_func")),
             documentation=MockDocstring("Test function"),
             match_reason="test",
             import_chain=[],
@@ -209,7 +217,7 @@ class TestCrossFileMatch:
         # Invalid confidence - too low
         with pytest.raises(ValueError, match="Confidence must be between 0 and 1"):
             CrossFileMatch(
-                function=MockFunction("test_func"),
+                function=MockFunction(MockSignature("test_func")),
                 documentation=MockDocstring("Test function"),
                 match_reason="test",
                 import_chain=[],
@@ -219,7 +227,7 @@ class TestCrossFileMatch:
         # Invalid confidence - too high
         with pytest.raises(ValueError, match="Confidence must be between 0 and 1"):
             CrossFileMatch(
-                function=MockFunction("test_func"),
+                function=MockFunction(MockSignature("test_func")),
                 documentation=MockDocstring("Test function"),
                 match_reason="test",
                 import_chain=[],
