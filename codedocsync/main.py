@@ -577,6 +577,327 @@ def _display_contextual_results(result: MatchResult, show_unmatched: bool):
             console.print(f"  ... and {len(result.unmatched_functions) - 10} more")
 
 
+def _format_json_unified_result(result: MatchResult, show_unmatched: bool) -> str:
+    """Format unified matching result as comprehensive JSON."""
+    import json
+
+    output = {
+        "summary": result.get_summary(),
+        "matched_pairs": [
+            {
+                "function": pair.function.signature.name,
+                "file": pair.function.file_path,
+                "line": pair.function.line_number,
+                "match_type": pair.match_type.value,
+                "confidence": {
+                    "overall": pair.confidence.overall,
+                    "name_similarity": pair.confidence.name_similarity,
+                    "location_score": pair.confidence.location_score,
+                    "signature_similarity": pair.confidence.signature_similarity,
+                },
+                "reason": pair.match_reason,
+                "docstring": (
+                    _serialize_docstring(pair.docstring) if pair.docstring else None
+                ),
+            }
+            for pair in result.matched_pairs
+        ],
+    }
+
+    if show_unmatched:
+        output["unmatched"] = [
+            {
+                "function": func.signature.name,
+                "file": func.file_path,
+                "line": func.line_number,
+                "signature": func.signature.to_string(),
+            }
+            for func in result.unmatched_functions
+        ]
+
+    # Add comprehensive metadata if available
+    if hasattr(result, "metadata") and getattr(result, "metadata", None):
+        metadata = getattr(result, "metadata", {})
+        output["metadata"] = metadata
+
+        # Add performance insights if available
+        if "unified_stats" in metadata:
+            unified_stats = metadata["unified_stats"]
+            output["performance_insights"] = {
+                "total_time": unified_stats.get("total_time_seconds", 0),
+                "memory_usage": unified_stats.get("memory_usage", {}),
+                "throughput": unified_stats.get("throughput", {}),
+                "phase_breakdown": unified_stats.get("phase_times", {}),
+                "efficiency": unified_stats.get("efficiency_metrics", {}),
+                "error_summary": unified_stats.get("error_summary", {}),
+            }
+
+        # Add system information
+        if "system_info" in metadata:
+            output["system_info"] = metadata["system_info"]
+
+        # Add performance recommendations
+        if "performance_profile" in metadata:
+            output["performance_profile"] = metadata["performance_profile"]
+
+    return json.dumps(output, indent=2)
+
+
+def _format_terminal_unified_result(result: MatchResult, show_unmatched: bool) -> str:
+    """Format unified matching result for terminal with enhanced display."""
+    from io import StringIO
+    import sys
+
+    # Capture console output
+    old_stdout = sys.stdout
+    sys.stdout = captured_output = StringIO()
+
+    try:
+        _display_unified_results(result, show_unmatched)
+        return captured_output.getvalue()
+    finally:
+        sys.stdout = old_stdout
+
+
+def _display_unified_results(result: MatchResult, show_unmatched: bool):
+    """Display unified matching results in terminal with comprehensive Rich formatting."""
+    console.print(
+        "\n[bold magenta]🚀 Unified Matching Results (Direct + Contextual + Semantic)[/bold magenta]"
+    )
+    console.print("=" * 80)
+
+    # Enhanced summary table
+    summary = result.get_summary()
+    summary_table = Table(
+        title="📊 Summary", show_header=True, header_style="bold blue"
+    )
+    summary_table.add_column("Metric", style="cyan", width=20)
+    summary_table.add_column("Value", style="green", width=15)
+    summary_table.add_column("Details", style="dim", width=30)
+
+    summary_table.add_row(
+        "Total Functions", str(summary["total_functions"]), "Functions analyzed"
+    )
+    summary_table.add_row(
+        "Matched", str(summary["matched"]), f"Success rate: {summary['match_rate']}"
+    )
+    summary_table.add_row(
+        "Unmatched", str(summary["unmatched"]), "May need manual review"
+    )
+
+    console.print(summary_table)
+
+    # Enhanced match type breakdown with icons
+    if summary["matched"] > 0:
+        match_table = Table(
+            title="🎯 Match Distribution", show_header=True, header_style="bold green"
+        )
+        match_table.add_column("Strategy", style="yellow", width=15)
+        match_table.add_column("Count", justify="right", style="green", width=8)
+        match_table.add_column("Percentage", justify="right", style="blue", width=12)
+        match_table.add_column("Description", style="dim", width=30)
+
+        total_matches = summary["matched"]
+        match_descriptions = {
+            "exact": "Same name, same file",
+            "fuzzy": "Similar names, patterns",
+            "contextual": "Import analysis, cross-file",
+            "semantic": "AI similarity matching",
+        }
+
+        for match_type, count in summary.get("match_types", {}).items():
+            if count > 0:
+                percentage = (
+                    f"{count/total_matches*100:.1f}%" if total_matches > 0 else "0%"
+                )
+                description = match_descriptions.get(match_type, "Unknown strategy")
+                match_table.add_row(
+                    match_type.title(), str(count), percentage, description
+                )
+
+        console.print(match_table)
+
+    # Enhanced performance metrics with comprehensive details
+    if (
+        hasattr(result, "metadata")
+        and getattr(result, "metadata", None)
+        and "unified_stats" in getattr(result, "metadata", {})
+    ):
+        metadata = getattr(result, "metadata", {})
+        unified_stats = metadata["unified_stats"]
+
+        # Performance overview
+        perf_table = Table(
+            title="⚡ Performance Overview", show_header=True, header_style="bold cyan"
+        )
+        perf_table.add_column("Phase", style="yellow", width=20)
+        perf_table.add_column("Time", justify="right", style="green", width=10)
+        perf_table.add_column("Percentage", justify="right", style="blue", width=12)
+        perf_table.add_column("Status", style="magenta", width=15)
+
+        total_time = unified_stats.get("total_time_seconds", 0)
+        phase_times = unified_stats.get("phase_times", {})
+
+        for phase, time_val in phase_times.items():
+            if time_val > 0:
+                percentage = (
+                    f"{time_val/total_time*100:.1f}%" if total_time > 0 else "0%"
+                )
+                # Determine status based on time
+                if phase == "parsing" and time_val > total_time * 0.5:
+                    status = "🐌 Slow"
+                elif phase == "semantic_matching" and time_val > 60:
+                    status = "🔥 Heavy"
+                else:
+                    status = "✅ Good"
+
+                perf_table.add_row(
+                    phase.replace("_", " ").title(),
+                    f"{time_val:.2f}s",
+                    percentage,
+                    status,
+                )
+
+        console.print(perf_table)
+
+        # Memory and throughput metrics
+        system_table = Table(
+            title="💻 System Metrics", show_header=True, header_style="bold yellow"
+        )
+        system_table.add_column("Metric", style="cyan", width=20)
+        system_table.add_column("Value", style="green", width=15)
+        system_table.add_column("Unit", style="dim", width=10)
+
+        # Memory metrics
+        memory_usage = unified_stats.get("memory_usage", {})
+        if memory_usage:
+            system_table.add_row(
+                "Initial Memory", f"{memory_usage.get('initial_mb', 0):.1f}", "MB"
+            )
+            system_table.add_row(
+                "Peak Memory", f"{memory_usage.get('peak_mb', 0):.1f}", "MB"
+            )
+            system_table.add_row(
+                "Memory Growth",
+                f"{memory_usage.get('peak_mb', 0) - memory_usage.get('initial_mb', 0):.1f}",
+                "MB",
+            )
+
+        # Throughput metrics
+        throughput = unified_stats.get("throughput", {})
+        if throughput:
+            system_table.add_row(
+                "Functions/sec",
+                f"{throughput.get('functions_per_second', 0):.1f}",
+                "ops/s",
+            )
+            system_table.add_row(
+                "Files/sec", f"{throughput.get('files_per_second', 0):.1f}", "files/s"
+            )
+
+        # Error metrics
+        errors = unified_stats.get("error_summary", {})
+        if errors and errors.get("total_errors", 0) > 0:
+            system_table.add_row(
+                "Parse Errors", str(errors.get("parsing_errors", 0)), "errors"
+            )
+            system_table.add_row(
+                "Match Errors", str(errors.get("matching_errors", 0)), "errors"
+            )
+            system_table.add_row(
+                "Error Rate",
+                f"{errors.get('total_errors', 0)/max(unified_stats.get('functions_processed', 1), 1)*100:.1f}",
+                "%",
+            )
+
+        console.print(system_table)
+
+        # Performance recommendations
+        if "performance_profile" in metadata:
+            profile = metadata["performance_profile"]
+            console.print("\n[bold blue]💡 Performance Insights:[/bold blue]")
+
+            if profile.get("bottleneck") != "none":
+                console.print(
+                    f"  🚨 Bottleneck: {profile.get('bottleneck', 'unknown')}"
+                )
+                console.print(
+                    f"  💡 Recommendation: {profile.get('recommendation', 'No specific advice')}"
+                )
+            else:
+                console.print("  ✅ Performance is well balanced!")
+
+            memory_concern = profile.get("memory_concern", "acceptable")
+            if memory_concern != "acceptable":
+                console.print(f"  📈 Memory usage: {memory_concern}")
+
+    # Enhanced detailed matches with confidence breakdown
+    if result.matched_pairs:
+        console.print(
+            f"\n[bold]📋 Detailed Matches ({len(result.matched_pairs)}):[/bold]"
+        )
+        for i, pair in enumerate(result.matched_pairs[:15]):  # Show first 15
+            confidence_color = (
+                "green"
+                if pair.confidence.overall >= 0.8
+                else "yellow" if pair.confidence.overall >= 0.6 else "red"
+            )
+            match_icon = {
+                "EXACT": "🎯",
+                "FUZZY": "🔍",
+                "CONTEXTUAL": "🔗",
+                "SEMANTIC": "🧠",
+            }.get(pair.match_type.value, "📝")
+
+            console.print(
+                f"  {i+1:2d}. {match_icon} {pair.function.signature.name} "
+                f"([{confidence_color}]{pair.confidence.overall:.2f}[/{confidence_color}]) "
+                f"- {pair.match_type.value.lower()} "
+                f"([dim]{pair.function.file_path}:{pair.function.line_number}[/dim])"
+            )
+
+            if pair.match_reason:
+                console.print(f"      💬 {pair.match_reason}")
+
+            # Show confidence breakdown for high-detail cases
+            if pair.confidence.overall < 0.8:
+                console.print(
+                    f"      📊 Name: {pair.confidence.name_similarity:.2f}, "
+                    f"Location: {pair.confidence.location_score:.2f}, "
+                    f"Signature: {pair.confidence.signature_similarity:.2f}"
+                )
+
+        if len(result.matched_pairs) > 15:
+            console.print(f"  ... and {len(result.matched_pairs) - 15} more matches")
+
+    # Enhanced unmatched section if requested
+    if show_unmatched and result.unmatched_functions:
+        console.print(
+            f"\n[bold red]❌ Unmatched Functions ({len(result.unmatched_functions)}):[/bold red]"
+        )
+        console.print(
+            "[dim]These functions may need manual documentation review:[/dim]"
+        )
+
+        for i, func in enumerate(result.unmatched_functions[:10]):  # Show first 10
+            console.print(
+                f"  {i+1:2d}. ⚠️  {func.signature.name} "
+                f"([dim]{func.file_path}:{func.line_number}[/dim])"
+            )
+            # Show signature for context
+            if hasattr(func.signature, "to_string"):
+                console.print(
+                    f"      📝 {func.signature.to_string()[:80]}{'...' if len(func.signature.to_string()) > 80 else ''}"
+                )
+
+        if len(result.unmatched_functions) > 10:
+            console.print(
+                f"  ... and {len(result.unmatched_functions) - 10} more unmatched functions"
+            )
+
+    console.print("\n[green]✨ Analysis complete![/green]")
+
+
 @app.command()
 def match_unified(
     path: Path = typer.Argument(..., help="Project directory to analyze"),
@@ -592,72 +913,249 @@ def match_unified(
     enable_semantic: bool = typer.Option(
         True, "--semantic/--no-semantic", help="Enable semantic matching"
     ),
-    show_stats: bool = typer.Option(False, "--stats", help="Show detailed statistics"),
+    show_stats: bool = typer.Option(
+        False, "--stats", help="Show detailed statistics and performance metrics"
+    ),
+    show_unmatched: bool = typer.Option(
+        False, "--show-unmatched", help="Show unmatched functions that need attention"
+    ),
+    use_cache: bool = typer.Option(
+        True, "--cache/--no-cache", help="Use caching for better performance"
+    ),
+    show_recommendations: bool = typer.Option(
+        True,
+        "--recommendations/--no-recommendations",
+        help="Show performance optimization recommendations",
+    ),
+    max_functions: Optional[int] = typer.Option(
+        None,
+        "--max-functions",
+        help="Maximum number of functions to process (for testing)",
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Verbose output with detailed progress"
+    ),
 ):
     """
-    Perform unified matching using all three strategies (FIRST HALF IMPLEMENTATION).
+    🚀 Perform comprehensive unified matching using all three strategies.
 
-    Uses direct, contextual, and semantic matching for comprehensive results.
-    This is a basic implementation of the unified matching command.
+    This command runs the complete matching pipeline:
+
+    1. 🎯 Direct Matching: Same-file function-to-docstring matching
+    2. 🔗 Contextual Matching: Cross-file analysis with import resolution
+    3. 🧠 Semantic Matching: AI-powered similarity search for renamed functions
+
+    Provides detailed performance metrics, memory monitoring, and optimization
+    recommendations for production use.
     """
     import asyncio
+    from rich.progress import (
+        Progress,
+        SpinnerColumn,
+        BarColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
 
-    # Load configuration
-    if config and config.exists():
-        config_obj = CodeDocSyncConfig.from_yaml(str(config))
-    else:
-        config_obj = CodeDocSyncConfig()
+    # Enhanced configuration loading with validation
+    try:
+        if config and config.exists():
+            config_obj = CodeDocSyncConfig.from_yaml(str(config))
+            if verbose:
+                console.print(f"[green]✅ Configuration loaded from {config}[/green]")
+        else:
+            config_obj = CodeDocSyncConfig()
+            if verbose:
+                console.print("[yellow]⚠️  Using default configuration[/yellow]")
+    except Exception as e:
+        console.print(f"[red]❌ Error loading configuration: {e}[/red]")
+        raise typer.Exit(1)
 
-    # Validate path
+    # Enhanced path validation
     if not path.exists():
-        console.print(f"[red]Error: {path} does not exist[/red]")
+        console.print(f"[red]❌ Error: {path} does not exist[/red]")
+        console.print("[dim]Please provide a valid project directory path[/dim]")
         raise typer.Exit(1)
 
     if not path.is_dir():
-        console.print(f"[red]Error: {path} is not a directory[/red]")
+        console.print(f"[red]❌ Error: {path} is not a directory[/red]")
+        console.print("[dim]Please provide a directory containing Python files[/dim]")
         raise typer.Exit(1)
 
-    # Create facade and run matching
+    # Validate semantic matching requirements
+    if enable_semantic:
+        try:
+            import openai
+
+            if verbose:
+                console.print(
+                    "[green]✅ OpenAI library available for semantic matching[/green]"
+                )
+        except ImportError:
+            console.print(
+                "[yellow]⚠️  OpenAI library not available, semantic matching may fall back to local models[/yellow]"
+            )
+
+    # Create facade with enhanced configuration
     facade = UnifiedMatchingFacade(config_obj)
 
-    console.print(f"[cyan]Starting unified analysis: {path}[/cyan]")
-    console.print("[dim]Running direct → contextual → semantic matching...[/dim]")
+    # Set up progress tracking if verbose
+    current_phase = ""
 
-    try:
-        # Run async matching
-        result = asyncio.run(
-            facade.match_project(str(path), enable_semantic=enable_semantic)
+    def progress_callback(phase: str, current: int, total: int):
+        nonlocal current_phase
+        if verbose and phase != current_phase:
+            current_phase = phase
+            console.print(f"[blue]📊 {phase}: {current}/{total}[/blue]")
+
+    # Enhanced startup message
+    console.print(
+        f"[bold cyan]🚀 Starting comprehensive unified analysis: {path}[/bold cyan]"
+    )
+    if verbose:
+        console.print(
+            "[dim]Pipeline: Direct → Contextual → Semantic matching with performance monitoring[/dim]"
         )
-    except Exception as e:
-        console.print(f"[red]Error during unified analysis: {str(e)}[/red]")
+        console.print(
+            f"[dim]Settings: Cache={use_cache}, Semantic={enable_semantic}, Max Functions={max_functions or 'unlimited'}[/dim]"
+        )
+
+    # Production-ready error recovery
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Analyzing project...", total=None)
+
+            # Run async matching with enhanced parameters
+            result = asyncio.run(
+                facade.match_project(
+                    str(path),
+                    use_cache=use_cache,
+                    enable_semantic=enable_semantic,
+                    progress_callback=progress_callback if verbose else None,
+                )
+            )
+
+            progress.update(task, completed=True)
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠️  Analysis interrupted by user[/yellow]")
+        console.print("[dim]Partial results may be available[/dim]")
+        raise typer.Exit(130)  # Standard exit code for SIGINT
+
+    except MemoryError:
+        console.print("[red]❌ Out of memory error during analysis[/red]")
+        console.print(
+            "[dim]Try using --no-cache or --max-functions to reduce memory usage[/dim]"
+        )
         raise typer.Exit(1)
 
-    # Basic output (detailed formatting left for second half)
-    if output_format == "json":
-        output = _format_json_contextual_result(
-            result, True
-        )  # Reuse existing formatter
-    else:
-        output = _format_terminal_contextual_result(
-            result, True
-        )  # Reuse existing formatter
+    except Exception as e:
+        console.print(f"[red]❌ Critical error during unified analysis: {str(e)}[/red]")
+        if verbose:
+            import traceback
 
-    # Save or print
-    if output_file:
-        output_file.write_text(output)
-        console.print(f"✅ Results saved to {output_file}")
-    else:
-        console.print(output)
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        console.print(
+            "[dim]Check file permissions, disk space, and network connectivity[/dim]"
+        )
+        raise typer.Exit(1)
 
-    # Show unified statistics if requested
+    # Enhanced output formatting with options
+    try:
+        if output_format == "json":
+            output = _format_json_unified_result(result, show_unmatched)
+        else:
+            output = _format_terminal_unified_result(result, show_unmatched)
+    except Exception as e:
+        console.print(f"[red]❌ Error formatting output: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Enhanced output handling
+    try:
+        if output_file:
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            output_file.write_text(output, encoding="utf-8")
+            console.print(f"[green]✅ Results saved to {output_file}[/green]")
+            if verbose:
+                console.print(
+                    f"[dim]File size: {output_file.stat().st_size} bytes[/dim]"
+                )
+        else:
+            console.print(output)
+    except Exception as e:
+        console.print(f"[red]❌ Error writing output: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Enhanced statistics and recommendations
     if show_stats:
+        console.print("\n" + "=" * 60)
         facade.print_summary()
 
-    console.print("\n[green]✅ Unified analysis complete![/green]")
+        # Show performance recommendations if requested
+        if show_recommendations:
+            try:
+                recommendations = facade.get_performance_recommendations()
+                console.print(
+                    "\n[bold blue]💡 Performance Recommendations:[/bold blue]"
+                )
+                for i, rec in enumerate(recommendations, 1):
+                    console.print(f"  {i}. {rec}")
+            except Exception as e:
+                console.print(
+                    f"[yellow]⚠️  Could not generate recommendations: {e}[/yellow]"
+                )
+
+    # Enhanced completion message with summary
+    console.print("\n[bold green]✨ Unified analysis complete![/bold green]")
     summary = result.get_summary()
-    console.print(
-        f"Matched {summary['matched']}/{summary['total_functions']} functions ({summary['match_rate']})"
+
+    # Success metrics
+    match_rate_color = (
+        "green"
+        if float(summary["match_rate"].strip("%")) >= 80
+        else "yellow" if float(summary["match_rate"].strip("%")) >= 60 else "red"
     )
+    console.print(
+        f"📊 Matched [bold]{summary['matched']}[/bold]/{summary['total_functions']} functions "
+        f"([{match_rate_color}]{summary['match_rate']}[/{match_rate_color}])"
+    )
+
+    # Performance summary
+    if hasattr(result, "metadata") and "unified_stats" in getattr(
+        result, "metadata", {}
+    ):
+        stats = getattr(result, "metadata", {})["unified_stats"]
+        console.print(
+            f"⏱️  Total time: [bold]{stats.get('total_time_seconds', 0):.2f}s[/bold]"
+        )
+        if stats.get("memory_usage"):
+            memory_growth = stats["memory_usage"].get("peak_mb", 0) - stats[
+                "memory_usage"
+            ].get("initial_mb", 0)
+            console.print(
+                f"💾 Memory usage: [bold]{memory_growth:.1f}MB[/bold] peak growth"
+            )
+
+    # Exit code based on results
+    if summary["matched"] == 0 and summary["total_functions"] > 0:
+        console.print(
+            "[red]⚠️  No matches found - this may indicate a configuration issue[/red]"
+        )
+        raise typer.Exit(2)  # Warning exit code
+
+    # Cleanup
+    try:
+        asyncio.run(facade.cleanup())
+    except:
+        pass  # Cleanup is best-effort
 
 
 if __name__ == "__main__":

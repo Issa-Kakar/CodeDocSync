@@ -1,6 +1,9 @@
+import gc
+import os
+import psutil
 import time
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Callable
 import logging
 
 from .facade import MatchingFacade
@@ -22,11 +25,14 @@ class UnifiedMatchingFacade:
     2. Contextual matching (8% of cases)
     3. Semantic matching (2% of cases)
 
-    This is the first half implementation focusing on core integration.
+    Enhanced with advanced performance monitoring, memory management,
+    and production-ready optimization features.
     """
 
     def __init__(self, config: Optional[CodeDocSyncConfig] = None):
         self.config = config or CodeDocSyncConfig()
+
+        # Enhanced statistics tracking
         self.stats = {
             "total_time": 0.0,
             "parsing_time": 0.0,
@@ -35,137 +41,325 @@ class UnifiedMatchingFacade:
             "semantic_matching_time": 0.0,
             "semantic_indexing_time": 0.0,
             "files_processed": 0,
+            "functions_processed": 0,
             "matches_by_type": {"direct": 0, "contextual": 0, "semantic": 0},
+            # New performance metrics
+            "memory_usage": {"initial_mb": 0.0, "peak_mb": 0.0, "final_mb": 0.0},
+            "errors": {"parsing_errors": 0, "matching_errors": 0, "total_errors": 0},
+            "cache_stats": {"hits": 0, "misses": 0, "hit_rate": 0.0},
+            "throughput": {"functions_per_second": 0.0, "files_per_second": 0.0},
         }
 
+        # Initialize process monitoring
+        self.process = psutil.Process()
+        self.stats["memory_usage"]["initial_mb"] = (
+            self.process.memory_info().rss / 1024 / 1024
+        )
+
+        # Progress tracking
+        self.progress_callback: Optional[Callable[[str, int, int], None]] = None
+
+    def set_progress_callback(self, callback: Callable[[str, int, int], None]) -> None:
+        """Set a callback for progress updates."""
+        self.progress_callback = callback
+
+    def _update_progress(self, phase: str, current: int, total: int) -> None:
+        """Update progress if callback is set."""
+        if self.progress_callback:
+            self.progress_callback(phase, current, total)
+
+    def _monitor_memory(self) -> float:
+        """Monitor current memory usage and update peak."""
+        current_mb = self.process.memory_info().rss / 1024 / 1024
+        if current_mb > self.stats["memory_usage"]["peak_mb"]:
+            self.stats["memory_usage"]["peak_mb"] = current_mb
+        return current_mb
+
+    def _should_trigger_gc(self, memory_threshold_mb: float = 500.0) -> bool:
+        """Check if garbage collection should be triggered."""
+        current_mb = self._monitor_memory()
+        return current_mb > memory_threshold_mb
+
     async def match_project(
-        self, project_path: str, use_cache: bool = True, enable_semantic: bool = True
+        self,
+        project_path: str,
+        use_cache: bool = True,
+        enable_semantic: bool = True,
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> MatchResult:
         """
-        Perform complete matching on a project.
+        Perform complete matching on a project with advanced monitoring.
 
         Args:
             project_path: Root directory of the project
             use_cache: Whether to use cached parsing/embeddings
             enable_semantic: Whether to use semantic matching
+            progress_callback: Optional callback for progress updates
 
         Returns:
-            Unified MatchResult with all matches
+            Unified MatchResult with all matches and comprehensive metadata
         """
         start_time = time.time()
         project_path = Path(project_path).resolve()
 
-        logger.info(f"Starting unified matching for project: {project_path}")
+        if progress_callback:
+            self.set_progress_callback(progress_callback)
 
-        # Phase 1: Parse all Python files
-        logger.info("Phase 1: Parsing Python files...")
-        parse_start = time.time()
+        logger.info(f"Starting enhanced unified matching for project: {project_path}")
 
-        all_functions = []
-        python_files = self._discover_python_files(project_path)
+        try:
+            # Phase 1: Enhanced file discovery and parsing
+            logger.info("Phase 1: Enhanced parsing with monitoring...")
+            parse_start = time.time()
 
-        parser = IntegratedParser(cache_enabled=use_cache)
-        for file_path in python_files:
+            all_functions = []
+            python_files = self._discover_python_files(project_path)
+
+            if not python_files:
+                logger.warning(f"No Python files found in {project_path}")
+                return self._create_empty_result()
+
+            parser = IntegratedParser(cache_enabled=use_cache)
+            parsing_errors = 0
+
+            for i, file_path in enumerate(python_files):
+                self._update_progress("Parsing", i + 1, len(python_files))
+
+                try:
+                    functions = parser.parse_file(str(file_path))
+                    all_functions.extend(functions)
+                    self.stats["files_processed"] += 1
+
+                    # Trigger GC periodically for large projects
+                    if i > 0 and i % 100 == 0 and self._should_trigger_gc():
+                        gc.collect()
+                        logger.debug(
+                            f"GC triggered at file {i}, memory: {self._monitor_memory():.1f}MB"
+                        )
+
+                except Exception as e:
+                    parsing_errors += 1
+                    logger.error(f"Failed to parse {file_path}: {e}")
+
+            self.stats["parsing_time"] = time.time() - parse_start
+            self.stats["functions_processed"] = len(all_functions)
+            self.stats["errors"]["parsing_errors"] = parsing_errors
+
+            logger.info(
+                f"Parsed {len(all_functions)} functions from {len(python_files)} files "
+                f"({parsing_errors} errors)"
+            )
+
+            # Phase 2: Direct matching with error handling
+            logger.info("Phase 2: Enhanced direct matching...")
+            direct_start = time.time()
+
             try:
-                functions = parser.parse_file(str(file_path))
-                all_functions.extend(functions)
-                self.stats["files_processed"] += 1
-            except Exception as e:
-                logger.error(f"Failed to parse {file_path}: {e}")
+                direct_facade = MatchingFacade(config=self.config)
+                direct_result = direct_facade.match_project(str(project_path))
 
-        self.stats["parsing_time"] = time.time() - parse_start
-        logger.info(
-            f"Parsed {len(all_functions)} functions from {len(python_files)} files"
+                # Enhanced direct match analysis
+                direct_matches = [
+                    m
+                    for m in direct_result.matched_pairs
+                    if m.confidence.overall >= 0.8
+                ]
+                self.stats["matches_by_type"]["direct"] = len(direct_matches)
+
+            except Exception as e:
+                logger.error(f"Direct matching failed: {e}")
+                self.stats["errors"]["matching_errors"] += 1
+                direct_result = self._create_empty_result()
+                direct_matches = []
+
+            self.stats["direct_matching_time"] = time.time() - direct_start
+
+            # Phase 3: Enhanced contextual matching
+            logger.info("Phase 3: Enhanced contextual matching...")
+            context_match_start = time.time()
+
+            try:
+                contextual_facade = ContextualMatchingFacade()
+                contextual_result = contextual_facade.match_project(str(project_path))
+
+                # Enhanced contextual match analysis
+                prev_matched = {m.function.signature.name for m in direct_matches}
+                contextual_matches = [
+                    m
+                    for m in contextual_result.matched_pairs
+                    if m.function.signature.name not in prev_matched
+                    and m.confidence.overall >= 0.7
+                ]
+                self.stats["matches_by_type"]["contextual"] = len(contextual_matches)
+
+            except Exception as e:
+                logger.error(f"Contextual matching failed: {e}")
+                self.stats["errors"]["matching_errors"] += 1
+                contextual_result = direct_result  # Fallback to direct result
+                contextual_matches = []
+
+            self.stats["contextual_matching_time"] = time.time() - context_match_start
+            final_result = contextual_result
+
+            # Phase 4: Enhanced semantic matching with monitoring
+            if enable_semantic and getattr(
+                self.config.matching, "enable_semantic", True
+            ):
+                logger.info("Phase 4: Enhanced semantic matching with monitoring...")
+
+                try:
+                    semantic_matcher = SemanticMatcher(str(project_path))
+
+                    # Build semantic index with progress tracking
+                    index_start = time.time()
+                    await semantic_matcher.prepare_semantic_index(
+                        all_functions, force_reindex=False
+                    )
+                    self.stats["semantic_indexing_time"] = time.time() - index_start
+
+                    # Monitor memory before intensive semantic operations
+                    pre_semantic_memory = self._monitor_memory()
+                    logger.debug(f"Pre-semantic memory: {pre_semantic_memory:.1f}MB")
+
+                    # Perform semantic matching
+                    semantic_start = time.time()
+                    semantic_result = await semantic_matcher.match_with_embeddings(
+                        all_functions, [direct_result, contextual_result]
+                    )
+                    self.stats["semantic_matching_time"] = time.time() - semantic_start
+
+                    # Enhanced semantic match analysis
+                    all_prev_matched = {
+                        m.function.signature.name
+                        for m in contextual_result.matched_pairs
+                        if m.confidence.overall >= 0.7
+                    }
+                    semantic_matches = [
+                        m
+                        for m in semantic_result.matched_pairs
+                        if m.function.signature.name not in all_prev_matched
+                    ]
+                    self.stats["matches_by_type"]["semantic"] = len(semantic_matches)
+
+                    final_result = semantic_result
+
+                    # Add semantic stats to result
+                    if not hasattr(final_result, "metadata"):
+                        final_result.metadata = {}
+                    final_result.metadata["semantic_stats"] = (
+                        semantic_matcher.get_stats()
+                    )
+
+                    # Log semantic performance
+                    post_semantic_memory = self._monitor_memory()
+                    logger.info(
+                        f"Semantic matching: {len(semantic_matches)} matches, "
+                        f"memory delta: {post_semantic_memory - pre_semantic_memory:.1f}MB"
+                    )
+
+                except Exception as e:
+                    logger.error(f"Semantic matching failed: {e}")
+                    self.stats["errors"]["matching_errors"] += 1
+                    # Continue with contextual result as fallback
+
+            # Finalize statistics
+            self._finalize_stats(start_time, len(all_functions), len(python_files))
+
+            # Add comprehensive metadata
+            self._add_comprehensive_metadata(final_result)
+
+            logger.info(
+                f"Enhanced unified matching completed in {self.stats['total_time']:.2f}s"
+            )
+            return final_result
+
+        except Exception as e:
+            logger.error(f"Critical error in unified matching: {e}")
+            self.stats["errors"]["total_errors"] += 1
+            raise
+
+    def _create_empty_result(self) -> MatchResult:
+        """Create an empty match result for error cases."""
+        return MatchResult(total_functions=0, matched_pairs=[], unmatched_functions=[])
+
+    def _finalize_stats(
+        self, start_time: float, total_functions: int, total_files: int
+    ) -> None:
+        """Finalize performance statistics."""
+        self.stats["total_time"] = time.time() - start_time
+        self.stats["memory_usage"]["final_mb"] = self._monitor_memory()
+        self.stats["errors"]["total_errors"] = (
+            self.stats["errors"]["parsing_errors"]
+            + self.stats["errors"]["matching_errors"]
         )
 
-        # Phase 2: Direct matching
-        logger.info("Phase 2: Direct matching...")
-        direct_start = time.time()
-
-        direct_facade = MatchingFacade(config=self.config)
-        direct_result = direct_facade.match_project(str(project_path))
-
-        self.stats["direct_matching_time"] = time.time() - direct_start
-
-        # Count direct matches
-        direct_matches = [
-            m for m in direct_result.matched_pairs if m.confidence.overall >= 0.8
-        ]
-        self.stats["matches_by_type"]["direct"] = len(direct_matches)
-
-        # Phase 3: Contextual matching
-        logger.info("Phase 3: Contextual matching for remaining functions...")
-        context_match_start = time.time()
-
-        contextual_facade = ContextualMatchingFacade()
-        contextual_result = contextual_facade.match_project(str(project_path))
-
-        self.stats["contextual_matching_time"] = time.time() - context_match_start
-
-        # Count new contextual matches (excluding those already well-matched by direct)
-        prev_matched = {m.function.signature.name for m in direct_matches}
-        contextual_matches = [
-            m
-            for m in contextual_result.matched_pairs
-            if m.function.signature.name not in prev_matched
-            and m.confidence.overall >= 0.7
-        ]
-        self.stats["matches_by_type"]["contextual"] = len(contextual_matches)
-
-        # Start with contextual result as our final result
-        final_result = contextual_result
-
-        # Phase 4: Semantic matching (if enabled)
-        if enable_semantic and getattr(self.config.matching, "enable_semantic", True):
-            logger.info("Phase 4: Semantic matching for remaining functions...")
-
-            # Initialize semantic matcher
-            semantic_matcher = SemanticMatcher(str(project_path))
-
-            # Build semantic index
-            index_start = time.time()
-            await semantic_matcher.prepare_semantic_index(
-                all_functions, force_reindex=False
+        # Calculate throughput
+        if self.stats["total_time"] > 0:
+            self.stats["throughput"]["functions_per_second"] = (
+                total_functions / self.stats["total_time"]
             )
-            self.stats["semantic_indexing_time"] = time.time() - index_start
-
-            # Perform semantic matching
-            semantic_start = time.time()
-            semantic_result = await semantic_matcher.match_with_embeddings(
-                all_functions, [direct_result, contextual_result]
+            self.stats["throughput"]["files_per_second"] = (
+                total_files / self.stats["total_time"]
             )
-            self.stats["semantic_matching_time"] = time.time() - semantic_start
 
-            # Count new semantic matches
-            all_prev_matched = {
-                m.function.signature.name
-                for m in contextual_result.matched_pairs
-                if m.confidence.overall >= 0.7
+    def _add_comprehensive_metadata(self, result: MatchResult) -> None:
+        """Add comprehensive metadata to result."""
+        if not hasattr(result, "metadata"):
+            result.metadata = {}
+
+        result.metadata.update(
+            {
+                "unified_stats": self.get_comprehensive_stats(),
+                "system_info": {
+                    "cpu_count": os.cpu_count(),
+                    "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}",
+                    "platform": os.name,
+                },
+                "performance_profile": self._generate_performance_profile(),
             }
-            semantic_matches = [
-                m
-                for m in semantic_result.matched_pairs
-                if m.function.signature.name not in all_prev_matched
-            ]
-            self.stats["matches_by_type"]["semantic"] = len(semantic_matches)
+        )
 
-            final_result = semantic_result
+    def _generate_performance_profile(self) -> Dict[str, str]:
+        """Generate performance profile for optimization insights."""
+        total_time = self.stats["total_time"]
 
-            # Add semantic stats to result
-            if not hasattr(final_result, "metadata"):
-                final_result.metadata = {}
-            final_result.metadata["semantic_stats"] = semantic_matcher.get_stats()
+        if total_time == 0:
+            return {"status": "no_data"}
 
-        # Calculate total time
-        self.stats["total_time"] = time.time() - start_time
+        profile = {}
 
-        # Add unified stats to result
-        if not hasattr(final_result, "metadata"):
-            final_result.metadata = {}
-        final_result.metadata["unified_stats"] = self.get_stats()
+        # Phase time analysis
+        parsing_pct = (self.stats["parsing_time"] / total_time) * 100
+        direct_pct = (self.stats["direct_matching_time"] / total_time) * 100
+        contextual_pct = (self.stats["contextual_matching_time"] / total_time) * 100
+        semantic_pct = (self.stats["semantic_matching_time"] / total_time) * 100
 
-        logger.info(f"Unified matching completed in {self.stats['total_time']:.2f}s")
-        return final_result
+        if parsing_pct > 50:
+            profile["bottleneck"] = "parsing"
+            profile["recommendation"] = "Consider using cache or parallel parsing"
+        elif semantic_pct > 40:
+            profile["bottleneck"] = "semantic_matching"
+            profile["recommendation"] = "Consider reducing semantic batch size"
+        elif contextual_pct > 30:
+            profile["bottleneck"] = "contextual_matching"
+            profile["recommendation"] = "Consider optimizing import resolution"
+        else:
+            profile["bottleneck"] = "none"
+            profile["recommendation"] = "Performance is well balanced"
+
+        # Memory analysis
+        memory_growth = (
+            self.stats["memory_usage"]["peak_mb"]
+            - self.stats["memory_usage"]["initial_mb"]
+        )
+        if memory_growth > 200:
+            profile["memory_concern"] = "high_growth"
+        elif memory_growth > 100:
+            profile["memory_concern"] = "moderate_growth"
+        else:
+            profile["memory_concern"] = "acceptable"
+
+        return profile
 
     def _discover_python_files(self, project_path: Path) -> List[Path]:
         """Discover Python files with exclusions."""
@@ -181,7 +375,11 @@ class UnifiedMatchingFacade:
         return python_files
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get comprehensive statistics."""
+        """Get basic statistics (backward compatibility)."""
+        return self.get_comprehensive_stats()
+
+    def get_comprehensive_stats(self) -> Dict[str, Any]:
+        """Get enhanced comprehensive statistics with performance insights."""
         total_matches = sum(self.stats["matches_by_type"].values())
 
         return {
@@ -194,6 +392,7 @@ class UnifiedMatchingFacade:
                 "semantic_matching": self.stats["semantic_matching_time"],
             },
             "files_processed": self.stats["files_processed"],
+            "functions_processed": self.stats["functions_processed"],
             "total_matches": total_matches,
             "matches_by_type": self.stats["matches_by_type"],
             "match_distribution": {
@@ -213,16 +412,61 @@ class UnifiedMatchingFacade:
                     else "0%"
                 ),
             },
+            # Enhanced metrics
+            "memory_usage": self.stats["memory_usage"],
+            "error_summary": self.stats["errors"],
+            "throughput": self.stats["throughput"],
+            "efficiency_metrics": self._calculate_efficiency_metrics(),
+        }
+
+    def _calculate_efficiency_metrics(self) -> Dict[str, float]:
+        """Calculate efficiency metrics for performance analysis."""
+        total_time = self.stats["total_time"]
+        total_functions = self.stats["functions_processed"]
+
+        if total_time == 0 or total_functions == 0:
+            return {"status": "no_data"}
+
+        return {
+            "functions_per_mb": total_functions
+            / max(self.stats["memory_usage"]["peak_mb"], 1),
+            "matches_per_second": sum(self.stats["matches_by_type"].values())
+            / total_time,
+            "error_rate": self.stats["errors"]["total_errors"]
+            / max(total_functions, 1),
+            "memory_efficiency": total_functions
+            / max(
+                self.stats["memory_usage"]["peak_mb"]
+                - self.stats["memory_usage"]["initial_mb"],
+                1,
+            ),
         }
 
     def print_summary(self) -> None:
-        """Print comprehensive matching summary."""
-        stats = self.get_stats()
+        """Print enhanced comprehensive matching summary."""
+        stats = self.get_comprehensive_stats()
 
-        print("\n=== Unified Matching Summary ===")
+        print("\n=== Enhanced Unified Matching Summary ===")
         print(f"Total time: {stats['total_time_seconds']:.2f}s")
         print(f"Files processed: {stats['files_processed']}")
+        print(f"Functions processed: {stats['functions_processed']}")
         print(f"Total matches: {stats['total_matches']}")
+
+        print("\n--- Performance Metrics ---")
+        if "throughput" in stats:
+            print(
+                f"Functions/second: {stats['throughput']['functions_per_second']:.1f}"
+            )
+            print(f"Files/second: {stats['throughput']['files_per_second']:.1f}")
+
+        print("\n--- Memory Usage ---")
+        if "memory_usage" in stats:
+            print(f"Initial: {stats['memory_usage']['initial_mb']:.1f}MB")
+            print(f"Peak: {stats['memory_usage']['peak_mb']:.1f}MB")
+            print(f"Final: {stats['memory_usage']['final_mb']:.1f}MB")
+            print(
+                f"Growth: {stats['memory_usage']['peak_mb'] - stats['memory_usage']['initial_mb']:.1f}MB"
+            )
 
         print("\n--- Time Breakdown ---")
         for phase, time_val in stats["phase_times"].items():
@@ -237,3 +481,67 @@ class UnifiedMatchingFacade:
                 print(
                     f"{match_type}: {count} matches ({stats['match_distribution'][match_type]})"
                 )
+
+        print("\n--- Error Summary ---")
+        if "error_summary" in stats:
+            errors = stats["error_summary"]
+            print(f"Parsing errors: {errors['parsing_errors']}")
+            print(f"Matching errors: {errors['matching_errors']}")
+            print(f"Total errors: {errors['total_errors']}")
+
+        print("\n--- Efficiency Metrics ---")
+        if (
+            "efficiency_metrics" in stats
+            and stats["efficiency_metrics"].get("status") != "no_data"
+        ):
+            eff = stats["efficiency_metrics"]
+            print(f"Functions per MB: {eff['functions_per_mb']:.1f}")
+            print(f"Matches per second: {eff['matches_per_second']:.1f}")
+            print(f"Error rate: {eff['error_rate']:.3f}")
+
+    def get_performance_recommendations(self) -> List[str]:
+        """Get performance recommendations based on current metrics."""
+        recommendations = []
+        stats = self.get_comprehensive_stats()
+
+        # Parsing performance
+        if (
+            stats.get("phase_times", {}).get("parsing", 0)
+            > stats["total_time_seconds"] * 0.5
+        ):
+            recommendations.append(
+                "Consider enabling parsing cache to improve performance"
+            )
+
+        # Memory usage
+        memory_growth = stats.get("memory_usage", {}).get("peak_mb", 0) - stats.get(
+            "memory_usage", {}
+        ).get("initial_mb", 0)
+        if memory_growth > 500:
+            recommendations.append(
+                "High memory usage detected - consider processing smaller batches"
+            )
+
+        # Error rates
+        error_rate = stats.get("efficiency_metrics", {}).get("error_rate", 0)
+        if error_rate > 0.1:
+            recommendations.append(
+                "High error rate - check file permissions and syntax"
+            )
+
+        # Semantic matching performance
+        semantic_time = stats.get("phase_times", {}).get("semantic_matching", 0)
+        if semantic_time > 60:  # More than 1 minute
+            recommendations.append(
+                "Semantic matching is slow - consider reducing batch size or disabling for large projects"
+            )
+
+        if not recommendations:
+            recommendations.append("Performance is good - no specific recommendations")
+
+        return recommendations
+
+    async def cleanup(self) -> None:
+        """Clean up resources and perform final garbage collection."""
+        gc.collect()
+        logger.info("Unified matching facade cleanup completed")

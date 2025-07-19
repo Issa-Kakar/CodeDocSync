@@ -1947,20 +1947,50 @@ CLI provides useful feedback and stats
 Total time <30s for 1000 functions
 
 
-Chunk 5: Performance Optimization and Production Readiness (Estimated: 2-3 hours)
-Objectives
+## Chunk 5A: Performance Optimization (Estimated: 1 hour)
+### Objectives
 
-Optimize embedding generation with batching
-Implement comprehensive error recovery
-Add monitoring and alerting capabilities
-Ensure production-ready performance
+- Optimize embedding generation with intelligent batching
+- Implement memory monitoring and resource management
+- Add concurrent processing capabilities
+- Build performance profiling infrastructure
 
-Required Files to Create/Update
+### Required Files to Create/Update
 
-matcher/semantic_optimizer.py - Performance optimizations
-tests/test_semantic_performance.py - Performance validation
-tests/test_semantic_integration.py - End-to-end tests
-Update configuration for production settings
+1. `matcher/semantic_optimizer.py` - Performance optimizations and batch processing
+2. `tests/test_semantic_optimizer.py` - Performance optimization validation tests
+
+---
+
+## Chunk 5B: Error Recovery and Monitoring (Estimated: 1 hour)
+### Objectives
+
+- Implement comprehensive error recovery for all failure scenarios
+- Add performance monitoring and metrics collection
+- Build alerting capabilities for production issues
+- Create resource cleanup and management systems
+
+### Required Files to Create/Update
+
+1. `matcher/semantic_error_recovery.py` - Comprehensive error handling and recovery
+2. `storage/performance_monitor.py` - Performance monitoring and metrics
+3. `tests/test_semantic_error_recovery.py` - Error recovery validation tests
+
+---
+
+## Chunk 5C: Production Readiness and Integration (Estimated: 1 hour)
+### Objectives
+
+- Ensure production-ready performance meets all architectural targets
+- Create comprehensive end-to-end integration tests
+- Validate complete semantic matching pipeline
+- Finalize configuration and deployment readiness
+
+### Required Files to Create/Update
+
+1. `tests/test_semantic_performance.py` - Complete performance validation suite
+2. `tests/test_semantic_integration.py` - End-to-end integration tests
+3. Update configuration for production settings and deployment
 
 Detailed Implementation
 1. Create matcher/semantic_optimizer.py
