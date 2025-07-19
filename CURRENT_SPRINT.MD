@@ -1003,20 +1003,53 @@ Batch processing improves throughput
 Performance: <100ms per function (batched)
 
 
-Chunk 3: Semantic Search Implementation (Estimated: 3-4 hours)
-Objectives
+## Chunk 3A: Semantic Search Implementation - Part 1 ✅ COMPLETE (Estimated: 2 hours)
+### Objectives
 
-Implement the core semantic matching logic
-Build similarity search with validation
-Create confidence scoring for semantic matches
-Integrate with vector store
+- Implement the core semantic matching logic
+- Build semantic index preparation
+- Create confidence scoring for semantic matches
+- Build foundation for similarity search
 
-Required Files to Create
+### Required Files to Create/Update
 
-matcher/semantic_matcher.py - Main semantic matching class
-matcher/semantic_scorer.py - Confidence scoring for matches
-tests/test_semantic_matcher.py - Matching logic tests
-tests/test_semantic_scorer.py - Scoring validation tests
+1. `matcher/semantic_matcher.py` - Core SemanticMatcher class with indexing
+2. `matcher/semantic_scorer.py` - Confidence scoring for matches
+3. `tests/test_semantic_matcher.py` - Core matching functionality tests
+4. `tests/test_semantic_scorer.py` - Scoring validation tests
+
+### Scope (First Half Only)
+This chunk implements the foundation for semantic matching:
+- SemanticMatcher class initialization and configuration
+- `prepare_semantic_index()` method for building search index
+- SemanticScorer class for confidence calculation and validation
+- Basic semantic match creation (without full similarity search)
+- Test infrastructure for semantic matching
+
+**Note**: The complete similarity search implementation with `match_with_embeddings()` method will be implemented in **Chunk 3B** by the next developer.
+
+---
+
+## Chunk 3B: Semantic Search Implementation - Part 2 ❌ PENDING (Estimated: 2 hours)
+### Objectives (For Next Developer)
+
+- Complete similarity search implementation
+- Integrate with vector store for full matching pipeline
+- Implement `match_with_embeddings()` method
+- Add integration with previous match results
+
+### Required Files to Create/Update (For Next Developer)
+
+1. Complete `matcher/semantic_matcher.py` - Add `match_with_embeddings()` method
+2. Add integration tests for full semantic matching pipeline
+3. Performance validation tests for semantic search
+
+### Scope (Second Half)
+- Complete `_find_semantic_match()` implementation
+- Full integration with vector store search
+- Match validation and filtering logic
+- Integration with DirectMatcher and ContextualMatcher results
+- End-to-end semantic matching pipeline
 
 Detailed Implementation
 1. Create matcher/semantic_matcher.py
