@@ -430,7 +430,7 @@ def match_contextual(
     # Save or print
     if output_file:
         output_file.write_text(output)
-        console.print(f"✅ Results saved to {output_file}")
+        console.print(f"[OK] Results saved to {output_file}")
     else:
         if output_format == "json":
             console.print(output)
@@ -443,7 +443,7 @@ def match_contextual(
 
     # Print final summary
     summary = result.get_summary()
-    console.print("\n[green]✅ Analysis complete![/green]")
+    console.print("\n[green][DONE] Analysis complete![/green]")
     console.print(
         f"Matched {summary['matched']}/{summary['total_functions']} functions ({summary['match_rate']})"
     )
@@ -662,15 +662,13 @@ def _format_terminal_unified_result(result: MatchResult, show_unmatched: bool) -
 def _display_unified_results(result: MatchResult, show_unmatched: bool):
     """Display unified matching results in terminal with comprehensive Rich formatting."""
     console.print(
-        "\n[bold magenta]🚀 Unified Matching Results (Direct + Contextual + Semantic)[/bold magenta]"
+        "\n[bold magenta][>>] Unified Matching Results (Direct + Contextual + Semantic)[/bold magenta]"
     )
     console.print("=" * 80)
 
     # Enhanced summary table
     summary = result.get_summary()
-    summary_table = Table(
-        title="📊 Summary", show_header=True, header_style="bold blue"
-    )
+    summary_table = Table(title="[Summary]", show_header=True, header_style="bold blue")
     summary_table.add_column("Metric", style="cyan", width=20)
     summary_table.add_column("Value", style="green", width=15)
     summary_table.add_column("Details", style="dim", width=30)
@@ -690,7 +688,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
     # Enhanced match type breakdown with icons
     if summary["matched"] > 0:
         match_table = Table(
-            title="🎯 Match Distribution", show_header=True, header_style="bold green"
+            title="[Distribution]", show_header=True, header_style="bold green"
         )
         match_table.add_column("Strategy", style="yellow", width=15)
         match_table.add_column("Count", justify="right", style="green", width=8)
@@ -728,7 +726,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
 
         # Performance overview
         perf_table = Table(
-            title="⚡ Performance Overview", show_header=True, header_style="bold cyan"
+            title="[Performance]", show_header=True, header_style="bold cyan"
         )
         perf_table.add_column("Phase", style="yellow", width=20)
         perf_table.add_column("Time", justify="right", style="green", width=10)
@@ -745,11 +743,11 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
                 )
                 # Determine status based on time
                 if phase == "parsing" and time_val > total_time * 0.5:
-                    status = "🐌 Slow"
+                    status = "[SLOW]"
                 elif phase == "semantic_matching" and time_val > 60:
-                    status = "🔥 Heavy"
+                    status = "[HEAVY]"
                 else:
-                    status = "✅ Good"
+                    status = "[GOOD]"
 
                 perf_table.add_row(
                     phase.replace("_", " ").title(),
@@ -762,7 +760,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
 
         # Memory and throughput metrics
         system_table = Table(
-            title="💻 System Metrics", show_header=True, header_style="bold yellow"
+            title="[System]", show_header=True, header_style="bold yellow"
         )
         system_table.add_column("Metric", style="cyan", width=20)
         system_table.add_column("Value", style="green", width=15)
@@ -815,17 +813,17 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
         # Performance recommendations
         if "performance_profile" in metadata:
             profile = metadata["performance_profile"]
-            console.print("\n[bold blue]💡 Performance Insights:[/bold blue]")
+            console.print("\n[bold blue][Insights]:[/bold blue]")
 
             if profile.get("bottleneck") != "none":
                 console.print(
                     f"  🚨 Bottleneck: {profile.get('bottleneck', 'unknown')}"
                 )
                 console.print(
-                    f"  💡 Recommendation: {profile.get('recommendation', 'No specific advice')}"
+                    f"  [TIP] Recommendation: {profile.get('recommendation', 'No specific advice')}"
                 )
             else:
-                console.print("  ✅ Performance is well balanced!")
+                console.print("  [OK] Performance is well balanced!")
 
             memory_concern = profile.get("memory_concern", "acceptable")
             if memory_concern != "acceptable":
@@ -834,7 +832,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
     # Enhanced detailed matches with confidence breakdown
     if result.matched_pairs:
         console.print(
-            f"\n[bold]📋 Detailed Matches ({len(result.matched_pairs)}):[/bold]"
+            f"\n[bold][Matches] Detailed Matches ({len(result.matched_pairs)}):[/bold]"
         )
         for i, pair in enumerate(result.matched_pairs[:15]):  # Show first 15
             confidence_color = (
@@ -843,10 +841,10 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
                 else "yellow" if pair.confidence.overall >= 0.6 else "red"
             )
             match_icon = {
-                "EXACT": "🎯",
-                "FUZZY": "🔍",
-                "CONTEXTUAL": "🔗",
-                "SEMANTIC": "🧠",
+                "EXACT": "[EXACT]",
+                "FUZZY": "[FUZZY]",
+                "CONTEXTUAL": "[CONTEXT]",
+                "SEMANTIC": "[SEMANTIC]",
             }.get(pair.match_type.value, "📝")
 
             console.print(
@@ -862,7 +860,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             # Show confidence breakdown for high-detail cases
             if pair.confidence.overall < 0.8:
                 console.print(
-                    f"      📊 Name: {pair.confidence.name_similarity:.2f}, "
+                    f"      [Stats] Name: {pair.confidence.name_similarity:.2f}, "
                     f"Location: {pair.confidence.location_score:.2f}, "
                     f"Signature: {pair.confidence.signature_similarity:.2f}"
                 )
@@ -873,7 +871,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
     # Enhanced unmatched section if requested
     if show_unmatched and result.unmatched_functions:
         console.print(
-            f"\n[bold red]❌ Unmatched Functions ({len(result.unmatched_functions)}):[/bold red]"
+            f"\n[bold red][UNMATCHED] Functions ({len(result.unmatched_functions)}):[/bold red]"
         )
         console.print(
             "[dim]These functions may need manual documentation review:[/dim]"
@@ -881,7 +879,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
 
         for i, func in enumerate(result.unmatched_functions[:10]):  # Show first 10
             console.print(
-                f"  {i+1:2d}. ⚠️  {func.signature.name} "
+                f"  {i+1:2d}. [WARNING] {func.signature.name} "
                 f"([dim]{func.file_path}:{func.line_number}[/dim])"
             )
             # Show signature for context
@@ -895,7 +893,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
                 f"  ... and {len(result.unmatched_functions) - 10} more unmatched functions"
             )
 
-    console.print("\n[green]✨ Analysis complete![/green]")
+    console.print("\n[green][COMPLETE] Analysis complete![/green]")
 
 
 @app.command()
@@ -937,13 +935,13 @@ def match_unified(
     ),
 ):
     """
-    🚀 Perform comprehensive unified matching using all three strategies.
+    Perform comprehensive unified matching using all three strategies.
 
     This command runs the complete matching pipeline:
 
-    1. 🎯 Direct Matching: Same-file function-to-docstring matching
-    2. 🔗 Contextual Matching: Cross-file analysis with import resolution
-    3. 🧠 Semantic Matching: AI-powered similarity search for renamed functions
+    1. * Direct Matching: Same-file function-to-docstring matching
+    2. * Contextual Matching: Cross-file analysis with import resolution
+    3. * Semantic Matching: AI-powered similarity search for renamed functions
 
     Provides detailed performance metrics, memory monitoring, and optimization
     recommendations for production use.
@@ -962,23 +960,23 @@ def match_unified(
         if config and config.exists():
             config_obj = CodeDocSyncConfig.from_yaml(str(config))
             if verbose:
-                console.print(f"[green]✅ Configuration loaded from {config}[/green]")
+                console.print(f"[green][OK] Configuration loaded from {config}[/green]")
         else:
             config_obj = CodeDocSyncConfig()
             if verbose:
-                console.print("[yellow]⚠️  Using default configuration[/yellow]")
+                console.print("[yellow][WARNING] Using default configuration[/yellow]")
     except Exception as e:
-        console.print(f"[red]❌ Error loading configuration: {e}[/red]")
+        console.print(f"[red][ERROR] Error loading configuration: {e}[/red]")
         raise typer.Exit(1)
 
     # Enhanced path validation
     if not path.exists():
-        console.print(f"[red]❌ Error: {path} does not exist[/red]")
+        console.print(f"[red][ERROR] Error: {path} does not exist[/red]")
         console.print("[dim]Please provide a valid project directory path[/dim]")
         raise typer.Exit(1)
 
     if not path.is_dir():
-        console.print(f"[red]❌ Error: {path} is not a directory[/red]")
+        console.print(f"[red][ERROR] Error: {path} is not a directory[/red]")
         console.print("[dim]Please provide a directory containing Python files[/dim]")
         raise typer.Exit(1)
 
@@ -990,11 +988,11 @@ def match_unified(
             openai_spec = importlib.util.find_spec("openai")
             if openai_spec is not None and verbose:
                 console.print(
-                    "[green]✅ OpenAI library available for semantic matching[/green]"
+                    "[green][OK] OpenAI library available for semantic matching[/green]"
                 )
         except ImportError:
             console.print(
-                "[yellow]⚠️  OpenAI library not available, semantic matching may fall back to local models[/yellow]"
+                "[yellow][WARNING] OpenAI library not available, semantic matching may fall back to local models[/yellow]"
             )
 
     # Create facade with enhanced configuration
@@ -1047,19 +1045,21 @@ def match_unified(
             progress.update(task, completed=True)
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]⚠️  Analysis interrupted by user[/yellow]")
+        console.print("\n[yellow][WARNING] Analysis interrupted by user[/yellow]")
         console.print("[dim]Partial results may be available[/dim]")
         raise typer.Exit(130)  # Standard exit code for SIGINT
 
     except MemoryError:
-        console.print("[red]❌ Out of memory error during analysis[/red]")
+        console.print("[red][ERROR] Out of memory error during analysis[/red]")
         console.print(
             "[dim]Try using --no-cache or --max-functions to reduce memory usage[/dim]"
         )
         raise typer.Exit(1)
 
     except Exception as e:
-        console.print(f"[red]❌ Critical error during unified analysis: {str(e)}[/red]")
+        console.print(
+            f"[red][ERROR] Critical error during unified analysis: {str(e)}[/red]"
+        )
         if verbose:
             import traceback
 
@@ -1076,7 +1076,7 @@ def match_unified(
         else:
             output = _format_terminal_unified_result(result, show_unmatched)
     except Exception as e:
-        console.print(f"[red]❌ Error formatting output: {e}[/red]")
+        console.print(f"[red][ERROR] Error formatting output: {e}[/red]")
         raise typer.Exit(1)
 
     # Enhanced output handling
@@ -1084,7 +1084,7 @@ def match_unified(
         if output_file:
             output_file.parent.mkdir(parents=True, exist_ok=True)
             output_file.write_text(output, encoding="utf-8")
-            console.print(f"[green]✅ Results saved to {output_file}[/green]")
+            console.print(f"[green][OK] Results saved to {output_file}[/green]")
             if verbose:
                 console.print(
                     f"[dim]File size: {output_file.stat().st_size} bytes[/dim]"
@@ -1092,7 +1092,7 @@ def match_unified(
         else:
             console.print(output)
     except Exception as e:
-        console.print(f"[red]❌ Error writing output: {e}[/red]")
+        console.print(f"[red][ERROR] Error writing output: {e}[/red]")
         raise typer.Exit(1)
 
     # Enhanced statistics and recommendations
@@ -1104,14 +1104,12 @@ def match_unified(
         if show_recommendations:
             try:
                 recommendations = facade.get_performance_recommendations()
-                console.print(
-                    "\n[bold blue]💡 Performance Recommendations:[/bold blue]"
-                )
+                console.print("\n[bold blue][Recommendations]:[/bold blue]")
                 for i, rec in enumerate(recommendations, 1):
                     console.print(f"  {i}. {rec}")
             except Exception as e:
                 console.print(
-                    f"[yellow]⚠️  Could not generate recommendations: {e}[/yellow]"
+                    f"[yellow][WARNING] Could not generate recommendations: {e}[/yellow]"
                 )
 
     # Enhanced completion message with summary
