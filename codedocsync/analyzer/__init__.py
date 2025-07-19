@@ -19,9 +19,11 @@ from .models import (
     RULE_CATEGORIES,
 )
 
+# Import implemented components
+from .rule_engine import RuleEngine
+
 # TYPE_CHECKING imports for future components
 if TYPE_CHECKING:
-    from .rule_engine import RuleEngine
     from .llm_analyzer import LLMAnalyzer
     from .models import AnalysisConfig, AnalysisCache
 
@@ -78,6 +80,8 @@ __all__ = [
     "SEVERITY_WEIGHTS",
     "CONFIDENCE_THRESHOLDS",
     "RULE_CATEGORIES",
+    # Components
+    "RuleEngine",
     # Main entry point
     "analyze_matched_pair",
     # Re-exported dependency

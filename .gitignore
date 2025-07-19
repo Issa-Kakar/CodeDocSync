@@ -201,3 +201,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project documentation files
+ARCHITECTURE.MD
+CHANGELOG.MD
+IMPLEMENTATION_STATE.MD
+CURRENT_SPRINT.MD
