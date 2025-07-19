@@ -17,6 +17,13 @@ from .import_parser import ImportParser
 from .module_resolver import ModuleResolver
 from .function_registry import FunctionRegistry
 from .doc_location_finder import DocLocationFinder
+from .semantic_models import (
+    EmbeddingModel,
+    EmbeddingConfig,
+    FunctionEmbedding,
+    SemanticMatch,
+    SemanticSearchResult,
+)
 
 __all__ = [
     "MatchedPair",
@@ -38,4 +45,9 @@ __all__ = [
     "ModuleResolver",
     "FunctionRegistry",
     "DocLocationFinder",
+    "EmbeddingModel",
+    "EmbeddingConfig",
+    "FunctionEmbedding",
+    "SemanticMatch",
+    "SemanticSearchResult",
 ]

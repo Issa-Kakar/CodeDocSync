@@ -363,6 +363,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Ensured proper data flow between direct and contextual matching phases
   - Performance targets met: <30s for 1000 files, memory usage <500MB for large projects
   - Complete contextual matching system now fully integrated and ready for production use
+- Semantic Matcher Foundation (Chunk 1):
+  - Created `storage/vector_store.py` with comprehensive ChromaDB wrapper for semantic search
+  - Added `matcher/semantic_models.py` with complete data models for semantic matching:
+    - `EmbeddingModel` enum supporting OpenAI and local models
+    - `EmbeddingConfig` dataclass with validation for batch size and timeout settings
+    - `FunctionEmbedding` dataclass with dimension validation for different models
+    - `SemanticMatch` dataclass with similarity score validation
+    - `SemanticSearchResult` dataclass with filtering and best match methods
+  - Implemented `storage/embedding_config.py` for API key and configuration management
+  - Added comprehensive test suite with 25+ test cases covering all semantic models and vector store functionality
+  - Updated project dependencies to include ChromaDB, OpenAI, sentence-transformers, tenacity, and psutil
+  - Enhanced matcher module exports to include all semantic matching components
+  - Foundation ready for semantic matching implementation (Chunks 2-5)
+- Semantic Matcher Embedding Generation Pipeline (Chunk 2):
+  - Created `matcher/embedding_generator.py` with comprehensive EmbeddingGenerator class:
+    - Multi-provider support with OpenAI (text-embedding-3-small, large, ada-002) and local fallback (MiniLM)
+    - Intelligent text preparation strategy combining function signatures with docstring summaries
+    - Fallback chain implementation for robust embedding generation when primary models fail
+    - Batch processing support with configurable batch sizes for efficient large-scale processing
+    - Retry logic with exponential backoff using tenacity for handling transient API failures
+    - Performance tracking with comprehensive statistics (generation time, fallback usage, batch counts)
+    - Function ID generation and signature hashing for cache key generation and change detection
+    - Security-conscious approach (never embeds source code, only signatures and docstring summaries)
+  - Created `storage/embedding_cache.py` with two-tier caching system:
+    - In-memory LRU cache with configurable size limits for fast access to recent embeddings
+    - SQLite-based disk persistence for long-term storage and cross-session caching
+    - Signature hash validation for automatic cache invalidation when functions change
+    - Performance metrics tracking (memory hits, disk hits, cache miss rates)
+    - Automatic cleanup of old entries with configurable retention policies
+    - Error handling for corrupted disk data and database connection issues
+    - Support for large embeddings (up to 3072 dimensions for OpenAI large models)
+  - Added comprehensive test suites:
+    - `tests/test_embedding_generator.py` with 17 test cases covering text preparation, provider fallbacks, and batch processing
+    - `tests/test_embedding_cache.py` with 13 test cases covering memory/disk caching, LRU eviction, and statistics
+  - Performance targets met: <100ms per function for batched embedding generation with caching
+  - Foundation ready for semantic search implementation (Chunk 3)
 
 ### Changed
 - Nothing yet

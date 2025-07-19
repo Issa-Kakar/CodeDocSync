@@ -352,3 +352,111 @@ parser/init.py exports:
 parse_python_file, parse_python_file_lazy
 ParsedFunction, FunctionSignature, FunctionParameter
 ParsingError (base exception)
+
+## Semantic Matching Architecture
+
+### Embedding Strategy
+The semantic matcher uses embeddings as a last-resort fallback (~2% of cases) when direct and contextual matching fail. Design principles:
+
+```python
+# Embedding content strategy (what gets embedded):
+1. Primary embedding: Function signature + first line of docstring
+   - Provides semantic understanding of function purpose
+   - Example: "def authenticate_user(username: str, password: str) -> User: Authenticate a user with credentials"
+
+2. Extended embedding (for complex cases): Signature + full docstring summary
+   - Used when primary embedding yields low confidence matches
+   - Includes parameter descriptions for better semantic understanding
+
+3. Source code embeddings: NEVER embed function source code
+   - Security risk (may contain secrets)
+   - Too noisy for similarity matching
+   - Violates separation of concerns
+Vector Store Contract
+ChromaDB integration requirements:
+python# Collection management rules:
+1. One collection per project (named by project hash)
+2. Metadata stored with each embedding:
+   - function_name: str
+   - module_path: str
+   - signature_hash: str (for change detection)
+   - timestamp: float
+   - embedding_model: str
+
+# Persistence strategy:
+- Local disk persistence in .codedocsync_cache/chroma/
+- Collections expire after 30 days of no access
+- Maximum 10GB total storage before oldest collections are pruned
+Semantic Matching Thresholds
+python# Confidence scoring for semantic matches:
+SEMANTIC_SIMILARITY_THRESHOLDS = {
+    "high_confidence": 0.85,      # Very likely the same function
+    "medium_confidence": 0.75,     # Possibly the same function
+    "low_confidence": 0.65,        # Needs manual verification
+    "no_match": 0.65              # Below this, don't even suggest
+}
+
+# Match validation rules:
+1. Semantic matches MUST have signature similarity > 0.5
+2. Parameter count difference must be <= 3
+3. Never match if module paths are >2 levels apart
+4. Downgrade confidence by 0.1 for each naming convention difference
+Performance Requirements for Semantic Operations
+python# Semantic matcher performance targets:
+- Embedding generation: <100ms per function (batched)
+- Similarity search: <50ms per query
+- Full semantic matching: <200ms per function
+- Memory usage: <500MB for 10k embeddings
+- Cache hit rate: >90% for unchanged functions
+Embedding Cache Architecture
+python@dataclass
+class EmbeddingCacheEntry:
+    text_hash: str           # SHA256 of input text
+    embedding: List[float]   # The embedding vector
+    model: str              # Model used to generate
+    timestamp: float        # For TTL management
+    hit_count: int = 0      # For LRU eviction
+
+# Cache hierarchy:
+1. In-memory LRU cache: 1000 most recent embeddings
+2. Disk cache: SQLite for persistence
+3. ChromaDB: Long-term storage with search capability
+Integration with Matching Pipeline
+The semantic matcher integrates as the final fallback:
+python# Matching pipeline order (STRICT):
+1. DirectMatcher.match_functions() -> MatchResult
+   - If confidence >= 0.8, STOP (use direct match)
+
+2. ContextualMatcher.match_with_context(functions, direct_result) -> MatchResult
+   - If confidence >= 0.7, STOP (use contextual match)
+
+3. SemanticMatcher.match_with_embeddings(functions, [direct_result, contextual_result]) -> MatchResult
+   - Only called for functions with no good match (confidence < 0.7)
+   - Never downgrades existing matches
+
+# Critical invariant:
+# Each matcher MUST preserve high-confidence matches from previous matchers
+Semantic Matcher State Management
+python@dataclass
+class SemanticMatcherState:
+    vector_store: ChromaDB.Collection
+    embedding_cache: EmbeddingCache
+    model_config: EmbeddingModelConfig
+    performance_stats: Dict[str, float]
+
+    # State constraints:
+    # - Vector store must be initialized before first use
+    # - Cache must be warmed from disk on startup
+    # - Stats must be persisted every 100 operations
+Error Recovery for External Services
+python# Embedding service failures:
+1. Primary: OpenAI text-embedding-3-small
+2. Fallback 1: OpenAI text-embedding-ada-002
+3. Fallback 2: Local sentence-transformers model
+4. Final fallback: Skip semantic matching entirely
+
+# Vector store failures:
+1. Connection timeout: Retry with exponential backoff (max 3 attempts)
+2. Storage full: Prune oldest 20% of embeddings
+3. Corruption: Rebuild collection from embedding cache
+4. Complete failure: Fall back to in-memory only mode

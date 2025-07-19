@@ -289,8 +289,96 @@ Upcoming Components
 matcher/ ✅ (Direct Matcher Complete - All Chunks 1-5 Finished)
 matcher/ ✅ (Contextual Matcher Complete - All Chunks 1-5 Finished)
 
+### Semantic Matcher Foundation ✅ COMPLETE (Chunk 1)
+**Status**: Chunk 1 of 5 completed
+**Exports**:
+```python
+# storage/vector_store.py
+VectorStore.add_embeddings() -> None
+VectorStore.search_similar() -> List[Tuple[str, float, Dict[str, str]]]
+VectorStore.get_by_id() -> Optional[Tuple[List[float], Dict[str, str]]]
+VectorStore.clear_old_embeddings() -> int
+VectorStore.get_stats() -> Dict[str, any]
+
+# matcher/semantic_models.py
+EmbeddingModel, EmbeddingConfig, FunctionEmbedding, SemanticMatch, SemanticSearchResult
+
+# storage/embedding_config.py
+EmbeddingConfigManager.get_api_key() -> Optional[str]
+EmbeddingConfigManager.validate_config() -> bool
+EmbeddingConfigManager.get_available_models() -> List[EmbeddingModel]
+```
+**Features**: Complete foundation for semantic matching with:
+- ChromaDB vector store integration with persistent storage and project-specific collections
+- Comprehensive data models for semantic matching with validation:
+  - EmbeddingModel enum supporting OpenAI (small, large, ada-002) and local MiniLM models
+  - EmbeddingConfig with batch size validation (1-2048) and timeout constraints (≥10s)
+  - FunctionEmbedding with dimension validation for different models (1536/3072/384 dims)
+  - SemanticMatch with similarity score validation (0-1 range)
+  - SemanticSearchResult with filtering and best match utilities
+- API key and configuration management with environment variable support
+- Performance metrics tracking (embeddings stored, searches performed, cache hits)
+- Similarity search with configurable thresholds and result filtering
+- Old embedding cleanup with configurable retention policies
+- Comprehensive test suite with 25+ test cases covering all functionality:
+  - Model validation tests for all dataclasses and enums
+  - Vector store tests with mocked ChromaDB for testing without dependencies
+  - Configuration management tests with environment variable handling
+  - Error handling and edge case validation
+- Updated project dependencies: chromadb, openai, sentence-transformers, tenacity, psutil
+- Enhanced matcher module exports with all semantic components
+- Optional ChromaDB imports for testing environments without full dependencies
+- Foundation ready for embedding generation pipeline (Chunk 2)
+
+### Semantic Matcher Embedding Generation Pipeline ✅ COMPLETE (Chunk 2)
+**Status**: Chunk 2 of 5 completed
+**Exports**:
+```python
+# matcher/embedding_generator.py
+EmbeddingGenerator.generate_function_embeddings() -> List[FunctionEmbedding]
+EmbeddingGenerator.prepare_function_text() -> str
+EmbeddingGenerator.generate_function_id() -> str
+EmbeddingGenerator.generate_signature_hash() -> str
+EmbeddingGenerator.get_stats() -> Dict[str, float]
+
+# storage/embedding_cache.py
+EmbeddingCache.get() -> Optional[FunctionEmbedding]
+EmbeddingCache.set() -> None
+EmbeddingCache.clear_old_entries() -> int
+EmbeddingCache.get_stats() -> Dict[str, any]
+```
+**Features**: Complete embedding generation pipeline with:
+- Multi-provider embedding generation with intelligent fallback chain:
+  - Primary: OpenAI models (text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002)
+  - Fallback: Local sentence-transformers model (all-MiniLM-L6-v2)
+  - Automatic provider switching when API failures occur
+- Intelligent text preparation strategy for function embedding:
+  - Combines function signatures with docstring summaries for optimal semantic representation
+  - Security-conscious approach (never embeds source code)
+  - Text truncation to respect model token limits (512 characters)
+  - Handles both RawDocstring and ParsedDocstring types
+- Robust error handling and retry mechanisms:
+  - Exponential backoff retry logic using tenacity library
+  - Rate limit detection and appropriate waiting
+  - Graceful degradation when all providers fail
+- Efficient batch processing and caching:
+  - Configurable batch sizes for optimal API usage
+  - Two-tier caching system (in-memory LRU + SQLite disk persistence)
+  - Signature hash validation for automatic cache invalidation when functions change
+  - Cache statistics tracking for performance monitoring
+- Performance optimization:
+  - <100ms per function target for batched generation with caching
+  - Memory-efficient LRU eviction in memory cache
+  - Automatic cleanup of old cache entries
+- Comprehensive test coverage:
+  - 17 test cases for embedding generation covering all scenarios
+  - 13 test cases for caching system covering memory/disk operations
+- Foundation ready for semantic search implementation (Chunk 3)
+
 Next Implementation:
-- semantic_matcher.py (Future sprint - will handle embedding-based similarity)
+- Chunk 3: Semantic Search Implementation
+- Chunk 4: Integration Layer
+- Chunk 5: Performance Optimization and Production Readiness
 
 analyzer/ ❌
 
