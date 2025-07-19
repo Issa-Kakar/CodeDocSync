@@ -19,7 +19,9 @@
       "Bash(cp:*)",
       "Bash(mkdir:*)",
       "Bash(del test_openai_integration.py test_openai_simple.py validate_openai.py)",
-      "Bash(type:*)"
+      "Bash(type:*)",
+      "Bash(git rm:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

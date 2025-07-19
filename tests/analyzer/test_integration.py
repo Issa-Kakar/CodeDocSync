@@ -16,7 +16,18 @@ from codedocsync.analyzer import (
     AnalysisConfig,
     get_development_config,
 )
-from codedocsync.analyzer.models import AnalysisResult
+from codedocsync.analyzer.integration import (
+    _should_use_llm,
+    _determine_analysis_types,
+    _create_llm_request,
+    _merge_results,
+)
+from codedocsync.analyzer.models import (
+    AnalysisResult,
+    InconsistencyIssue,
+    RuleCheckResult,
+)
+from codedocsync.analyzer.llm_models import LLMAnalysisRequest
 from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
 from codedocsync.parser import (
     ParsedFunction,
@@ -569,3 +580,508 @@ class TestErrorRecovery:
 
         assert isinstance(result, AnalysisResult)
         assert not result.used_llm
+
+
+class TestHelperFunctions:
+    """Test the helper functions in integration module."""
+
+    def create_test_data(self):
+        """Create test data for helper function tests."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="calculate_total",
+                parameters=[
+                    FunctionParameter(
+                        name="items",
+                        type_annotation="List[int]",
+                        default_value=None,
+                        is_required=True,
+                    )
+                ],
+                return_annotation="int",
+                is_async=False,
+                decorators=["@cached_property"],
+            ),
+            docstring=None,
+            file_path="/test/calculations.py",
+            line_number=10,
+            body="if len(items) == 0:\n    return 0\nreturn sum(items)",
+        )
+
+        docstring = ParsedDocstring(
+            format="google",
+            summary="Calculate total of items",
+            parameters=[
+                DocstringParameter(
+                    name="items", description="List of integers", type="List[int]"
+                )
+            ],
+            returns=DocstringReturns(description="Total sum", type="int"),
+            raises=[],
+            raw_text="Calculate total of items.\n\nArgs:\n    items: List of integers\n\nReturns:\n    Total sum",
+            examples=[">>> calculate_total([1, 2, 3])\n6"],
+        )
+
+        pair = MatchedPair(
+            function=function,
+            documentation=docstring,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="Direct match",
+        )
+
+        return function, docstring, pair
+
+    def test_should_use_llm_low_confidence(self):
+        """Test _should_use_llm with low confidence rules."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+
+        # Create low confidence rule result
+        rule_results = [
+            RuleCheckResult(
+                rule_name="parameter_type_check",
+                passed=False,
+                confidence=0.7,  # Low confidence
+                issues=[],
+                execution_time_ms=1.0,
+            )
+        ]
+
+        assert _should_use_llm(rule_results, config, pair) is True
+
+    def test_should_use_llm_high_confidence(self):
+        """Test _should_use_llm with high confidence rules."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+
+        # Create high confidence rule result
+        rule_results = [
+            RuleCheckResult(
+                rule_name="parameter_name_check",
+                passed=True,
+                confidence=0.95,  # High confidence
+                issues=[],
+                execution_time_ms=1.0,
+            )
+        ]
+
+        assert _should_use_llm(rule_results, config, pair) is False
+
+    def test_should_use_llm_with_examples(self):
+        """Test _should_use_llm when docstring has examples."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+
+        # High confidence rules but docstring has examples
+        rule_results = [
+            RuleCheckResult(
+                rule_name="all_checks",
+                passed=True,
+                confidence=0.95,
+                issues=[],
+                execution_time_ms=1.0,
+            )
+        ]
+
+        # Should use LLM because docstring has examples
+        assert _should_use_llm(rule_results, config, pair) is True
+
+    def test_should_use_llm_with_decorators(self):
+        """Test _should_use_llm with behavior-affecting decorators."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+
+        rule_results = [
+            RuleCheckResult(
+                rule_name="all_checks",
+                passed=True,
+                confidence=0.95,
+                issues=[],
+                execution_time_ms=1.0,
+            )
+        ]
+
+        # Should use LLM because function has @cached_property decorator
+        assert _should_use_llm(rule_results, config, pair) is True
+
+    def test_should_use_llm_disabled(self):
+        """Test _should_use_llm when LLM is disabled in config."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+        config.use_llm = False
+
+        rule_results = [
+            RuleCheckResult(
+                rule_name="test",
+                passed=False,
+                confidence=0.5,  # Low confidence
+                issues=[],
+                execution_time_ms=1.0,
+            )
+        ]
+
+        # Should not use LLM when disabled
+        assert _should_use_llm(rule_results, config, pair) is False
+
+    def test_determine_analysis_types_basic(self):
+        """Test _determine_analysis_types for basic function."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="simple_func",
+                parameters=[],
+                return_annotation=None,
+                is_async=False,
+                decorators=[],
+            ),
+            docstring=None,
+            file_path="/test/file.py",
+            line_number=1,
+        )
+
+        pair = MatchedPair(
+            function=function,
+            documentation=None,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="Test",
+        )
+
+        types = _determine_analysis_types(pair, [])
+
+        # Should default to behavior analysis
+        assert types == ["behavior"]
+
+    def test_determine_analysis_types_with_examples(self):
+        """Test _determine_analysis_types when docstring has examples."""
+        _, _, pair = self.create_test_data()
+
+        types = _determine_analysis_types(pair, [])
+
+        # Should include examples analysis
+        assert "examples" in types
+
+    def test_determine_analysis_types_with_conditionals(self):
+        """Test _determine_analysis_types for functions with conditionals."""
+        _, _, pair = self.create_test_data()
+
+        types = _determine_analysis_types(pair, [])
+
+        # Should include edge_cases analysis due to if statement in body
+        assert "edge_cases" in types
+
+    def test_determine_analysis_types_with_deprecated(self):
+        """Test _determine_analysis_types for deprecated functions."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="old_func",
+                parameters=[],
+                return_annotation=None,
+                is_async=False,
+                decorators=["@deprecated"],
+            ),
+            docstring=None,
+            file_path="/test/file.py",
+            line_number=1,
+        )
+
+        pair = MatchedPair(
+            function=function,
+            documentation=None,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="Test",
+        )
+
+        types = _determine_analysis_types(pair, [])
+
+        # Should include version_info analysis
+        assert "version_info" in types
+
+    def test_create_llm_request(self):
+        """Test _create_llm_request function."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+
+        rule_results = [
+            RuleCheckResult(
+                rule_name="test_rule",
+                passed=False,
+                confidence=0.8,
+                issues=[],
+                execution_time_ms=1.0,
+            )
+        ]
+
+        request = _create_llm_request(pair, rule_results, config)
+
+        assert isinstance(request, LLMAnalysisRequest)
+        assert request.function == pair.function
+        assert request.docstring == pair.documentation
+        assert len(request.analysis_types) > 0
+        assert request.rule_results == rule_results
+        assert isinstance(request.related_functions, list)
+
+    def test_create_llm_request_with_config_override(self):
+        """Test _create_llm_request with config analysis types override."""
+        _, _, pair = self.create_test_data()
+        config = get_development_config()
+        config.llm_analysis_types = ["behavior", "performance"]
+
+        rule_results = []
+
+        request = _create_llm_request(pair, rule_results, config)
+
+        # Should use config override
+        assert request.analysis_types == ["behavior", "performance"]
+
+    def test_merge_results_no_duplicates(self):
+        """Test _merge_results with no duplicates."""
+        rule_issues = [
+            InconsistencyIssue(
+                issue_type="parameter_missing",
+                severity="critical",
+                description="Parameter 'x' is missing",
+                suggestion="Add parameter 'x'",
+                line_number=10,
+                confidence=0.95,
+            )
+        ]
+
+        llm_issues = [
+            InconsistencyIssue(
+                issue_type="edge_case_missing",
+                severity="medium",
+                description="Edge case not documented",
+                suggestion="Document empty list case",
+                line_number=15,
+                confidence=0.85,
+            )
+        ]
+
+        merged = _merge_results(rule_issues, llm_issues)
+
+        assert len(merged) == 2
+        assert merged[0].severity == "critical"  # Higher severity first
+        assert merged[1].severity == "medium"
+
+    def test_merge_results_with_duplicates(self):
+        """Test _merge_results with duplicate issues."""
+        rule_issues = [
+            InconsistencyIssue(
+                issue_type="parameter_type_mismatch",
+                severity="high",
+                description="Type mismatch",
+                suggestion="Fix type to int",
+                line_number=10,
+                confidence=0.85,
+            )
+        ]
+
+        llm_issues = [
+            InconsistencyIssue(
+                issue_type="parameter_type_mismatch",
+                severity="high",
+                description="Type mismatch detected",
+                suggestion="Change type annotation to int",
+                line_number=10,
+                confidence=0.9,
+            )
+        ]
+
+        merged = _merge_results(rule_issues, llm_issues)
+
+        # Should merge into one issue
+        assert len(merged) == 1
+        assert merged[0].confidence == 0.9  # Higher confidence wins
+        assert "Alternatively:" in merged[0].suggestion  # Suggestions combined
+
+    def test_merge_results_sorting(self):
+        """Test _merge_results sorting by severity and line number."""
+        issues = [
+            InconsistencyIssue(
+                issue_type="test1",
+                severity="low",
+                description="Low severity",
+                suggestion="Fix",
+                line_number=20,
+                confidence=0.8,
+            ),
+            InconsistencyIssue(
+                issue_type="test2",
+                severity="critical",
+                description="Critical issue",
+                suggestion="Fix now",
+                line_number=10,
+                confidence=0.9,
+            ),
+            InconsistencyIssue(
+                issue_type="test3",
+                severity="critical",
+                description="Another critical",
+                suggestion="Fix now",
+                line_number=5,
+                confidence=0.9,
+            ),
+        ]
+
+        merged = _merge_results(issues, [])
+
+        # Should be sorted by severity (critical first) then line number
+        assert merged[0].line_number == 5  # First critical (lower line)
+        assert merged[1].line_number == 10  # Second critical
+        assert merged[2].severity == "low"  # Low severity last
+
+
+class TestIntegrationFlow:
+    """Test the complete integration flow with all components."""
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_with_llm(self):
+        """Test complete pipeline with rule engine and LLM."""
+        # Create function with issues that trigger LLM
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="complex_calculation",
+                parameters=[
+                    FunctionParameter(
+                        name="data",
+                        type_annotation="Dict[str, Any]",
+                        default_value=None,
+                        is_required=True,
+                    )
+                ],
+                return_annotation="float",
+                is_async=False,
+                decorators=[],
+            ),
+            docstring=None,
+            file_path="/test/calc.py",
+            line_number=25,
+            complexity=15,  # High complexity
+        )
+
+        docstring = ParsedDocstring(
+            format="google",
+            summary="Perform complex calculation",
+            parameters=[
+                DocstringParameter(
+                    name="data",
+                    description="Input data",
+                    type="dict",  # Type mismatch
+                )
+            ],
+            returns=DocstringReturns(
+                description="Calculated result",
+                type="float",
+            ),
+            raises=[],
+            raw_text="Docstring text",
+        )
+
+        pair = MatchedPair(
+            function=function,
+            documentation=docstring,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="Direct match",
+        )
+
+        config = get_development_config()
+        config.use_llm = True
+
+        # Mock LLM analyzer
+        mock_llm = Mock()
+        mock_llm.analyze_function = AsyncMock(
+            return_value=Mock(
+                issues=[
+                    InconsistencyIssue(
+                        issue_type="behavior_inconsistency",
+                        severity="medium",
+                        description="Function behavior not fully documented",
+                        suggestion="Add description of edge cases",
+                        line_number=25,
+                        confidence=0.85,
+                    )
+                ]
+            )
+        )
+
+        result = await analyze_matched_pair(pair, config=config, llm_analyzer=mock_llm)
+
+        assert result.used_llm is True
+        assert len(result.issues) >= 2  # Rule issues + LLM issues
+
+        # Check that issues are properly merged and sorted
+        critical_issues = [i for i in result.issues if i.severity == "critical"]
+        medium_issues = [i for i in result.issues if i.severity == "medium"]
+
+        # Critical issues should come before medium issues
+        if critical_issues and medium_issues:
+            assert result.issues.index(critical_issues[0]) < result.issues.index(
+                medium_issues[0]
+            )
+
+    @pytest.mark.asyncio
+    async def test_pipeline_skips_llm_for_high_confidence(self):
+        """Test that pipeline skips LLM for high-confidence critical issues."""
+        # Create function with critical parameter mismatch
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="process_data",
+                parameters=[
+                    FunctionParameter(
+                        name="user_id",
+                        type_annotation="int",
+                        default_value=None,
+                        is_required=True,
+                    )
+                ],
+                return_annotation=None,
+                is_async=False,
+                decorators=[],
+            ),
+            docstring=None,
+            file_path="/test/process.py",
+            line_number=10,
+        )
+
+        docstring = ParsedDocstring(
+            format="google",
+            summary="Process user data",
+            parameters=[
+                DocstringParameter(
+                    name="userId",  # Name mismatch - critical issue
+                    description="User identifier",
+                    type="int",
+                )
+            ],
+            returns=None,
+            raises=[],
+            raw_text="Process user data",
+        )
+
+        pair = MatchedPair(
+            function=function,
+            documentation=docstring,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="Direct match",
+        )
+
+        config = get_development_config()
+        config.use_llm = True
+
+        # Mock LLM analyzer
+        mock_llm = Mock()
+        mock_llm.analyze_function = AsyncMock()
+
+        result = await analyze_matched_pair(pair, config=config, llm_analyzer=mock_llm)
+
+        # Should not use LLM due to high-confidence critical issue
+        assert result.used_llm is False
+        mock_llm.analyze_function.assert_not_called()
+
+        # Should still have the critical issue
+        assert len(result.issues) > 0
+        assert any(i.severity == "critical" for i in result.issues)

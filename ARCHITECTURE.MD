@@ -31,6 +31,7 @@ CodeDocSync is a CLI tool that automatically detects inconsistencies between Pyt
 3. **Function Naming**: parse_* for parsing, analyze_* for analysis, match_* for matching
 4. **Error Handling**: Every public function must handle None inputs gracefully
 5. **Testing**: Each component must have tests BEFORE moving to next component
+6. **Code Quality**: All code must pass pre-commit hooks before committing (see Code Quality section)
 
 ## Component Specifications
 
@@ -259,3 +260,217 @@ markdown### Analysis Caching Strategy
 2. **LLM Results Cache**: SQLite with function signature hash as key
 3. **Cache Key Generation**: MD5(function_signature + docstring + model)
 4. **Cache Invalidation**: On function or docstring change
+
+### LLM Analyzer Specifications
+
+**Purpose**: Provide semantic analysis for complex inconsistencies that rule-based checks cannot detect.
+
+**Core Responsibilities**:
+1. Behavioral consistency checking (does the code do what the docs say?)
+2. Example validation (are code examples in docstrings valid?)
+3. Edge case documentation (are important edge cases documented?)
+4. Version/deprecation info validation
+5. Complex type consistency beyond structural checks
+
+**LLM Integration Architecture**:
+```python
+@dataclass
+class LLMAnalysisRequest:
+    function: ParsedFunction
+    docstring: ParsedDocstring
+    analysis_type: str  # 'behavior', 'examples', 'edge_cases', etc.
+    context: Dict[str, Any]  # Related functions, imports, etc.
+
+@dataclass
+class LLMAnalysisResponse:
+    issues: List[InconsistencyIssue]
+    raw_response: str
+    model_used: str
+    tokens_used: int
+    response_time_ms: float
+Prompt Engineering Principles:
+
+Structured Output: Always request JSON with specific schema
+Context Limiting: Include only relevant code context (max 2000 tokens)
+Temperature 0: Deterministic outputs for consistency
+Confidence Scoring: LLM must provide confidence for each issue
+Example-Driven: Include examples of correct analysis in prompts
+
+LLM Performance Requirements:
+
+Response time: <2s per function (p95)
+Cache hit rate: >80% after warm-up
+Token usage: <1000 per analysis (optimize prompts)
+Fallback time: <100ms to switch to rule-only analysis
+
+Caching Strategy for LLM:
+Cache Key: MD5(function_signature + docstring + analysis_type + model)
+Cache Storage: SQLite with JSON responses
+Cache TTL: 7 days (configurable)
+Cache Size Limit: 1GB (rotate oldest entries)
+Integration Flow
+Rule Engine Analysis (confidence > 0.9) → Skip LLM → Return results
+                    ↓ (confidence ≤ 0.9)
+        Check LLM Cache → Hit → Return cached + rule results
+                    ↓ Miss
+        Call LLM with context → Merge with rule results → Cache → Return
+                    ↓ (timeout/error)
+        Return rule-only results with degraded confidence
+Critical LLM Invariants
+
+Never Block on LLM: Always have rule-based fallback
+Cache Everything: LLM calls are expensive, cache aggressively
+Validate Output: LLM output must match expected schema or reject
+Context Window: Never exceed 4000 tokens total (prompt + completion)
+Rate Limiting: Implement token bucket with 10 req/s limit
+
+## Code Quality and Pre-commit Hooks
+
+This project uses strict code quality enforcement through pre-commit hooks that run automatically before each commit. **All code must pass these checks before being committed.**
+
+### Pre-commit Hook Configuration
+
+The project uses the following pre-commit hooks (defined in `.pre-commit-config.yaml`):
+
+1. **Standard Pre-commit Hooks** (v4.6.0):
+   - `check-yaml`: Validates YAML file syntax
+   - `end-of-file-fixer`: Ensures files end with a newline
+   - `trailing-whitespace`: Removes trailing whitespace
+
+2. **Ruff** (v0.4.10):
+   - `ruff --fix`: Fast Python linter with auto-fix capabilities
+   - `ruff-format`: Fast Python code formatter (alternative to Black)
+
+3. **Black** (v24.4.2):
+   - `black`: Python code formatter for consistent style
+
+### Development Workflow
+
+**CRITICAL**: When writing code, follow this workflow to avoid commit failures:
+
+1. **Write code following these style guidelines**:
+   - Use double quotes for strings (Ruff/Black default)
+   - Keep line length ≤ 88 characters (Black default)
+   - Use trailing commas in multi-line structures
+   - Follow PEP 8 naming conventions
+   - End files with a single newline
+   - Remove trailing whitespace
+
+2. **Before committing, run pre-commit manually** (optional but recommended):
+   ```bash
+   pre-commit run --all-files
+   ```
+
+3. **Commit normally**:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   ```
+
+4. **If pre-commit hooks fail**:
+   - Review the changes made by the hooks
+   - Add the modified files: `git add -A`
+   - Commit again: `git commit -m "Your commit message"`
+
+### Common Pre-commit Issues and Solutions
+
+**Issue**: Ruff/Black formatting conflicts
+- **Solution**: Let both tools run, they are configured to work together
+
+**Issue**: Files missing final newline
+- **Solution**: Automatic fix by `end-of-file-fixer`, just re-commit
+
+**Issue**: Trailing whitespace
+- **Solution**: Automatic fix by `trailing-whitespace`, just re-commit
+
+**Issue**: YAML syntax errors
+- **Solution**: Fix YAML syntax manually, then re-commit
+
+### Bypassing Pre-commit (Emergency Only)
+
+**ONLY use in emergencies**:
+```bash
+git commit --no-verify -m "Emergency commit message"
+```
+
+### Code Style Guidelines for Consistency
+
+To minimize pre-commit hook failures, follow these guidelines when writing code:
+
+**String Formatting**:
+```python
+# Good
+description = "This is a string"
+f"Function {name} has {count} parameters"
+
+# Avoid
+description = 'This is a string'  # Single quotes
+```
+
+**Line Length and Formatting**:
+```python
+# Good
+def long_function_name(
+    parameter_one: str,
+    parameter_two: int,
+    parameter_three: bool = True,
+) -> Dict[str, Any]:
+    pass
+
+# Good
+result = some_function(
+    arg1="value1",
+    arg2="value2",
+    arg3="value3",
+)
+```
+
+**Import Organization**:
+```python
+# Standard library
+import json
+import re
+from typing import List, Dict, Any
+
+# Third party
+import pytest
+from rich.console import Console
+
+# Local imports
+from .models import InconsistencyIssue
+from .prompt_templates import format_prompt
+```
+
+**Docstring Style**:
+```python
+def function_name(param: str) -> bool:
+    """
+    Brief description of function.
+
+    Args:
+        param: Description of parameter
+
+    Returns:
+        Description of return value
+
+    Raises:
+        ValueError: When validation fails
+    """
+    pass
+```
+
+### Editor Configuration
+
+**Recommended VS Code settings** (`.vscode/settings.json`):
+```json
+{
+    "python.formatting.provider": "black",
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true
+}
+```
+
+This configuration ensures your editor applies the same formatting rules as the pre-commit hooks, reducing commit failures.
