@@ -138,13 +138,50 @@ class LLMOutputParser:
             except json.JSONDecodeError:
                 pass
 
-        # Try to find JSON object in the text
-        json_match = re.search(r'(\{[^}]*"issues"[^}]*\})', raw_response, re.DOTALL)
-        if json_match:
-            try:
-                return json.loads(json_match.group(1))
-            except json.JSONDecodeError:
-                pass
+        # Try to find JSON object in the text using a more robust approach
+        # Look for JSON that starts with { and contains "issues"
+        start_idx = raw_response.find("{")
+        while start_idx != -1:
+            # Try to find a valid JSON object starting from this position
+            brace_count = 0
+            end_idx = start_idx
+            in_string = False
+            escape_next = False
+
+            for i in range(start_idx, len(raw_response)):
+                char = raw_response[i]
+
+                if escape_next:
+                    escape_next = False
+                    continue
+
+                if char == "\\":
+                    escape_next = True
+                    continue
+
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+
+                if not in_string:
+                    if char == "{":
+                        brace_count += 1
+                    elif char == "}":
+                        brace_count -= 1
+                        if brace_count == 0:
+                            end_idx = i + 1
+                            break
+
+            if end_idx > start_idx:
+                potential_json = raw_response[start_idx:end_idx]
+                if '"issues"' in potential_json:
+                    try:
+                        return json.loads(potential_json)
+                    except json.JSONDecodeError:
+                        pass
+
+            # Look for next {
+            start_idx = raw_response.find("{", start_idx + 1)
 
         # If all else fails, try to parse the whole thing
         return json.loads(raw_response)
