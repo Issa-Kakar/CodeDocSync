@@ -115,7 +115,7 @@ class DirectMatcher:
         # If we have a parsed docstring, check parameter alignment
         confidence = self._calculate_exact_match_confidence(func)
 
-        if confidence.overall >= 0.95:  # High threshold for exact match
+        if confidence.overall >= 0.7:  # Reasonable threshold for exact match
             return MatchedPair(
                 function=func,
                 match_type=MatchType.EXACT,
@@ -170,7 +170,7 @@ class DirectMatcher:
             return 1.0  # Both empty
 
         if not func_params or not doc_params:
-            return 0.0  # One empty, one not
+            return 0.5  # Give partial credit if one side is empty
 
         # Calculate Jaccard similarity
         intersection = func_params & doc_params

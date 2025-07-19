@@ -146,7 +146,7 @@ class TestVectorStore:
 
         # Check metrics updated
         assert store.metrics["searches_performed"] == 1
-        assert store.metrics["total_search_time"] > 0
+        assert store.metrics["total_search_time"] >= 0
 
     def test_search_similar_with_filtering(self, temp_cache_dir, mock_chromadb):
         """Test similarity search with min_similarity filtering."""

@@ -119,7 +119,7 @@ class UnifiedMatchingFacade:
                 logger.warning(f"No Python files found in {project_path}")
                 return self._create_empty_result()
 
-            parser = IntegratedParser(cache_enabled=use_cache)
+            parser = IntegratedParser()
             parsing_errors = 0
 
             for i, file_path in enumerate(python_files):
@@ -203,7 +203,7 @@ class UnifiedMatchingFacade:
 
             # Phase 4: Enhanced semantic matching with monitoring
             if enable_semantic and getattr(
-                self.config.matching, "enable_semantic", True
+                self.config.matcher, "enable_semantic", True
             ):
                 logger.info("Phase 4: Enhanced semantic matching with monitoring...")
 
@@ -343,6 +343,11 @@ class UnifiedMatchingFacade:
         elif contextual_pct > 30:
             profile["bottleneck"] = "contextual_matching"
             profile["recommendation"] = "Consider optimizing import resolution"
+        elif direct_pct > 20:
+            profile["bottleneck"] = "direct_matching"
+            profile["recommendation"] = (
+                "Consider optimizing signature similarity calculation"
+            )
         else:
             profile["bottleneck"] = "none"
             profile["recommendation"] = "Performance is well balanced"

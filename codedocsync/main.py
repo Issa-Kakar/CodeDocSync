@@ -985,9 +985,10 @@ def match_unified(
     # Validate semantic matching requirements
     if enable_semantic:
         try:
-            import openai
+            import importlib.util
 
-            if verbose:
+            openai_spec = importlib.util.find_spec("openai")
+            if openai_spec is not None and verbose:
                 console.print(
                     "[green]✅ OpenAI library available for semantic matching[/green]"
                 )
@@ -1006,11 +1007,11 @@ def match_unified(
         nonlocal current_phase
         if verbose and phase != current_phase:
             current_phase = phase
-            console.print(f"[blue]📊 {phase}: {current}/{total}[/blue]")
+            console.print(f"[blue]{phase}: {current}/{total}[/blue]")
 
     # Enhanced startup message
     console.print(
-        f"[bold cyan]🚀 Starting comprehensive unified analysis: {path}[/bold cyan]"
+        f"[bold cyan]Starting comprehensive unified analysis: {path}[/bold cyan]"
     )
     if verbose:
         console.print(
@@ -1114,7 +1115,7 @@ def match_unified(
                 )
 
     # Enhanced completion message with summary
-    console.print("\n[bold green]✨ Unified analysis complete![/bold green]")
+    console.print("\n[bold green]Unified analysis complete![/bold green]")
     summary = result.get_summary()
 
     # Success metrics
@@ -1124,7 +1125,7 @@ def match_unified(
         else "yellow" if float(summary["match_rate"].strip("%")) >= 60 else "red"
     )
     console.print(
-        f"📊 Matched [bold]{summary['matched']}[/bold]/{summary['total_functions']} functions "
+        f"Matched [bold]{summary['matched']}[/bold]/{summary['total_functions']} functions "
         f"([{match_rate_color}]{summary['match_rate']}[/{match_rate_color}])"
     )
 
@@ -1134,27 +1135,27 @@ def match_unified(
     ):
         stats = getattr(result, "metadata", {})["unified_stats"]
         console.print(
-            f"⏱️  Total time: [bold]{stats.get('total_time_seconds', 0):.2f}s[/bold]"
+            f"Total time: [bold]{stats.get('total_time_seconds', 0):.2f}s[/bold]"
         )
         if stats.get("memory_usage"):
             memory_growth = stats["memory_usage"].get("peak_mb", 0) - stats[
                 "memory_usage"
             ].get("initial_mb", 0)
             console.print(
-                f"💾 Memory usage: [bold]{memory_growth:.1f}MB[/bold] peak growth"
+                f"Memory usage: [bold]{memory_growth:.1f}MB[/bold] peak growth"
             )
 
     # Exit code based on results
     if summary["matched"] == 0 and summary["total_functions"] > 0:
         console.print(
-            "[red]⚠️  No matches found - this may indicate a configuration issue[/red]"
+            "[red]No matches found - this may indicate a configuration issue[/red]"
         )
         raise typer.Exit(2)  # Warning exit code
 
     # Cleanup
     try:
         asyncio.run(facade.cleanup())
-    except:
+    except Exception:
         pass  # Cleanup is best-effort
 
 

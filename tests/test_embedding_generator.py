@@ -34,7 +34,7 @@ class TestEmbeddingGenerator:
     def mock_generator(self):
         """Create properly mocked embedding generator."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock valid configuration
             mock_manager = Mock()
@@ -185,7 +185,7 @@ class TestEmbeddingGenerator:
     def test_init_with_valid_config(self):
         """Test initialization with valid configuration."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock valid configuration
             mock_manager = Mock()
@@ -205,7 +205,7 @@ class TestEmbeddingGenerator:
     def test_init_with_invalid_config(self):
         """Test initialization with invalid configuration."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock invalid configuration
             mock_manager = Mock()
@@ -218,7 +218,7 @@ class TestEmbeddingGenerator:
     def test_init_local_fallback(self):
         """Test initialization with local model fallback."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock configuration without OpenAI
             mock_manager = Mock()
@@ -238,7 +238,7 @@ class TestEmbeddingGenerator:
     async def test_generate_openai_embedding(self):
         """Test OpenAI embedding generation."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock configuration
             mock_manager = Mock()
@@ -263,7 +263,7 @@ class TestEmbeddingGenerator:
     async def test_generate_openai_embedding_rate_limit(self):
         """Test OpenAI embedding with rate limit error."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock configuration
             mock_manager = Mock()
@@ -286,7 +286,7 @@ class TestEmbeddingGenerator:
     def test_generate_local_embedding(self):
         """Test local embedding generation."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock configuration
             mock_manager = Mock()
@@ -313,7 +313,7 @@ class TestEmbeddingGenerator:
     async def test_generate_function_embeddings_batch(self, sample_function):
         """Test batch processing of function embeddings."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock configuration
             mock_manager = Mock()
@@ -352,7 +352,7 @@ class TestEmbeddingGenerator:
     async def test_fallback_model_usage(self, sample_function):
         """Test fallback to secondary model when primary fails."""
         with patch(
-            "codedocsync.matcher.embedding_generator.EmbeddingConfigManager"
+            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
         ) as mock_config_manager:
             # Mock configuration
             mock_manager = Mock()

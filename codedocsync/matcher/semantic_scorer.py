@@ -144,32 +144,40 @@ class SemanticScorer:
         name2_lower = name2.lower()
 
         patterns = [
-            # Verb changes
-            (r"^get_(.+)$", r"^fetch_\1$"),
-            (r"^set_(.+)$", r"^update_\1$"),
-            (r"^create_(.+)$", r"^make_\1$"),
-            (r"^delete_(.+)$", r"^remove_\1$"),
-            (r"^build_(.+)$", r"^construct_\1$"),
-            (r"^init_(.+)$", r"^initialize_\1$"),
+            # Verb changes - (source_pattern, target_template)
+            (r"^get_(.+)$", "fetch_{}"),
+            (r"^set_(.+)$", "update_{}"),
+            (r"^create_(.+)$", "make_{}"),
+            (r"^delete_(.+)$", "remove_{}"),
+            (r"^build_(.+)$", "construct_{}"),
+            (r"^init_(.+)$", "initialize_{}"),
             # Noun changes
-            (r"^(.+)_id$", r"^\1_identifier$"),
-            (r"^(.+)_dict$", r"^\1_map$"),
-            (r"^(.+)_list$", r"^\1_array$"),
-            (r"^(.+)_str$", r"^\1_string$"),
-            (r"^(.+)_num$", r"^\1_number$"),
+            (r"^(.+)_id$", "{}_identifier"),
+            (r"^(.+)_dict$", "{}_map"),
+            (r"^(.+)_list$", "{}_array"),
+            (r"^(.+)_str$", "{}_string"),
+            (r"^(.+)_num$", "{}_number"),
             # Common abbreviations
-            (r"^(.+)_config$", r"^\1_configuration$"),
-            (r"^(.+)_info$", r"^\1_information$"),
-            (r"^(.+)_data$", r"^\1_dataset$"),
-            (r"^(.+)_proc$", r"^\1_process$"),
+            (r"^(.+)_config$", "{}_configuration"),
+            (r"^(.+)_info$", "{}_information"),
+            (r"^(.+)_data$", "{}_dataset"),
+            (r"^(.+)_proc$", "{}_process"),
         ]
 
-        for pattern1, pattern2 in patterns:
-            # Check both directions
-            if re.match(pattern1, name1_lower) and re.match(pattern2, name2_lower):
-                return True
-            if re.match(pattern2, name1_lower) and re.match(pattern1, name2_lower):
-                return True
+        for pattern1, template2 in patterns:
+            # Check name1 -> name2 direction
+            match1 = re.match(pattern1, name1_lower)
+            if match1:
+                expected_name2 = template2.format(match1.group(1))
+                if expected_name2 == name2_lower:
+                    return True
+
+            # Check name2 -> name1 direction
+            match2 = re.match(pattern1, name2_lower)
+            if match2:
+                expected_name1 = template2.format(match2.group(1))
+                if expected_name1 == name1_lower:
+                    return True
 
         # Check for camelCase to snake_case conversion
         if self._is_camelcase_snake_case_pair(name1, name2):
@@ -213,13 +221,20 @@ class SemanticScorer:
         name1 = name1.lower()
         name2 = name2.lower()
 
+        # Handle empty strings
+        if not name1 and not name2:
+            return 1.0
+        if not name1 or not name2:
+            return 0.0
+
         # Exact match
         if name1 == name2:
             return 1.0
 
-        # Check if one contains the other
-        if name1 in name2 or name2 in name1:
-            return 0.8
+        # Check if one contains the other (but both must be non-empty)
+        if len(name1) > 0 and len(name2) > 0:
+            if name1 in name2 or name2 in name1:
+                return 0.8
 
         # Simple character overlap (Jaccard similarity)
         common_chars = set(name1) & set(name2)

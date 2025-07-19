@@ -106,6 +106,7 @@ class VectorStore:
             List of (id, similarity_score, metadata) tuples
         """
         start_time = time.time()
+        similar_items = []
 
         try:
             results = self.collection.query(
@@ -113,7 +114,6 @@ class VectorStore:
             )
 
             # Extract and filter results
-            similar_items = []
             if results["ids"] and results["ids"][0]:
                 for i, id_ in enumerate(results["ids"][0]):
                     # ChromaDB returns distances, convert to similarity
@@ -124,15 +124,14 @@ class VectorStore:
                         metadata = results["metadatas"][0][i]
                         similar_items.append((id_, similarity, metadata))
 
-            # Update metrics
-            self.metrics["searches_performed"] += 1
-            self.metrics["total_search_time"] += time.time() - start_time
-
-            return similar_items
-
         except Exception as e:
             logger.error(f"Search failed: {e}")
-            return []
+
+        # Update metrics regardless of success/failure
+        self.metrics["searches_performed"] += 1
+        self.metrics["total_search_time"] += time.time() - start_time
+
+        return similar_items
 
     def get_by_id(
         self, function_id: str

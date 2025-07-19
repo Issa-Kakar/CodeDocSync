@@ -5,7 +5,6 @@ import logging
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..parser import ParsedFunction
-from ..storage.embedding_config import EmbeddingConfigManager
 from .semantic_models import EmbeddingModel, FunctionEmbedding, EmbeddingConfig
 
 logger = logging.getLogger(__name__)
@@ -15,6 +14,8 @@ class EmbeddingGenerator:
     """Generates embeddings for functions with fallback support."""
 
     def __init__(self, config: Optional[EmbeddingConfig] = None):
+        from ..storage.embedding_config import EmbeddingConfigManager
+
         self.config = config or EmbeddingConfig()
         self.config_manager = EmbeddingConfigManager()
 

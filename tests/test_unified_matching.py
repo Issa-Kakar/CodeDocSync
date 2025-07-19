@@ -117,7 +117,6 @@ class TestUnifiedMatchingFacade:
         mock_direct.return_value = mock_direct_facade
         direct_result = MatchResult(
             total_functions=1,
-            total_docs=1,
             matched_pairs=[
                 MatchedPair(
                     function=sample_function,
@@ -133,7 +132,6 @@ class TestUnifiedMatchingFacade:
                 )
             ],
             unmatched_functions=[],
-            unmatched_docs=[],
         )
         mock_direct_facade.match_project.return_value = direct_result
 
@@ -142,7 +140,6 @@ class TestUnifiedMatchingFacade:
         mock_contextual.return_value = mock_contextual_facade
         contextual_result = MatchResult(
             total_functions=1,
-            total_docs=1,
             matched_pairs=[
                 MatchedPair(
                     function=sample_function,
@@ -158,7 +155,6 @@ class TestUnifiedMatchingFacade:
                 )
             ],
             unmatched_functions=[],
-            unmatched_docs=[],
         )
         mock_contextual_facade.match_project.return_value = contextual_result
 
@@ -206,10 +202,8 @@ class TestUnifiedMatchingFacade:
         mock_direct.return_value = mock_direct_facade
         empty_result = MatchResult(
             total_functions=0,
-            total_docs=0,
             matched_pairs=[],
             unmatched_functions=[],
-            unmatched_docs=[],
         )
         mock_direct_facade.match_project.return_value = empty_result
 
@@ -240,7 +234,7 @@ class TestUnifiedMatchingFacade:
 
         facade.print_summary()
 
-        captured = capsys.readout()
+        captured = capsys.readouterr()
         assert "Unified Matching Summary" in captured.out
         assert "Total time: 5.00s" in captured.out
         assert "Files processed: 10" in captured.out
@@ -266,13 +260,13 @@ class TestUnifiedMatchingIntegration:
 
         # Test with zero matches
         stats = facade.get_stats()
-        assert stats["match_distribution"]["direct"] == "0%"
+        assert stats["match_distribution"]["direct"] == "0.0%"
 
         # Test with only one match type
         facade.stats["matches_by_type"]["direct"] = 1
         stats = facade.get_stats()
         assert stats["match_distribution"]["direct"] == "100.0%"
-        assert stats["match_distribution"]["contextual"] == "0%"
+        assert stats["match_distribution"]["contextual"] == "0.0%"
 
     @pytest.mark.asyncio
     async def test_error_handling_during_parsing(self):
@@ -298,10 +292,8 @@ class TestUnifiedMatchingIntegration:
                     mock_direct.return_value = mock_direct_facade
                     empty_result = MatchResult(
                         total_functions=0,
-                        total_docs=0,
                         matched_pairs=[],
                         unmatched_functions=[],
-                        unmatched_docs=[],
                     )
                     mock_direct_facade.match_project.return_value = empty_result
 
