@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Critical Bug Fixes** (2025-01-19)
+  - Fixed AttributeError in logger when accessing function name incorrectly
+    - Fixed incorrect access of `pair.function.name` to `pair.function.signature.name` (integration.py:181)
+    - Logger now properly accesses function name through signature object
+  - Fixed test mock object structure mismatch in test_contextual_models.py
+    - Updated MockFunction to include signature attribute matching ParsedFunction structure
+    - Tests now correctly validate function name access patterns
+  - Fixed SyntaxError in code analysis when ast.parse encounters invalid Python syntax or None values
+    - Added try-except handling in _determine_analysis_types function (integration.py:169-182)
+    - Analysis pipeline now gracefully handles malformed code instead of crashing
+  - Fixed cache corruption with compressed LLM response data
+    - Replaced incorrect latin-1 decoding with base64 encoding for binary compression data (llm_cache.py:244-246, 292-293)
+    - Compressed data is now properly stored and retrieved without corruption
+  - Fixed regex pattern failure with nested braces in JSON responses
+    - Replaced flawed regex with proper brace-counting parser (llm_output_parser.py:141-184)
+    - JSON extraction now correctly handles nested objects, arrays, and string values containing braces
+
 ### Added
 - **Integration with Rule Engine & Testing (Chunk 6)** (2025-01-19)
   - Complete integration module orchestrating rule engine and LLM analysis with sophisticated decision logic

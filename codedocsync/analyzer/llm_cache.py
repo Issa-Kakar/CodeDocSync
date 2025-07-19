@@ -243,7 +243,11 @@ class LLMCache:
 
                 # Decompress if needed
                 if is_compressed:
-                    response_json = zlib.decompress(response_json.encode()).decode()
+                    # response_json is stored as base64-encoded compressed data
+                    import base64
+
+                    compressed_data = base64.b64decode(response_json)
+                    response_json = zlib.decompress(compressed_data).decode("utf-8")
 
                 # Deserialize JSON to response object
                 response_data = json.loads(response_json)
@@ -290,7 +294,11 @@ class LLMCache:
             # Compress if large (>1KB)
             is_compressed = False
             if len(response_json) > self.compression_threshold:
-                response_json = zlib.compress(response_json.encode()).decode("latin-1")
+                # Compress and base64 encode for safe storage as TEXT
+                import base64
+
+                compressed_data = zlib.compress(response_json.encode("utf-8"))
+                response_json = base64.b64encode(compressed_data).decode("ascii")
                 is_compressed = True
 
             analysis_types_str = ",".join(analysis_types) if analysis_types else ""

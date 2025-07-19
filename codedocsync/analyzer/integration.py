@@ -169,11 +169,17 @@ def _determine_analysis_types(
     # Check edge cases for functions with conditionals
     if hasattr(pair.function, "body") and pair.function.body:
         # Simple heuristic: check for if/try statements
-        if any(
-            isinstance(node, (ast.If, ast.Try))
-            for node in ast.walk(ast.parse(pair.function.body))
-        ):
-            analysis_types.append("edge_cases")
+        try:
+            if any(
+                isinstance(node, (ast.If, ast.Try))
+                for node in ast.walk(ast.parse(pair.function.body))
+            ):
+                analysis_types.append("edge_cases")
+        except (SyntaxError, TypeError, ValueError):
+            # If we can't parse the body, skip edge case analysis
+            logger.debug(
+                f"Could not parse function body for edge case analysis: {pair.function.signature.name}"
+            )
 
     # Check version info if decorators present
     if hasattr(pair.function.signature, "decorators"):
