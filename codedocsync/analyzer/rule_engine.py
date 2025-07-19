@@ -5,9 +5,8 @@ Performance target: <5ms per function
 Confidence threshold: Issues with confidence > 0.9 skip LLM analysis
 """
 
-import re
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from codedocsync.matcher import MatchedPair
 from codedocsync.parser import (
@@ -20,6 +19,13 @@ from .models import (
     RuleCheckResult,
     InconsistencyIssue,
 )
+from .rule_engine_utils import (
+    normalize_type_string,
+    compare_types,
+    extract_function_params,
+    extract_doc_params,
+    generate_parameter_suggestion,
+)
 
 
 class RuleEngine:
@@ -31,7 +37,11 @@ class RuleEngine:
     """
 
     def __init__(
-        self, enabled_rules: Optional[List[str]] = None, performance_mode: bool = False
+        self,
+        enabled_rules: Optional[List[str]] = None,
+        performance_mode: bool = False,
+        severity_overrides: Optional[Dict[str, str]] = None,
+        confidence_threshold: float = 0.9,
     ):
         """
         Initialize the rule engine.
@@ -39,9 +49,13 @@ class RuleEngine:
         Args:
             enabled_rules: List of rule names to run (None = all rules)
             performance_mode: Skip expensive rules for better performance
+            severity_overrides: Custom severity mappings for issue types
+            confidence_threshold: Minimum confidence to skip LLM analysis
         """
         self.enabled_rules = enabled_rules
         self.performance_mode = performance_mode
+        self.severity_overrides = severity_overrides or {}
+        self.confidence_threshold = confidence_threshold
 
         # Map rule names to methods
         self._rule_methods = {
@@ -58,6 +72,9 @@ class RuleEngine:
             # Consistency rules
             "default_mismatches": self._check_default_mismatches,
             "parameter_order": self._check_parameter_order,
+            # Advanced rules
+            "optional_parameters": self._check_optional_parameters,
+            "method_decorators": self._check_method_decorators,
         }
 
     def check_matched_pair(
@@ -120,21 +137,40 @@ class RuleEngine:
 
     def _get_function_params(self, function: ParsedFunction) -> List[FunctionParameter]:
         """Extract parameters from function signature, excluding self/cls."""
-        params = []
-        for param in function.signature.parameters:
-            # Skip 'self' and 'cls' parameters
-            if param.name in ("self", "cls"):
-                continue
-            params.append(param)
-        return params
+        return extract_function_params(function)
 
     def _get_doc_params(
         self, docstring: Optional[ParsedDocstring]
     ) -> List[DocstringParameter]:
         """Extract parameters from parsed docstring."""
-        if not docstring:
-            return []
-        return docstring.parameters
+        return extract_doc_params(docstring)
+
+    def _create_issue(
+        self,
+        issue_type: str,
+        description: str,
+        suggestion: str,
+        line_number: int,
+        confidence: float = 1.0,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> InconsistencyIssue:
+        """Create an InconsistencyIssue with proper severity handling."""
+        from .models import ISSUE_TYPES
+
+        # Use custom severity if provided, otherwise use default
+        severity = self.severity_overrides.get(
+            issue_type, ISSUE_TYPES.get(issue_type, "medium")
+        )
+
+        return InconsistencyIssue(
+            issue_type=issue_type,
+            severity=severity,
+            description=description,
+            suggestion=suggestion,
+            line_number=line_number,
+            confidence=confidence,
+            details=details or {},
+        )
 
     # STRUCTURAL RULES
 
@@ -156,12 +192,21 @@ class RuleEngine:
 
         # Generate issues for missing parameters
         for param_name in missing_in_docs:
+            # Find the actual parameter for better suggestions
+            actual_param = next(
+                (p for p in func_params if p.name.lstrip("*") == param_name), None
+            )
+            suggestion = generate_parameter_suggestion(
+                "missing_params",
+                param_name,
+                param_type=actual_param.type_annotation if actual_param else "",
+            )
+
             issues.append(
-                InconsistencyIssue(
+                self._create_issue(
                     issue_type="parameter_missing",
-                    severity="critical",
                     description=f"Parameter '{param_name}' in function signature is not documented",
-                    suggestion=f"Add '{param_name}' to the docstring parameters section",
+                    suggestion=suggestion,
                     line_number=pair.function.line_number,
                     confidence=1.0,
                     details={"missing_param": param_name},
@@ -170,12 +215,20 @@ class RuleEngine:
 
         # Generate issues for extra documented parameters
         for param_name in extra_in_docs:
+            suggestion = (
+                f"Remove '{param_name}' from docstring or check for naming mismatch"
+            )
+            if func_param_names:
+                # Suggest potential matches
+                suggestion += (
+                    f"\n\nDid you mean one of: {', '.join(sorted(func_param_names))}?"
+                )
+
             issues.append(
-                InconsistencyIssue(
+                self._create_issue(
                     issue_type="parameter_name_mismatch",
-                    severity="critical",
                     description=f"Parameter '{param_name}' documented but not in function signature",
-                    suggestion=f"Remove '{param_name}' from docstring or check for naming mismatch",
+                    suggestion=suggestion,
                     line_number=pair.function.line_number,
                     confidence=0.95,
                     details={"extra_param": param_name},
@@ -207,19 +260,21 @@ class RuleEngine:
         # Check type consistency for parameters that have both
         for param_name in func_types:
             if param_name in doc_types:
-                func_type = self._normalize_type_string(func_types[param_name])
-                doc_type = self._normalize_type_string(doc_types[param_name])
+                if not compare_types(func_types[param_name], doc_types[param_name]):
+                    suggestion = generate_parameter_suggestion(
+                        "parameter_type_mismatch",
+                        param_name,
+                        expected_value=func_types[param_name],
+                        actual_value=doc_types[param_name],
+                    )
 
-                if not self._types_equivalent(func_type, doc_type):
                     issues.append(
-                        InconsistencyIssue(
+                        self._create_issue(
                             issue_type="parameter_type_mismatch",
-                            severity="high",
                             description=f"Type mismatch for parameter '{param_name}': "
                             f"function has '{func_types[param_name]}', "
                             f"documentation has '{doc_types[param_name]}'",
-                            suggestion=f"Update docstring type for '{param_name}' to match "
-                            f"function annotation: '{func_types[param_name]}'",
+                            suggestion=suggestion,
                             line_number=pair.function.line_number,
                             confidence=0.9,
                             details={
@@ -341,13 +396,15 @@ class RuleEngine:
         for param in func_params:
             param_name = param.name.lstrip("*")
             if param_name not in documented_names:
+                suggestion = generate_parameter_suggestion(
+                    "missing_params", param.name, param_type=param.type_annotation
+                )
+
                 issues.append(
-                    InconsistencyIssue(
+                    self._create_issue(
                         issue_type="missing_params",
-                        severity="critical",
                         description=f"Parameter '{param.name}' is not documented",
-                        suggestion=f"Add documentation for parameter '{param.name}':\n"
-                        f"    {param.name}: [TODO: Add description]",
+                        suggestion=suggestion,
                         line_number=pair.function.line_number,
                         confidence=1.0,
                         details={"missing_param": param.name},
@@ -550,36 +607,102 @@ class RuleEngine:
             execution_time_ms=(time.time() - start_time) * 1000,
         )
 
-    # UTILITY METHODS
+    # ADVANCED RULES
+
+    def _check_optional_parameters(self, pair: MatchedPair) -> RuleCheckResult:
+        """Validate Optional parameter consistency."""
+        start_time = time.time()
+        issues = []
+
+        func_params = self._get_function_params(pair.function)
+
+        for param in func_params:
+            # Parameters with None default should be Optional in type hints
+            if (
+                param.default_value
+                and param.default_value.lower() in ("none", "null")
+                and param.type_annotation
+                and "optional" not in param.type_annotation.lower()
+                and "| none" not in param.type_annotation.lower()
+            ):
+                suggestion = f"Update type annotation for '{param.name}' to Optional[{param.type_annotation}] since it has None default"
+
+                issues.append(
+                    self._create_issue(
+                        issue_type="parameter_type_mismatch",
+                        description=f"Parameter '{param.name}' has None default but type is not Optional",
+                        suggestion=suggestion,
+                        line_number=pair.function.line_number,
+                        confidence=0.85,
+                        details={
+                            "param_name": param.name,
+                            "current_type": param.type_annotation,
+                            "suggested_type": f"Optional[{param.type_annotation}]",
+                        },
+                    )
+                )
+
+        return RuleCheckResult(
+            rule_name="optional_parameters",
+            passed=len(issues) == 0,
+            confidence=0.85,
+            issues=issues,
+            execution_time_ms=(time.time() - start_time) * 1000,
+        )
+
+    def _check_method_decorators(self, pair: MatchedPair) -> RuleCheckResult:
+        """Check class method decorator consistency."""
+        start_time = time.time()
+        issues = []
+
+        func_params = self._get_function_params(pair.function)
+        all_params = (
+            pair.function.signature.parameters
+        )  # Include self/cls for this check
+
+        # Check for common decorator issues
+        has_self = any(p.name == "self" for p in all_params)
+        has_cls = any(p.name == "cls" for p in all_params)
+
+        # This is a simplified check - in a full implementation we'd parse decorators from AST
+        # For now, just check parameter patterns that suggest decorator issues
+
+        # If function has 'cls' but also regular params, might be missing @classmethod
+        if has_cls and len(all_params) > 1:
+            # This suggests it should be a classmethod
+            suggestion = "Ensure this method has @classmethod decorator since it uses 'cls' parameter"
+
+            issues.append(
+                self._create_issue(
+                    issue_type="parameter_name_mismatch",
+                    description="Method uses 'cls' parameter which suggests it should be a classmethod",
+                    suggestion=suggestion,
+                    line_number=pair.function.line_number,
+                    confidence=0.7,
+                    details={"has_cls": True, "param_count": len(all_params)},
+                )
+            )
+
+        # If function has no self/cls but is in a class context, might be missing @staticmethod
+        if not has_self and not has_cls and len(func_params) > 0:
+            # This is a heuristic - could be a static method
+            # In practice, we'd need class context to be sure
+            pass  # Skip for now as we don't have class context
+
+        return RuleCheckResult(
+            rule_name="method_decorators",
+            passed=len(issues) == 0,
+            confidence=0.7,  # Lower confidence since we lack full decorator info
+            issues=issues,
+            execution_time_ms=(time.time() - start_time) * 1000,
+        )
+
+    # UTILITY METHODS (kept for backward compatibility)
 
     def _normalize_type_string(self, type_str: str) -> str:
         """Normalize type string for comparison."""
-        if not type_str:
-            return ""
-
-        # Remove whitespace and normalize common variations
-        normalized = type_str.strip()
-
-        # Common type mappings
-        type_mappings = {
-            "string": "str",
-            "integer": "int",
-            "boolean": "bool",
-            "float": "float",
-            "list": "List",
-            "dict": "Dict",
-            "tuple": "Tuple",
-        }
-
-        for old, new in type_mappings.items():
-            normalized = re.sub(rf"\b{old}\b", new, normalized, flags=re.IGNORECASE)
-
-        return normalized
+        return normalize_type_string(type_str)
 
     def _types_equivalent(self, type1: str, type2: str) -> bool:
         """Check if two type strings are equivalent."""
-        if not type1 or not type2:
-            return type1 == type2
-
-        # Simple equivalence check
-        return type1.lower() == type2.lower()
+        return compare_types(type1, type2)

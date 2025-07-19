@@ -22,6 +22,26 @@ from .models import (
 # Import implemented components
 from .rule_engine import RuleEngine
 
+# Import utility functions
+from .rule_engine_utils import (
+    normalize_type_string,
+    compare_types,
+    extract_base_type,
+    generate_parameter_suggestion,
+    generate_docstring_template,
+    format_code_suggestion,
+    get_parameter_statistics,
+)
+
+# Import configuration classes
+from .config import (
+    RuleEngineConfig,
+    AnalysisConfig,
+    get_fast_config,
+    get_thorough_config,
+    get_development_config,
+)
+
 # TYPE_CHECKING imports for future components
 if TYPE_CHECKING:
     from .llm_analyzer import LLMAnalyzer
@@ -82,6 +102,20 @@ __all__ = [
     "RULE_CATEGORIES",
     # Components
     "RuleEngine",
+    # Utility functions
+    "normalize_type_string",
+    "compare_types",
+    "extract_base_type",
+    "generate_parameter_suggestion",
+    "generate_docstring_template",
+    "format_code_suggestion",
+    "get_parameter_statistics",
+    # Configuration
+    "RuleEngineConfig",
+    "AnalysisConfig",
+    "get_fast_config",
+    "get_thorough_config",
+    "get_development_config",
     # Main entry point
     "analyze_matched_pair",
     # Re-exported dependency

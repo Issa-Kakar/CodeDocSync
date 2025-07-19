@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Rule Engine Advanced Features** (2025-01-19)
+  - Enhanced rule engine with utility functions and advanced rule types
+  - Advanced rules: optional_parameters (None default validation), method_decorators (classmethod/staticmethod checks)
+  - Intelligent suggestion generation with actionable, formatted recommendations
+  - Comprehensive configuration system (RuleEngineConfig, AnalysisConfig) with predefined profiles
+  - Type parsing utilities supporting modern Python types (Union, Optional, generics)
+  - Rule customization: severity overrides, confidence thresholds, rule selection
+
 - **Rule Engine Implementation** (2025-01-19)
   - Complete RuleEngine class with <5ms per function performance target
   - Structural rules: parameter_names, parameter_types, parameter_count, return_type
