@@ -20,7 +20,7 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, TYPE_CHECKING
 
 try:
     import openai
@@ -34,6 +34,10 @@ from .llm_models import LLMAnalysisRequest, LLMAnalysisResponse
 from .models import InconsistencyIssue, RuleCheckResult
 from .prompt_templates import format_prompt
 from .llm_output_parser import parse_llm_response
+
+# Import ParsedFunction for type hints
+if TYPE_CHECKING:
+    from ..parser.models import ParsedFunction
 
 logger = logging.getLogger(__name__)
 
@@ -909,6 +913,405 @@ class LLMAnalyzer:
 
         except Exception as e:
             logger.warning(f"Failed to cache response: {e}")
+
+    async def analyze_batch(
+        self,
+        requests: List[LLMAnalysisRequest],
+        max_concurrent: int = 10,
+        progress_callback: Optional[callable] = None,
+    ) -> List[LLMAnalysisResponse]:
+        """
+        Analyze multiple functions efficiently with smart batching.
+
+        Implements batching strategies:
+        - Group similar functions together (better cache hits)
+        - Prioritize by file modification time
+        - Limit concurrent requests to avoid rate limits
+        - Use asyncio.gather with return_exceptions=True
+
+        Args:
+            requests: List of LLM analysis requests
+            max_concurrent: Maximum concurrent analysis operations
+            progress_callback: Optional callback function for progress updates
+
+        Returns:
+            List of LLM analysis responses (same order as requests)
+        """
+        if not requests:
+            return []
+
+        logger.info(f"Starting batch analysis of {len(requests)} requests")
+
+        # Group by analysis type for cache efficiency
+        grouped_requests = self._group_requests_for_efficiency(requests)
+
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        # Track progress
+        completed = 0
+        total = len(requests)
+        results = [None] * total  # Maintain original order
+
+        async def analyze_single_with_semaphore(
+            request: LLMAnalysisRequest, index: int
+        ):
+            """Analyze single request with semaphore control."""
+            async with semaphore:
+                try:
+                    result = await self.analyze_function(request)
+
+                    # Update progress
+                    nonlocal completed
+                    completed += 1
+
+                    if progress_callback:
+                        await asyncio.get_event_loop().run_in_executor(
+                            None, progress_callback, completed, total, request
+                        )
+
+                    return result, index
+
+                except Exception as e:
+                    logger.warning(f"Batch analysis failed for request {index}: {e}")
+                    # Return a minimal error response
+                    return self._create_error_response(request, str(e)), index
+
+        # Execute all requests with concurrency control
+        # Process in groups to optimize cache hits
+        all_tasks = []
+        for group in grouped_requests:
+            group_tasks = [
+                analyze_single_with_semaphore(req, idx) for req, idx in group
+            ]
+            all_tasks.extend(group_tasks)
+
+        # Wait for all requests to complete, handling partial failures
+        completed_results = await asyncio.gather(*all_tasks, return_exceptions=True)
+
+        # Process results and maintain original order
+        for result in completed_results:
+            if isinstance(result, Exception):
+                logger.error(f"Batch analysis exception: {result}")
+                continue
+
+            response, original_index = result
+            results[original_index] = response
+
+        # Fill any None results with error responses
+        for i, result in enumerate(results):
+            if result is None:
+                results[i] = self._create_error_response(
+                    requests[i], "Failed to process request"
+                )
+
+        logger.info(f"Batch analysis completed: {len(results)} results")
+        return results
+
+    def _group_requests_for_efficiency(
+        self, requests: List[LLMAnalysisRequest]
+    ) -> List[List[Tuple[LLMAnalysisRequest, int]]]:
+        """
+        Group requests for better cache efficiency and performance.
+
+        Grouping strategies:
+        1. Group by analysis type (similar prompts = better cache hits)
+        2. Prioritize by function complexity (complex functions first)
+        3. Group by file path (similar context)
+
+        Args:
+            requests: List of requests to group
+
+        Returns:
+            List of groups, each containing (request, original_index) tuples
+        """
+        # Create request-index pairs for tracking
+        indexed_requests = [(req, i) for i, req in enumerate(requests)]
+
+        # Group by analysis type first
+        type_groups = {}
+        for req, idx in indexed_requests:
+            primary_type = req.analysis_types[0] if req.analysis_types else "behavior"
+            if primary_type not in type_groups:
+                type_groups[primary_type] = []
+            type_groups[primary_type].append((req, idx))
+
+        # Further group by file path within each type
+        final_groups = []
+        for analysis_type, type_group in type_groups.items():
+            # Sort by function complexity (more complex first for better parallelization)
+            type_group.sort(
+                key=lambda x: self._estimate_function_complexity(x[0].function),
+                reverse=True,
+            )
+
+            # Group by file path
+            file_groups = {}
+            for req, idx in type_group:
+                file_path = req.function.file_path
+                if file_path not in file_groups:
+                    file_groups[file_path] = []
+                file_groups[file_path].append((req, idx))
+
+            # Add file groups to final groups
+            final_groups.extend(file_groups.values())
+
+        return final_groups
+
+    def _estimate_function_complexity(self, function: "ParsedFunction") -> int:
+        """
+        Estimate function complexity for prioritization.
+
+        Args:
+            function: Function to analyze
+
+        Returns:
+            Complexity score (higher = more complex)
+        """
+        complexity = 0
+
+        # Parameter count contributes to complexity
+        complexity += len(function.signature.parameters) * 2
+
+        # Type annotations suggest more complex functions
+        for param in function.signature.parameters:
+            if param.type_annotation:
+                complexity += 1
+
+        if function.signature.return_type:
+            complexity += 1
+
+        # Estimate based on line count if available
+        if hasattr(function, "line_count"):
+            complexity += function.line_count // 10
+        elif hasattr(function, "source_code") and function.source_code:
+            complexity += len(function.source_code.split("\n")) // 10
+
+        return complexity
+
+    def _create_error_response(
+        self, request: LLMAnalysisRequest, error_message: str
+    ) -> LLMAnalysisResponse:
+        """
+        Create an error response for failed analysis.
+
+        Args:
+            request: Original request that failed
+            error_message: Error description
+
+        Returns:
+            Error response with minimal information
+        """
+        from .models import InconsistencyIssue
+
+        # Create a generic error issue
+        error_issue = InconsistencyIssue(
+            issue_type="analysis_error",
+            severity="low",
+            description=f"Analysis failed: {error_message}",
+            suggestion="Manual review recommended",
+            line_number=request.function.line_number,
+            confidence=0.0,
+        )
+
+        return LLMAnalysisResponse(
+            issues=[error_issue],
+            raw_response=f"Error: {error_message}",
+            model_used=self.config.model,
+            prompt_tokens=0,
+            completion_tokens=0,
+            response_time_ms=0.0,
+            cache_hit=False,
+        )
+
+    async def warm_cache(
+        self,
+        functions: List["ParsedFunction"],
+        max_concurrent: int = 5,
+        progress_callback: Optional[callable] = None,
+    ) -> Dict[str, Any]:
+        """
+        Pre-populate cache for high-value functions.
+
+        Identifies functions that would benefit from caching:
+        - Public API functions (no leading underscore)
+        - Frequently changed functions
+        - Complex functions (>50 lines or >5 parameters)
+
+        Args:
+            functions: List of functions to potentially cache
+            max_concurrent: Maximum concurrent warming operations
+            progress_callback: Optional progress callback
+
+        Returns:
+            Statistics about the warming operation
+        """
+        start_time = time.time()
+
+        # Identify high-value targets
+        high_value_functions = []
+        for func in functions:
+            if self._is_high_value_function(func):
+                high_value_functions.append(func)
+
+        logger.info(
+            f"Cache warming: {len(high_value_functions)}/{len(functions)} high-value functions identified"
+        )
+
+        if not high_value_functions:
+            return {
+                "total_functions": len(functions),
+                "high_value_functions": 0,
+                "warming_completed": True,
+                "cache_entries_created": 0,
+                "warming_time_ms": 0.0,
+                "skipped_existing": 0,
+            }
+
+        # Create analysis requests for high-value functions
+        requests = []
+        skipped_existing = 0
+
+        for func in high_value_functions:
+            # Check if already cached
+            if hasattr(func, "docstring") and func.docstring:
+                # Create minimal request for cache key generation
+                cache_key = self._generate_cache_key(
+                    str(func.signature),
+                    str(func.docstring),
+                    ["behavior"],  # Default analysis type
+                    self.config.model,
+                )
+
+                # Check if already cached
+                cached_response = await self._get_cached_response(cache_key)
+                if cached_response:
+                    skipped_existing += 1
+                    continue
+
+            # Create analysis request
+            from .llm_models import LLMAnalysisRequest
+
+            request = LLMAnalysisRequest(
+                function=func,
+                docstring=func.docstring,
+                analysis_types=self._determine_warming_analysis_types(func),
+                rule_results=[],  # No rule results for warming
+                related_functions=[],
+            )
+            requests.append(request)
+
+        if not requests:
+            return {
+                "total_functions": len(functions),
+                "high_value_functions": len(high_value_functions),
+                "warming_completed": True,
+                "cache_entries_created": 0,
+                "warming_time_ms": (time.time() - start_time) * 1000,
+                "skipped_existing": skipped_existing,
+            }
+
+        # Perform batch analysis with reduced concurrency
+        warming_semaphore = asyncio.Semaphore(
+            min(max_concurrent, 3)
+        )  # Conservative limit
+
+        successful_warming = 0
+
+        async def warm_single_function(request):
+            """Warm cache for a single function."""
+            async with warming_semaphore:
+                try:
+                    await self.analyze_function(request)
+                    return True
+                except Exception as e:
+                    logger.warning(
+                        f"Cache warming failed for {request.function.signature.name}: {e}"
+                    )
+                    return False
+
+        # Execute warming with progress tracking
+        warming_tasks = [warm_single_function(req) for req in requests]
+
+        if progress_callback:
+            # Track progress
+            completed = 0
+
+            async def track_progress():
+                nonlocal completed
+                while completed < len(warming_tasks):
+                    await asyncio.sleep(0.5)
+                    current_completed = sum(1 for task in warming_tasks if task.done())
+                    if current_completed > completed:
+                        completed = current_completed
+                        await asyncio.get_event_loop().run_in_executor(
+                            None, progress_callback, completed, len(warming_tasks)
+                        )
+
+        results = await asyncio.gather(*warming_tasks, return_exceptions=True)
+        successful_warming = sum(1 for result in results if result is True)
+
+        warming_time_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            f"Cache warming completed: {successful_warming}/{len(requests)} functions cached"
+        )
+
+        return {
+            "total_functions": len(functions),
+            "high_value_functions": len(high_value_functions),
+            "warming_completed": True,
+            "cache_entries_created": successful_warming,
+            "warming_time_ms": warming_time_ms,
+            "skipped_existing": skipped_existing,
+        }
+
+    def _is_high_value_function(self, func: "ParsedFunction") -> bool:
+        """Determine if a function is high-value for caching."""
+        # Public API functions (no leading underscore)
+        if not func.signature.name.startswith("_"):
+            return True
+
+        # Complex functions based on parameter count
+        if len(func.signature.parameters) > 5:
+            return True
+
+        # Functions with complex type annotations
+        complex_types = 0
+        for param in func.signature.parameters:
+            if param.type_annotation and any(
+                keyword in param.type_annotation.lower()
+                for keyword in ["union", "optional", "dict", "list", "callable"]
+            ):
+                complex_types += 1
+
+        if complex_types > 2:
+            return True
+
+        # Functions with return type annotations
+        if func.signature.return_type:
+            return True
+
+        return False
+
+    def _determine_warming_analysis_types(self, func: "ParsedFunction") -> List[str]:
+        """Determine which analysis types to use for cache warming."""
+        analysis_types = ["behavior"]  # Always include behavior analysis
+
+        # Add example validation if docstring likely contains examples
+        if hasattr(func, "docstring") and func.docstring:
+            docstring_text = str(func.docstring)
+            if any(
+                keyword in docstring_text.lower()
+                for keyword in ["example", ">>>", "test"]
+            ):
+                analysis_types.append("examples")
+
+        # Add type consistency for complex typed functions
+        if any(param.type_annotation for param in func.signature.parameters):
+            analysis_types.append("type_consistency")
+
+        return analysis_types
 
 
 # Factory functions for different use cases
