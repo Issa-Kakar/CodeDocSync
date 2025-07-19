@@ -31,9 +31,18 @@ except ImportError:
 
 from .llm_config import LLMConfig
 from .llm_models import LLMAnalysisRequest, LLMAnalysisResponse
-from .models import InconsistencyIssue, RuleCheckResult
+from .models import InconsistencyIssue, RuleCheckResult, AnalysisResult
 from .prompt_templates import format_prompt
 from .llm_output_parser import parse_llm_response
+from .llm_errors import (
+    LLMError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+    LLMAPIKeyError,
+    LLMNetworkError,
+    RetryStrategy,
+    CircuitBreaker,
+)
 
 # Import ParsedFunction for type hints
 if TYPE_CHECKING:
@@ -153,6 +162,20 @@ class LLMAnalyzer:
             "total_response_time_ms": 0.0,
             "errors_encountered": 0,
         }
+
+        # Set up circuit breaker for error handling
+        self.circuit_breaker = CircuitBreaker(
+            failure_threshold=5, recovery_timeout=60, expected_exception=LLMError
+        )
+
+        # Set up retry strategy
+        self.retry_strategy = RetryStrategy(
+            max_retries=self.config.max_retries,
+            base_delay=1.0,
+            max_delay=60.0,
+            exponential_base=2.0,
+            jitter=True,
+        )
 
         # Track initialization success
         self._initialized_at = time.time()
@@ -1312,6 +1335,336 @@ class LLMAnalyzer:
             analysis_types.append("type_consistency")
 
         return analysis_types
+
+    # ========== CHUNK 5: Error Handling & Graceful Degradation ==========
+
+    async def analyze_with_fallback(
+        self, request: LLMAnalysisRequest
+    ) -> AnalysisResult:
+        """
+        Analyze with multiple fallback strategies.
+
+        Implements graceful degradation through multiple fallback strategies:
+        1. Try full LLM analysis with circuit breaker protection
+        2. Try simpler prompts with reduced complexity
+        3. Try rule engine only analysis
+        4. Return minimal analysis as last resort
+
+        Args:
+            request: LLM analysis request
+
+        Returns:
+            AnalysisResult with appropriate confidence adjustment
+        """
+        strategies = [
+            # 1. Try full LLM analysis
+            (self._analyze_with_llm, 1.0, "full_llm"),
+            # 2. Try simpler prompts
+            (self._analyze_with_simple_prompts, 0.8, "simple_llm"),
+            # 3. Try rule engine only
+            (self._analyze_with_rules_only, 0.6, "rules_only"),
+            # 4. Return minimal analysis
+            (self._minimal_analysis, 0.3, "minimal"),
+        ]
+
+        last_error = None
+
+        for strategy_func, confidence_multiplier, strategy_name in strategies:
+            try:
+                logger.debug(
+                    f"Attempting {strategy_name} strategy for {request.function.signature.name}"
+                )
+
+                result = await strategy_func(request)
+
+                # Adjust confidence if using degraded strategy
+                if confidence_multiplier < 1.0:
+                    for issue in result.issues:
+                        issue.confidence *= confidence_multiplier
+                    result.degraded = True
+                    result.degradation_reason = (
+                        f"Used {strategy_name} fallback strategy"
+                    )
+                else:
+                    result.degraded = False
+
+                logger.info(f"Analysis successful using {strategy_name} strategy")
+                return result
+
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Strategy {strategy_name} failed: {e}")
+                continue
+
+        # All strategies failed - return empty analysis
+        logger.error(
+            f"All fallback strategies failed for {request.function.signature.name}"
+        )
+        return self._empty_analysis(request, last_error)
+
+    async def _analyze_with_llm(self, request: LLMAnalysisRequest) -> AnalysisResult:
+        """
+        Perform full LLM analysis with circuit breaker protection.
+
+        Args:
+            request: LLM analysis request
+
+        Returns:
+            AnalysisResult from LLM analysis
+
+        Raises:
+            LLMError: If circuit breaker is open or analysis fails
+        """
+        # Check circuit breaker state
+        if not self.circuit_breaker.can_execute():
+            raise LLMError(f"Circuit breaker is {self.circuit_breaker.state.value}")
+
+        # Use circuit breaker to protect LLM call
+        async def protected_llm_call():
+            try:
+                # Convert OpenAI errors to our error types
+                response = await self.analyze_function(request)
+                return self._llm_response_to_analysis_result(request, response)
+
+            except openai.RateLimitError as e:
+                raise LLMRateLimitError(str(e), getattr(e, "retry_after", None))
+            except openai.APIError as e:
+                if "api key" in str(e).lower():
+                    raise LLMAPIKeyError(str(e))
+                else:
+                    raise LLMNetworkError(str(e))
+            except asyncio.TimeoutError as e:
+                raise LLMTimeoutError(str(e))
+            except Exception as e:
+                raise LLMError(f"Unexpected error: {e}")
+
+        return await self.circuit_breaker.call(protected_llm_call)
+
+    async def _analyze_with_simple_prompts(
+        self, request: LLMAnalysisRequest
+    ) -> AnalysisResult:
+        """
+        Perform LLM analysis with simplified prompts.
+
+        Uses shorter, simpler prompts to reduce the chance of failure.
+
+        Args:
+            request: LLM analysis request
+
+        Returns:
+            AnalysisResult from simplified LLM analysis
+        """
+        # Create simplified request with only behavior analysis
+        simplified_request = LLMAnalysisRequest(
+            function=request.function,
+            docstring=request.docstring,
+            analysis_types=["behavior"],  # Only basic behavior analysis
+            rule_results=[],  # Remove rule context to simplify
+            related_functions=[],  # Remove related functions to reduce complexity
+        )
+
+        # Use shorter timeout and simpler configuration
+        original_timeout = self.config.timeout_seconds
+        original_max_tokens = self.config.max_tokens
+
+        try:
+            # Temporarily reduce complexity
+            self.config.timeout_seconds = min(15, original_timeout)
+            self.config.max_tokens = min(500, original_max_tokens)
+
+            response = await self.analyze_function(simplified_request)
+            return self._llm_response_to_analysis_result(simplified_request, response)
+
+        finally:
+            # Restore original configuration
+            self.config.timeout_seconds = original_timeout
+            self.config.max_tokens = original_max_tokens
+
+    async def _analyze_with_rules_only(
+        self, request: LLMAnalysisRequest
+    ) -> AnalysisResult:
+        """
+        Perform rule-based analysis only.
+
+        Falls back to rule engine when LLM analysis is not available.
+
+        Args:
+            request: LLM analysis request
+
+        Returns:
+            AnalysisResult from rule engine only
+        """
+        from .rule_engine import RuleEngine
+        from .config import RuleEngineConfig
+
+        # Create rule engine with default configuration
+        rule_config = RuleEngineConfig()
+        rule_engine = RuleEngine(rule_config)
+
+        # Create matched pair for rule analysis
+        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+
+        matched_pair = MatchedPair(
+            function=request.function,
+            documentation=request.docstring,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="Rule-only analysis",
+            docstring=request.docstring,
+        )
+
+        # Run rule analysis
+        rule_results = rule_engine.analyze(matched_pair)
+
+        # Convert rule results to issues
+        issues = []
+        for result in rule_results:
+            if not result.passed:
+                issues.extend(result.issues)
+
+        start_time = time.time()
+        analysis_time = (time.time() - start_time) * 1000
+
+        return AnalysisResult(
+            matched_pair=matched_pair,
+            issues=issues,
+            used_llm=False,
+            analysis_time_ms=analysis_time,
+            cache_hit=False,
+        )
+
+    async def _minimal_analysis(self, request: LLMAnalysisRequest) -> AnalysisResult:
+        """
+        Return minimal analysis when all other strategies fail.
+
+        Creates a basic analysis result with minimal information.
+
+        Args:
+            request: LLM analysis request
+
+        Returns:
+            Minimal AnalysisResult
+        """
+        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+
+        # Create minimal matched pair
+        matched_pair = MatchedPair(
+            function=request.function,
+            documentation=request.docstring,
+            confidence=MatchConfidence.LOW,
+            match_type=MatchType.SEMANTIC,
+            match_reason="Minimal fallback analysis",
+            docstring=request.docstring,
+        )
+
+        # Create basic analysis issue
+        minimal_issue = InconsistencyIssue(
+            issue_type="analysis_unavailable",
+            severity="low",
+            description="Full analysis unavailable, manual review recommended",
+            suggestion="Review function documentation manually for consistency",
+            line_number=request.function.line_number,
+            confidence=0.1,
+        )
+
+        return AnalysisResult(
+            matched_pair=matched_pair,
+            issues=[minimal_issue],
+            used_llm=False,
+            analysis_time_ms=1.0,
+            cache_hit=False,
+        )
+
+    def _empty_analysis(
+        self, request: LLMAnalysisRequest, error: Exception = None
+    ) -> AnalysisResult:
+        """
+        Create empty analysis result when all strategies fail.
+
+        Args:
+            request: Original analysis request
+            error: Last error encountered
+
+        Returns:
+            Empty AnalysisResult with error information
+        """
+        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+
+        # Create error matched pair
+        matched_pair = MatchedPair(
+            function=request.function,
+            documentation=request.docstring,
+            confidence=MatchConfidence.NONE,
+            match_type=MatchType.SEMANTIC,
+            match_reason="Analysis failed",
+            docstring=request.docstring,
+        )
+
+        # Create error issue
+        error_message = str(error) if error else "Analysis failed for unknown reason"
+        error_issue = InconsistencyIssue(
+            issue_type="analysis_error",
+            severity="low",
+            description=f"Analysis failed: {error_message}",
+            suggestion="Manual review required - automated analysis unavailable",
+            line_number=request.function.line_number,
+            confidence=0.0,
+            details={"error": error_message, "all_strategies_failed": True},
+        )
+
+        return AnalysisResult(
+            matched_pair=matched_pair,
+            issues=[error_issue],
+            used_llm=False,
+            analysis_time_ms=0.0,
+            cache_hit=False,
+        )
+
+    def _llm_response_to_analysis_result(
+        self, request: LLMAnalysisRequest, response: LLMAnalysisResponse
+    ) -> AnalysisResult:
+        """
+        Convert LLMAnalysisResponse to AnalysisResult.
+
+        Args:
+            request: Original request
+            response: LLM response
+
+        Returns:
+            AnalysisResult with LLM data
+        """
+        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+
+        # Create matched pair
+        matched_pair = MatchedPair(
+            function=request.function,
+            documentation=request.docstring,
+            confidence=MatchConfidence.HIGH,
+            match_type=MatchType.DIRECT,
+            match_reason="LLM analysis",
+            docstring=request.docstring,
+        )
+
+        return AnalysisResult(
+            matched_pair=matched_pair,
+            issues=response.issues,
+            used_llm=True,
+            analysis_time_ms=response.response_time_ms,
+            cache_hit=response.cache_hit,
+        )
+
+    def get_circuit_breaker_stats(self) -> Dict[str, Any]:
+        """Get circuit breaker statistics."""
+        return self.circuit_breaker.get_stats()
+
+    def get_retry_stats(self) -> Dict[str, Any]:
+        """Get retry strategy statistics."""
+        return self.retry_strategy.get_retry_stats()
+
+    def reset_error_handling(self) -> None:
+        """Reset circuit breaker and retry statistics."""
+        self.circuit_breaker.reset()
+        self.retry_strategy.retry_history.clear()
 
 
 # Factory functions for different use cases
