@@ -19,6 +19,14 @@ from codedocsync.matcher import (
     UnifiedMatchingFacade,
 )
 from codedocsync.utils.config import CodeDocSyncConfig
+from codedocsync.analyzer import (
+    analyze_matched_pair,
+    analyze_multiple_pairs,
+    AnalysisCache,
+    get_development_config,
+    get_fast_config,
+    get_thorough_config,
+)
 
 app = typer.Typer(
     help="CodeDocSync: An intelligent tool to find and fix documentation drift."
@@ -98,15 +106,227 @@ def main(
 @app.command()
 def analyze(
     path: Annotated[
-        str, typer.Argument(help="The path to the file or directory to analyze.")
-    ] = ".",
+        Path,
+        typer.Argument(
+            help="File or directory to analyze for documentation inconsistencies"
+        ),
+    ] = Path("."),
+    rules_only: Annotated[
+        bool,
+        typer.Option("--rules-only", help="Skip LLM analysis, use only rule engine"),
+    ] = False,
+    confidence_threshold: Annotated[
+        float,
+        typer.Option(
+            "--confidence-threshold", help="Confidence threshold for LLM routing"
+        ),
+    ] = 0.9,
+    cache_dir: Annotated[
+        Optional[Path], typer.Option("--cache-dir", help="Directory for analysis cache")
+    ] = None,
+    parallel: Annotated[
+        bool, typer.Option("--parallel/--sequential", help="Use parallel analysis")
+    ] = True,
+    output_format: Annotated[
+        str, typer.Option("--format", "-f", help="Output format (terminal/json)")
+    ] = "terminal",
+    output_file: Annotated[
+        Optional[Path], typer.Option("--output", "-o", help="Output file path")
+    ] = None,
+    config_profile: Annotated[
+        str,
+        typer.Option("--profile", help="Analysis profile (fast/thorough/development)"),
+    ] = "development",
+    show_summary: Annotated[
+        bool, typer.Option("--summary/--no-summary", help="Show analysis summary")
+    ] = True,
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Verbose output")
+    ] = False,
 ):
     """
-    Analyzes the project for documentation inconsistencies.
+    Analyze code for documentation inconsistencies using rules and LLM.
+
+    This command performs comprehensive analysis of function-documentation pairs
+    to identify inconsistencies, missing documentation, and outdated descriptions.
+
+    Examples:
+        codedocsync analyze ./src --rules-only
+        codedocsync analyze ./project --profile thorough --format json
     """
-    print(f"Analyzing documentation in: {path}")
-    # Placeholder for analysis logic. This is where you'll integrate the AST parser.
-    print("Analysis complete. (Placeholder)")
+    import asyncio
+    import time
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+
+    # Validate path
+    if not path.exists():
+        console.print(f"[red]Error: {path} does not exist[/red]")
+        raise typer.Exit(1)
+
+    # Get configuration profile
+    if config_profile == "fast":
+        config = get_fast_config()
+    elif config_profile == "thorough":
+        config = get_thorough_config()
+    else:
+        config = get_development_config()
+
+    # Apply command line overrides
+    if rules_only:
+        config.use_llm = False
+    config.rule_engine.confidence_threshold = confidence_threshold
+    config.parallel_analysis = parallel
+
+    # Set up cache
+    cache = AnalysisCache() if config.enable_cache else None
+
+    if verbose:
+        console.print(f"[cyan]Starting analysis of: {path}[/cyan]")
+        console.print(
+            f"[dim]Profile: {config_profile}, LLM: {config.use_llm}, Parallel: {parallel}[/dim]"
+        )
+
+    start_time = time.time()
+
+    try:
+        # First, get matched pairs using unified matching
+        facade = UnifiedMatchingFacade()
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            console=console,
+            transient=not verbose,
+        ) as progress:
+            # Match functions to documentation
+            match_task = progress.add_task(
+                "Matching functions to documentation...", total=None
+            )
+
+            if path.is_file():
+                match_result = facade.match_file(path)
+            else:
+                match_result = asyncio.run(facade.match_project(str(path)))
+
+            progress.update(match_task, completed=True)
+
+            if not match_result.matched_pairs:
+                console.print(
+                    "[yellow]No function-documentation pairs found to analyze[/yellow]"
+                )
+                return
+
+            # Analyze matched pairs
+            analysis_task = progress.add_task(
+                f"Analyzing {len(match_result.matched_pairs)} pairs...",
+                total=len(match_result.matched_pairs),
+            )
+
+            # Run analysis
+            results = await analyze_multiple_pairs(
+                match_result.matched_pairs, config=config, cache=cache
+            )
+
+            progress.update(analysis_task, completed=len(results))
+
+        total_time = time.time() - start_time
+
+        # Aggregate results
+        all_issues = []
+        total_analysis_time = 0
+        used_llm_count = 0
+        cache_hits = 0
+
+        for result in results:
+            all_issues.extend(result.issues)
+            total_analysis_time += result.analysis_time_ms
+            if result.used_llm:
+                used_llm_count += 1
+            if result.cache_hit:
+                cache_hits += 1
+
+        # Format output
+        if output_format == "json":
+            output_data = {
+                "summary": {
+                    "total_pairs": len(results),
+                    "total_issues": len(all_issues),
+                    "critical_issues": len(
+                        [i for i in all_issues if i.severity == "critical"]
+                    ),
+                    "high_issues": len([i for i in all_issues if i.severity == "high"]),
+                    "medium_issues": len(
+                        [i for i in all_issues if i.severity == "medium"]
+                    ),
+                    "low_issues": len([i for i in all_issues if i.severity == "low"]),
+                    "used_llm": used_llm_count,
+                    "cache_hits": cache_hits,
+                    "total_time_seconds": total_time,
+                    "analysis_time_ms": total_analysis_time,
+                },
+                "issues": [
+                    {
+                        "issue_type": issue.issue_type,
+                        "severity": issue.severity,
+                        "description": issue.description,
+                        "suggestion": issue.suggestion,
+                        "line_number": issue.line_number,
+                        "confidence": issue.confidence,
+                        "details": issue.details,
+                    }
+                    for issue in all_issues
+                ],
+                "results": [
+                    {
+                        "function_name": result.matched_pair.function.signature.name,
+                        "file_path": result.matched_pair.function.file_path,
+                        "line_number": result.matched_pair.function.line_number,
+                        "issues_count": len(result.issues),
+                        "used_llm": result.used_llm,
+                        "cache_hit": result.cache_hit,
+                        "analysis_time_ms": result.analysis_time_ms,
+                    }
+                    for result in results
+                ],
+            }
+
+            output_text = json.dumps(output_data, indent=2)
+        else:
+            # Terminal output
+            output_text = _format_analysis_results(
+                results, all_issues, total_time, show_summary
+            )
+
+        # Save or print output
+        if output_file:
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            output_file.write_text(output_text, encoding="utf-8")
+            console.print(f"[green]Results saved to {output_file}[/green]")
+        else:
+            console.print(output_text)
+
+        # Print final summary
+        if show_summary:
+            console.print("\n[green]Analysis complete![/green]")
+            console.print(
+                f"Analyzed {len(results)} function-documentation pairs in {total_time:.2f}s"
+            )
+            console.print(f"Found {len(all_issues)} total issues")
+
+            critical_count = len([i for i in all_issues if i.severity == "critical"])
+            if critical_count > 0:
+                console.print(
+                    f"[red]{critical_count} critical issues require immediate attention[/red]"
+                )
+
+    except Exception as e:
+        console.print(f"[red]Error during analysis: {str(e)}[/red]")
+        if verbose:
+            import traceback
+
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -659,6 +879,91 @@ def _format_terminal_unified_result(result: MatchResult, show_unmatched: bool) -
         sys.stdout = old_stdout
 
 
+def _format_analysis_results(results, all_issues, total_time, show_summary):
+    """Format analysis results for terminal output."""
+    from io import StringIO
+    import sys
+
+    # Capture console output
+    old_stdout = sys.stdout
+    sys.stdout = captured_output = StringIO()
+
+    try:
+        _display_analysis_results(results, all_issues, total_time, show_summary)
+        return captured_output.getvalue()
+    finally:
+        sys.stdout = old_stdout
+
+
+def _display_analysis_results(results, all_issues, total_time, show_summary):
+    """Display analysis results in terminal with Rich."""
+    console.print("\n[bold]Analysis Results[/bold]")
+    console.print("=" * 60)
+
+    if show_summary:
+        # Summary table
+        table = Table(title="Analysis Summary")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+
+        table.add_row("Total Functions", str(len(results)))
+        table.add_row("Total Issues", str(len(all_issues)))
+        table.add_row(
+            "Critical Issues",
+            str(len([i for i in all_issues if i.severity == "critical"])),
+        )
+        table.add_row(
+            "High Issues", str(len([i for i in all_issues if i.severity == "high"]))
+        )
+        table.add_row(
+            "Medium Issues", str(len([i for i in all_issues if i.severity == "medium"]))
+        )
+        table.add_row(
+            "Low Issues", str(len([i for i in all_issues if i.severity == "low"]))
+        )
+        table.add_row("Analysis Time", f"{total_time:.2f}s")
+
+        console.print(table)
+
+    # Group issues by severity
+    critical_issues = [i for i in all_issues if i.severity == "critical"]
+    high_issues = [i for i in all_issues if i.severity == "high"]
+    medium_issues = [i for i in all_issues if i.severity == "medium"]
+    low_issues = [i for i in all_issues if i.severity == "low"]
+
+    # Display critical issues first
+    if critical_issues:
+        console.print(
+            f"\n[bold red]Critical Issues ({len(critical_issues)}):[/bold red]"
+        )
+        for issue in critical_issues[:10]:  # Show first 10
+            console.print(f"  • {issue.description}")
+            console.print(
+                f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
+            )
+        if len(critical_issues) > 10:
+            console.print(f"  ... and {len(critical_issues) - 10} more critical issues")
+
+    # Display high issues
+    if high_issues:
+        console.print(
+            f"\n[bold yellow]High Priority Issues ({len(high_issues)}):[/bold yellow]"
+        )
+        for issue in high_issues[:5]:  # Show first 5
+            console.print(f"  • {issue.description}")
+            console.print(
+                f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
+            )
+        if len(high_issues) > 5:
+            console.print(f"  ... and {len(high_issues) - 5} more high priority issues")
+
+    # Show summary for medium/low issues
+    if medium_issues:
+        console.print(f"\n[dim]Medium Issues: {len(medium_issues)}[/dim]")
+    if low_issues:
+        console.print(f"[dim]Low Issues: {len(low_issues)}[/dim]")
+
+
 def _display_unified_results(result: MatchResult, show_unmatched: bool):
     """Display unified matching results in terminal with comprehensive Rich formatting."""
     console.print(
@@ -1155,6 +1460,315 @@ def match_unified(
         asyncio.run(facade.cleanup())
     except Exception:
         pass  # Cleanup is best-effort
+
+
+@app.command()
+def analyze_function(
+    file: Annotated[Path, typer.Argument(help="Python file containing the function")],
+    function_name: Annotated[
+        str, typer.Argument(help="Name of the function to analyze")
+    ],
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Show detailed analysis")
+    ] = False,
+    rules_only: Annotated[
+        bool, typer.Option("--rules-only", help="Skip LLM analysis")
+    ] = False,
+    config_profile: Annotated[
+        str,
+        typer.Option("--profile", help="Analysis profile (fast/thorough/development)"),
+    ] = "development",
+):
+    """
+    Analyze a specific function in detail.
+
+    This command analyzes a single function and its documentation,
+    providing detailed insights and suggestions for improvement.
+
+    Examples:
+        codedocsync analyze-function ./myfile.py process_user --verbose
+        codedocsync analyze-function ./src/utils.py validate_data --rules-only
+    """
+    from codedocsync.parser import IntegratedParser
+
+    # Validate file
+    if not file.exists():
+        console.print(f"[red]Error: {file} does not exist[/red]")
+        raise typer.Exit(1)
+
+    if not file.is_file():
+        console.print(f"[red]Error: {file} is not a file[/red]")
+        raise typer.Exit(1)
+
+    try:
+        # Parse the file to find the function
+        parser = IntegratedParser()
+        functions = parser.parse_file(str(file))
+
+        target_function = None
+        for func in functions:
+            if func.signature.name == function_name:
+                target_function = func
+                break
+
+        if not target_function:
+            console.print(
+                f"[red]Error: Function '{function_name}' not found in {file}[/red]"
+            )
+            available_functions = [f.signature.name for f in functions]
+            if available_functions:
+                console.print(
+                    f"[dim]Available functions: {', '.join(available_functions)}[/dim]"
+                )
+            raise typer.Exit(1)
+
+        # Try to match with documentation
+        facade = UnifiedMatchingFacade()
+        match_result = facade.match_file(file)
+
+        target_pair = None
+        for pair in match_result.matched_pairs:
+            if pair.function.signature.name == function_name:
+                target_pair = pair
+                break
+
+        if not target_pair:
+            console.print(
+                f"[yellow]Warning: No documentation found for function '{function_name}'[/yellow]"
+            )
+            console.print("[dim]Analysis will focus on function structure only[/dim]")
+            # Create a dummy pair for analysis
+            from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
+
+            target_pair = MatchedPair(
+                function=target_function,
+                documentation=None,
+                confidence=MatchConfidence.HIGH,
+                match_type=MatchType.DIRECT,
+                match_reason="No documentation found",
+            )
+
+        # Get configuration
+        if config_profile == "fast":
+            config = get_fast_config()
+        elif config_profile == "thorough":
+            config = get_thorough_config()
+        else:
+            config = get_development_config()
+
+        if rules_only:
+            config.use_llm = False
+
+        # Analyze the function
+        console.print(f"[cyan]Analyzing function: {function_name}[/cyan]")
+        if verbose:
+            console.print(f"[dim]File: {file}[/dim]")
+            console.print(f"[dim]Line: {target_function.line_number}[/dim]")
+            console.print(
+                f"[dim]Profile: {config_profile}, LLM: {config.use_llm}[/dim]"
+            )
+
+        result = await analyze_matched_pair(target_pair, config=config)
+
+        # Display detailed results
+        console.print(f"\n[bold]Analysis Results for {function_name}[/bold]")
+        console.print("=" * 50)
+
+        # Function information
+        info_table = Table(title="Function Information")
+        info_table.add_column("Property", style="cyan")
+        info_table.add_column("Value", style="green")
+
+        info_table.add_row("Name", target_function.signature.name)
+        info_table.add_row("File", str(file))
+        info_table.add_row("Line", str(target_function.line_number))
+        info_table.add_row(
+            "Type", "async" if target_function.signature.is_async else "sync"
+        )
+        info_table.add_row("Parameters", str(len(target_function.signature.parameters)))
+        info_table.add_row(
+            "Return Type", target_function.signature.return_annotation or "None"
+        )
+
+        console.print(info_table)
+
+        # Analysis summary
+        console.print("\n[bold]Analysis Summary[/bold]")
+        summary_table = Table()
+        summary_table.add_column("Metric", style="cyan")
+        summary_table.add_column("Value", style="green")
+
+        summary_table.add_row("Total Issues", str(len(result.issues)))
+        summary_table.add_row(
+            "Critical", str(len([i for i in result.issues if i.severity == "critical"]))
+        )
+        summary_table.add_row(
+            "High", str(len([i for i in result.issues if i.severity == "high"]))
+        )
+        summary_table.add_row(
+            "Medium", str(len([i for i in result.issues if i.severity == "medium"]))
+        )
+        summary_table.add_row(
+            "Low", str(len([i for i in result.issues if i.severity == "low"]))
+        )
+        summary_table.add_row("Used LLM", "Yes" if result.used_llm else "No")
+        summary_table.add_row("Analysis Time", f"{result.analysis_time_ms:.1f}ms")
+
+        console.print(summary_table)
+
+        # Detailed issues
+        if result.issues:
+            console.print("\n[bold]Detected Issues[/bold]")
+            for i, issue in enumerate(result.issues, 1):
+                severity_color = {
+                    "critical": "red",
+                    "high": "yellow",
+                    "medium": "blue",
+                    "low": "dim",
+                }.get(issue.severity, "white")
+
+                console.print(
+                    f"\n{i}. [{severity_color}]{issue.severity.upper()}[/{severity_color}]: {issue.issue_type}"
+                )
+                console.print(f"   {issue.description}")
+                console.print(f"   [green]Suggestion:[/green] {issue.suggestion}")
+                if verbose and issue.details:
+                    console.print(f"   [dim]Details: {issue.details}[/dim]")
+                console.print(f"   [dim]Confidence: {issue.confidence:.2f}[/dim]")
+        else:
+            console.print(
+                "\n[green]No issues found! Function documentation is consistent.[/green]"
+            )
+
+        # Show function signature if verbose
+        if verbose:
+            console.print("\n[bold]Function Signature[/bold]")
+            console.print(f"[dim]{target_function.signature.to_string()}[/dim]")
+
+            if target_function.docstring:
+                console.print("\n[bold]Docstring[/bold]")
+                from codedocsync.parser import ParsedDocstring
+
+                if isinstance(target_function.docstring, ParsedDocstring):
+                    console.print(f"Format: {target_function.docstring.format}")
+                    console.print(f"Summary: {target_function.docstring.summary}")
+                else:
+                    console.print(f"Raw: {target_function.docstring.raw_text[:200]}...")
+
+    except Exception as e:
+        console.print(f"[red]Error during analysis: {str(e)}[/red]")
+        if verbose:
+            import traceback
+
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def clear_cache(
+    llm_only: Annotated[
+        bool, typer.Option("--llm-only", help="Clear only LLM analysis cache")
+    ] = False,
+    older_than_days: Annotated[
+        int, typer.Option("--older-than-days", help="Clear entries older than N days")
+    ] = 7,
+    confirm: Annotated[
+        bool, typer.Option("--yes", "-y", help="Skip confirmation prompt")
+    ] = False,
+):
+    """
+    Clear analysis cache.
+
+    This command clears cached analysis results to free up disk space
+    or force fresh analysis.
+
+    Examples:
+        codedocsync clear-cache --llm-only
+        codedocsync clear-cache --older-than-days 30 --yes
+    """
+    from codedocsync.analyzer.llm_analyzer import LLMCache
+    from pathlib import Path
+
+    # Get cache directories
+    cache_dir = Path.home() / ".cache" / "codedocsync"
+
+    if not cache_dir.exists():
+        console.print("[yellow]No cache directory found - nothing to clear[/yellow]")
+        return
+
+    # Calculate what will be cleared
+    total_cleared = 0
+
+    if llm_only:
+        # Only clear LLM cache
+        llm_cache_path = cache_dir / "llm_analysis_cache.db"
+        if llm_cache_path.exists():
+            if not confirm:
+                response = typer.confirm(
+                    "Clear LLM analysis cache? This will force re-analysis of all functions."
+                )
+                if not response:
+                    console.print("[yellow]Cache clear cancelled[/yellow]")
+                    return
+
+            try:
+                llm_cache = LLMCache(cache_dir=cache_dir)
+                cleared_count = llm_cache.clear(older_than_hours=older_than_days * 24)
+                total_cleared += cleared_count
+                console.print(
+                    f"[green]Cleared {cleared_count} LLM cache entries[/green]"
+                )
+            except Exception as e:
+                console.print(f"[red]Error clearing LLM cache: {e}[/red]")
+    else:
+        # Clear all caches
+        if not confirm:
+            response = typer.confirm(
+                f"Clear all analysis caches older than {older_than_days} days? "
+                "This will force re-analysis and re-matching."
+            )
+            if not response:
+                console.print("[yellow]Cache clear cancelled[/yellow]")
+                return
+
+        # Clear LLM cache
+        llm_cache_path = cache_dir / "llm_analysis_cache.db"
+        if llm_cache_path.exists():
+            try:
+                llm_cache = LLMCache(cache_dir=cache_dir)
+                llm_cleared = llm_cache.clear(older_than_hours=older_than_days * 24)
+                total_cleared += llm_cleared
+                console.print(f"[green]Cleared {llm_cleared} LLM cache entries[/green]")
+            except Exception as e:
+                console.print(
+                    f"[yellow]Warning: Error clearing LLM cache: {e}[/yellow]"
+                )
+
+        # Clear other cache files (AST cache, embedding cache, etc.)
+        import time
+
+        cutoff_time = time.time() - (older_than_days * 24 * 3600)
+
+        for cache_file in cache_dir.glob("**/*"):
+            if cache_file.is_file() and cache_file.name != "llm_analysis_cache.db":
+                try:
+                    if cache_file.stat().st_mtime < cutoff_time:
+                        cache_file.unlink()
+                        total_cleared += 1
+                except Exception as e:
+                    console.print(
+                        f"[yellow]Warning: Could not remove {cache_file}: {e}[/yellow]"
+                    )
+
+        console.print(f"[green]Cleared {total_cleared} total cache entries[/green]")
+
+    # Show remaining cache size
+    try:
+        total_size = sum(f.stat().st_size for f in cache_dir.rglob("*") if f.is_file())
+        total_size_mb = total_size / (1024 * 1024)
+        console.print(f"[dim]Remaining cache size: {total_size_mb:.1f} MB[/dim]")
+    except Exception:
+        pass  # Size calculation is best-effort
 
 
 if __name__ == "__main__":
