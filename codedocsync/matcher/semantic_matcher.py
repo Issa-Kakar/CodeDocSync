@@ -7,7 +7,8 @@ from ..storage.vector_store import VectorStore
 from ..storage.embedding_cache import EmbeddingCache
 from .semantic_models import EmbeddingConfig, FunctionEmbedding
 from .embedding_generator import EmbeddingGenerator
-from .models import MatchResult, MatchedPair, MatchType, MatchConfidence
+from .semantic_scorer import SemanticScorer
+from .models import MatchResult, MatchedPair, MatchType
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +19,6 @@ class SemanticMatcher:
 
     This is the final fallback when direct and contextual matching fail.
     Only handles ~2% of cases but critical for major refactorings.
-
-    Note: This is Part 1 implementation focusing on index preparation.
-    The complete similarity search will be implemented in Part 2.
     """
 
     def __init__(self, project_root: str, config: Optional[EmbeddingConfig] = None):
@@ -31,6 +29,7 @@ class SemanticMatcher:
         self.vector_store = VectorStore(project_id=None)  # Auto-generate from path
         self.embedding_cache = EmbeddingCache()
         self.embedding_generator = EmbeddingGenerator(self.config)
+        self.scorer = SemanticScorer()
 
         # Performance tracking
         self.stats = {
@@ -124,70 +123,163 @@ class SemanticMatcher:
 
         logger.info(f"Semantic index prepared in {index_time:.2f}s")
 
-    def create_placeholder_match_result(
+    async def match_with_embeddings(
         self,
         functions: List[ParsedFunction],
         previous_results: Optional[List[MatchResult]] = None,
     ) -> MatchResult:
         """
-        Create a placeholder match result for Part 1 implementation.
-
-        This method provides the interface that will be completed in Part 2.
-        For now, it returns the previous results or an empty result.
+        Perform semantic matching on functions.
 
         Args:
             functions: Functions to find matches for
             previous_results: Results from direct/contextual matching
 
         Returns:
-            MatchResult with existing matches preserved
+            MatchResult with semantic matches added
         """
-        logger.info("Creating placeholder match result (Part 1 implementation)")
+        start_time = time.time()
+        matches = []
+        unmatched_functions = []
 
         # Start with previous results if provided
-        all_matches = []
+        high_confidence_matches = set()
         if previous_results:
             for result in previous_results:
-                all_matches.extend(result.matched_pairs)
+                for match in result.matched_pairs:
+                    # Keep high confidence matches
+                    if match.confidence.overall >= 0.7:
+                        matches.append(match)
+                        high_confidence_matches.add(match.function.signature.name)
 
-        # Create result preserving existing matches
-        return MatchResult(
-            total_functions=len(functions),
-            total_docs=len(functions),  # Assuming integrated parsing
-            matched_pairs=all_matches,
-            unmatched_functions=[
-                f
-                for f in functions
-                if not any(
-                    m.function.signature.name == f.signature.name for m in all_matches
-                )
-            ],
-            unmatched_docs=[],
+        # Process only functions without good matches
+        functions_to_process = [
+            f for f in functions if f.signature.name not in high_confidence_matches
+        ]
+
+        logger.info(
+            f"Semantic matching for {len(functions_to_process)} functions "
+            f"(skipping {len(high_confidence_matches)} with good matches)"
         )
 
-    def _create_semantic_match_placeholder(
+        # Perform semantic search for each function
+        for function in functions_to_process:
+            semantic_match = await self._find_semantic_match(function)
+
+            if semantic_match:
+                matches.append(semantic_match)
+                self.stats["semantic_matches_found"] += 1
+            else:
+                unmatched_functions.append(function)
+
+        # Update stats
+        self.stats["functions_processed"] += len(functions_to_process)
+        self.stats["total_time"] += time.time() - start_time
+
+        # Build result
+        return MatchResult(
+            total_functions=len(functions),
+            matched_pairs=matches,
+            unmatched_functions=unmatched_functions,
+        )
+
+    async def _find_semantic_match(
+        self, function: ParsedFunction
+    ) -> Optional[MatchedPair]:
+        """Find semantic match for a single function."""
+        try:
+            # Generate embedding for query function
+            text = self.embedding_generator.prepare_function_text(function)
+
+            # Try cache first
+            signature_hash = self.embedding_generator.generate_signature_hash(function)
+            cached_embedding = self.embedding_cache.get(
+                text, self.config.primary_model.value, signature_hash
+            )
+
+            if cached_embedding:
+                query_embedding = cached_embedding.embedding
+            else:
+                # Generate new embedding
+                embeddings = (
+                    await self.embedding_generator.generate_function_embeddings(
+                        [function], use_cache=True
+                    )
+                )
+                if not embeddings:
+                    logger.warning(
+                        f"Failed to generate embedding for {function.signature.name}"
+                    )
+                    return None
+
+                query_embedding = embeddings[0].embedding
+                # Cache it
+                self.embedding_cache.set(embeddings[0])
+
+            # Search for similar functions
+            similar_items = self.vector_store.search_similar(
+                query_embedding,
+                n_results=10,
+                min_similarity=0.65,  # Get top 10 candidates
+            )
+            self.stats["searches_performed"] += 1
+
+            if not similar_items:
+                return None
+
+            # Score and validate matches
+            best_match = None
+            best_score = 0.0
+
+            for item_id, similarity, metadata in similar_items:
+                # Skip self-matches
+                if metadata[
+                    "function_id"
+                ] == self.embedding_generator.generate_function_id(function):
+                    continue
+
+                # Validate match with additional checks
+                is_valid, adjusted_score = self.scorer.validate_semantic_match(
+                    function, metadata["function_id"], similarity
+                )
+
+                if is_valid and adjusted_score > best_score:
+                    best_score = adjusted_score
+                    best_match = (item_id, adjusted_score, metadata)
+
+            # Create match if found
+            if best_match and best_score >= 0.65:
+                return self._create_semantic_match(
+                    function,
+                    best_match[0],  # matched function ID
+                    best_match[1],  # score
+                    best_match[2],  # metadata
+                )
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Semantic matching failed for {function.signature.name}: {e}")
+            return None
+
+    def _create_semantic_match(
         self,
         source_function: ParsedFunction,
         matched_function_id: str,
         similarity_score: float,
         metadata: Dict[str, str],
     ) -> MatchedPair:
-        """
-        Create a placeholder MatchedPair for semantic match.
+        """Create a MatchedPair for semantic match."""
+        # In a real implementation, we'd load the matched function
+        # For now, we'll create a placeholder match
 
-        This will be fully implemented in Part 2 with actual matching logic.
-        """
-        # Create basic confidence (will be enhanced in Part 2)
-        confidence = MatchConfidence(
-            overall=similarity_score,
-            name_similarity=similarity_score,
-            location_score=0.5,  # Unknown location relationship
-            signature_similarity=0.7,  # Assumed similar based on embedding
+        confidence = self.scorer.calculate_semantic_confidence(
+            similarity_score, source_function
         )
 
         return MatchedPair(
             function=source_function,
-            docstring=source_function.docstring,
+            docstring=source_function.docstring,  # Will be updated when we load actual match
             match_type=MatchType.SEMANTIC,
             confidence=confidence,
             match_reason=f"Semantic similarity match with {matched_function_id} (score: {similarity_score:.2f})",

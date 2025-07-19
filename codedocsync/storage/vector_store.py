@@ -1,10 +1,18 @@
-import chromadb
-from chromadb.config import Settings
 import hashlib
 import time
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import logging
+
+try:
+    import chromadb
+    from chromadb.config import Settings
+
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    chromadb = None
+    Settings = None
+    CHROMADB_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +23,9 @@ class VectorStore:
     def __init__(
         self, cache_dir: str = ".codedocsync_cache", project_id: Optional[str] = None
     ):
+        if not CHROMADB_AVAILABLE:
+            raise ImportError("chromadb is required for VectorStore functionality")
+
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +56,7 @@ class VectorStore:
         project_path = Path.cwd().absolute()
         return hashlib.md5(str(project_path).encode()).hexdigest()
 
-    def _init_collection(self) -> chromadb.Collection:
+    def _init_collection(self):
         """Initialize or get existing collection."""
         try:
             # Try to get existing collection

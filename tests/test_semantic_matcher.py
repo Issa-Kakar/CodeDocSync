@@ -4,6 +4,12 @@ from unittest.mock import Mock, patch, AsyncMock
 
 from codedocsync.matcher.semantic_matcher import SemanticMatcher
 from codedocsync.matcher.semantic_models import EmbeddingConfig, FunctionEmbedding
+from codedocsync.matcher.models import (
+    MatchResult,
+    MatchedPair,
+    MatchType,
+    MatchConfidence,
+)
 from codedocsync.parser import (
     ParsedFunction,
     FunctionSignature,
@@ -13,7 +19,7 @@ from codedocsync.parser import (
 
 
 class TestSemanticMatcher:
-    """Test suite for SemanticMatcher - Part 1 implementation."""
+    """Test suite for SemanticMatcher - Complete implementation."""
 
     @pytest.fixture
     def sample_functions(self):
@@ -52,13 +58,10 @@ class TestSemanticMatcher:
     def test_semantic_matcher_initialization(self, mock_config):
         """Test SemanticMatcher initialization."""
         with (
-            patch(
-                "codedocsync.matcher.semantic_matcher.VectorStore"
-            ) as mock_vector_store,
-            patch("codedocsync.matcher.semantic_matcher.EmbeddingCache") as mock_cache,
-            patch(
-                "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
-            ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.VectorStore"),
+            patch("codedocsync.matcher.semantic_matcher.EmbeddingCache"),
+            patch("codedocsync.matcher.semantic_matcher.EmbeddingGenerator"),
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             matcher = SemanticMatcher("/test/project", config=mock_config)
 
@@ -81,6 +84,7 @@ class TestSemanticMatcher:
             patch(
                 "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
             ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             # Setup mocks
             mock_cache_instance = Mock()
@@ -119,9 +123,7 @@ class TestSemanticMatcher:
             assert mock_cache_instance.get.call_count == len(sample_functions)
 
             # Verify no new embeddings were generated (all cache hits)
-            mock_generator_instance.generate_function_embeddings.assert_called_once_with(
-                [], use_cache=True
-            )
+            mock_generator_instance.generate_function_embeddings.assert_not_called()
 
             # Verify vector store was populated
             mock_vector_store_instance.add_embeddings.assert_called_once()
@@ -139,6 +141,7 @@ class TestSemanticMatcher:
             patch(
                 "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
             ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             # Setup mocks
             mock_cache_instance = Mock()
@@ -204,6 +207,7 @@ class TestSemanticMatcher:
             patch(
                 "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
             ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             # Setup mocks
             mock_cache_instance = Mock()
@@ -235,22 +239,164 @@ class TestSemanticMatcher:
                 sample_functions, use_cache=True
             )
 
-    def test_create_placeholder_match_result(self, sample_functions):
-        """Test placeholder match result creation."""
+    @pytest.mark.asyncio
+    async def test_match_with_embeddings_with_previous_results(self, sample_functions):
+        """Test semantic matching with previous results."""
         with (
             patch("codedocsync.matcher.semantic_matcher.VectorStore"),
             patch("codedocsync.matcher.semantic_matcher.EmbeddingCache"),
             patch("codedocsync.matcher.semantic_matcher.EmbeddingGenerator"),
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             matcher = SemanticMatcher("/test/project")
 
-            # Test with no previous results
-            result = matcher.create_placeholder_match_result(sample_functions)
+            # Create previous result with high confidence match
+            previous_match = MatchedPair(
+                function=sample_functions[0],
+                docstring=sample_functions[0].docstring,
+                match_type=MatchType.EXACT,
+                confidence=MatchConfidence(
+                    overall=0.9,
+                    name_similarity=0.9,
+                    location_score=0.9,
+                    signature_similarity=0.9,
+                ),
+                match_reason="Exact match",
+            )
+            previous_result = MatchResult(
+                total_functions=1,
+                matched_pairs=[previous_match],
+                unmatched_functions=[],
+            )
 
+            # Test semantic matching
+            result = await matcher.match_with_embeddings(
+                sample_functions, [previous_result]
+            )
+
+            # Should preserve high confidence matches and only process remaining functions
+            assert len(result.matched_pairs) >= 1
+            assert result.matched_pairs[0] == previous_match  # Previous match preserved
             assert result.total_functions == len(sample_functions)
-            assert result.total_docs == len(sample_functions)
-            assert len(result.matched_pairs) == 0
-            assert len(result.unmatched_functions) == len(sample_functions)
+
+    @pytest.mark.asyncio
+    async def test_match_with_embeddings_no_previous_results(self, sample_functions):
+        """Test semantic matching without previous results."""
+        with (
+            patch(
+                "codedocsync.matcher.semantic_matcher.VectorStore"
+            ) as mock_vector_store,
+            patch("codedocsync.matcher.semantic_matcher.EmbeddingCache") as mock_cache,
+            patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
+            ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
+        ):
+            # Setup mocks
+            mock_vector_store_instance = Mock()
+            mock_vector_store.return_value = mock_vector_store_instance
+            mock_vector_store_instance.search_similar.return_value = (
+                []
+            )  # No matches found
+
+            mock_cache_instance = Mock()
+            mock_cache.return_value = mock_cache_instance
+            mock_cache_instance.get.return_value = None
+
+            mock_generator_instance = Mock()
+            mock_generator.return_value = mock_generator_instance
+            mock_generator_instance.prepare_function_text.return_value = (
+                "def test(): pass"
+            )
+            mock_generator_instance.generate_signature_hash.return_value = "hash"
+            mock_generator_instance.generate_function_embeddings = AsyncMock(
+                return_value=[
+                    FunctionEmbedding(
+                        function_id="test.func",
+                        embedding=[0.1] * 1536,
+                        model="text-embedding-3-small",
+                        text_embedded="def test(): pass",
+                        timestamp=time.time(),
+                        signature_hash="hash",
+                    )
+                ]
+            )
+
+            matcher = SemanticMatcher("/test/project")
+
+            # Test semantic matching
+            result = await matcher.match_with_embeddings(sample_functions)
+
+            # Should process all functions since no previous results
+            assert result.total_functions == len(sample_functions)
+            assert len(result.unmatched_functions) == len(
+                sample_functions
+            )  # No matches found
+
+    @pytest.mark.asyncio
+    async def test_find_semantic_match_with_valid_match(self, sample_functions):
+        """Test finding semantic match when valid match exists."""
+        with (
+            patch(
+                "codedocsync.matcher.semantic_matcher.VectorStore"
+            ) as mock_vector_store,
+            patch("codedocsync.matcher.semantic_matcher.EmbeddingCache") as mock_cache,
+            patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
+            ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer") as mock_scorer,
+        ):
+            # Setup mocks
+            mock_vector_store_instance = Mock()
+            mock_vector_store.return_value = mock_vector_store_instance
+            mock_vector_store_instance.search_similar.return_value = [
+                ("match_id", 0.8, {"function_id": "other.function"})
+            ]
+
+            mock_cache_instance = Mock()
+            mock_cache.return_value = mock_cache_instance
+
+            # Mock cached embedding
+            cached_embedding = FunctionEmbedding(
+                function_id="test.func",
+                embedding=[0.1] * 1536,
+                model="text-embedding-3-small",
+                text_embedded="def test(): pass",
+                timestamp=time.time(),
+                signature_hash="hash",
+            )
+            mock_cache_instance.get.return_value = cached_embedding
+
+            mock_generator_instance = Mock()
+            mock_generator.return_value = mock_generator_instance
+            mock_generator_instance.prepare_function_text.return_value = (
+                "def test(): pass"
+            )
+            mock_generator_instance.generate_signature_hash.return_value = "hash"
+            mock_generator_instance.generate_function_id.return_value = "test.func"
+
+            mock_scorer_instance = Mock()
+            mock_scorer.return_value = mock_scorer_instance
+            mock_scorer_instance.validate_semantic_match.return_value = (True, 0.75)
+            mock_scorer_instance.calculate_semantic_confidence.return_value = (
+                MatchConfidence(
+                    overall=0.75,
+                    name_similarity=0.8,
+                    location_score=0.5,
+                    signature_similarity=0.7,
+                )
+            )
+
+            matcher = SemanticMatcher("/test/project")
+
+            # Test finding semantic match
+            result = await matcher._find_semantic_match(sample_functions[0])
+
+            # Should find a valid match
+            assert result is not None
+            assert result.match_type == MatchType.SEMANTIC
+            assert result.confidence.overall == 0.75
+            assert "Semantic similarity match" in result.match_reason
 
     def test_get_stats(self):
         """Test statistics retrieval."""
@@ -262,6 +408,7 @@ class TestSemanticMatcher:
             patch(
                 "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
             ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             # Setup mock return values for stats
             mock_generator_instance = Mock()
@@ -315,17 +462,17 @@ class TestSemanticMatcher:
             mock_vector_store_instance.get_stats.return_value = {
                 "collection_count": 100
             }
-            assert matcher.is_ready_for_matching() == True
+            assert matcher.is_ready_for_matching()
 
             # Test when vector store is empty
             mock_vector_store_instance.get_stats.return_value = {"collection_count": 0}
-            assert matcher.is_ready_for_matching() == False
+            assert not matcher.is_ready_for_matching()
 
             # Test when vector store throws exception
             mock_vector_store_instance.get_stats.side_effect = Exception(
                 "Connection failed"
             )
-            assert matcher.is_ready_for_matching() == False
+            assert not matcher.is_ready_for_matching()
 
     def test_clear_index(self):
         """Test index clearing functionality."""
@@ -333,6 +480,7 @@ class TestSemanticMatcher:
             patch("codedocsync.matcher.semantic_matcher.VectorStore"),
             patch("codedocsync.matcher.semantic_matcher.EmbeddingCache"),
             patch("codedocsync.matcher.semantic_matcher.EmbeddingGenerator"),
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             matcher = SemanticMatcher("/test/project")
 
@@ -423,6 +571,7 @@ class TestSemanticMatcher:
             patch(
                 "codedocsync.matcher.semantic_matcher.EmbeddingGenerator"
             ) as mock_generator,
+            patch("codedocsync.matcher.semantic_matcher.SemanticScorer"),
         ):
             # Setup fast mocks
             mock_cache_instance = Mock()
@@ -447,7 +596,9 @@ class TestSemanticMatcher:
 
             # Should complete quickly with mocks
             assert duration < 1.0  # Very generous for mocked operations
-            assert matcher.stats["index_preparation_time"] > 0
+            assert (
+                matcher.stats["index_preparation_time"] >= 0
+            )  # Can be 0 for very fast mocked operations
 
     def test_semantic_matcher_with_custom_config(self):
         """Test SemanticMatcher with custom configuration."""
@@ -466,7 +617,7 @@ class TestSemanticMatcher:
 
             assert matcher.config.batch_size == 50
             assert matcher.config.timeout_seconds == 60
-            assert matcher.config.cache_embeddings == False
+            assert not matcher.config.cache_embeddings
 
             # Verify config was passed to generator
             mock_generator.assert_called_once_with(custom_config)
