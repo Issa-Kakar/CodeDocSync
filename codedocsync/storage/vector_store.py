@@ -116,9 +116,11 @@ class VectorStore:
             # Extract and filter results
             if results["ids"] and results["ids"][0]:
                 for i, id_ in enumerate(results["ids"][0]):
-                    # ChromaDB returns distances, convert to similarity
+                    # ChromaDB returns cosine distances in [0,2] range, convert to similarity [0,1]
                     distance = results["distances"][0][i]
-                    similarity = 1 - distance  # Assuming normalized embeddings
+                    similarity = 1 - (
+                        distance / 2
+                    )  # Proper cosine distance to similarity conversion
 
                     if similarity >= min_similarity:
                         metadata = results["metadatas"][0][i]
