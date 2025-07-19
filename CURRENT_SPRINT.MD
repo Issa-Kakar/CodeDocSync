@@ -1560,20 +1560,75 @@ No false positives from distant modules
 Performance: <200ms per function including search
 
 
-Chunk 4: Integration Layer (Estimated: 2-3 hours)
-Objectives
+## Chunk 4A: Integration Layer - Part 1 ✅ COMPLETE (Estimated: 1.5 hours)
+### Objectives (First Half)
 
-Create unified matching facade with all three matchers
-Implement proper fallback chain
-Add performance monitoring across all matchers
-Create CLI command for semantic matching
+- Create unified matching facade foundation with all three matchers
+- Implement basic integration between direct, contextual, and semantic matching
+- Add basic CLI command for unified matching
+- Create foundation integration tests
 
-Required Files to Create/Update
+### Required Files Created/Updated (First Half)
 
-matcher/unified_facade.py - Unified interface for all matchers
-Update matcher/__init__.py - Export semantic components
-Update cli/main.py - Add semantic matching command
-tests/test_unified_matching.py - Integration tests
+1. `matcher/unified_facade.py` ✅ - Basic UnifiedMatchingFacade class with core integration
+2. `matcher/__init__.py` ✅ - Export semantic components and unified facade
+3. `main.py` ✅ - Add basic match_unified CLI command
+4. `tests/test_unified_matching.py` ✅ - Basic integration tests
+
+### Completed Implementation (First Half)
+
+**Created `matcher/unified_facade.py`** with core UnifiedMatchingFacade:
+- Basic class initialization with configuration and statistics tracking
+- `match_project()` method implementing four-phase matching pipeline:
+  1. Python file parsing with IntegratedParser
+  2. Direct matching using MatchingFacade
+  3. Contextual matching using ContextualMatchingFacade
+  4. Semantic matching using SemanticMatcher (optional)
+- Statistics collection across all matching phases
+- Performance timing for each phase (parsing, direct, contextual, semantic)
+- Match type counting (direct, contextual, semantic)
+- File discovery with standard exclusions (.git, __pycache__, venv)
+- Basic summary printing functionality
+
+**Updated `matcher/__init__.py`** to export:
+- `SemanticMatcher` class
+- `UnifiedMatchingFacade` class
+- All existing semantic models
+
+**Added basic `match_unified` CLI command** to `main.py`:
+- Async command execution for semantic matching support
+- Configuration file loading support
+- Enable/disable semantic matching option
+- Basic output formatting (reusing existing formatters)
+- Statistics display option
+- Error handling for invalid paths and analysis failures
+
+**Created `tests/test_unified_matching.py`** with comprehensive test coverage:
+- Facade initialization and configuration tests
+- File discovery testing with exclusion validation
+- Statistics calculation and retrieval tests
+- Basic project matching workflow with mocked components
+- Error handling during file parsing
+- Edge cases for empty directories and invalid files
+- Integration testing with all three matcher types
+
+---
+
+## Chunk 4B: Integration Layer - Part 2 ❌ PENDING (For Next Developer)
+### Objectives (Second Half - To Be Implemented)
+
+- Complete performance monitoring and optimization
+- Implement detailed output formatting for unified results
+- Add comprehensive CLI features and options
+- Create production-ready error recovery
+- Add performance validation tests
+
+### Required Files to Create/Update (Second Half)
+
+1. Complete `matcher/unified_facade.py` - Add advanced performance monitoring and optimization
+2. Update `main.py` - Add detailed output formatting functions for unified results
+3. Create `tests/test_unified_performance.py` - Performance validation tests
+4. Add comprehensive integration scenarios
 
 Detailed Implementation
 1. Create matcher/unified_facade.py

@@ -12,7 +12,12 @@ from rich.table import Table
 
 from codedocsync import __version__
 from codedocsync.parser import IntegratedParser, ParsingError, ParsedDocstring
-from codedocsync.matcher import MatchingFacade, MatchResult, ContextualMatchingFacade
+from codedocsync.matcher import (
+    MatchingFacade,
+    MatchResult,
+    ContextualMatchingFacade,
+    UnifiedMatchingFacade,
+)
 from codedocsync.utils.config import CodeDocSyncConfig
 
 app = typer.Typer(
@@ -570,6 +575,89 @@ def _display_contextual_results(result: MatchResult, show_unmatched: bool):
             )
         if len(result.unmatched_functions) > 10:
             console.print(f"  ... and {len(result.unmatched_functions) - 10} more")
+
+
+@app.command()
+def match_unified(
+    path: Path = typer.Argument(..., help="Project directory to analyze"),
+    output_format: str = typer.Option(
+        "terminal", "--format", "-f", help="Output format: terminal or json"
+    ),
+    output_file: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Output file"
+    ),
+    config: Optional[Path] = typer.Option(
+        None, "--config", "-c", help="Configuration file"
+    ),
+    enable_semantic: bool = typer.Option(
+        True, "--semantic/--no-semantic", help="Enable semantic matching"
+    ),
+    show_stats: bool = typer.Option(False, "--stats", help="Show detailed statistics"),
+):
+    """
+    Perform unified matching using all three strategies (FIRST HALF IMPLEMENTATION).
+
+    Uses direct, contextual, and semantic matching for comprehensive results.
+    This is a basic implementation of the unified matching command.
+    """
+    import asyncio
+
+    # Load configuration
+    if config and config.exists():
+        config_obj = CodeDocSyncConfig.from_yaml(str(config))
+    else:
+        config_obj = CodeDocSyncConfig()
+
+    # Validate path
+    if not path.exists():
+        console.print(f"[red]Error: {path} does not exist[/red]")
+        raise typer.Exit(1)
+
+    if not path.is_dir():
+        console.print(f"[red]Error: {path} is not a directory[/red]")
+        raise typer.Exit(1)
+
+    # Create facade and run matching
+    facade = UnifiedMatchingFacade(config_obj)
+
+    console.print(f"[cyan]Starting unified analysis: {path}[/cyan]")
+    console.print("[dim]Running direct → contextual → semantic matching...[/dim]")
+
+    try:
+        # Run async matching
+        result = asyncio.run(
+            facade.match_project(str(path), enable_semantic=enable_semantic)
+        )
+    except Exception as e:
+        console.print(f"[red]Error during unified analysis: {str(e)}[/red]")
+        raise typer.Exit(1)
+
+    # Basic output (detailed formatting left for second half)
+    if output_format == "json":
+        output = _format_json_contextual_result(
+            result, True
+        )  # Reuse existing formatter
+    else:
+        output = _format_terminal_contextual_result(
+            result, True
+        )  # Reuse existing formatter
+
+    # Save or print
+    if output_file:
+        output_file.write_text(output)
+        console.print(f"✅ Results saved to {output_file}")
+    else:
+        console.print(output)
+
+    # Show unified statistics if requested
+    if show_stats:
+        facade.print_summary()
+
+    console.print("\n[green]✅ Unified analysis complete![/green]")
+    summary = result.get_summary()
+    console.print(
+        f"Matched {summary['matched']}/{summary['total_functions']} functions ({summary['match_rate']})"
+    )
 
 
 if __name__ == "__main__":

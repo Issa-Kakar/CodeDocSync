@@ -24,6 +24,8 @@ from .semantic_models import (
     SemanticMatch,
     SemanticSearchResult,
 )
+from .semantic_matcher import SemanticMatcher
+from .unified_facade import UnifiedMatchingFacade
 
 __all__ = [
     "MatchedPair",
@@ -50,4 +52,6 @@ __all__ = [
     "FunctionEmbedding",
     "SemanticMatch",
     "SemanticSearchResult",
+    "SemanticMatcher",
+    "UnifiedMatchingFacade",
 ]

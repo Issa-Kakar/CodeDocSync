@@ -445,6 +445,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Mock-based testing ensuring external dependency isolation
   - **Complete semantic matching implementation now functional**: Full similarity search, match validation, confidence scoring, and integration with existing matchers
   - **Status**: ✅ READY FOR PRODUCTION - All architectural requirements met, comprehensive test coverage, performance targets achieved
+- Unified Matching Integration - First Half (Chunk 4A):
+  - Created `matcher/unified_facade.py` with core UnifiedMatchingFacade class implementing complete four-phase matching pipeline:
+    - Phase 1: Python file parsing with IntegratedParser and file discovery with standard exclusions
+    - Phase 2: Direct matching using MatchingFacade with exact and fuzzy matching capabilities
+    - Phase 3: Contextual matching using ContextualMatchingFacade with import and cross-file analysis
+    - Phase 4: Optional semantic matching using SemanticMatcher with embedding-based similarity search
+  - Comprehensive statistics collection and performance tracking across all matching phases
+  - Match type counting and distribution calculation (direct/contextual/semantic percentages)
+  - Enhanced `matcher/__init__.py` to export SemanticMatcher and UnifiedMatchingFacade classes
+  - Added basic `match_unified` CLI command in `main.py` with async execution support:
+    - Configuration file loading and validation
+    - Enable/disable semantic matching option (--semantic/--no-semantic)
+    - Basic output formatting reusing existing contextual formatters
+    - Statistics display option (--stats) with comprehensive performance breakdowns
+    - Error handling for invalid paths and analysis failures
+  - Created comprehensive test suite `tests/test_unified_matching.py` with 15+ test cases:
+    - Facade initialization and configuration testing
+    - File discovery validation with exclusion pattern testing
+    - Statistics calculation and retrieval across different scenarios
+    - Basic project matching workflow with mocked component integration
+    - Error handling during file parsing and analysis failures
+    - Edge cases for empty directories, invalid files, and zero matches
+    - Integration testing with all three matcher types (direct, contextual, semantic)
+  - **Implementation Note**: This is the first half of Chunk 4 (4A), focusing on core integration and basic functionality
+  - **Next Phase**: Chunk 4B will add advanced performance monitoring, detailed output formatting, and production optimizations
 
 ### Changed
 - Nothing yet
