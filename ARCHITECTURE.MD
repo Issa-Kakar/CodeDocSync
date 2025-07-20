@@ -473,4 +473,47 @@ def function_name(param: str) -> bool:
 }
 ```
 
-This configuration ensures your editor applies the same formatting rules as the pre-commit hooks, reducing commit failures.
+### Suggestion Generator Specifications
+
+**Purpose**: Generate actionable, copy-paste ready fix suggestions for detected inconsistencies.
+
+**Core Responsibilities**:
+1. Transform issues into properly formatted docstrings
+2. Support multiple docstring styles (Google, NumPy, Sphinx, REST)
+3. Provide confidence scores for suggestions
+4. Generate minimal diffs for easy review
+5. Format suggestions for different output contexts (terminal, JSON, HTML)
+
+**Data Models**:
+```python
+@dataclass
+class Suggestion:
+    """A single fix suggestion with formatting."""
+    original_text: str          # Current docstring/code
+    suggested_text: str         # Fixed version
+    diff_preview: str          # Minimal diff view
+    confidence: float          # 0.0-1.0 confidence
+    style: str                 # Docstring style used
+    copy_paste_ready: bool     # If suggestion can be directly applied
+
+@dataclass
+class SuggestionContext:
+    """Context needed to generate suggestions."""
+    issue: InconsistencyIssue
+    function: ParsedFunction
+    docstring: Optional[ParsedDocstring]
+    project_style: str  # From config
+    surrounding_code: Optional[str]  # For context-aware suggestions
+Integration Pattern:
+InconsistencyIssue → SuggestionGenerator → Formatted Suggestion
+                           ↓
+                    Style Formatter
+                           ↓
+                    Output Formatter
+Critical Invariants:
+
+Suggestions must preserve all valid existing documentation
+Generated docstrings must be syntactically valid Python
+Style must be consistent with project configuration
+Suggestions must be actionable (no vague instructions)
+Terminal output must be ANSI-safe, JSON must escape properly
