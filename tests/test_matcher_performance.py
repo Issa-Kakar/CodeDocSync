@@ -1,8 +1,9 @@
 """Performance tests for the matcher."""
 
 import time
+
 from codedocsync.matcher import DirectMatcher
-from codedocsync.parser import ParsedFunction, FunctionSignature, RawDocstring
+from codedocsync.parser import FunctionSignature, ParsedFunction, RawDocstring
 
 
 class TestMatcherPerformance:

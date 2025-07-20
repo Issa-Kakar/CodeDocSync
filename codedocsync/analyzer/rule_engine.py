@@ -6,25 +6,26 @@ Confidence threshold: Issues with confidence > 0.9 skip LLM analysis
 """
 
 import time
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from codedocsync.matcher import MatchedPair
 from codedocsync.parser import (
-    ParsedFunction,
+    DocstringParameter,
     FunctionParameter,
     ParsedDocstring,
-    DocstringParameter,
+    ParsedFunction,
 )
+
 from .models import (
-    RuleCheckResult,
     InconsistencyIssue,
+    RuleCheckResult,
 )
 from .rule_engine_utils import (
-    normalize_type_string,
     compare_types,
-    extract_function_params,
     extract_doc_params,
+    extract_function_params,
     generate_parameter_suggestion,
+    normalize_type_string,
 )
 
 
@@ -38,9 +39,9 @@ class RuleEngine:
 
     def __init__(
         self,
-        enabled_rules: Optional[List[str]] = None,
+        enabled_rules: list[str] | None = None,
         performance_mode: bool = False,
-        severity_overrides: Optional[Dict[str, str]] = None,
+        severity_overrides: dict[str, str] | None = None,
         confidence_threshold: float = 0.9,
     ):
         """
@@ -79,7 +80,7 @@ class RuleEngine:
 
     def check_matched_pair(
         self, pair: MatchedPair, confidence_threshold: float = 0.9
-    ) -> List[InconsistencyIssue]:
+    ) -> list[InconsistencyIssue]:
         """
         Main entry point for rule checking.
 
@@ -121,7 +122,7 @@ class RuleEngine:
 
         return has_docstring
 
-    def _get_parsed_docstring(self, pair: MatchedPair) -> Optional[ParsedDocstring]:
+    def _get_parsed_docstring(self, pair: MatchedPair) -> ParsedDocstring | None:
         """Get the parsed docstring from the matched pair."""
         # Try function's docstring first
         if pair.function.docstring:
@@ -135,13 +136,13 @@ class RuleEngine:
 
         return None
 
-    def _get_function_params(self, function: ParsedFunction) -> List[FunctionParameter]:
+    def _get_function_params(self, function: ParsedFunction) -> list[FunctionParameter]:
         """Extract parameters from function signature, excluding self/cls."""
         return extract_function_params(function)
 
     def _get_doc_params(
-        self, docstring: Optional[ParsedDocstring]
-    ) -> List[DocstringParameter]:
+        self, docstring: ParsedDocstring | None
+    ) -> list[DocstringParameter]:
         """Extract parameters from parsed docstring."""
         return extract_doc_params(docstring)
 
@@ -152,7 +153,7 @@ class RuleEngine:
         suggestion: str,
         line_number: int,
         confidence: float = 1.0,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> InconsistencyIssue:
         """Create an InconsistencyIssue with proper severity handling."""
         from .models import ISSUE_TYPES

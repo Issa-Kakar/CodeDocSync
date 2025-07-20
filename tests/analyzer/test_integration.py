@@ -5,37 +5,38 @@ End-to-end tests for the complete analysis pipeline, performance requirements,
 and error handling.
 """
 
-import pytest
 import time
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from codedocsync.analyzer import (
-    analyze_matched_pair,
-    analyze_multiple_pairs,
     AnalysisCache,
     AnalysisConfig,
+    analyze_matched_pair,
+    analyze_multiple_pairs,
     get_development_config,
 )
 from codedocsync.analyzer.integration import (
-    _should_use_llm,
-    _determine_analysis_types,
     _create_llm_request,
+    _determine_analysis_types,
     _merge_results,
+    _should_use_llm,
 )
+from codedocsync.analyzer.llm_models import LLMAnalysisRequest
 from codedocsync.analyzer.models import (
     AnalysisResult,
     InconsistencyIssue,
     RuleCheckResult,
 )
-from codedocsync.analyzer.llm_models import LLMAnalysisRequest
-from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
+from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
 from codedocsync.parser import (
-    ParsedFunction,
-    FunctionSignature,
-    FunctionParameter,
-    ParsedDocstring,
     DocstringParameter,
     DocstringReturns,
+    FunctionParameter,
+    FunctionSignature,
+    ParsedDocstring,
+    ParsedFunction,
 )
 
 
@@ -391,8 +392,8 @@ class TestAnalyzeMultiplePairs:
         pairs = self.create_test_pairs(3)
 
         config = AnalysisConfig(
-            parallel_analysis=False,  # Force sequential
-            use_llm=False,
+            parallel_analysis=False,
+            use_llm=False,  # Force sequential
         )
 
         results = await analyze_multiple_pairs(pairs, config=config)

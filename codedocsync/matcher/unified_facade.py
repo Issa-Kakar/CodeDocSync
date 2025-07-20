@@ -1,17 +1,19 @@
 import gc
-import os
-import psutil
-import time
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Callable
 import logging
+import os
+import time
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
-from .facade import MatchingFacade
-from .contextual_facade import ContextualMatchingFacade
-from .semantic_matcher import SemanticMatcher
-from .models import MatchResult
+import psutil
+
 from ..parser import IntegratedParser
 from ..utils.config import CodeDocSyncConfig
+from .contextual_facade import ContextualMatchingFacade
+from .facade import MatchingFacade
+from .models import MatchResult
+from .semantic_matcher import SemanticMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class UnifiedMatchingFacade:
     and production-ready optimization features.
     """
 
-    def __init__(self, config: Optional[CodeDocSyncConfig] = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None):
         self.config = config or CodeDocSyncConfig()
 
         # Enhanced statistics tracking
@@ -57,7 +59,7 @@ class UnifiedMatchingFacade:
         )
 
         # Progress tracking
-        self.progress_callback: Optional[Callable[[str, int, int], None]] = None
+        self.progress_callback: Callable[[str, int, int], None] | None = None
 
     def set_progress_callback(self, callback: Callable[[str, int, int], None]) -> None:
         """Set a callback for progress updates."""
@@ -85,7 +87,7 @@ class UnifiedMatchingFacade:
         project_path: str,
         use_cache: bool = True,
         enable_semantic: bool = True,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> MatchResult:
         """
         Perform complete matching on a project with advanced monitoring.
@@ -319,7 +321,7 @@ class UnifiedMatchingFacade:
             }
         )
 
-    def _generate_performance_profile(self) -> Dict[str, str]:
+    def _generate_performance_profile(self) -> dict[str, str]:
         """Generate performance profile for optimization insights."""
         total_time = self.stats["total_time"]
 
@@ -366,7 +368,7 @@ class UnifiedMatchingFacade:
 
         return profile
 
-    def _discover_python_files(self, project_path: Path) -> List[Path]:
+    def _discover_python_files(self, project_path: Path) -> list[Path]:
         """Discover Python files with exclusions."""
         exclusions = {".git", "__pycache__", "venv", "env", ".venv", "build", "dist"}
 
@@ -379,11 +381,11 @@ class UnifiedMatchingFacade:
 
         return python_files
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get basic statistics (backward compatibility)."""
         return self.get_comprehensive_stats()
 
-    def get_comprehensive_stats(self) -> Dict[str, Any]:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get enhanced comprehensive statistics with performance insights."""
         total_matches = sum(self.stats["matches_by_type"].values())
 
@@ -424,7 +426,7 @@ class UnifiedMatchingFacade:
             "efficiency_metrics": self._calculate_efficiency_metrics(),
         }
 
-    def _calculate_efficiency_metrics(self) -> Dict[str, float]:
+    def _calculate_efficiency_metrics(self) -> dict[str, float]:
         """Calculate efficiency metrics for performance analysis."""
         total_time = self.stats["total_time"]
         total_functions = self.stats["functions_processed"]
@@ -477,7 +479,7 @@ class UnifiedMatchingFacade:
         for phase, time_val in stats["phase_times"].items():
             if time_val > 0:
                 print(
-                    f"{phase}: {time_val:.2f}s ({time_val/stats['total_time_seconds']*100:.1f}%)"
+                    f"{phase}: {time_val:.2f}s ({time_val / stats['total_time_seconds'] * 100:.1f}%)"
                 )
 
         print("\n--- Match Distribution ---")
@@ -504,7 +506,7 @@ class UnifiedMatchingFacade:
             print(f"Matches per second: {eff['matches_per_second']:.1f}")
             print(f"Error rate: {eff['error_rate']:.3f}")
 
-    def get_performance_recommendations(self) -> List[str]:
+    def get_performance_recommendations(self) -> list[str]:
         """Get performance recommendations based on current metrics."""
         recommendations = []
         stats = self.get_comprehensive_stats()

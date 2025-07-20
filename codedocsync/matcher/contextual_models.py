@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Set, TYPE_CHECKING
 from enum import Enum
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..parser import ParsedFunction, ParsedDocstring
+    from ..parser import ParsedDocstring, ParsedFunction
 
 
 class ImportType(Enum):
@@ -21,8 +21,8 @@ class ImportStatement:
 
     import_type: ImportType
     module_path: str  # 'os.path' or '.utils'
-    imported_names: List[str]  # ['join', 'exists'] or ['*']
-    aliases: Dict[str, str]  # {'DataFrame': 'pd.DataFrame'}
+    imported_names: list[str]  # ['join', 'exists'] or ['*']
+    aliases: dict[str, str]  # {'DataFrame': 'pd.DataFrame'}
     line_number: int
     level: int = 0  # Relative import level (number of dots)
 
@@ -40,9 +40,9 @@ class ModuleInfo:
 
     module_path: str  # 'mypackage.submodule'
     file_path: str  # '/path/to/mypackage/submodule.py'
-    imports: List[ImportStatement] = field(default_factory=list)
-    exports: Set[str] = field(default_factory=set)  # __all__ or public names
-    functions: Dict[str, "FunctionLocation"] = field(default_factory=dict)
+    imports: list[ImportStatement] = field(default_factory=list)
+    exports: set[str] = field(default_factory=set)  # __all__ or public names
+    functions: dict[str, "FunctionLocation"] = field(default_factory=dict)
     is_package: bool = False  # True if __init__.py
 
     def get_canonical_name(self, function_name: str) -> str:
@@ -57,7 +57,7 @@ class FunctionLocation:
     canonical_module: str  # Original definition module
     function_name: str
     line_number: int
-    import_paths: Set[str] = field(default_factory=set)  # All ways to import
+    import_paths: set[str] = field(default_factory=set)  # All ways to import
     is_exported: bool = True  # False if name starts with _
 
 
@@ -68,7 +68,7 @@ class CrossFileMatch:
     function: "ParsedFunction"
     documentation: "ParsedDocstring"
     match_reason: str  # "imported_function", "moved_function", etc
-    import_chain: List[str]  # Steps to resolve the import
+    import_chain: list[str]  # Steps to resolve the import
     confidence: float
 
     def __post_init__(self):
@@ -82,9 +82,9 @@ class CrossFileMatch:
 class ContextualMatcherState:
     """Global state for contextual matching across files."""
 
-    module_tree: Dict[str, ModuleInfo] = field(default_factory=dict)
-    import_graph: Dict[str, Set[str]] = field(default_factory=dict)
-    function_registry: Dict[str, FunctionLocation] = field(default_factory=dict)
+    module_tree: dict[str, ModuleInfo] = field(default_factory=dict)
+    import_graph: dict[str, set[str]] = field(default_factory=dict)
+    function_registry: dict[str, FunctionLocation] = field(default_factory=dict)
 
     def add_module(self, module_info: ModuleInfo) -> None:
         """Add a module to the state."""

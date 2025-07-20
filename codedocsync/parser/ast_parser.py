@@ -11,18 +11,19 @@ import hashlib
 import logging
 import re
 import time
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import List, Optional, Union, Generator, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from .docstring_models import ParsedDocstring
 
 from ..utils.errors import (
-    ValidationError,
-    ParsingError,
     FileAccessError,
+    ParsingError,
     SyntaxParsingError,
+    ValidationError,
 )
 
 # Configure module logger
@@ -34,8 +35,8 @@ class FunctionParameter:
     """Single function parameter with validation."""
 
     name: str
-    type_annotation: Optional[str] = None
-    default_value: Optional[str] = None
+    type_annotation: str | None = None
+    default_value: str | None = None
     is_required: bool = True
 
     def __post_init__(self):
@@ -80,11 +81,11 @@ class FunctionSignature:
     """Complete function signature with validation."""
 
     name: str
-    parameters: List[FunctionParameter] = field(default_factory=list)
-    return_type: Optional[str] = None
+    parameters: list[FunctionParameter] = field(default_factory=list)
+    return_type: str | None = None
     is_async: bool = False
     is_method: bool = False
-    decorators: List[str] = field(default_factory=list)
+    decorators: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         """Validate function signature after initialization."""
@@ -137,7 +138,7 @@ class ParsedFunction:
     """Represents a parsed function with all metadata."""
 
     signature: FunctionSignature
-    docstring: Optional[Union[RawDocstring, "ParsedDocstring"]] = None
+    docstring: Union[RawDocstring, "ParsedDocstring"] | None = None
     file_path: str = ""
     line_number: int = 0
     end_line_number: int = 0
@@ -162,17 +163,17 @@ class ParsedFunction:
 def _get_cached_ast(file_content_hash: str, file_path: str) -> ast.AST:
     """Cache parsed AST trees for repeated analysis."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
     except UnicodeDecodeError:
         # Try alternative encodings
-        with open(file_path, "r", encoding="latin-1") as f:
+        with open(file_path, encoding="latin-1") as f:
             source_content = f.read()
         logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
     return ast.parse(source_content, filename=file_path)
 
 
-def parse_python_file(file_path: str) -> List[ParsedFunction]:
+def parse_python_file(file_path: str) -> list[ParsedFunction]:
     """
     Parse Python file with comprehensive error handling.
 
@@ -193,7 +194,7 @@ def parse_python_file(file_path: str) -> List[ParsedFunction]:
     start_time = time.time()
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
     except FileNotFoundError:
         error_msg = f"File not found: {file_path}"
@@ -210,7 +211,7 @@ def parse_python_file(file_path: str) -> List[ParsedFunction]:
     except UnicodeDecodeError as e:
         # Try alternative encodings
         try:
-            with open(file_path, "r", encoding="latin-1") as f:
+            with open(file_path, encoding="latin-1") as f:
                 source_content = f.read()
             logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
         except Exception:
@@ -296,7 +297,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     start_time = time.time()
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
     except FileNotFoundError:
         error_msg = f"File not found: {file_path}"
@@ -313,7 +314,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     except UnicodeDecodeError as e:
         # Try alternative encodings
         try:
-            with open(file_path, "r", encoding="latin-1") as f:
+            with open(file_path, encoding="latin-1") as f:
                 source_content = f.read()
             logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
         except Exception:
@@ -381,7 +382,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
 
 
 def _extract_function(
-    node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
     file_path: str,
     source_content: str,
 ) -> ParsedFunction:
@@ -443,7 +444,7 @@ def _extract_function(
 
 
 def _extract_signature(
-    node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
 ) -> FunctionSignature:
     """Extract signature information from AST node with comprehensive parameter handling."""
     parameters = []
@@ -568,7 +569,7 @@ def _extract_signature(
     )
 
 
-def _get_decorator_names(decorators: List[ast.expr]) -> List[str]:
+def _get_decorator_names(decorators: list[ast.expr]) -> list[str]:
     """Extract decorator names handling both simple and complex decorators."""
     decorator_names = []
 
@@ -609,7 +610,7 @@ def _decorator_fallback(decorator: ast.expr) -> str:
         return "<complex_decorator>"
 
 
-def _get_annotation_string(annotation: Optional[ast.expr]) -> Optional[str]:
+def _get_annotation_string(annotation: ast.expr | None) -> str | None:
     """Convert AST annotation to string representation with enhanced type handling."""
     if annotation is None:
         return None
@@ -653,7 +654,7 @@ def _annotation_to_string_fallback(annotation: ast.expr) -> str:
 
 
 def _is_method_function(
-    parameters: List[FunctionParameter], decorators: List[str]
+    parameters: list[FunctionParameter], decorators: list[str]
 ) -> bool:
     """Enhanced method detection considering decorators and parameters."""
     # Check for static method or class method decorators
@@ -672,7 +673,7 @@ def _is_method_function(
     return False
 
 
-def _get_default_value(default_node: Optional[ast.expr]) -> str:
+def _get_default_value(default_node: ast.expr | None) -> str:
     """Extract default value from AST node with enhanced handling."""
     if default_node is None:
         return "None"
@@ -745,7 +746,7 @@ def _is_imports_only(source_content: str) -> bool:
 
 def _parse_partial_file(
     file_path: str, source_content: str, error_line: int
-) -> List[ParsedFunction]:
+) -> list[ParsedFunction]:
     """Attempt to parse file up to the syntax error line."""
     lines = source_content.split("\n")
     if error_line <= 1:
@@ -775,7 +776,7 @@ def _parse_partial_file(
 
 
 def _extract_parameter(
-    arg: ast.arg, defaults: List, default_offset: int
+    arg: ast.arg, defaults: list, default_offset: int
 ) -> FunctionParameter:
     """Extract parameter information with proper default handling."""
     # Calculate if this parameter has a default value

@@ -1,10 +1,11 @@
-import pytest
 import tempfile
 import time
 from pathlib import Path
 
-from codedocsync.storage.embedding_cache import EmbeddingCache
+import pytest
+
 from codedocsync.matcher.semantic_models import FunctionEmbedding
+from codedocsync.storage.embedding_cache import EmbeddingCache
 
 
 class TestEmbeddingCache:

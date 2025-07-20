@@ -1,20 +1,21 @@
-import pytest
 import asyncio
 import time
 from unittest.mock import AsyncMock
 
+import pytest
+
 from codedocsync.matcher.semantic_error_recovery import (
-    SemanticErrorRecovery,
-    ErrorType,
-    RecoveryAction,
-    ErrorAnalysis,
     CircuitBreaker,
     CircuitBreakerOpenError,
+    ErrorAnalysis,
+    ErrorType,
+    RecoveryAction,
+    SemanticErrorRecovery,
     with_api_fallback,
     with_resilient_retry,
 )
-from codedocsync.parser import ParsedFunction, FunctionSignature
 from codedocsync.matcher.semantic_models import FunctionEmbedding
+from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
 class TestSemanticErrorRecovery:

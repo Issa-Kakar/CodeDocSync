@@ -12,15 +12,16 @@ Key Requirements (Chunk 1):
 - Performance target: Foundation setup in <100ms
 """
 
+import asyncio
+import hashlib
+import json
+import logging
 import os
 import sqlite3
 import time
-import hashlib
-import asyncio
-import json
-import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 try:
     import openai
@@ -30,19 +31,19 @@ except ImportError:
     HAS_OPENAI = False
 
 from .llm_config import LLMConfig
-from .llm_models import LLMAnalysisRequest, LLMAnalysisResponse
-from .models import InconsistencyIssue, RuleCheckResult, AnalysisResult
-from .prompt_templates import format_prompt
-from .llm_output_parser import parse_llm_response
 from .llm_errors import (
+    CircuitBreaker,
+    LLMAPIKeyError,
     LLMError,
+    LLMNetworkError,
     LLMRateLimitError,
     LLMTimeoutError,
-    LLMAPIKeyError,
-    LLMNetworkError,
     RetryStrategy,
-    CircuitBreaker,
 )
+from .llm_models import LLMAnalysisRequest, LLMAnalysisResponse
+from .llm_output_parser import parse_llm_response
+from .models import AnalysisResult, InconsistencyIssue, RuleCheckResult
+from .prompt_templates import format_prompt
 
 # Import ParsedFunction for type hints
 if TYPE_CHECKING:
@@ -121,7 +122,7 @@ class LLMAnalyzer:
     - Performance monitoring setup
     """
 
-    def __init__(self, config: Optional[LLMConfig] = None):
+    def __init__(self, config: LLMConfig | None = None):
         """
         Initialize with configuration and OpenAI client.
 
@@ -281,7 +282,7 @@ class LLMAnalyzer:
         # Generate MD5 hash (sufficient for cache keys)
         return hashlib.md5(content.encode("utf-8")).hexdigest()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """
         Get comprehensive cache statistics.
 
@@ -358,7 +359,7 @@ class LLMAnalyzer:
         except Exception:
             return 0
 
-    def validate_configuration(self) -> Dict[str, Any]:
+    def validate_configuration(self) -> dict[str, Any]:
         """
         Validate the current configuration and system state.
 
@@ -392,7 +393,7 @@ class LLMAnalyzer:
 
         return validation_results
 
-    def get_initialization_summary(self) -> Dict[str, Any]:
+    def get_initialization_summary(self) -> dict[str, Any]:
         """
         Get summary of initialization status and configuration.
 
@@ -415,7 +416,7 @@ class LLMAnalyzer:
     # ========== CHUNK 3: Core LLM Analysis Logic ==========
 
     async def analyze_function(
-        self, request: LLMAnalysisRequest, cache: Optional[Dict[str, Any]] = None
+        self, request: LLMAnalysisRequest, cache: dict[str, Any] | None = None
     ) -> LLMAnalysisResponse:
         """
         Perform LLM analysis with caching and error handling.
@@ -527,8 +528,8 @@ class LLMAnalyzer:
             raise
 
     async def _call_openai(
-        self, user_prompt: str, system_prompt: Optional[str] = None
-    ) -> Tuple[str, Dict[str, int]]:
+        self, user_prompt: str, system_prompt: str | None = None
+    ) -> tuple[str, dict[str, int]]:
         """
         Make OpenAI API call with retry logic.
 
@@ -609,8 +610,8 @@ class LLMAnalyzer:
                 raise
 
     def _build_analysis_prompt(
-        self, function, docstring, analysis_types: List[str], context: Dict[str, Any]
-    ) -> Tuple[str, str]:
+        self, function, docstring, analysis_types: list[str], context: dict[str, Any]
+    ) -> tuple[str, str]:
         """
         Build optimized prompt for analysis type.
 
@@ -743,8 +744,8 @@ class LLMAnalyzer:
         """
 
     def merge_with_rule_results(
-        self, llm_issues: List[InconsistencyIssue], rule_results: List[RuleCheckResult]
-    ) -> List[InconsistencyIssue]:
+        self, llm_issues: list[InconsistencyIssue], rule_results: list[RuleCheckResult]
+    ) -> list[InconsistencyIssue]:
         """
         Merge LLM and rule engine results intelligently.
 
@@ -848,7 +849,7 @@ class LLMAnalyzer:
 
         return False
 
-    async def _check_cache(self, cache_key: str) -> Optional[LLMAnalysisResponse]:
+    async def _check_cache(self, cache_key: str) -> LLMAnalysisResponse | None:
         """Check if cached response exists and is not expired."""
         try:
             with sqlite3.connect(self.cache_db_path) as conn:
@@ -939,10 +940,10 @@ class LLMAnalyzer:
 
     async def analyze_batch(
         self,
-        requests: List[LLMAnalysisRequest],
+        requests: list[LLMAnalysisRequest],
         max_concurrent: int = 10,
-        progress_callback: Optional[callable] = None,
-    ) -> List[LLMAnalysisResponse]:
+        progress_callback: Callable | None = None,
+    ) -> list[LLMAnalysisResponse]:
         """
         Analyze multiple functions efficiently with smart batching.
 
@@ -1032,8 +1033,8 @@ class LLMAnalyzer:
         return results
 
     def _group_requests_for_efficiency(
-        self, requests: List[LLMAnalysisRequest]
-    ) -> List[List[Tuple[LLMAnalysisRequest, int]]]:
+        self, requests: list[LLMAnalysisRequest]
+    ) -> list[list[tuple[LLMAnalysisRequest, int]]]:
         """
         Group requests for better cache efficiency and performance.
 
@@ -1149,10 +1150,10 @@ class LLMAnalyzer:
 
     async def warm_cache(
         self,
-        functions: List["ParsedFunction"],
+        functions: list["ParsedFunction"],
         max_concurrent: int = 5,
-        progress_callback: Optional[callable] = None,
-    ) -> Dict[str, Any]:
+        progress_callback: Callable | None = None,
+    ) -> dict[str, Any]:
         """
         Pre-populate cache for high-value functions.
 
@@ -1317,7 +1318,7 @@ class LLMAnalyzer:
 
         return False
 
-    def _determine_warming_analysis_types(self, func: "ParsedFunction") -> List[str]:
+    def _determine_warming_analysis_types(self, func: "ParsedFunction") -> list[str]:
         """Determine which analysis types to use for cache warming."""
         analysis_types = ["behavior"]  # Always include behavior analysis
 
@@ -1494,15 +1495,15 @@ class LLMAnalyzer:
         Returns:
             AnalysisResult from rule engine only
         """
-        from .rule_engine import RuleEngine
         from .config import RuleEngineConfig
+        from .rule_engine import RuleEngine
 
         # Create rule engine with default configuration
         rule_config = RuleEngineConfig()
         rule_engine = RuleEngine(rule_config)
 
         # Create matched pair for rule analysis
-        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+        from ..matcher.models import MatchConfidence, MatchedPair, MatchType
 
         matched_pair = MatchedPair(
             function=request.function,
@@ -1545,7 +1546,7 @@ class LLMAnalyzer:
         Returns:
             Minimal AnalysisResult
         """
-        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+        from ..matcher.models import MatchConfidence, MatchedPair, MatchType
 
         # Create minimal matched pair
         matched_pair = MatchedPair(
@@ -1588,7 +1589,7 @@ class LLMAnalyzer:
         Returns:
             Empty AnalysisResult with error information
         """
-        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+        from ..matcher.models import MatchConfidence, MatchedPair, MatchType
 
         # Create error matched pair
         matched_pair = MatchedPair(
@@ -1633,7 +1634,7 @@ class LLMAnalyzer:
         Returns:
             AnalysisResult with LLM data
         """
-        from ..matcher.models import MatchedPair, MatchConfidence, MatchType
+        from ..matcher.models import MatchConfidence, MatchedPair, MatchType
 
         # Create matched pair
         matched_pair = MatchedPair(
@@ -1653,11 +1654,11 @@ class LLMAnalyzer:
             cache_hit=response.cache_hit,
         )
 
-    def get_circuit_breaker_stats(self) -> Dict[str, Any]:
+    def get_circuit_breaker_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics."""
         return self.circuit_breaker.get_stats()
 
-    def get_retry_stats(self) -> Dict[str, Any]:
+    def get_retry_stats(self) -> dict[str, Any]:
         """Get retry strategy statistics."""
         return self.retry_strategy.get_retry_stats()
 

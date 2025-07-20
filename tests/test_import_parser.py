@@ -3,8 +3,8 @@
 import tempfile
 from pathlib import Path
 
-from codedocsync.matcher.import_parser import ImportParser
 from codedocsync.matcher.contextual_models import ImportType
+from codedocsync.matcher.import_parser import ImportParser
 
 
 class TestImportParser:

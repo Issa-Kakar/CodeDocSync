@@ -1,19 +1,20 @@
-import pytest
 import time
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from codedocsync.matcher.models import (
+    MatchConfidence,
+    MatchedPair,
+    MatchResult,
+    MatchType,
+)
 from codedocsync.matcher.semantic_matcher import SemanticMatcher
 from codedocsync.matcher.semantic_models import EmbeddingConfig, FunctionEmbedding
-from codedocsync.matcher.models import (
-    MatchResult,
-    MatchedPair,
-    MatchType,
-    MatchConfidence,
-)
 from codedocsync.parser import (
-    ParsedFunction,
-    FunctionSignature,
     FunctionParameter,
+    FunctionSignature,
+    ParsedFunction,
     RawDocstring,
 )
 

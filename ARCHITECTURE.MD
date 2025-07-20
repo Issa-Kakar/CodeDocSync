@@ -35,6 +35,26 @@ CodeDocSync is a CLI tool that automatically detects inconsistencies between Pyt
 
 ## Component Specifications
 
+### CLI Module (`cli/`)
+
+**Purpose**: Provide a clean, maintainable command-line interface organized into logical submodules.
+
+**Structure** (Refactored from single 2191-line main.py):
+- `cli/main.py`: App initialization and command registration (~100 lines)
+- `cli/analyze.py`: `analyze` and `analyze_function` commands for documentation analysis (~425 lines)
+- `cli/match.py`: `match`, `match_contextual`, `match_unified` commands for function matching (~538 lines)
+- `cli/parse.py`: `parse` command for AST parsing demonstration (~130 lines)
+- `cli/suggest.py`: `suggest` and `suggest_interactive` commands for fix suggestions (~386 lines)
+- `cli/cache.py`: `clear_cache` command for cache management (~106 lines)
+- `cli/placeholders.py`: `watch` and `check` placeholder commands for future features (~25 lines)
+- `cli/formatting.py`: Shared formatting and display utilities (~300 lines)
+
+**Key Design Decisions**:
+- Modular structure for maintainability
+- Shared formatting utilities to avoid duplication
+- Clear separation of concerns by command type
+- Backward compatibility maintained with wrapper in original main.py
+
 ### Parser Module (`parser/`)
 
 **Purpose**: Extract code structure and documentation from Python files with high accuracy.
@@ -99,7 +119,7 @@ Key Architectural Decisions
 ADR-001: Python 3.10+ Requirement
 
 Decision: Require Python 3.10+
-Reason: Match statements, better typing, ast.unparse()
+Reason: Match statements, better typing, ast.unparse(), parenthesized context managers
 
 ADR-002: AST Parser Choice
 
@@ -330,6 +350,8 @@ This project uses strict code quality enforcement through pre-commit hooks that 
 
 ### Pre-commit Hook Configuration
 
+**IMPORTANT**: All tool versions are synchronized between `pyproject.toml` and `.pre-commit-config.yaml` to ensure consistent code quality enforcement.
+
 The project uses the following pre-commit hooks (defined in `.pre-commit-config.yaml`):
 
 1. **Standard Pre-commit Hooks** (v4.6.0):
@@ -337,12 +359,15 @@ The project uses the following pre-commit hooks (defined in `.pre-commit-config.
    - `end-of-file-fixer`: Ensures files end with a newline
    - `trailing-whitespace`: Removes trailing whitespace
 
-2. **Ruff** (v0.4.10):
+2. **Ruff** (v0.12.3):
    - `ruff --fix`: Fast Python linter with auto-fix capabilities
    - `ruff-format`: Fast Python code formatter (alternative to Black)
 
-3. **Black** (v24.4.2):
+3. **Black** (v25.1.0):
    - `black`: Python code formatter for consistent style
+
+4. **Mypy** (v1.17.0):
+   - `mypy`: Static type checker for Python code
 
 ### Development Workflow
 
@@ -473,4 +498,47 @@ def function_name(param: str) -> bool:
 }
 ```
 
-This configuration ensures your editor applies the same formatting rules as the pre-commit hooks, reducing commit failures.
+### Suggestion Generator Specifications
+
+**Purpose**: Generate actionable, copy-paste ready fix suggestions for detected inconsistencies.
+
+**Core Responsibilities**:
+1. Transform issues into properly formatted docstrings
+2. Support multiple docstring styles (Google, NumPy, Sphinx, REST)
+3. Provide confidence scores for suggestions
+4. Generate minimal diffs for easy review
+5. Format suggestions for different output contexts (terminal, JSON, HTML)
+
+**Data Models**:
+```python
+@dataclass
+class Suggestion:
+    """A single fix suggestion with formatting."""
+    original_text: str          # Current docstring/code
+    suggested_text: str         # Fixed version
+    diff_preview: str          # Minimal diff view
+    confidence: float          # 0.0-1.0 confidence
+    style: str                 # Docstring style used
+    copy_paste_ready: bool     # If suggestion can be directly applied
+
+@dataclass
+class SuggestionContext:
+    """Context needed to generate suggestions."""
+    issue: InconsistencyIssue
+    function: ParsedFunction
+    docstring: Optional[ParsedDocstring]
+    project_style: str  # From config
+    surrounding_code: Optional[str]  # For context-aware suggestions
+Integration Pattern:
+InconsistencyIssue → SuggestionGenerator → Formatted Suggestion
+                           ↓
+                    Style Formatter
+                           ↓
+                    Output Formatter
+Critical Invariants:
+
+Suggestions must preserve all valid existing documentation
+Generated docstrings must be syntactically valid Python
+Style must be consistent with project configuration
+Suggestions must be actionable (no vague instructions)
+Terminal output must be ANSI-safe, JSON must escape properly

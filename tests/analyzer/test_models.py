@@ -5,16 +5,17 @@ Tests validation logic, edge cases, and serialization for all analyzer models.
 """
 
 import pytest
+
 from codedocsync.analyzer.models import (
-    InconsistencyIssue,
-    RuleCheckResult,
-    AnalysisResult,
+    CONFIDENCE_THRESHOLDS,
     ISSUE_TYPES,
     SEVERITY_WEIGHTS,
-    CONFIDENCE_THRESHOLDS,
+    AnalysisResult,
+    InconsistencyIssue,
+    RuleCheckResult,
 )
-from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
-from codedocsync.parser import ParsedFunction, FunctionSignature
+from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
+from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
 class TestInconsistencyIssue:

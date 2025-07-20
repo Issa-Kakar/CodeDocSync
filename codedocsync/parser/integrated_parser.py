@@ -5,13 +5,13 @@ with docstring parsing to provide complete function analysis.
 """
 
 import logging
-from typing import List, Generator
+from collections.abc import Generator
 
 from .ast_parser import (
-    parse_python_file,
-    parse_python_file_lazy,
     ParsedFunction,
     RawDocstring,
+    parse_python_file,
+    parse_python_file_lazy,
 )
 from .docstring_parser import DocstringParser
 
@@ -25,7 +25,7 @@ class IntegratedParser:
         self.docstring_parser = DocstringParser()
         self._cache = {}  # Simple cache for parsed docstrings
 
-    def parse_file(self, file_path: str) -> List[ParsedFunction]:
+    def parse_file(self, file_path: str) -> list[ParsedFunction]:
         """Parse file and enrich with parsed docstrings.
 
         Steps:

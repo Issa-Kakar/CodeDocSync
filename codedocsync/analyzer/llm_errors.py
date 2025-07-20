@@ -3,15 +3,16 @@
 import asyncio
 import random
 import time
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar
+from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, TypeVar
 
 
 class LLMError(Exception):
     """Base class for LLM-related errors."""
 
-    def __init__(self, message: str, retry_after: Optional[float] = None):
+    def __init__(self, message: str, retry_after: float | None = None):
         super().__init__(message)
         self.retry_after = retry_after
 
@@ -19,7 +20,7 @@ class LLMError(Exception):
 class LLMRateLimitError(LLMError):
     """Rate limit exceeded."""
 
-    def __init__(self, message: str, retry_after: Optional[float] = None):
+    def __init__(self, message: str, retry_after: float | None = None):
         super().__init__(message, retry_after)
 
 
@@ -52,7 +53,7 @@ class LLMNetworkError(LLMError):
 class LLMQuotaExceededError(LLMError):
     """API quota exceeded."""
 
-    def __init__(self, message: str, retry_after: Optional[float] = None):
+    def __init__(self, message: str, retry_after: float | None = None):
         super().__init__(message, retry_after)
 
 
@@ -99,9 +100,9 @@ class RetryStrategy:
         self.max_delay = max_delay
         self.exponential_base = exponential_base
         self.jitter = jitter
-        self.retry_history: List[RetryAttempt] = []
+        self.retry_history: list[RetryAttempt] = []
 
-    def should_retry(self, error: Exception, attempt: int) -> Tuple[bool, float]:
+    def should_retry(self, error: Exception, attempt: int) -> tuple[bool, float]:
         """Determine if should retry and calculate delay.
 
         Args:
@@ -141,9 +142,7 @@ class RetryStrategy:
         delay = self._calculate_delay(attempt)
         return True, delay
 
-    def _calculate_delay(
-        self, attempt: int, retry_after: Optional[float] = None
-    ) -> float:
+    def _calculate_delay(self, attempt: int, retry_after: float | None = None) -> float:
         """Calculate delay for retry attempt.
 
         Args:
@@ -178,7 +177,7 @@ class RetryStrategy:
             )
         )
 
-    def get_retry_stats(self) -> Dict[str, Any]:
+    def get_retry_stats(self) -> dict[str, Any]:
         """Get statistics about retry attempts."""
         if not self.retry_history:
             return {"total_attempts": 0}
@@ -209,7 +208,7 @@ class CircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout: int = 60,
-        expected_exception: Type[Exception] = LLMError,
+        expected_exception: type[Exception] = LLMError,
         half_open_max_calls: int = 1,
     ):
         """Initialize circuit breaker.
@@ -321,7 +320,7 @@ class CircuitBreaker:
             self.record_failure(e)
             raise
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics."""
         return {
             "state": self.state.value,
@@ -345,7 +344,7 @@ class CircuitBreaker:
 
 async def with_retry(
     func: Callable[..., T],
-    retry_strategy: Optional[RetryStrategy] = None,
+    retry_strategy: RetryStrategy | None = None,
     *args,
     **kwargs,
 ) -> T:

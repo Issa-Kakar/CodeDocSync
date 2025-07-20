@@ -16,14 +16,13 @@ Performance Requirements:
 - Track cost metrics for budget management
 """
 
-import time
 import logging
 import statistics
+import threading
+import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 from enum import Enum
-import threading
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +59,7 @@ class PerformanceMetrics:
 
     # Cache metrics
     overall_cache_hit_rate: float
-    cache_hit_rate_by_type: Dict[str, float]
+    cache_hit_rate_by_type: dict[str, float]
     cache_efficiency_score: float
 
     # Token and cost metrics
@@ -71,7 +70,7 @@ class PerformanceMetrics:
 
     # Error metrics
     error_rate: float
-    error_rate_by_type: Dict[str, float]
+    error_rate_by_type: dict[str, float]
 
     # Rate limiting metrics
     avg_queue_depth: float
@@ -85,7 +84,7 @@ class PerformanceMetrics:
 
     # Performance scores
     overall_performance_score: float
-    recommendations: List[str]
+    recommendations: list[str]
 
 
 class LLMPerformanceMonitor:
@@ -104,7 +103,7 @@ class LLMPerformanceMonitor:
     def __init__(
         self,
         window_size: int = 1000,
-        alert_thresholds: Optional[Dict[str, float]] = None,
+        alert_thresholds: dict[str, float] | None = None,
     ):
         """
         Initialize performance monitor.
@@ -174,7 +173,7 @@ class LLMPerformanceMonitor:
         tokens_used: int,
         cache_hit: bool,
         model: str = "gpt-4o-mini",
-        error: Optional[str] = None,
+        error: str | None = None,
         queue_depth: int = 0,
     ) -> None:
         """
@@ -337,7 +336,7 @@ class LLMPerformanceMonitor:
                 recommendations=recommendations,
             )
 
-    def get_alerts(self, since: Optional[float] = None) -> List[PerformanceAlert]:
+    def get_alerts(self, since: float | None = None) -> list[PerformanceAlert]:
         """
         Get performance alerts.
 
@@ -372,7 +371,7 @@ class LLMPerformanceMonitor:
             self.last_alert_time.clear()
             self.start_time = time.time()
 
-    def _percentile(self, data: List[float], percentile: float) -> float:
+    def _percentile(self, data: list[float], percentile: float) -> float:
         """Calculate percentile from sorted data."""
         if not data:
             return 0.0
@@ -424,12 +423,12 @@ class LLMPerformanceMonitor:
         # Factor in response time improvement from cache
         cache_response_times = [
             rt
-            for rt, usage in zip(self.response_times, self.token_usage)
+            for rt, usage in zip(self.response_times, self.token_usage, strict=False)
             if usage.get("cache_hit", False)
         ]
         non_cache_response_times = [
             rt
-            for rt, usage in zip(self.response_times, self.token_usage)
+            for rt, usage in zip(self.response_times, self.token_usage, strict=False)
             if not usage.get("cache_hit", False)
         ]
 
@@ -464,7 +463,7 @@ class LLMPerformanceMonitor:
         cache_hit_rate: float,
         error_rate: float,
         avg_queue_depth: float,
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate performance improvement recommendations."""
         recommendations = []
 

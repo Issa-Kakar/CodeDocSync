@@ -21,7 +21,15 @@
       "Bash(del test_openai_integration.py test_openai_simple.py validate_openai.py)",
       "Bash(type:*)",
       "Bash(git rm:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(black:*)",
+      "Bash(poetry run ruff:*)",
+      "Bash(poetry run mypy:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(poetry:*)",
+      "Bash(where python)",
+      "Bash(ls:*)",
+      "Bash(conda:*)"
     ],
     "deny": []
   }

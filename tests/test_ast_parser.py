@@ -18,16 +18,16 @@ from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
-    parse_python_file,
-    _get_decorator_names,
     _get_annotation_string,
+    _get_decorator_names,
     _get_default_value,
     _is_method_function,
+    parse_python_file,
 )
 from codedocsync.utils.errors import (
-    ValidationError,
     FileAccessError,
     SyntaxParsingError,
+    ValidationError,
 )
 
 

@@ -1,8 +1,7 @@
-from pathlib import Path
-from typing import Dict, List, Optional
 import logging
+from pathlib import Path
 
-from .contextual_models import ModuleInfo, ImportStatement, ImportType
+from .contextual_models import ImportStatement, ImportType, ModuleInfo
 from .import_parser import ImportParser
 
 logger = logging.getLogger(__name__)
@@ -14,10 +13,10 @@ class ModuleResolver:
     def __init__(self, project_root: str):
         self.project_root = Path(project_root).resolve()
         self.import_parser = ImportParser()
-        self.module_cache: Dict[str, ModuleInfo] = {}
+        self.module_cache: dict[str, ModuleInfo] = {}
         self._python_paths = self._calculate_python_paths()
 
-    def _calculate_python_paths(self) -> List[Path]:
+    def _calculate_python_paths(self) -> list[Path]:
         """Calculate Python module search paths."""
         paths = [self.project_root]
 
@@ -32,7 +31,7 @@ class ModuleResolver:
 
         return paths
 
-    def resolve_module_path(self, file_path: str) -> Optional[str]:
+    def resolve_module_path(self, file_path: str) -> str | None:
         """
         Convert file path to module path.
 
@@ -69,7 +68,7 @@ class ModuleResolver:
 
     def resolve_import(
         self, import_stmt: ImportStatement, current_module: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Resolve an import statement to absolute module path.
 
@@ -109,7 +108,7 @@ class ModuleResolver:
 
     def build_import_chain(
         self, target_function: str, from_module: str, to_module: str
-    ) -> Optional[List[str]]:
+    ) -> list[str] | None:
         """
         Build the import chain to access a function from another module.
 
@@ -144,7 +143,7 @@ class ModuleResolver:
         # TODO: Check indirect imports (through parent packages)
         return None
 
-    def find_module_file(self, module_path: str) -> Optional[str]:
+    def find_module_file(self, module_path: str) -> str | None:
         """Find the file path for a module."""
         # Convert module path to possible file paths
         path_parts = module_path.split(".")

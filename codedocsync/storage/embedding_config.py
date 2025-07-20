@@ -1,6 +1,5 @@
-import os
-from typing import Optional, Dict, List
 import logging
+import os
 
 from ..matcher.semantic_models import EmbeddingConfig, EmbeddingModel
 
@@ -14,7 +13,7 @@ class EmbeddingConfigManager:
         self.api_keys = self._load_api_keys()
         self.config = self._load_config()
 
-    def _load_api_keys(self) -> Dict[str, str]:
+    def _load_api_keys(self) -> dict[str, str]:
         """Load API keys from environment variables."""
         keys = {}
 
@@ -49,7 +48,7 @@ class EmbeddingConfigManager:
 
         return config
 
-    def get_api_key(self, provider: str) -> Optional[str]:
+    def get_api_key(self, provider: str) -> str | None:
         """Get API key for provider."""
         return self.api_keys.get(provider)
 
@@ -67,7 +66,7 @@ class EmbeddingConfigManager:
 
         return True
 
-    def get_available_models(self) -> List[EmbeddingModel]:
+    def get_available_models(self) -> list[EmbeddingModel]:
         """Get list of models that are actually available."""
         available = []
 

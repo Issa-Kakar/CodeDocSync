@@ -4,19 +4,20 @@ Test suite for LLM analyzer implementation.
 Tests LLM integration, caching, retry logic, and fallback behavior.
 """
 
-import pytest
 import asyncio
 import json
 from unittest.mock import Mock, patch
 
+import pytest
+
 from codedocsync.analyzer.llm_analyzer import (
-    LLMAnalyzer,
-    LLMAnalysisResult,
-    LLMCache,
     LLMAnalysisError,
+    LLMAnalysisResult,
+    LLMAnalyzer,
+    LLMCache,
 )
-from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
-from codedocsync.parser import ParsedFunction, FunctionSignature, ParsedDocstring
+from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
+from codedocsync.parser import FunctionSignature, ParsedDocstring, ParsedFunction
 
 
 class TestLLMCache:

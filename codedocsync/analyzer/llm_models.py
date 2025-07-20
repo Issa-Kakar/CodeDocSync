@@ -11,13 +11,13 @@ Critical Validations:
 - All response fields are required (no Optional)
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
 import re
+from dataclasses import dataclass, field
+from typing import Any
+
+from codedocsync.parser import ParsedDocstring, ParsedFunction
 
 from .models import InconsistencyIssue, RuleCheckResult
-from codedocsync.parser import ParsedFunction, ParsedDocstring
-
 
 # Valid analysis types for LLM requests
 VALID_ANALYSIS_TYPES = {
@@ -36,11 +36,11 @@ class LLMAnalysisRequest:
 
     function: ParsedFunction
     docstring: ParsedDocstring
-    analysis_types: List[str]  # ['behavior', 'examples', 'edge_cases']
-    rule_results: List[RuleCheckResult] = field(
+    analysis_types: list[str]  # ['behavior', 'examples', 'edge_cases']
+    rule_results: list[RuleCheckResult] = field(
         default_factory=list
     )  # Context from rule engine
-    related_functions: List[ParsedFunction] = field(default_factory=list)
+    related_functions: list[ParsedFunction] = field(default_factory=list)
 
     def __post_init__(self):
         """Validate request after initialization."""
@@ -178,7 +178,7 @@ class LLMAnalysisRequest:
 
         return "; ".join(summaries)
 
-    def get_context_summary(self) -> Dict[str, Any]:
+    def get_context_summary(self) -> dict[str, Any]:
         """Get a summary of the request context for debugging."""
         return {
             "function_name": self.function.signature.name,
@@ -196,7 +196,7 @@ class LLMAnalysisRequest:
 class LLMAnalysisResponse:
     """Response from LLM analysis."""
 
-    issues: List[InconsistencyIssue]
+    issues: list[InconsistencyIssue]
     raw_response: str
     model_used: str
     prompt_tokens: int
@@ -271,7 +271,7 @@ class LLMAnalysisResponse:
         return self.prompt_tokens + self.completion_tokens
 
     @property
-    def issues_by_severity(self) -> Dict[str, List[InconsistencyIssue]]:
+    def issues_by_severity(self) -> dict[str, list[InconsistencyIssue]]:
         """Group issues by severity level."""
         result = {"critical": [], "high": [], "medium": [], "low": []}
         for issue in self.issues:
@@ -288,9 +288,7 @@ class LLMAnalysisResponse:
         """Get count of high severity issues."""
         return len([issue for issue in self.issues if issue.severity == "high"])
 
-    def estimate_cost_usd(
-        self, model_pricing: Optional[Dict[str, float]] = None
-    ) -> float:
+    def estimate_cost_usd(self, model_pricing: dict[str, float] | None = None) -> float:
         """
         Estimate the cost of this API call in USD.
 
@@ -325,7 +323,7 @@ class LLMAnalysisResponse:
         cost = (self.total_tokens / 1000) * price_per_1k
         return round(cost, 6)  # Round to microseconds
 
-    def get_performance_metrics(self) -> Dict[str, Any]:
+    def get_performance_metrics(self) -> dict[str, Any]:
         """Get performance metrics for this response."""
         return {
             "response_time_ms": self.response_time_ms,

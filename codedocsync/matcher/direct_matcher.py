@@ -1,10 +1,11 @@
 """Direct matcher for same-file function-documentation matching."""
 
-import time
 import logging
-from typing import List, Dict, Optional, Tuple
-from codedocsync.parser import ParsedFunction, RawDocstring, ParsedDocstring
-from .models import MatchedPair, MatchConfidence, MatchType, MatchResult
+import time
+
+from codedocsync.parser import ParsedDocstring, ParsedFunction, RawDocstring
+
+from .models import MatchConfidence, MatchedPair, MatchResult, MatchType
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class DirectMatcher:
             "total_processed": 0,
         }
 
-    def match_functions(self, functions: List[ParsedFunction]) -> MatchResult:
+    def match_functions(self, functions: list[ParsedFunction]) -> MatchResult:
         """
         Match functions to their documentation.
 
@@ -75,8 +76,8 @@ class DirectMatcher:
         return result
 
     def _match_functions_in_file(
-        self, functions: List[ParsedFunction]
-    ) -> Dict[int, Tuple[ParsedFunction, Optional[MatchedPair]]]:
+        self, functions: list[ParsedFunction]
+    ) -> dict[int, tuple[ParsedFunction, MatchedPair | None]]:
         """Match functions to their own documentation within a single file."""
         matches = {}
 
@@ -100,7 +101,7 @@ class DirectMatcher:
 
         return matches
 
-    def _try_exact_match(self, func: ParsedFunction) -> Optional[MatchedPair]:
+    def _try_exact_match(self, func: ParsedFunction) -> MatchedPair | None:
         """
         Try to create an exact match for a function.
 
@@ -179,8 +180,8 @@ class DirectMatcher:
         return len(intersection) / len(union)
 
     def _group_by_file(
-        self, functions: List[ParsedFunction]
-    ) -> Dict[str, List[ParsedFunction]]:
+        self, functions: list[ParsedFunction]
+    ) -> dict[str, list[ParsedFunction]]:
         """Group functions by their file path."""
         grouped = {}
         for func in functions:
@@ -194,6 +195,6 @@ class DirectMatcher:
         for key in self.stats:
             self.stats[key] = 0
 
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         """Get matching statistics."""
         return self.stats.copy()

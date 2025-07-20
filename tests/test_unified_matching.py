@@ -1,18 +1,19 @@
 """Tests for unified matching facade (First Half Implementation)."""
 
-import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
 import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+import pytest
+
 from codedocsync.matcher.models import (
-    MatchResult,
-    MatchedPair,
-    MatchType,
     MatchConfidence,
+    MatchedPair,
+    MatchResult,
+    MatchType,
 )
-from codedocsync.parser import ParsedFunction, FunctionSignature, RawDocstring
+from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+from codedocsync.parser import FunctionSignature, ParsedFunction, RawDocstring
 from codedocsync.utils.config import CodeDocSyncConfig
 
 

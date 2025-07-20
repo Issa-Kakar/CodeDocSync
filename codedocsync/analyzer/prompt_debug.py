@@ -13,17 +13,19 @@ Key Features:
 """
 
 import re
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from typing import Any
+
 from rich.console import Console
+from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
-from rich.panel import Panel
 
-from .prompt_templates import format_prompt, get_available_analysis_types
-from .llm_output_parser import LLMOutputParser, ParseResult
+from codedocsync.parser import ParsedDocstring, ParsedFunction
+
 from .llm_models import LLMAnalysisRequest
-from codedocsync.parser import ParsedFunction, ParsedDocstring
+from .llm_output_parser import LLMOutputParser, ParseResult
+from .prompt_templates import format_prompt, get_available_analysis_types
 
 
 @dataclass
@@ -37,13 +39,13 @@ class PromptAnalysis:
     has_examples: bool
     has_output_format: bool
     complexity_score: float
-    potential_issues: List[str]
+    potential_issues: list[str]
 
 
 class PromptDebugger:
     """Debug and analyze LLM prompts."""
 
-    def __init__(self, console: Optional[Console] = None):
+    def __init__(self, console: Console | None = None):
         """Initialize with optional Rich console."""
         self.console = console or Console()
         self.parser = LLMOutputParser(strict_validation=True)
@@ -53,7 +55,7 @@ class PromptDebugger:
         analysis_type: str,
         function: ParsedFunction,
         docstring: ParsedDocstring,
-        rule_issues: Optional[str] = None,
+        rule_issues: str | None = None,
         show_details: bool = True,
     ) -> PromptAnalysis:
         """
@@ -98,8 +100,8 @@ class PromptDebugger:
         self,
         function: ParsedFunction,
         docstring: ParsedDocstring,
-        rule_issues: Optional[str] = None,
-    ) -> Dict[str, PromptAnalysis]:
+        rule_issues: str | None = None,
+    ) -> dict[str, PromptAnalysis]:
         """Debug all available prompt templates with the same data."""
         results = {}
 
@@ -131,8 +133,8 @@ class PromptDebugger:
         return results
 
     def test_response_parsing(
-        self, sample_responses: List[str], show_details: bool = True
-    ) -> Dict[str, Any]:
+        self, sample_responses: list[str], show_details: bool = True
+    ) -> dict[str, Any]:
         """
         Test LLM response parsing with sample responses.
 
@@ -150,7 +152,7 @@ class PromptDebugger:
             results.append(result)
 
             if show_details:
-                self._display_parse_result(f"Response {i+1}", result)
+                self._display_parse_result(f"Response {i + 1}", result)
 
         # Calculate statistics
         stats = self.parser.get_parsing_statistics(results)
@@ -162,7 +164,7 @@ class PromptDebugger:
 
     def validate_prompt_token_usage(
         self, request: LLMAnalysisRequest, max_tokens: int = 4000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate that a request fits within token limits.
 
@@ -341,7 +343,7 @@ class PromptDebugger:
             f"{len(analysis.potential_issues):2d} issues"
         )
 
-    def _show_prompts_comparison(self, results: Dict[str, PromptAnalysis]) -> None:
+    def _show_prompts_comparison(self, results: dict[str, PromptAnalysis]) -> None:
         """Show comparison table of all prompt analyses."""
         self.console.print("\n[bold]Prompt Comparison Summary[/bold]")
 
@@ -383,7 +385,7 @@ class PromptDebugger:
         if result.raw_response:
             self.console.print(f"  Response length: {len(result.raw_response)} chars")
 
-    def _display_parsing_statistics(self, stats: Dict[str, Any]) -> None:
+    def _display_parsing_statistics(self, stats: dict[str, Any]) -> None:
         """Display parsing statistics summary."""
         self.console.print("\n[bold]Parsing Statistics Summary[/bold]")
 
@@ -405,7 +407,7 @@ class PromptDebugger:
             for error, count in stats["common_errors"]:
                 self.console.print(f"  • {error}: {count} times")
 
-    def _display_token_validation(self, validation: Dict[str, Any]) -> None:
+    def _display_token_validation(self, validation: dict[str, Any]) -> None:
         """Display token validation results."""
         status = "✅" if validation["within_limit"] else "❌"
 
@@ -450,7 +452,7 @@ def debug_single_prompt(
     analysis_type: str,
     function: ParsedFunction,
     docstring: ParsedDocstring,
-    console: Optional[Console] = None,
+    console: Console | None = None,
 ) -> PromptAnalysis:
     """Debug a single prompt template."""
     debugger = PromptDebugger(console)
@@ -458,8 +460,8 @@ def debug_single_prompt(
 
 
 def test_sample_responses(
-    responses: List[str], console: Optional[Console] = None
-) -> Dict[str, Any]:
+    responses: list[str], console: Console | None = None
+) -> dict[str, Any]:
     """Test parsing of sample LLM responses."""
     debugger = PromptDebugger(console)
     return debugger.test_response_parsing(responses)
@@ -468,8 +470,8 @@ def test_sample_responses(
 def validate_token_limits(
     request: LLMAnalysisRequest,
     max_tokens: int = 4000,
-    console: Optional[Console] = None,
-) -> Dict[str, Any]:
+    console: Console | None = None,
+) -> dict[str, Any]:
     """Validate that request fits within token limits."""
     debugger = PromptDebugger(console)
     return debugger.validate_prompt_token_usage(request, max_tokens)

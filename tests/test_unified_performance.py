@@ -1,20 +1,21 @@
 """Performance validation tests for unified matching facade."""
 
-import pytest
-import time
 import tempfile
-import psutil
+import time
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
-from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+import psutil
+import pytest
+
 from codedocsync.matcher.models import (
-    MatchResult,
-    MatchedPair,
-    MatchType,
     MatchConfidence,
+    MatchedPair,
+    MatchResult,
+    MatchType,
 )
-from codedocsync.parser import ParsedFunction, FunctionSignature, RawDocstring
+from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+from codedocsync.parser import FunctionSignature, ParsedFunction, RawDocstring
 
 
 class TestUnifiedPerformanceValidation:
@@ -196,7 +197,7 @@ class Class{i}:
             initial_memory = process.memory_info().rss / 1024 / 1024
 
             start_time = time.time()
-            result = await facade.match_project("/test/path", enable_semantic=True)
+            _result = await facade.match_project("/test/path", enable_semantic=True)
             total_time = time.time() - start_time
 
             # Monitor memory after test
@@ -240,7 +241,7 @@ class Class{i}:
                     docstring=RawDocstring(
                         raw_text=f"Function {i}", line_number=i * 2 + 1
                     ),
-                    file_path=f"file_{i//10}.py",
+                    file_path=f"file_{i // 10}.py",
                     line_number=i * 2,
                     end_line_number=i * 2 + 1,
                     source_code=f"def func_{i}(): pass",
@@ -275,7 +276,7 @@ class Class{i}:
                     unmatched_functions=mock_functions,
                 )
 
-                result = await facade.match_project(
+                _result = await facade.match_project(
                     str(large_project_structure), enable_semantic=False
                 )
 
@@ -368,7 +369,7 @@ class Class{i}:
                     (temp_path / "error_file.py").write_text("def test(): pass")
 
                     start_time = time.time()
-                    result = await facade.match_project(
+                    _result = await facade.match_project(
                         str(temp_path), enable_semantic=False
                     )
                     error_recovery_time = time.time() - start_time
@@ -494,7 +495,7 @@ class Class{i}:
                         docstring=RawDocstring(
                             raw_text=f"Function {i}", line_number=i * 2 + 1
                         ),
-                        file_path=f"file_{i//10}.py",
+                        file_path=f"file_{i // 10}.py",
                         line_number=i * 2,
                         end_line_number=i * 2 + 1,
                         source_code=f"def func_{i}(): pass",

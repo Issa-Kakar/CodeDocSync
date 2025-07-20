@@ -6,14 +6,14 @@ parameter extraction, and suggestion generation.
 """
 
 import re
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any
+
 from codedocsync.parser import (
-    ParsedFunction,
+    DocstringParameter,
     FunctionParameter,
     ParsedDocstring,
-    DocstringParameter,
+    ParsedFunction,
 )
-
 
 # TYPE PARSING UTILITIES
 
@@ -135,7 +135,7 @@ def extract_base_type(type_str: str) -> str:
 # PARAMETER EXTRACTION HELPERS
 
 
-def extract_function_params(function: ParsedFunction) -> List[FunctionParameter]:
+def extract_function_params(function: ParsedFunction) -> list[FunctionParameter]:
     """
     Get parameters from FunctionSignature, excluding self/cls.
 
@@ -153,8 +153,8 @@ def extract_function_params(function: ParsedFunction) -> List[FunctionParameter]
 
 
 def extract_doc_params(
-    docstring: Optional[ParsedDocstring],
-) -> List[DocstringParameter]:
+    docstring: ParsedDocstring | None,
+) -> list[DocstringParameter]:
     """
     Get parameters from ParsedDocstring.
 
@@ -184,8 +184,8 @@ def should_ignore_param(param_name: str) -> bool:
 
 
 def get_param_mapping(
-    func_params: List[FunctionParameter], doc_params: List[DocstringParameter]
-) -> Tuple[Dict[str, FunctionParameter], Dict[str, DocstringParameter]]:
+    func_params: list[FunctionParameter], doc_params: list[DocstringParameter]
+) -> tuple[dict[str, FunctionParameter], dict[str, DocstringParameter]]:
     """
     Create name-to-parameter mappings for comparison.
 
@@ -270,9 +270,9 @@ def generate_parameter_suggestion(
 
 
 def generate_docstring_template(
-    missing_params: List[FunctionParameter],
-    missing_return_type: Optional[str] = None,
-    missing_raises: Optional[List[str]] = None,
+    missing_params: list[FunctionParameter],
+    missing_return_type: str | None = None,
+    missing_raises: list[str] | None = None,
 ) -> str:
     """
     Create template for missing documentation sections.
@@ -364,8 +364,8 @@ def format_code_suggestion(suggestion: str, language: str = "python") -> str:
 
 
 def get_parameter_statistics(
-    func_params: List[FunctionParameter], doc_params: List[DocstringParameter]
-) -> Dict[str, Any]:
+    func_params: list[FunctionParameter], doc_params: list[DocstringParameter]
+) -> dict[str, Any]:
     """
     Generate statistics about parameter documentation coverage.
 
@@ -399,8 +399,8 @@ def get_parameter_statistics(
 
 
 def validate_special_parameters(
-    func_params: List[FunctionParameter],
-) -> List[Dict[str, Any]]:
+    func_params: list[FunctionParameter],
+) -> list[dict[str, Any]]:
     """
     Validate special parameter patterns (*args, **kwargs, Optional types).
 

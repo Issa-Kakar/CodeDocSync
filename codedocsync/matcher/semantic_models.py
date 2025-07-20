@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict
 from enum import Enum
 
 
@@ -17,7 +16,7 @@ class EmbeddingConfig:
     """Configuration for embedding generation."""
 
     primary_model: EmbeddingModel = EmbeddingModel.OPENAI_SMALL
-    fallback_models: List[EmbeddingModel] = field(
+    fallback_models: list[EmbeddingModel] = field(
         default_factory=lambda: [EmbeddingModel.OPENAI_ADA, EmbeddingModel.LOCAL_MINILM]
     )
     batch_size: int = 100  # For batch processing
@@ -37,7 +36,7 @@ class FunctionEmbedding:
     """Embedding for a function with metadata."""
 
     function_id: str  # Canonical function path
-    embedding: List[float]
+    embedding: list[float]
     model: str
     text_embedded: str  # What was actually embedded
     timestamp: float
@@ -68,7 +67,7 @@ class SemanticMatch:
     matched_function: str  # Potentially matching function
     similarity_score: float  # 0-1 similarity
     embedding_model: str
-    match_metadata: Dict[str, any] = field(default_factory=dict)
+    match_metadata: dict[str, any] = field(default_factory=dict)
 
     def __post_init__(self):
         if not 0 <= self.similarity_score <= 1:
@@ -80,16 +79,16 @@ class SemanticSearchResult:
     """Results from semantic search operation."""
 
     query_function: str
-    matches: List[SemanticMatch]
+    matches: list[SemanticMatch]
     search_time_ms: float
     total_candidates: int  # How many were searched
 
-    def get_best_match(self) -> Optional[SemanticMatch]:
+    def get_best_match(self) -> SemanticMatch | None:
         """Get the highest scoring match."""
         if not self.matches:
             return None
         return max(self.matches, key=lambda m: m.similarity_score)
 
-    def filter_by_threshold(self, threshold: float) -> List[SemanticMatch]:
+    def filter_by_threshold(self, threshold: float) -> list[SemanticMatch]:
         """Get matches above similarity threshold."""
         return [m for m in self.matches if m.similarity_score >= threshold]

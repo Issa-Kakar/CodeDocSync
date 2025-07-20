@@ -15,10 +15,10 @@ Critical Requirements:
 import json
 import logging
 import re
-from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any
 
-from .models import InconsistencyIssue, ISSUE_TYPES
+from .models import ISSUE_TYPES, InconsistencyIssue
 from .prompt_templates import map_llm_issue_type
 
 logger = logging.getLogger(__name__)
@@ -28,12 +28,12 @@ logger = logging.getLogger(__name__)
 class ParseResult:
     """Result of parsing an LLM response."""
 
-    issues: List[InconsistencyIssue]
+    issues: list[InconsistencyIssue]
     success: bool
-    error_message: Optional[str] = None
-    raw_response: Optional[str] = None
+    error_message: str | None = None
+    raw_response: str | None = None
     confidence: float = 0.0
-    analysis_notes: Optional[str] = None
+    analysis_notes: str | None = None
 
 
 class LLMOutputParser:
@@ -120,7 +120,7 @@ class LLMOutputParser:
                 raw_response=raw_response,
             )
 
-    def _extract_and_parse_json(self, raw_response: str) -> Dict[str, Any]:
+    def _extract_and_parse_json(self, raw_response: str) -> dict[str, Any]:
         """Extract JSON from response that might have extra text."""
         # First try direct parsing
         try:
@@ -187,8 +187,8 @@ class LLMOutputParser:
         return json.loads(raw_response)
 
     def _validate_response_structure(
-        self, response_data: Dict[str, Any]
-    ) -> Tuple[bool, str]:
+        self, response_data: dict[str, Any]
+    ) -> tuple[bool, str]:
         """
         Validate that response has expected structure.
 
@@ -222,8 +222,8 @@ class LLMOutputParser:
         return True, ""
 
     def _parse_issues_from_response(
-        self, response_data: Dict[str, Any]
-    ) -> List[InconsistencyIssue]:
+        self, response_data: dict[str, Any]
+    ) -> list[InconsistencyIssue]:
         """Parse individual issues from validated response data."""
         issues = []
 
@@ -242,8 +242,8 @@ class LLMOutputParser:
         return issues
 
     def _parse_single_issue(
-        self, issue_data: Dict[str, Any]
-    ) -> Optional[InconsistencyIssue]:
+        self, issue_data: dict[str, Any]
+    ) -> InconsistencyIssue | None:
         """Parse a single issue from LLM response data."""
         if not isinstance(issue_data, dict):
             raise ValueError("Issue must be a JSON object")
@@ -314,7 +314,7 @@ class LLMOutputParser:
         return self._recover_from_malformed_response(raw_response, None)
 
     def _recover_from_malformed_response(
-        self, raw_response: str, partial_data: Optional[Dict[str, Any]] = None
+        self, raw_response: str, partial_data: dict[str, Any] | None = None
     ) -> ParseResult:
         """Attempt to recover useful information from malformed response."""
         issues = []
@@ -346,7 +346,7 @@ class LLMOutputParser:
             confidence=0.3,  # Low confidence for recovered data
         )
 
-    def _extract_issues_with_regex(self, text: str) -> List[InconsistencyIssue]:
+    def _extract_issues_with_regex(self, text: str) -> list[InconsistencyIssue]:
         """Extract issues using regex patterns as fallback."""
         issues = []
 
@@ -458,8 +458,8 @@ class LLMOutputParser:
         return False
 
     def filter_actionable_issues(
-        self, issues: List[InconsistencyIssue]
-    ) -> List[InconsistencyIssue]:
+        self, issues: list[InconsistencyIssue]
+    ) -> list[InconsistencyIssue]:
         """Filter issues to only include those with actionable suggestions."""
         actionable = []
         for issue in issues:
@@ -472,7 +472,7 @@ class LLMOutputParser:
 
         return actionable
 
-    def get_parsing_statistics(self, results: List[ParseResult]) -> Dict[str, Any]:
+    def get_parsing_statistics(self, results: list[ParseResult]) -> dict[str, Any]:
         """Get statistics about parsing success rates."""
         if not results:
             return {
@@ -522,7 +522,7 @@ def parse_llm_response(raw_response: str, strict: bool = True) -> ParseResult:
 
 def parse_and_filter_response(
     raw_response: str, filter_actionable: bool = True
-) -> List[InconsistencyIssue]:
+) -> list[InconsistencyIssue]:
     """
     Parse response and return filtered list of actionable issues.
 
@@ -548,7 +548,7 @@ def parse_and_filter_response(
     return issues
 
 
-def validate_response_format(response_data: Dict[str, Any]) -> Tuple[bool, str]:
+def validate_response_format(response_data: dict[str, Any]) -> tuple[bool, str]:
     """
     Validate LLM response format without full parsing.
 

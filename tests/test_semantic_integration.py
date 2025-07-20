@@ -5,22 +5,24 @@ This module tests the complete semantic matching system in realistic scenarios,
 ensuring all components work together correctly and the system is ready for production.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
+from codedocsync.matcher.models import MatchResult, MatchType
+
 # Import all semantic matching components
 from codedocsync.matcher.semantic_matcher import SemanticMatcher
-from codedocsync.storage.embedding_cache import EmbeddingCache
+from codedocsync.matcher.semantic_models import FunctionEmbedding
 from codedocsync.matcher.semantic_optimizer import SemanticOptimizer
-from codedocsync.storage.performance_monitor import PerformanceMonitor
 from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
 
 # Import related components
 from codedocsync.parser import IntegratedParser
-from codedocsync.matcher.models import MatchResult, MatchType
-from codedocsync.matcher.semantic_models import FunctionEmbedding
+from codedocsync.storage.embedding_cache import EmbeddingCache
+from codedocsync.storage.performance_monitor import PerformanceMonitor
 from codedocsync.utils.config import CodeDocSyncConfig
 
 
@@ -608,6 +610,7 @@ def function_{module_num}_{file_num}_2(data: dict) -> bool:
         """Test memory is properly cleaned up after semantic operations."""
 
         import gc
+
         import psutil
 
         process = psutil.Process()

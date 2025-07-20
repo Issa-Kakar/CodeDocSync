@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List, Dict, Any, Union
-from codedocsync.parser import ParsedFunction, RawDocstring, ParsedDocstring
+from typing import Any
+
+from codedocsync.parser import ParsedDocstring, ParsedFunction, RawDocstring
 
 
 class MatchType(Enum):
@@ -48,10 +49,10 @@ class MatchedPair:
     match_reason: str  # Human-readable explanation
 
     # Optional: The matched documentation (for cross-file matches)
-    docstring: Optional[Union[RawDocstring, ParsedDocstring]] = None
+    docstring: RawDocstring | ParsedDocstring | None = None
 
     # Optional: If documentation is in a different location
-    doc_location: Optional[str] = None  # e.g., "class docstring", "module docstring"
+    doc_location: str | None = None  # e.g., "class docstring", "module docstring"
 
     def is_high_confidence(self) -> bool:
         """Check if this is a high-confidence match."""
@@ -62,8 +63,8 @@ class MatchedPair:
 class MatchResult:
     """Complete result of matching operation."""
 
-    matched_pairs: List[MatchedPair] = field(default_factory=list)
-    unmatched_functions: List[ParsedFunction] = field(default_factory=list)
+    matched_pairs: list[MatchedPair] = field(default_factory=list)
+    unmatched_functions: list[ParsedFunction] = field(default_factory=list)
     total_functions: int = 0
     match_duration_ms: float = 0.0
 
@@ -74,7 +75,7 @@ class MatchResult:
             return 0.0
         return len(self.matched_pairs) / self.total_functions
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         return {
             "total_functions": self.total_functions,
@@ -85,7 +86,7 @@ class MatchResult:
             "match_types": self._count_match_types(),
         }
 
-    def _count_match_types(self) -> Dict[str, int]:
+    def _count_match_types(self) -> dict[str, int]:
         """Count matches by type."""
         counts = {match_type.value: 0 for match_type in MatchType}
         for pair in self.matched_pairs:
@@ -96,6 +97,6 @@ class MatchResult:
 class MatchingError(Exception):
     """Base exception for matching errors."""
 
-    def __init__(self, message: str, recovery_hint: Optional[str] = None):
+    def __init__(self, message: str, recovery_hint: str | None = None):
         super().__init__(message)
         self.recovery_hint = recovery_hint

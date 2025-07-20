@@ -1,10 +1,12 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import logging
-from typing import List, Dict, Any, Callable
-import psutil
-import time
 import gc
+import logging
+import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+import psutil
 
 from ..parser import ParsedFunction
 from .semantic_models import FunctionEmbedding
@@ -77,8 +79,8 @@ class SemanticOptimizer:
         return optimized_batch
 
     async def parallel_embedding_generation(
-        self, function_batches: List[List[ParsedFunction]], generator_func: Callable
-    ) -> List[FunctionEmbedding]:
+        self, function_batches: list[list[ParsedFunction]], generator_func: Callable
+    ) -> list[FunctionEmbedding]:
         """
         Generate embeddings in parallel with controlled concurrency.
         """
@@ -141,8 +143,8 @@ class SemanticOptimizer:
         return should_trigger
 
     def optimize_vector_store_queries(
-        self, queries: List[List[float]], vector_store: Any
-    ) -> List[List[Any]]:
+        self, queries: list[list[float]], vector_store: Any
+    ) -> list[list[Any]]:
         """
         Optimize vector store queries with batching.
 
@@ -196,7 +198,7 @@ class SemanticOptimizer:
 
     def estimate_processing_time(
         self, num_functions: int, cache_hit_rate: float = 0.9
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Estimate processing time for semantic matching."""
         # Based on performance benchmarks
         embeddings_to_generate = int(num_functions * (1 - cache_hit_rate))
@@ -218,7 +220,7 @@ class SemanticOptimizer:
         )
         return estimates
 
-    def monitor_system_resources(self) -> Dict[str, Any]:
+    def monitor_system_resources(self) -> dict[str, Any]:
         """Monitor current system resource usage."""
         cpu_percent = self.process.cpu_percent()
         memory_info = self.process.memory_info()
@@ -247,8 +249,8 @@ class SemanticOptimizer:
         return system_stats
 
     def get_optimization_recommendations(
-        self, num_functions: int, current_performance: Dict[str, float]
-    ) -> List[str]:
+        self, num_functions: int, current_performance: dict[str, float]
+    ) -> list[str]:
         """Generate optimization recommendations based on current performance."""
         recommendations = []
 
@@ -286,7 +288,7 @@ class SemanticOptimizer:
 
         return recommendations
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive optimization statistics."""
         current_memory = self.process.memory_info().rss / 1024 / 1024
 

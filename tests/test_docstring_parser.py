@@ -1,12 +1,13 @@
 """Comprehensive tests for docstring parsing."""
 
 import pytest
-from codedocsync.parser.docstring_parser import DocstringParser
+
 from codedocsync.parser.docstring_models import (
     DocstringFormat,
     DocstringParameter,
     DocstringRaises,
 )
+from codedocsync.parser.docstring_parser import DocstringParser
 
 
 class TestDocstringParser:

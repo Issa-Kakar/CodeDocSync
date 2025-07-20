@@ -1,7 +1,6 @@
 import ast
-from pathlib import Path
-from typing import List, Set, Tuple
 import logging
+from pathlib import Path
 
 from .contextual_models import ImportStatement, ImportType, ModuleInfo
 
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ImportParser:
     """Parses Python imports and module structure."""
 
-    def parse_imports(self, file_path: str) -> Tuple[List[ImportStatement], Set[str]]:
+    def parse_imports(self, file_path: str) -> tuple[list[ImportStatement], set[str]]:
         """
         Parse all imports and exports from a Python file.
 
@@ -24,12 +23,12 @@ class ImportParser:
         exports = set()
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
         except UnicodeDecodeError:
             try:
-                with open(file_path, "r", encoding="latin-1") as f:
+                with open(file_path, encoding="latin-1") as f:
                     content = f.read()
             except Exception as e:
                 logger.error(f"Failed to read {file_path} with fallback encoding: {e}")
@@ -64,7 +63,7 @@ class ImportParser:
             logger.error(f"Failed to parse imports from {file_path}: {e}")
             return [], set()
 
-    def _parse_import(self, node: ast.Import) -> List[ImportStatement]:
+    def _parse_import(self, node: ast.Import) -> list[ImportStatement]:
         """Parse 'import' statement."""
         imports = []
         for alias in node.names:
@@ -79,7 +78,7 @@ class ImportParser:
             )
         return imports
 
-    def _parse_import_from(self, node: ast.ImportFrom) -> List[ImportStatement]:
+    def _parse_import_from(self, node: ast.ImportFrom) -> list[ImportStatement]:
         """Parse 'from ... import ...' statement."""
         if node.module is None:
             # Relative import like 'from . import something'
@@ -114,7 +113,7 @@ class ImportParser:
             )
         ]
 
-    def _extract_exports(self, tree: ast.AST) -> Set[str]:
+    def _extract_exports(self, tree: ast.AST) -> set[str]:
         """Extract __all__ exports."""
         for node in ast.walk(tree):
             if isinstance(node, ast.Assign):
@@ -130,7 +129,7 @@ class ImportParser:
                             }
         return set()
 
-    def _extract_public_names(self, tree: ast.AST) -> Set[str]:
+    def _extract_public_names(self, tree: ast.AST) -> set[str]:
         """Extract all public function and class names."""
         names = set()
         for node in ast.walk(tree):

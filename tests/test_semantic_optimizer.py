@@ -1,12 +1,13 @@
-import pytest
 import asyncio
 import time
-from unittest.mock import Mock, patch
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import Mock, patch
 
-from codedocsync.matcher.semantic_optimizer import SemanticOptimizer
+import pytest
+
 from codedocsync.matcher.semantic_models import FunctionEmbedding
-from codedocsync.parser import ParsedFunction, FunctionSignature
+from codedocsync.matcher.semantic_optimizer import SemanticOptimizer
+from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
 class TestSemanticOptimizer:

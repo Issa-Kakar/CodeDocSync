@@ -6,7 +6,6 @@ severity mappings, and analysis parameters.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 
 @dataclass
@@ -14,15 +13,15 @@ class RuleEngineConfig:
     """Configuration for the rule engine."""
 
     # Rule selection
-    enabled_rules: Optional[List[str]] = None  # None = all rules
-    disabled_rules: Optional[List[str]] = None  # Rules to explicitly disable
+    enabled_rules: list[str] | None = None  # None = all rules
+    disabled_rules: list[str] | None = None  # Rules to explicitly disable
 
     # Performance settings
     performance_mode: bool = False  # Skip expensive rules
     max_execution_time_ms: float = 5.0  # Per-function timeout
 
     # Severity overrides
-    severity_overrides: Dict[str, str] = field(default_factory=dict)
+    severity_overrides: dict[str, str] = field(default_factory=dict)
 
     # Confidence settings
     confidence_threshold: float = 0.9  # Skip LLM if rule confidence >= this
@@ -34,7 +33,7 @@ class RuleEngineConfig:
     markdown_formatting: bool = True  # Format suggestions as markdown
     max_suggestion_length: int = 500  # Maximum suggestion length in chars
 
-    def get_effective_rules(self, all_rules: List[str]) -> List[str]:
+    def get_effective_rules(self, all_rules: list[str]) -> list[str]:
         """Get the effective list of rules to run."""
         if self.enabled_rules is not None:
             # Use explicitly enabled rules
@@ -96,7 +95,7 @@ class AnalysisConfig:
     sort_by_severity: bool = True  # Sort issues by severity
     include_performance_stats: bool = False  # Include timing information
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate configuration and return any errors."""
         errors = []
 

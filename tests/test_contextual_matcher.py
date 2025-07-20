@@ -1,27 +1,28 @@
-import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from codedocsync.matcher.contextual_matcher import ContextualMatcher
-from codedocsync.matcher.models import (
-    MatchResult,
-    MatchedPair,
-    MatchType,
-    MatchConfidence,
-)
 from codedocsync.matcher.contextual_models import (
+    FunctionLocation,
     ImportStatement,
     ImportType,
     ModuleInfo,
-    FunctionLocation,
 )
-from codedocsync.parser.ast_parser import (
-    FunctionSignature,
-    FunctionParameter,
-    ParsedFunction,
+from codedocsync.matcher.models import (
+    MatchConfidence,
+    MatchedPair,
+    MatchResult,
+    MatchType,
 )
 from codedocsync.parser import RawDocstring
+from codedocsync.parser.ast_parser import (
+    FunctionParameter,
+    FunctionSignature,
+    ParsedFunction,
+)
 
 
 class TestContextualMatcher:

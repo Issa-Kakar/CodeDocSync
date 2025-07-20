@@ -1,8 +1,9 @@
 """Integration tests for the contextual matching system."""
 
-import pytest
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from codedocsync.matcher import ContextualMatchingFacade
 from codedocsync.utils.config import CodeDocSyncConfig

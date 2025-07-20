@@ -9,8 +9,7 @@ analysis that the rule engine cannot catch. All prompts follow best practices:
 - Confidence scores
 """
 
-from typing import Dict, Any, Optional
-
+from typing import Any
 
 # Base template for all analysis prompts
 BASE_ANALYSIS_PROMPT = """You are an expert Python documentation analyzer. Your job is to identify inconsistencies between function implementations and their documentation that automated rules cannot catch.
@@ -328,7 +327,7 @@ def format_prompt(
     signature: str,
     source_code: str,
     docstring: str,
-    rule_issues: Optional[str] = None,
+    rule_issues: str | None = None,
     **kwargs,
 ) -> str:
     """
@@ -376,7 +375,7 @@ def get_available_analysis_types() -> list[str]:
     return list(PROMPT_TEMPLATES.keys())
 
 
-def validate_llm_response(response_data: Dict[str, Any]) -> bool:
+def validate_llm_response(response_data: dict[str, Any]) -> bool:
     """
     Validate that an LLM response has the expected structure.
 

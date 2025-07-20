@@ -1,5 +1,6 @@
 import sys
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
 
 # Mock external dependencies at module level before other imports
@@ -20,9 +21,9 @@ from codedocsync.matcher.semantic_models import (  # noqa: E402
     FunctionEmbedding,
 )
 from codedocsync.parser import (  # noqa: E402
-    ParsedFunction,
-    FunctionSignature,
     FunctionParameter,
+    FunctionSignature,
+    ParsedFunction,
     RawDocstring,
 )
 
