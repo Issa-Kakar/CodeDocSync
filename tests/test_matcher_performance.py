@@ -78,8 +78,7 @@ class TestMatcherPerformance:
         for i in range(10000):
             func = ParsedFunction(
                 signature=FunctionSignature(
-                    name=f"func_{i}",
-                    parameters=[],  # Keep it simple
+                    name=f"func_{i}", parameters=[],  # Keep it simple
                 ),
                 docstring=(
                     RawDocstring(raw_text=f"Doc {i}", line_number=i + 1)

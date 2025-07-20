@@ -248,9 +248,9 @@ class LLMPerformanceMonitor:
                 p95_response_time = self._percentile(response_times_list, 95)
                 p99_response_time = self._percentile(response_times_list, 99)
             else:
-                avg_response_time = p50_response_time = p95_response_time = (
-                    p99_response_time
-                ) = 0.0
+                avg_response_time = (
+                    p50_response_time
+                ) = p95_response_time = p99_response_time = 0.0
 
             # Calculate cache hit rates
             total_cache_requests = self.total_cache_hits + self.total_cache_misses

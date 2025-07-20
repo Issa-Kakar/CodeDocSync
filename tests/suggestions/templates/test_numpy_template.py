@@ -67,8 +67,7 @@ class TestNumpyStyleTemplate:
                 description="If input data has wrong shape",
             ),
             DocstringRaises(
-                exception_type="TypeError",
-                description="If input is not a numpy array",
+                exception_type="TypeError", description="If input is not a numpy array",
             ),
         ]
 
@@ -190,8 +189,7 @@ class TestNumpyStyleTemplate:
     def test_render_returns_without_type(self, template):
         """Test rendering returns without type annotation."""
         returns = DocstringReturns(
-            type_annotation=None,
-            description="Some return value",
+            type_annotation=None, description="Some return value",
         )
 
         result = template.render_returns(returns)
@@ -208,8 +206,7 @@ class TestNumpyStyleTemplate:
         """Test rendering single exception."""
         raises = [
             DocstringRaises(
-                exception_type="ValueError",
-                description="If input is invalid",
+                exception_type="ValueError", description="If input is invalid",
             )
         ]
 
@@ -242,10 +239,7 @@ class TestNumpyStyleTemplate:
     def test_render_raises_without_type(self, template):
         """Test rendering raises without exception type."""
         raises = [
-            DocstringRaises(
-                exception_type=None,
-                description="If something goes wrong",
-            )
+            DocstringRaises(exception_type=None, description="If something goes wrong",)
         ]
 
         result = template.render_raises(raises)
@@ -282,20 +276,14 @@ class TestNumpyStyleTemplate:
 
     def test_format_return_line_with_type(self, template):
         """Test formatting return line with type."""
-        returns = DocstringReturns(
-            type_annotation="int",
-            description="Return value",
-        )
+        returns = DocstringReturns(type_annotation="int", description="Return value",)
 
         result = template._format_return_line(returns)
         assert result == "result : int"
 
     def test_format_return_line_without_type(self, template):
         """Test formatting return line without type."""
-        returns = DocstringReturns(
-            type_annotation=None,
-            description="Return value",
-        )
+        returns = DocstringReturns(type_annotation=None, description="Return value",)
 
         result = template._format_return_line(returns)
         assert result == "result"

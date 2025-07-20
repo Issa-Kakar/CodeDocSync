@@ -123,8 +123,7 @@ class TestSuggestionMetadata:
         """Test validation fails for negative generation time."""
         with pytest.raises(ValueError, match="generation_time_ms must be non-negative"):
             SuggestionMetadata(
-                generator_type="test",
-                generation_time_ms=-10.0,
+                generator_type="test", generation_time_ms=-10.0,
             )
 
     def test_metadata_validation_empty_generator_type(self):
@@ -175,9 +174,7 @@ class TestSuggestionContext:
 
         with pytest.raises(ValueError, match="max_line_length too small"):
             SuggestionContext(
-                issue=mock_issue,
-                function=mock_function,
-                max_line_length=30,
+                issue=mock_issue, function=mock_function, max_line_length=30,
             )
 
     def test_context_validation_invalid_style(self):
@@ -187,9 +184,7 @@ class TestSuggestionContext:
 
         with pytest.raises(ValueError, match="Invalid project_style"):
             SuggestionContext(
-                issue=mock_issue,
-                function=mock_function,
-                project_style="invalid_style",
+                issue=mock_issue, function=mock_function, project_style="invalid_style",
             )
 
     def test_context_defaults(self):
@@ -197,10 +192,7 @@ class TestSuggestionContext:
         mock_issue = type("MockIssue", (), {})()
         mock_function = type("MockFunction", (), {})()
 
-        context = SuggestionContext(
-            issue=mock_issue,
-            function=mock_function,
-        )
+        context = SuggestionContext(issue=mock_issue, function=mock_function,)
 
         assert context.project_style == "google"
         assert context.max_line_length == 88
@@ -406,10 +398,7 @@ class TestSuggestionBatch:
     def setup_method(self):
         """Set up test fixtures."""
         self.diff = SuggestionDiff(
-            original_lines=["test"],
-            suggested_lines=["test"],
-            start_line=1,
-            end_line=1,
+            original_lines=["test"], suggested_lines=["test"], start_line=1, end_line=1,
         )
 
         self.metadata = SuggestionMetadata(generator_type="test")
@@ -464,8 +453,7 @@ class TestSuggestionBatch:
             ValueError, match="total_generation_time_ms must be non-negative"
         ):
             SuggestionBatch(
-                suggestions=self.suggestions,
-                total_generation_time_ms=-10.0,
+                suggestions=self.suggestions, total_generation_time_ms=-10.0,
             )
 
     def test_batch_high_confidence_suggestions(self):

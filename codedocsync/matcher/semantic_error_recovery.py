@@ -303,7 +303,7 @@ class SemanticErrorRecovery:
             base_wait = self.base_wait_time
 
         # Exponential backoff with jitter
-        backoff = base_wait * (2**attempt)
+        backoff = base_wait * (2 ** attempt)
 
         # Add some randomness to avoid thundering herd
         import random

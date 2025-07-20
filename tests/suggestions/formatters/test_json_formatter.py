@@ -183,9 +183,7 @@ class TestJSONSuggestionFormatterInit:
     def test_custom_initialization(self):
         """Test initialization with custom parameters."""
         formatter = JSONSuggestionFormatter(
-            indent=4,
-            include_metadata=False,
-            include_timestamps=False,
+            indent=4, include_metadata=False, include_timestamps=False,
         )
 
         assert formatter.indent == 4

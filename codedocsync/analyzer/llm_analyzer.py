@@ -585,7 +585,7 @@ class LLMAnalyzer:
                 logger.warning(f"OpenAI API call timed out (attempt {attempt + 1})")
                 if attempt == max_retries:
                     raise
-                await asyncio.sleep(base_delay * (2**attempt))
+                await asyncio.sleep(base_delay * (2 ** attempt))
 
             except openai.RateLimitError as e:
                 logger.warning(f"Rate limit exceeded (attempt {attempt + 1}): {e}")
@@ -594,7 +594,7 @@ class LLMAnalyzer:
 
                 # Extract retry-after from headers if available
                 retry_after = getattr(e, "retry_after", None) or (
-                    base_delay * (2**attempt)
+                    base_delay * (2 ** attempt)
                 )
                 await asyncio.sleep(min(retry_after, 60))  # Cap at 60 seconds
 
@@ -602,7 +602,7 @@ class LLMAnalyzer:
                 logger.warning(f"OpenAI API error (attempt {attempt + 1}): {e}")
                 if attempt == max_retries:
                     raise
-                await asyncio.sleep(base_delay * (2**attempt))
+                await asyncio.sleep(base_delay * (2 ** attempt))
 
             except Exception as e:
                 logger.error(f"Unexpected error in OpenAI API call: {e}")

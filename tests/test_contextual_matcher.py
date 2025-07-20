@@ -171,9 +171,7 @@ def helper_function():
         )
 
         direct_result = MatchResult(
-            total_functions=1,
-            matched_pairs=[previous_match],
-            unmatched_functions=[],
+            total_functions=1, matched_pairs=[previous_match], unmatched_functions=[],
         )
 
         result = contextual_matcher.match_with_context(functions, direct_result)
@@ -202,9 +200,7 @@ def helper_function():
         )
 
         direct_result = MatchResult(
-            total_functions=1,
-            matched_pairs=[previous_match],
-            unmatched_functions=[],
+            total_functions=1, matched_pairs=[previous_match], unmatched_functions=[],
         )
 
         # Mock contextual match finding

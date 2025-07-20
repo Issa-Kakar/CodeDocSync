@@ -173,9 +173,9 @@ class DocLocationFinder:
                                 )
                                 if method_parsed:
                                     # Use class.method format for method names
-                                    docs[f"{class_name}.{current_method}"] = (
-                                        method_parsed
-                                    )
+                                    docs[
+                                        f"{class_name}.{current_method}"
+                                    ] = method_parsed
 
                         # Extract method name
                         potential_method = line.split(":")[0].strip()

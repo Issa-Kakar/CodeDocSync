@@ -246,9 +246,9 @@ class UnifiedMatchingFacade:
                     # Add semantic stats to result
                     if not hasattr(final_result, "metadata"):
                         final_result.metadata = {}
-                    final_result.metadata["semantic_stats"] = (
-                        semantic_matcher.get_stats()
-                    )
+                    final_result.metadata[
+                        "semantic_stats"
+                    ] = semantic_matcher.get_stats()
 
                     # Log semantic performance
                     post_semantic_memory = self._monitor_memory()
@@ -345,9 +345,9 @@ class UnifiedMatchingFacade:
             profile["recommendation"] = "Consider optimizing import resolution"
         elif direct_pct > 20:
             profile["bottleneck"] = "direct_matching"
-            profile["recommendation"] = (
-                "Consider optimizing signature similarity calculation"
-            )
+            profile[
+                "recommendation"
+            ] = "Consider optimizing signature similarity calculation"
         else:
             profile["bottleneck"] = "none"
             profile["recommendation"] = "Performance is well balanced"

@@ -84,10 +84,8 @@ class SemanticMatcher:
         # Generate missing embeddings
         new_embeddings = []
         if embeddings_needed:
-            new_embeddings = (
-                await self.embedding_generator.generate_function_embeddings(
-                    embeddings_needed, use_cache=True
-                )
+            new_embeddings = await self.embedding_generator.generate_function_embeddings(
+                embeddings_needed, use_cache=True
             )
 
             # Cache the new embeddings
@@ -201,10 +199,8 @@ class SemanticMatcher:
                 query_embedding = cached_embedding.embedding
             else:
                 # Generate new embedding
-                embeddings = (
-                    await self.embedding_generator.generate_function_embeddings(
-                        [function], use_cache=True
-                    )
+                embeddings = await self.embedding_generator.generate_function_embeddings(
+                    [function], use_cache=True
                 )
                 if not embeddings:
                     logger.warning(

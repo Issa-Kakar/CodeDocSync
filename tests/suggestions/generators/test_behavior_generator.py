@@ -205,10 +205,7 @@ class TestBehaviorSuggestionGenerator:
     @pytest.fixture
     def config(self):
         """Create test configuration."""
-        return SuggestionConfig(
-            default_style="google",
-            max_line_length=88,
-        )
+        return SuggestionConfig(default_style="google", max_line_length=88,)
 
     @pytest.fixture
     def generator(self, config):

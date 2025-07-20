@@ -201,9 +201,7 @@ class TestUnifiedMatchingFacade:
         mock_direct_facade = Mock()
         mock_direct.return_value = mock_direct_facade
         empty_result = MatchResult(
-            total_functions=0,
-            matched_pairs=[],
-            unmatched_functions=[],
+            total_functions=0, matched_pairs=[], unmatched_functions=[],
         )
         mock_direct_facade.match_project.return_value = empty_result
 
@@ -291,9 +289,7 @@ class TestUnifiedMatchingIntegration:
                     mock_direct_facade = Mock()
                     mock_direct.return_value = mock_direct_facade
                     empty_result = MatchResult(
-                        total_functions=0,
-                        matched_pairs=[],
-                        unmatched_functions=[],
+                        total_functions=0, matched_pairs=[], unmatched_functions=[],
                     )
                     mock_direct_facade.match_project.return_value = empty_result
 

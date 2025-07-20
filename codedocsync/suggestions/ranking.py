@@ -390,11 +390,7 @@ class PriorityBooster:
             return 0.0
 
         self.boost_rules.extend(
-            [
-                boost_critical_parameters,
-                boost_public_functions,
-                boost_frequently_used,
-            ]
+            [boost_critical_parameters, boost_public_functions, boost_frequently_used,]
         )
 
     def add_boost_rule(self, rule: Callable[[EnhancedIssue], float]):
@@ -427,17 +423,11 @@ def create_strict_ranker() -> SuggestionRanker:
 
 def create_permissive_ranker() -> SuggestionRanker:
     """Create ranker with permissive filtering."""
-    config = RankingConfig(
-        min_confidence=0.3,
-        copy_paste_ready_only=False,
-    )
+    config = RankingConfig(min_confidence=0.3, copy_paste_ready_only=False,)
     return SuggestionRanker(config)
 
 
 def create_balanced_ranker() -> SuggestionRanker:
     """Create ranker with balanced settings."""
-    config = RankingConfig(
-        strategy=RankingStrategy.BALANCED,
-        min_confidence=0.6,
-    )
+    config = RankingConfig(strategy=RankingStrategy.BALANCED, min_confidence=0.6,)
     return SuggestionRanker(config)

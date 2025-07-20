@@ -170,7 +170,9 @@ class BehaviorAnalyzer:
                     len(
                         child.elts
                         if hasattr(child, "elts")
-                        else child.keys if hasattr(child, "keys") else []
+                        else child.keys
+                        if hasattr(child, "keys")
+                        else []
                     )
                     > 0
                 ):

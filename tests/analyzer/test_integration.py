@@ -391,8 +391,7 @@ class TestAnalyzeMultiplePairs:
         pairs = self.create_test_pairs(3)
 
         config = AnalysisConfig(
-            parallel_analysis=False,
-            use_llm=False,  # Force sequential
+            parallel_analysis=False, use_llm=False,  # Force sequential
         )
 
         results = await analyze_multiple_pairs(pairs, config=config)
@@ -966,15 +965,10 @@ class TestIntegrationFlow:
             summary="Perform complex calculation",
             parameters=[
                 DocstringParameter(
-                    name="data",
-                    description="Input data",
-                    type="dict",  # Type mismatch
+                    name="data", description="Input data", type="dict",  # Type mismatch
                 )
             ],
-            returns=DocstringReturns(
-                description="Calculated result",
-                type="float",
-            ),
+            returns=DocstringReturns(description="Calculated result", type="float",),
             raises=[],
             raw_text="Docstring text",
         )

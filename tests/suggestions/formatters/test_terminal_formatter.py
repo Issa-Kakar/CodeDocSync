@@ -142,9 +142,7 @@ class TestTerminalFormatterConfig:
     def test_custom_config(self):
         """Test custom configuration values."""
         config = TerminalFormatterConfig(
-            max_width=120,
-            show_line_numbers=False,
-            compact_mode=True,
+            max_width=120, show_line_numbers=False, compact_mode=True,
         )
 
         assert config.max_width == 120
@@ -325,10 +323,7 @@ class TestAnalysisResultFormatting:
         mock_pair = Mock()
         mock_pair.function = mock_function
 
-        empty_result = EnhancedAnalysisResult(
-            matched_pair=mock_pair,
-            issues=[],
-        )
+        empty_result = EnhancedAnalysisResult(matched_pair=mock_pair, issues=[],)
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_analysis_result(empty_result)
@@ -445,10 +440,7 @@ class TestUtilityMethods:
         mock_pair = Mock()
         mock_pair.function = mock_function
 
-        empty_result = EnhancedAnalysisResult(
-            matched_pair=mock_pair,
-            issues=[],
-        )
+        empty_result = EnhancedAnalysisResult(matched_pair=mock_pair, issues=[],)
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter._format_no_issues(empty_result)
@@ -531,10 +523,7 @@ class TestEdgeCases:
         mock_pair = Mock()
         mock_pair.function = mock_function
 
-        result = EnhancedAnalysisResult(
-            matched_pair=mock_pair,
-            issues=[],
-        )
+        result = EnhancedAnalysisResult(matched_pair=mock_pair, issues=[],)
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         formatted = formatter.format_analysis_result(result)

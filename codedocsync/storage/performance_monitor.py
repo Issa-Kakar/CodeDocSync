@@ -122,9 +122,9 @@ class PerformanceMonitor:
         try:
             disk = psutil.disk_usage(Path.cwd())
             return {
-                "total_gb": disk.total / (1024**3),
-                "used_gb": disk.used / (1024**3),
-                "free_gb": disk.free / (1024**3),
+                "total_gb": disk.total / (1024 ** 3),
+                "used_gb": disk.used / (1024 ** 3),
+                "free_gb": disk.free / (1024 ** 3),
                 "used_percent": (disk.used / disk.total) * 100,
             }
         except Exception as e:

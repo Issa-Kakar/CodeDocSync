@@ -62,10 +62,7 @@ def _serialize_docstring(docstring):
                 else None
             ),
             "raises": [
-                {
-                    "exception_type": r.exception_type,
-                    "description": r.description,
-                }
+                {"exception_type": r.exception_type, "description": r.description,}
                 for r in docstring.raises
             ],
             "examples": docstring.examples,
@@ -1121,9 +1118,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             console.print("\n[bold blue][Insights]:[/bold blue]")
 
             if profile.get("bottleneck") != "none":
-                console.print(
-                    f"  🚨 Bottleneck: {profile.get('bottleneck', 'unknown')}"
-                )
+                console.print(f"  🚨 Bottleneck: {profile.get('bottleneck', 'unknown')}")
                 console.print(
                     f"  [TIP] Recommendation: {profile.get('recommendation', 'No specific advice')}"
                 )
@@ -1143,7 +1138,9 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             confidence_color = (
                 "green"
                 if pair.confidence.overall >= 0.8
-                else "yellow" if pair.confidence.overall >= 0.6 else "red"
+                else "yellow"
+                if pair.confidence.overall >= 0.6
+                else "red"
             )
             match_icon = {
                 "EXACT": "[EXACT]",
@@ -1425,7 +1422,9 @@ def match_unified(
     match_rate_color = (
         "green"
         if float(summary["match_rate"].strip("%")) >= 80
-        else "yellow" if float(summary["match_rate"].strip("%")) >= 60 else "red"
+        else "yellow"
+        if float(summary["match_rate"].strip("%")) >= 60
+        else "red"
     )
     console.print(
         f"Matched [bold]{summary['matched']}[/bold]/{summary['total_functions']} functions "

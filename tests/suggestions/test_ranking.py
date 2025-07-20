@@ -300,8 +300,7 @@ class TestSuggestionRanker:
         mock_pair.function = Mock()
 
         result = EnhancedAnalysisResult(
-            matched_pair=mock_pair,
-            issues=[critical_issue],
+            matched_pair=mock_pair, issues=[critical_issue],
         )
 
         ranker = SuggestionRanker()

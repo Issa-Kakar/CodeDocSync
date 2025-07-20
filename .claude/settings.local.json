@@ -25,7 +25,8 @@
       "Bash(black:*)",
       "Bash(poetry run ruff:*)",
       "Bash(poetry run mypy:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "Bash(poetry:*)"
     ],
     "deny": []
   }

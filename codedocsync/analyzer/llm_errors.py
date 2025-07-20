@@ -158,7 +158,7 @@ class RetryStrategy:
             delay = retry_after
         else:
             # Exponential backoff
-            delay = self.base_delay * (self.exponential_base**attempt)
+            delay = self.base_delay * (self.exponential_base ** attempt)
 
         # Cap at maximum delay
         delay = min(delay, self.max_delay)

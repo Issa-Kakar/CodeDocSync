@@ -89,9 +89,7 @@ def mock_suggestion():
 def config():
     """Create a test configuration."""
     return SuggestionConfig(
-        default_style="google",
-        confidence_threshold=0.5,
-        preserve_descriptions=True,
+        default_style="google", confidence_threshold=0.5, preserve_descriptions=True,
     )
 
 
@@ -169,10 +167,7 @@ class TestEnhancedAnalysisResult:
             rich_suggestion=mock_suggestion,
         )
 
-        result = EnhancedAnalysisResult(
-            matched_pair=mock_matched_pair,
-            issues=[issue],
-        )
+        result = EnhancedAnalysisResult(matched_pair=mock_matched_pair, issues=[issue],)
 
         assert result.has_suggestions
         assert len(result.get_suggestions()) == 1

@@ -141,8 +141,7 @@ class TestDocstringStyleConverter:
                 ),
             ],
             returns=DocstringReturns(
-                type_annotation="dict",
-                description="Dictionary containing statistics",
+                type_annotation="dict", description="Dictionary containing statistics",
             ),
             raises=None,
             raw_text="",
@@ -179,8 +178,7 @@ class TestDocstringStyleConverter:
                 ),
             ],
             returns=DocstringReturns(
-                type_annotation="dict",
-                description="Parsed configuration data",
+                type_annotation="dict", description="Parsed configuration data",
             ),
             raises=[
                 DocstringRaises(
@@ -595,8 +593,7 @@ class TestSpecialCases:
                 )
             ],
             returns=DocstringReturns(
-                type_annotation="str",
-                description=long_description,
+                type_annotation="str", description=long_description,
             ),
             raises=None,
             raw_text="",

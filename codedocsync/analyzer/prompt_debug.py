@@ -333,7 +333,9 @@ class PromptDebugger:
         tokens_status = (
             "🟢"
             if analysis.estimated_tokens < 2000
-            else "🟡" if analysis.estimated_tokens < 3000 else "🔴"
+            else "🟡"
+            if analysis.estimated_tokens < 3000
+            else "🔴"
         )
 
         self.console.print(
