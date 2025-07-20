@@ -16,9 +16,13 @@ from .base import (
     TemplateMerger,
 )
 from .google_template import GoogleStyleTemplate
+from .numpy_template import NumpyStyleTemplate
+from .sphinx_template import SphinxStyleTemplate
 
-# Register Google template
+# Register all templates
 template_registry.register(DocstringStyle.GOOGLE, GoogleStyleTemplate)
+template_registry.register(DocstringStyle.NUMPY, NumpyStyleTemplate)
+template_registry.register(DocstringStyle.SPHINX, SphinxStyleTemplate)
 
 __all__ = [
     "DocstringTemplate",
@@ -27,5 +31,7 @@ __all__ = [
     "get_template",
     "TemplateMerger",
     "GoogleStyleTemplate",
+    "NumpyStyleTemplate",
+    "SphinxStyleTemplate",
     "DocstringStyle",
 ]

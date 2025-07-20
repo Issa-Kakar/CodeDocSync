@@ -67,6 +67,20 @@ from .style_detector import (
     style_detector,  # Global detector instance
 )
 
+# Type formatting
+from .type_formatter import (
+    TypeAnnotationFormatter,
+    format_type_for_style,
+    extract_type_from_ast,
+)
+
+# Style conversion
+from .converter import (
+    DocstringStyleConverter,
+    convert_docstring,
+    batch_convert_docstrings,
+)
+
 # Version information
 __version__ = "1.0.0"
 
@@ -102,6 +116,14 @@ __all__ = [
     # Style detection
     "DocstringStyleDetector",
     "style_detector",
+    # Type formatting
+    "TypeAnnotationFormatter",
+    "format_type_for_style",
+    "extract_type_from_ast",
+    # Style conversion
+    "DocstringStyleConverter",
+    "convert_docstring",
+    "batch_convert_docstrings",
     # Exceptions
     "SuggestionError",
     "StyleDetectionError",
@@ -304,8 +326,8 @@ def get_module_info() -> Dict[str, Any]:
         },
         "chunk_status": {
             "chunk_1": "✅ Complete - Core Data Models and Base Infrastructure",
-            "chunk_2": "⏳ Pending - Template-Based Suggestion Engine",
-            "chunk_3": "⏳ Pending - Style-Specific Formatters",
+            "chunk_2": "✅ Complete - Template-Based Suggestion Engine",
+            "chunk_3": "✅ Complete - Style-Specific Formatters",
             "chunk_4": "⏳ Pending - Issue-Specific Strategies",
             "chunk_5": "⏳ Pending - Integration Layer and Output Formatting",
             "chunk_6": "⏳ Pending - Testing Suite and Production Integration",
