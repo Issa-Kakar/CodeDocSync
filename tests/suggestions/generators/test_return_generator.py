@@ -5,22 +5,23 @@ Tests cover return type analysis, mismatch detection, and suggestion generation
 for various return scenarios including generators, async functions, and complex types.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from codedocsync.analyzer.models import InconsistencyIssue
+from codedocsync.parser.docstring_models import DocstringReturn
+from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.return_generator import (
-    ReturnSuggestionGenerator,
-    ReturnStatementAnalyzer,
     ReturnAnalysisResult,
+    ReturnStatementAnalyzer,
+    ReturnSuggestionGenerator,
 )
 from codedocsync.suggestions.models import (
     Suggestion,
     SuggestionContext,
     SuggestionType,
 )
-from codedocsync.suggestions.config import SuggestionConfig
-from codedocsync.analyzer.models import InconsistencyIssue
-from codedocsync.parser.docstring_models import DocstringReturn
 
 
 class TestReturnStatementAnalyzer:
@@ -116,7 +117,10 @@ class TestReturnSuggestionGenerator:
     @pytest.fixture
     def config(self):
         """Create test configuration."""
-        return SuggestionConfig(default_style="google", max_line_length=88,)
+        return SuggestionConfig(
+            default_style="google",
+            max_line_length=88,
+        )
 
     @pytest.fixture
     def generator(self, config):

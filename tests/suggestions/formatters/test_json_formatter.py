@@ -5,28 +5,29 @@ Tests the JSON formatting functionality for suggestions,
 including structured output, metadata inclusion, and batch processing.
 """
 
-import pytest
 import json
-from unittest.mock import Mock
 from datetime import datetime
+from unittest.mock import Mock
+
+import pytest
 
 from codedocsync.suggestions.formatters.json_formatter import (
+    OUTPUT_FORMAT_VERSION,
     JSONSuggestionFormatter,
-    suggestion_to_json,
     analysis_result_to_json,
     batch_results_to_json,
     suggestion_batch_to_json,
-    OUTPUT_FORMAT_VERSION,
+    suggestion_to_json,
 )
+from codedocsync.suggestions.integration import EnhancedAnalysisResult, EnhancedIssue
 from codedocsync.suggestions.models import (
+    DocstringStyle,
     Suggestion,
     SuggestionBatch,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
-from codedocsync.suggestions.integration import EnhancedIssue, EnhancedAnalysisResult
 
 
 # Test fixtures
@@ -183,7 +184,9 @@ class TestJSONSuggestionFormatterInit:
     def test_custom_initialization(self):
         """Test initialization with custom parameters."""
         formatter = JSONSuggestionFormatter(
-            indent=4, include_metadata=False, include_timestamps=False,
+            indent=4,
+            include_metadata=False,
+            include_timestamps=False,
         )
 
         assert formatter.indent == 4

@@ -5,22 +5,24 @@ This module tests the complete semantic matching system in realistic scenarios,
 ensuring all components work together correctly and the system is ready for production.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
+from codedocsync.matcher.models import MatchResult, MatchType
+
 # Import all semantic matching components
 from codedocsync.matcher.semantic_matcher import SemanticMatcher
-from codedocsync.storage.embedding_cache import EmbeddingCache
+from codedocsync.matcher.semantic_models import FunctionEmbedding
 from codedocsync.matcher.semantic_optimizer import SemanticOptimizer
-from codedocsync.storage.performance_monitor import PerformanceMonitor
 from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
 
 # Import related components
 from codedocsync.parser import IntegratedParser
-from codedocsync.matcher.models import MatchResult, MatchType
-from codedocsync.matcher.semantic_models import FunctionEmbedding
+from codedocsync.storage.embedding_cache import EmbeddingCache
+from codedocsync.storage.performance_monitor import PerformanceMonitor
 from codedocsync.utils.config import CodeDocSyncConfig
 
 
@@ -136,9 +138,12 @@ def test_data_retrieval():
         """Test complete semantic matching workflow from project analysis to results."""
 
         # Mock external dependencies for consistent testing
-        with patch("openai.embeddings.create") as mock_create, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config:
+        with (
+            patch("openai.embeddings.create") as mock_create,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+        ):
             # Setup realistic mock responses
             mock_create.return_value = Mock()
             mock_create.return_value.data = [Mock(embedding=[0.1] * 1536)]
@@ -191,9 +196,12 @@ def test_data_retrieval():
         """Test unified facade with complete four-phase matching pipeline."""
 
         # Mock all external dependencies
-        with patch("openai.embeddings.create") as mock_create, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config:
+        with (
+            patch("openai.embeddings.create") as mock_create,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+        ):
             mock_create.return_value = Mock()
             mock_create.return_value.data = [Mock(embedding=[0.1] * 1536)]
             mock_config.return_value.validate_config.return_value = True
@@ -234,9 +242,12 @@ def test_data_retrieval():
     ):
         """Test semantic matching identifies renamed functions correctly."""
 
-        with patch("openai.embeddings.create") as mock_create, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config:
+        with (
+            patch("openai.embeddings.create") as mock_create,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+        ):
             # Create embeddings that would be similar for renamed functions
             def create_similar_embedding(base_value):
                 return [base_value + i * 0.001 for i in range(1536)]
@@ -345,11 +356,13 @@ def test_data_retrieval():
         """Test error recovery works correctly in complete semantic matching pipeline."""
 
         # Test with failing primary service but working fallback
-        with patch("openai.embeddings.create") as mock_openai, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config, patch(
-            "sentence_transformers.SentenceTransformer"
-        ) as mock_local:
+        with (
+            patch("openai.embeddings.create") as mock_openai,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+            patch("sentence_transformers.SentenceTransformer") as mock_local,
+        ):
             # Setup config
             mock_config.return_value.validate_config.return_value = True
             mock_config.return_value.get_api_key.return_value = "test-key"
@@ -391,9 +404,12 @@ def test_data_retrieval():
 
         monitor = PerformanceMonitor()
 
-        with patch("openai.embeddings.create") as mock_create, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config:
+        with (
+            patch("openai.embeddings.create") as mock_create,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+        ):
             mock_create.return_value = Mock()
             mock_create.return_value.data = [Mock(embedding=[0.1] * 1536)]
             mock_config.return_value.validate_config.return_value = True
@@ -471,9 +487,12 @@ def test_data_retrieval():
         # Test with semantic matching disabled
         facade_disabled = UnifiedMatchingFacade(config)
 
-        with patch("openai.embeddings.create") as mock_create, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config:
+        with (
+            patch("openai.embeddings.create") as mock_create,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+        ):
             mock_create.return_value = Mock()
             mock_create.return_value.data = [Mock(embedding=[0.1] * 1536)]
             mock_config.return_value.validate_config.return_value = True
@@ -551,9 +570,12 @@ def function_{module_num}_{file_num}_2(data: dict) -> bool:
 '''
                 )
 
-        with patch("openai.embeddings.create") as mock_create, patch(
-            "codedocsync.storage.embedding_config.EmbeddingConfigManager"
-        ) as mock_config:
+        with (
+            patch("openai.embeddings.create") as mock_create,
+            patch(
+                "codedocsync.storage.embedding_config.EmbeddingConfigManager"
+            ) as mock_config,
+        ):
             mock_create.return_value = Mock()
             mock_create.return_value.data = [Mock(embedding=[0.1] * 1536)]
             mock_config.return_value.validate_config.return_value = True
@@ -588,6 +610,7 @@ def function_{module_num}_{file_num}_2(data: dict) -> bool:
         """Test memory is properly cleaned up after semantic operations."""
 
         import gc
+
         import psutil
 
         process = psutil.Process()

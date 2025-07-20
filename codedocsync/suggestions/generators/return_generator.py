@@ -7,31 +7,30 @@ missing return documentation, and other return-specific problems.
 
 import ast
 import re
-from typing import List, Optional, Set, Union
 
+from ...parser.docstring_models import DocstringReturns
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
 from ..templates.base import get_template
-from ...parser.docstring_models import DocstringReturns
 
 
 class ReturnAnalysisResult:
     """Result of analyzing return statements in function code."""
 
     def __init__(self):
-        self.return_types: Set[str] = set()
+        self.return_types: set[str] = set()
         self.has_explicit_return: bool = False
         self.has_implicit_none: bool = False
         self.is_generator: bool = False
         self.is_async: bool = False
-        self.conditional_returns: List[str] = []
+        self.conditional_returns: list[str] = []
         self.complexity_score: float = 0.0
 
 
@@ -65,7 +64,7 @@ class ReturnStatementAnalyzer:
 
     def _analyze_function_node(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
         result: ReturnAnalysisResult,
     ) -> None:
         """Analyze a function node for return patterns."""
@@ -95,7 +94,7 @@ class ReturnStatementAnalyzer:
         # Calculate complexity based on number of return paths
         result.complexity_score = min(len(result.return_types) / 5.0, 1.0)
 
-    def _infer_return_type(self, node: ast.expr) -> Optional[str]:
+    def _infer_return_type(self, node: ast.expr) -> str | None:
         """Infer return type from AST node."""
         if isinstance(node, ast.Constant):
             if node.value is None:
@@ -303,7 +302,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
 
     def _determine_best_return_type(
         self, analysis: ReturnAnalysisResult, function
-    ) -> Optional[str]:
+    ) -> str | None:
         """Determine the best return type to document."""
         if analysis.is_generator:
             return "Generator"
@@ -326,7 +325,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
 
         return None
 
-    def _get_return_type_from_signature(self, function) -> Optional[str]:
+    def _get_return_type_from_signature(self, function) -> str | None:
         """Extract return type from function signature."""
         if hasattr(function, "signature") and hasattr(
             function.signature, "return_annotation"
@@ -338,7 +337,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         self,
         context: SuggestionContext,
         return_type: str,
-        analysis: Optional[ReturnAnalysisResult],
+        analysis: ReturnAnalysisResult | None,
     ) -> str:
         """Update return type in existing docstring."""
         docstring = context.docstring
@@ -381,7 +380,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         )
 
     def _generate_return_description(
-        self, return_type: str, analysis: Optional[ReturnAnalysisResult]
+        self, return_type: str, analysis: ReturnAnalysisResult | None
     ) -> str:
         """Generate appropriate return description based on type and analysis."""
         if return_type == "None":

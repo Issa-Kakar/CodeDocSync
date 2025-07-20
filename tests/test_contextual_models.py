@@ -1,15 +1,16 @@
 """Test suite for contextual matcher models."""
 
-import pytest
 from dataclasses import dataclass
 
+import pytest
+
 from codedocsync.matcher.contextual_models import (
-    ImportType,
-    ImportStatement,
-    ModuleInfo,
-    FunctionLocation,
-    CrossFileMatch,
     ContextualMatcherState,
+    CrossFileMatch,
+    FunctionLocation,
+    ImportStatement,
+    ImportType,
+    ModuleInfo,
 )
 
 

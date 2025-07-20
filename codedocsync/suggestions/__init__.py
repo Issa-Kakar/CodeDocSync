@@ -20,25 +20,7 @@ Key Features:
 - Quality scoring and ranking
 """
 
-from typing import Dict, Any, Optional
-
-# Core data models
-from .models import (
-    # Main suggestion classes
-    Suggestion,
-    SuggestionBatch,
-    SuggestionContext,
-    SuggestionDiff,
-    SuggestionMetadata,
-    # Enums
-    SuggestionType,
-    DocstringStyle,
-    # Exceptions
-    SuggestionError,
-    StyleDetectionError,
-    SuggestionGenerationError,
-    SuggestionValidationError,
-)
+from typing import Any, Dict, Optional
 
 # Base generator interface
 from .base import (
@@ -48,16 +30,79 @@ from .base import (
 
 # Configuration system
 from .config import (
+    ConfigManager,
     # Main configuration classes
     SuggestionConfig,
-    ConfigManager,
-    # Predefined configurations
-    get_minimal_config,
+    # Global config manager
+    config_manager,
     get_comprehensive_config,
     get_development_config,
     get_documentation_config,
-    # Global config manager
-    config_manager,
+    # Predefined configurations
+    get_minimal_config,
+)
+
+# Configuration management (Chunk 5)
+from .config_manager import (
+    IntegratedSuggestionConfig,
+    SuggestionConfigManager,
+    get_config_manager,
+    load_suggestion_config,
+)
+
+# Style conversion
+from .converter import (
+    DocstringStyleConverter,
+    batch_convert_docstrings,
+    convert_docstring,
+)
+
+# Output formatters (Chunk 5)
+from .formatters import (
+    JSONSuggestionFormatter,
+    OutputStyle,
+    TerminalSuggestionFormatter,
+)
+
+# Integration layer (Chunk 5)
+from .integration import (
+    EnhancedAnalysisResult,
+    EnhancedIssue,
+    SuggestionBatchProcessor,
+    SuggestionIntegration,
+    enhance_multiple_with_suggestions,
+    enhance_with_suggestions,
+)
+
+# Core data models
+from .models import (
+    DocstringStyle,
+    StyleDetectionError,
+    # Main suggestion classes
+    Suggestion,
+    SuggestionBatch,
+    SuggestionContext,
+    SuggestionDiff,
+    # Exceptions
+    SuggestionError,
+    SuggestionGenerationError,
+    SuggestionMetadata,
+    # Enums
+    SuggestionType,
+    SuggestionValidationError,
+)
+
+# Ranking and filtering (Chunk 5)
+from .ranking import (
+    PriorityBooster,
+    RankingConfig,
+    RankingMetrics,
+    RankingStrategy,
+    SuggestionFilter,
+    SuggestionRanker,
+    create_balanced_ranker,
+    create_permissive_ranker,
+    create_strict_ranker,
 )
 
 # Style detection system
@@ -69,53 +114,8 @@ from .style_detector import (
 # Type formatting
 from .type_formatter import (
     TypeAnnotationFormatter,
-    format_type_for_style,
     extract_type_from_ast,
-)
-
-# Style conversion
-from .converter import (
-    DocstringStyleConverter,
-    convert_docstring,
-    batch_convert_docstrings,
-)
-
-# Integration layer (Chunk 5)
-from .integration import (
-    SuggestionIntegration,
-    SuggestionBatchProcessor,
-    EnhancedIssue,
-    EnhancedAnalysisResult,
-    enhance_with_suggestions,
-    enhance_multiple_with_suggestions,
-)
-
-# Output formatters (Chunk 5)
-from .formatters import (
-    TerminalSuggestionFormatter,
-    JSONSuggestionFormatter,
-    OutputStyle,
-)
-
-# Ranking and filtering (Chunk 5)
-from .ranking import (
-    SuggestionRanker,
-    SuggestionFilter,
-    RankingStrategy,
-    RankingConfig,
-    RankingMetrics,
-    PriorityBooster,
-    create_strict_ranker,
-    create_permissive_ranker,
-    create_balanced_ranker,
-)
-
-# Configuration management (Chunk 5)
-from .config_manager import (
-    SuggestionConfigManager,
-    IntegratedSuggestionConfig,
-    get_config_manager,
-    load_suggestion_config,
+    format_type_for_style,
 )
 
 # Version information
@@ -224,7 +224,7 @@ def create_suggestion_context(
     )
 
 
-def validate_suggestion_quality(suggestion: Suggestion) -> Dict[str, Any]:
+def validate_suggestion_quality(suggestion: Suggestion) -> dict[str, Any]:
     """
     Validate and analyze the quality of a suggestion.
 
@@ -267,7 +267,7 @@ def validate_suggestion_quality(suggestion: Suggestion) -> Dict[str, Any]:
 
 
 def detect_project_style(
-    project_path: str, config: Optional[SuggestionConfig] = None
+    project_path: str, config: SuggestionConfig | None = None
 ) -> str:
     """
     Detect the predominant docstring style in a project.
@@ -312,7 +312,7 @@ def create_diff_preview(
 
 # Integration helpers for working with the analyzer module
 def enhance_analysis_result_with_suggestions(
-    analysis_result, config: Optional[SuggestionConfig] = None
+    analysis_result, config: SuggestionConfig | None = None
 ):
     """
     Enhance an AnalysisResult with suggestions.
@@ -360,7 +360,7 @@ COMMON_TEMPLATES = {
 }
 
 
-def get_module_info() -> Dict[str, Any]:
+def get_module_info() -> dict[str, Any]:
     """
     Get information about the suggestions module.
 

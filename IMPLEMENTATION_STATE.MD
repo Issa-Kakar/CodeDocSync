@@ -447,8 +447,13 @@ The suggestion module depends on parser models with specific names:
 
 ### Environment Requirements
 - Python 3.10+ is required (for parenthesized context managers and modern syntax)
-- Pre-commit hooks may fail on Windows with Python version mismatches
-- Use `--no-verify` flag for commits if pre-commit environment setup fails
+- Pre-commit hooks configuration:
+  - Fixed `types-all` dependency issue in `.pre-commit-config.yaml` (2025-01-20)
+  - Mypy hook now uses empty additional_dependencies list instead of problematic `types-all`
+  - All hooks (ruff, black, mypy, check-yaml) now install and run correctly
+- Poetry installation notes:
+  - Poetry should be installed in the base environment or system-wide
+  - If using conda environments, ensure poetry is accessible from the active environment
 
 Next Implementation Priority
 

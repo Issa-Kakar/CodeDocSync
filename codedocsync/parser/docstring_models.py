@@ -4,10 +4,9 @@ This module defines the core data structures used to represent parsed docstrings
 across different formats (Google, NumPy, Sphinx, REST).
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional
-from enum import Enum
 import re
+from dataclasses import dataclass, field
+from enum import Enum
 
 
 class DocstringFormat(Enum):
@@ -25,10 +24,10 @@ class DocstringParameter:
     """Single parameter documentation."""
 
     name: str
-    type_str: Optional[str] = None
+    type_str: str | None = None
     description: str = ""
     is_optional: bool = False
-    default_value: Optional[str] = None
+    default_value: str | None = None
 
     def __post_init__(self):
         """Validate parameter name."""
@@ -43,7 +42,7 @@ class DocstringParameter:
 class DocstringReturns:
     """Return value documentation."""
 
-    type_str: Optional[str] = None
+    type_str: str | None = None
     description: str = ""
 
 
@@ -69,17 +68,17 @@ class ParsedDocstring:
 
     format: DocstringFormat
     summary: str
-    description: Optional[str] = None
-    parameters: List[DocstringParameter] = field(default_factory=list)
-    returns: Optional[DocstringReturns] = None
-    raises: List[DocstringRaises] = field(default_factory=list)
-    examples: List[str] = field(default_factory=list)
+    description: str | None = None
+    parameters: list[DocstringParameter] = field(default_factory=list)
+    returns: DocstringReturns | None = None
+    raises: list[DocstringRaises] = field(default_factory=list)
+    examples: list[str] = field(default_factory=list)
     raw_text: str = ""
 
     # Additional metadata
     is_valid: bool = True
-    parse_errors: List[str] = field(default_factory=list)
+    parse_errors: list[str] = field(default_factory=list)
 
-    def get_parameter(self, name: str) -> Optional[DocstringParameter]:
+    def get_parameter(self, name: str) -> DocstringParameter | None:
         """Get parameter by name."""
         return next((p for p in self.parameters if p.name == name), None)

@@ -1,10 +1,9 @@
-import sqlite3
 import json
-import time
-from pathlib import Path
-from typing import Optional, Dict
 import logging
+import sqlite3
+import time
 from collections import OrderedDict
+from pathlib import Path
 
 from ..matcher.semantic_models import FunctionEmbedding
 
@@ -77,8 +76,8 @@ class EmbeddingCache:
         return hashlib.sha256(content.encode()).hexdigest()
 
     def get(
-        self, text: str, model: str, signature_hash: Optional[str] = None
-    ) -> Optional[FunctionEmbedding]:
+        self, text: str, model: str, signature_hash: str | None = None
+    ) -> FunctionEmbedding | None:
         """
         Get embedding from cache.
 
@@ -147,7 +146,7 @@ class EmbeddingCache:
 
         self.memory_cache[key] = embedding
 
-    def _get_from_disk(self, cache_key: str) -> Optional[FunctionEmbedding]:
+    def _get_from_disk(self, cache_key: str) -> FunctionEmbedding | None:
         """Load embedding from disk."""
         conn = sqlite3.connect(str(self.db_path))
         cursor = conn.cursor()
@@ -267,7 +266,7 @@ class EmbeddingCache:
         finally:
             conn.close()
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> dict[str, any]:
         """Get cache statistics."""
         total_requests = (
             self.metrics["memory_hits"]

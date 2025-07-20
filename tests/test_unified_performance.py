@@ -1,20 +1,21 @@
 """Performance validation tests for unified matching facade."""
 
-import pytest
-import time
 import tempfile
-import psutil
+import time
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
-from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+import psutil
+import pytest
+
 from codedocsync.matcher.models import (
-    MatchResult,
-    MatchedPair,
-    MatchType,
     MatchConfidence,
+    MatchedPair,
+    MatchResult,
+    MatchType,
 )
-from codedocsync.parser import ParsedFunction, FunctionSignature, RawDocstring
+from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+from codedocsync.parser import FunctionSignature, ParsedFunction, RawDocstring
 
 
 class TestUnifiedPerformanceValidation:
@@ -240,7 +241,7 @@ class Class{i}:
                     docstring=RawDocstring(
                         raw_text=f"Function {i}", line_number=i * 2 + 1
                     ),
-                    file_path=f"file_{i//10}.py",
+                    file_path=f"file_{i // 10}.py",
                     line_number=i * 2,
                     end_line_number=i * 2 + 1,
                     source_code=f"def func_{i}(): pass",
@@ -494,7 +495,7 @@ class Class{i}:
                         docstring=RawDocstring(
                             raw_text=f"Function {i}", line_number=i * 2 + 1
                         ),
-                        file_path=f"file_{i//10}.py",
+                        file_path=f"file_{i // 10}.py",
                         line_number=i * 2,
                         end_line_number=i * 2 + 1,
                         source_code=f"def func_{i}(): pass",

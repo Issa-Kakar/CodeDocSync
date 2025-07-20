@@ -9,16 +9,17 @@ import hashlib
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, List, Any
+from typing import Any
+
 from docstring_parser import parse as third_party_parse
 from docstring_parser.common import DocstringStyle
 
 from .docstring_models import (
-    ParsedDocstring,
     DocstringFormat,
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
+    ParsedDocstring,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ class DocstringParser:
         # Default to Google style as it's most common
         return DocstringFormat.GOOGLE
 
-    def parse(self, docstring: Optional[str]) -> Optional[ParsedDocstring]:
+    def parse(self, docstring: str | None) -> ParsedDocstring | None:
         """Parse docstring with caching and error handling."""
         if not docstring:
             return None
@@ -122,7 +123,7 @@ class DocstringParser:
         self._parse_cache[cache_key] = result
         return result
 
-    def _parse_uncached(self, docstring: str) -> Optional[ParsedDocstring]:
+    def _parse_uncached(self, docstring: str) -> ParsedDocstring | None:
         """Parse docstring without caching."""
         # Detect format
         detected_format = self.detect_format(docstring)
@@ -206,7 +207,7 @@ class DocstringParser:
             parse_errors=[],
         )
 
-    def _extract_examples(self, parsed: Any, format: DocstringFormat) -> List[str]:
+    def _extract_examples(self, parsed: Any, format: DocstringFormat) -> list[str]:
         """Extract code examples from docstring.
 
         Different formats store examples differently:
@@ -266,7 +267,7 @@ class DocstringParser:
 
     def _extract_parameters_fallback(
         self, raw_text: str, format: DocstringFormat
-    ) -> List[DocstringParameter]:
+    ) -> list[DocstringParameter]:
         """Fallback parameter extraction for failed parsing.
 
         Use regex patterns specific to each format.
@@ -319,9 +320,7 @@ class DocstringParser:
 
         return parameters
 
-    def parse_batch(
-        self, docstrings: List[Optional[str]]
-    ) -> List[Optional[ParsedDocstring]]:
+    def parse_batch(self, docstrings: list[str | None]) -> list[ParsedDocstring | None]:
         """Parse multiple docstrings efficiently using thread pool.
 
         Args:

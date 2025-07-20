@@ -5,23 +5,22 @@ This module provides automatic detection of docstring styles from existing
 code and validates that suggestions match the detected or configured style.
 """
 
-import re
 import ast
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
+import re
 from collections import defaultdict
+from pathlib import Path
 
-from .models import StyleDetectionError
 from .config import SuggestionConfig
+from .models import StyleDetectionError
 
 
 class DocstringStyleDetector:
     """Detect docstring style from existing code."""
 
-    def __init__(self, config: Optional[SuggestionConfig] = None):
+    def __init__(self, config: SuggestionConfig | None = None):
         """Initialize detector with configuration."""
         self.config = config or SuggestionConfig()
-        self._detection_cache: Dict[str, str] = {}
+        self._detection_cache: dict[str, str] = {}
 
         # Style indicators and their weights
         self._style_indicators = {
@@ -71,7 +70,7 @@ class DocstringStyleDetector:
             return self._detection_cache[cache_key]
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
         except (FileNotFoundError, UnicodeDecodeError) as e:
             raise StyleDetectionError(
@@ -140,7 +139,7 @@ class DocstringStyleDetector:
         self._detection_cache[cache_key] = detected_style
         return detected_style
 
-    def _extract_docstrings_from_code(self, code: str) -> List[str]:
+    def _extract_docstrings_from_code(self, code: str) -> list[str]:
         """Extract all docstrings from Python code."""
         try:
             tree = ast.parse(code)
@@ -163,10 +162,10 @@ class DocstringStyleDetector:
 
         return docstrings
 
-    def _extract_docstrings_from_file(self, file_path: str) -> List[str]:
+    def _extract_docstrings_from_file(self, file_path: str) -> list[str]:
         """Extract docstrings from a file."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
             return self._extract_docstrings_from_code(content)
         except Exception:
@@ -192,7 +191,7 @@ class DocstringStyleDetector:
 
         return best_style
 
-    def _analyze_multiple_docstrings(self, docstrings: List[str]) -> str:
+    def _analyze_multiple_docstrings(self, docstrings: list[str]) -> str:
         """Analyze multiple docstrings to find predominant style."""
         if not docstrings:
             return self.config.default_style
@@ -226,7 +225,7 @@ class DocstringStyleDetector:
         return winning_style
 
     def _calculate_style_score(
-        self, docstring: str, indicators: Dict[str, List[str]]
+        self, docstring: str, indicators: dict[str, list[str]]
     ) -> float:
         """Calculate how well a docstring matches a style's indicators."""
         score = 0.0
@@ -266,7 +265,7 @@ class DocstringStyleDetector:
 
     def validate_style_consistency(
         self, text: str, expected_style: str
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Validate that text matches the expected style."""
         issues = []
 
@@ -293,7 +292,7 @@ class DocstringStyleDetector:
 
         return len(issues) == 0, issues
 
-    def _validate_google_style(self, text: str) -> List[str]:
+    def _validate_google_style(self, text: str) -> list[str]:
         """Validate Google-style specific formatting."""
         issues = []
         lines = text.split("\n")
@@ -328,7 +327,7 @@ class DocstringStyleDetector:
 
         return issues
 
-    def _validate_numpy_style(self, text: str) -> List[str]:
+    def _validate_numpy_style(self, text: str) -> list[str]:
         """Validate NumPy-style specific formatting."""
         issues = []
         lines = text.split("\n")
@@ -360,7 +359,7 @@ class DocstringStyleDetector:
 
         return issues
 
-    def _validate_sphinx_style(self, text: str) -> List[str]:
+    def _validate_sphinx_style(self, text: str) -> list[str]:
         """Validate Sphinx-style specific formatting."""
         issues = []
 
@@ -386,7 +385,7 @@ class DocstringStyleDetector:
 
         return issues
 
-    def _validate_rest_style(self, text: str) -> List[str]:
+    def _validate_rest_style(self, text: str) -> list[str]:
         """Validate reStructuredText style specific formatting."""
         issues = []
 
@@ -417,7 +416,7 @@ class DocstringStyleDetector:
         indicators = self._style_indicators[style]
         return self._calculate_style_score(text, indicators)
 
-    def get_all_style_scores(self, text: str) -> Dict[str, float]:
+    def get_all_style_scores(self, text: str) -> dict[str, float]:
         """Get confidence scores for all supported styles."""
         scores = {}
         for style in self._style_indicators:
@@ -428,7 +427,7 @@ class DocstringStyleDetector:
         """Clear the detection cache."""
         self._detection_cache.clear()
 
-    def get_style_template(self, style: str) -> Dict[str, str]:
+    def get_style_template(self, style: str) -> dict[str, str]:
         """Get formatting templates for a specific style."""
         templates = {
             "google": {

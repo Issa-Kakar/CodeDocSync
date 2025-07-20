@@ -1,8 +1,9 @@
 """Performance tests for the matcher."""
 
 import time
+
 from codedocsync.matcher import DirectMatcher
-from codedocsync.parser import ParsedFunction, FunctionSignature, RawDocstring
+from codedocsync.parser import FunctionSignature, ParsedFunction, RawDocstring
 
 
 class TestMatcherPerformance:
@@ -78,7 +79,8 @@ class TestMatcherPerformance:
         for i in range(10000):
             func = ParsedFunction(
                 signature=FunctionSignature(
-                    name=f"func_{i}", parameters=[],  # Keep it simple
+                    name=f"func_{i}",
+                    parameters=[],  # Keep it simple
                 ),
                 docstring=(
                     RawDocstring(raw_text=f"Doc {i}", line_number=i + 1)

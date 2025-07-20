@@ -2,9 +2,10 @@
 
 import logging
 from pathlib import Path
-from typing import Optional, Union
+
 from codedocsync.parser import IntegratedParser
 from codedocsync.utils.config import CodeDocSyncConfig
+
 from .direct_matcher import DirectMatcher
 from .models import MatchResult
 
@@ -14,14 +15,14 @@ logger = logging.getLogger(__name__)
 class MatchingFacade:
     """High-level interface for matching operations."""
 
-    def __init__(self, config: Optional[CodeDocSyncConfig] = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None):
         """Initialize with optional configuration."""
         self.config = config or CodeDocSyncConfig()
 
         # Initialize matchers based on config
         self.direct_matcher = DirectMatcher()
 
-    def match_file(self, file_path: Union[str, Path]) -> MatchResult:
+    def match_file(self, file_path: str | Path) -> MatchResult:
         """
         Parse and match functions in a single file.
 
@@ -45,7 +46,7 @@ class MatchingFacade:
 
         return self.direct_matcher.match_functions(functions)
 
-    def match_project(self, project_path: Union[str, Path]) -> MatchResult:
+    def match_project(self, project_path: str | Path) -> MatchResult:
         """
         Parse and match all Python files in a project.
 

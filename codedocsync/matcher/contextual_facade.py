@@ -4,17 +4,16 @@ High-level interface for contextual matching.
 Combines direct and contextual matching for best results.
 """
 
+import fnmatch
 import logging
 import time
 from pathlib import Path
-from typing import List, Optional
-import fnmatch
 
-from .models import MatchResult
-from .contextual_matcher import ContextualMatcher
-from .direct_matcher import DirectMatcher
 from ..parser import IntegratedParser
 from ..utils.config import CodeDocSyncConfig
+from .contextual_matcher import ContextualMatcher
+from .direct_matcher import DirectMatcher
+from .models import MatchResult
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class ContextualMatchingFacade:
     Combines direct and contextual matching for best results.
     """
 
-    def __init__(self, config: Optional[CodeDocSyncConfig] = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None):
         self.config = config or CodeDocSyncConfig()
         self.stats = {
             "total_time": 0.0,
@@ -102,7 +101,7 @@ class ContextualMatchingFacade:
         return final_result
 
     def match_file(
-        self, file_path: str, project_path: Optional[str] = None
+        self, file_path: str, project_path: str | None = None
     ) -> MatchResult:
         """
         Match a single file with optional project context.
@@ -137,7 +136,7 @@ class ContextualMatchingFacade:
         # Enhance with contextual matching
         return contextual_matcher.match_with_context(functions, direct_result)
 
-    def _discover_python_files(self, project_path: Path) -> List[Path]:
+    def _discover_python_files(self, project_path: Path) -> list[Path]:
         """Discover Python files respecting exclusions."""
         # Default exclusions if not specified in config
         exclusions = {

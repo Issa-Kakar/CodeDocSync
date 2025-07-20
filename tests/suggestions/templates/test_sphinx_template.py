@@ -7,13 +7,13 @@ ensuring proper field list formatting and Sphinx-specific features.
 
 import pytest
 
-from codedocsync.suggestions.templates.sphinx_template import SphinxStyleTemplate
-from codedocsync.suggestions.models import DocstringStyle
 from codedocsync.parser.docstring_models import (
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
 )
+from codedocsync.suggestions.models import DocstringStyle
+from codedocsync.suggestions.templates.sphinx_template import SphinxStyleTemplate
 
 
 class TestSphinxStyleTemplate:
@@ -182,7 +182,8 @@ class TestSphinxStyleTemplate:
     def test_render_returns_without_type(self, template):
         """Test rendering returns without type annotation."""
         returns = DocstringReturns(
-            type_annotation=None, description="Some return value",
+            type_annotation=None,
+            description="Some return value",
         )
 
         result = template.render_returns(returns)
@@ -193,7 +194,10 @@ class TestSphinxStyleTemplate:
 
     def test_render_returns_without_description(self, template):
         """Test rendering returns without description."""
-        returns = DocstringReturns(type_annotation="int", description=None,)
+        returns = DocstringReturns(
+            type_annotation="int",
+            description=None,
+        )
 
         result = template.render_returns(returns)
 
@@ -209,7 +213,8 @@ class TestSphinxStyleTemplate:
         """Test rendering single exception."""
         raises = [
             DocstringRaises(
-                exception_type="ValueError", description="If input is invalid",
+                exception_type="ValueError",
+                description="If input is invalid",
             )
         ]
 
@@ -236,7 +241,10 @@ class TestSphinxStyleTemplate:
     def test_render_raises_without_type(self, template):
         """Test rendering raises without exception type."""
         raises = [
-            DocstringRaises(exception_type=None, description="If something goes wrong",)
+            DocstringRaises(
+                exception_type=None,
+                description="If something goes wrong",
+            )
         ]
 
         result = template.render_raises(raises)
@@ -246,7 +254,12 @@ class TestSphinxStyleTemplate:
 
     def test_render_raises_without_description(self, template):
         """Test rendering raises without description."""
-        raises = [DocstringRaises(exception_type="ValueError", description=None,)]
+        raises = [
+            DocstringRaises(
+                exception_type="ValueError",
+                description=None,
+            )
+        ]
 
         result = template.render_raises(raises)
 

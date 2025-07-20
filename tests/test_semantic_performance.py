@@ -9,33 +9,34 @@ This module validates that all architectural performance targets are met:
 - <30s for 1000 functions overall
 """
 
-import pytest
 import asyncio
-import time
-import psutil
-from typing import List
-from unittest.mock import Mock, patch
 import gc
+import time
+from unittest.mock import Mock, patch
+
+import psutil
+import pytest
+
+from codedocsync.matcher.embedding_generator import EmbeddingGenerator
+from codedocsync.matcher.semantic_error_recovery import SemanticErrorRecovery
 
 # Import the semantic matching components
 from codedocsync.matcher.semantic_matcher import SemanticMatcher
-from codedocsync.matcher.embedding_generator import EmbeddingGenerator
-from codedocsync.storage.embedding_cache import EmbeddingCache
+from codedocsync.matcher.semantic_models import FunctionEmbedding
 from codedocsync.matcher.semantic_optimizer import SemanticOptimizer
-from codedocsync.matcher.semantic_error_recovery import SemanticErrorRecovery
-from codedocsync.storage.performance_monitor import PerformanceMonitor
 from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
 
 # Import test utilities
-from codedocsync.parser import ParsedFunction, FunctionSignature, FunctionParameter
-from codedocsync.matcher.semantic_models import FunctionEmbedding
+from codedocsync.parser import FunctionParameter, FunctionSignature, ParsedFunction
+from codedocsync.storage.embedding_cache import EmbeddingCache
+from codedocsync.storage.performance_monitor import PerformanceMonitor
 
 
 class TestSemanticPerformanceValidation:
     """Validate semantic matcher meets all architectural performance requirements."""
 
     @pytest.fixture
-    def mock_functions(self) -> List[ParsedFunction]:
+    def mock_functions(self) -> list[ParsedFunction]:
         """Generate mock functions for performance testing."""
         functions = []
         for i in range(1000):  # Large dataset for performance testing
@@ -74,7 +75,7 @@ class TestSemanticPerformanceValidation:
 
     @pytest.mark.asyncio
     async def test_embedding_generation_performance_target(
-        self, mock_functions: List[ParsedFunction]
+        self, mock_functions: list[ParsedFunction]
     ):
         """Test embedding generation meets <100ms per function target for batched processing."""
         # Mock OpenAI client and embedding response
@@ -123,7 +124,7 @@ class TestSemanticPerformanceValidation:
 
     @pytest.mark.asyncio
     async def test_semantic_search_performance_target(
-        self, mock_functions: List[ParsedFunction]
+        self, mock_functions: list[ParsedFunction]
     ):
         """Test semantic search meets <200ms per function target including embedding generation."""
         # Mock all external dependencies
@@ -379,7 +380,7 @@ class TestSemanticPerformanceValidation:
 
     @pytest.mark.asyncio
     async def test_full_semantic_pipeline_performance(
-        self, mock_functions: List[ParsedFunction]
+        self, mock_functions: list[ParsedFunction]
     ):
         """Test complete semantic matching pipeline meets overall performance targets."""
         # Mock all external dependencies for consistent testing
@@ -470,7 +471,7 @@ class TestSemanticPerformanceValidation:
 
     @pytest.mark.asyncio
     async def test_unified_facade_performance_integration(
-        self, mock_functions: List[ParsedFunction]
+        self, mock_functions: list[ParsedFunction]
     ):
         """Test unified facade meets overall performance targets with semantic matching enabled."""
         # Mock all external dependencies
@@ -520,8 +521,8 @@ class TestSemanticPerformanceValidation:
             mock_contextual.return_value = mock_contextual_instance
 
             # Create temporary test directory structure
-            import tempfile
             import os
+            import tempfile
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Create test Python files

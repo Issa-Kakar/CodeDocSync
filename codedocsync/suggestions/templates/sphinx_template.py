@@ -6,15 +6,14 @@ which uses field lists with colon-prefixed directives.
 """
 
 import re
-from typing import List, Dict, Optional
 
-from .base import DocstringTemplate
-from ..models import DocstringStyle
 from ...parser.docstring_models import (
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
 )
+from ..models import DocstringStyle
+from .base import DocstringTemplate
 
 
 class SphinxStyleTemplate(DocstringTemplate):
@@ -26,7 +25,7 @@ class SphinxStyleTemplate(DocstringTemplate):
         """Initialize Sphinx template."""
         super().__init__(style, max_line_length)
 
-    def render_parameters(self, parameters: List[DocstringParameter]) -> List[str]:
+    def render_parameters(self, parameters: list[DocstringParameter]) -> list[str]:
         """
         Render parameters in Sphinx style.
 
@@ -61,7 +60,7 @@ class SphinxStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def render_returns(self, returns: DocstringReturns) -> List[str]:
+    def render_returns(self, returns: DocstringReturns) -> list[str]:
         """
         Render returns in Sphinx style.
 
@@ -88,7 +87,7 @@ class SphinxStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def render_raises(self, raises: List[DocstringRaises]) -> List[str]:
+    def render_raises(self, raises: list[DocstringRaises]) -> list[str]:
         """
         Render raises in Sphinx style.
 
@@ -115,7 +114,7 @@ class SphinxStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def _wrap_sphinx_field(self, field_line: str, field_prefix: str) -> List[str]:
+    def _wrap_sphinx_field(self, field_line: str, field_prefix: str) -> list[str]:
         """Wrap Sphinx field line with proper continuation indentation."""
         if len(field_line) <= self.max_line_length:
             return [field_line]
@@ -159,7 +158,7 @@ class SphinxStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def _match_parameter_line(self, line: str) -> Optional[str]:
+    def _match_parameter_line(self, line: str) -> str | None:
         """Match Sphinx parameter definition and extract parameter name."""
         # Sphinx format: ":param name:" or ":param name: description"
         match = re.match(r"^:param\s+(\w+):", line.strip())
@@ -168,8 +167,8 @@ class SphinxStyleTemplate(DocstringTemplate):
         return None
 
     def _merge_descriptions(
-        self, new_lines: List[str], descriptions: Dict[str, str]
-    ) -> List[str]:
+        self, new_lines: list[str], descriptions: dict[str, str]
+    ) -> list[str]:
         """Merge preserved descriptions into Sphinx structure."""
         merged_lines = []
         i = 0
@@ -196,7 +195,7 @@ class SphinxStyleTemplate(DocstringTemplate):
 
         return merged_lines
 
-    def _render_examples(self, examples: List[str]) -> List[str]:
+    def _render_examples(self, examples: list[str]) -> list[str]:
         """Render examples section in Sphinx style."""
         if not examples:
             return []
@@ -219,7 +218,7 @@ class SphinxStyleTemplate(DocstringTemplate):
 
         return lines[:-1] if lines else []  # Remove trailing empty line
 
-    def _format_type_annotation(self, type_str: Optional[str]) -> str:
+    def _format_type_annotation(self, type_str: str | None) -> str:
         """Format type annotation for Sphinx style."""
         if not type_str:
             return ""
@@ -266,11 +265,11 @@ class SphinxStyleTemplate(DocstringTemplate):
     def render_complete_docstring(
         self,
         summary: str,
-        description: Optional[str] = None,
-        parameters: Optional[List[DocstringParameter]] = None,
-        returns: Optional[DocstringReturns] = None,
-        raises: Optional[List[DocstringRaises]] = None,
-        examples: Optional[List[str]] = None,
+        description: str | None = None,
+        parameters: list[DocstringParameter] | None = None,
+        returns: DocstringReturns | None = None,
+        raises: list[DocstringRaises] | None = None,
+        examples: list[str] | None = None,
     ) -> str:
         """Render a complete Sphinx-style docstring from components."""
         lines = ['"""']

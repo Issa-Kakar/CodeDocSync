@@ -1,8 +1,7 @@
-from typing import Dict, List, Optional, Set
 import logging
 
-from .contextual_models import FunctionLocation, ModuleInfo
 from ..parser import ParsedFunction
+from .contextual_models import FunctionLocation, ModuleInfo
 
 logger = logging.getLogger(__name__)
 
@@ -11,10 +10,10 @@ class FunctionRegistry:
     """Global registry of all functions in the project."""
 
     def __init__(self):
-        self.functions: Dict[str, FunctionLocation] = {}
+        self.functions: dict[str, FunctionLocation] = {}
         # Secondary indices for efficient lookup
-        self.by_module: Dict[str, Set[str]] = {}
-        self.by_name: Dict[str, Set[str]] = {}
+        self.by_module: dict[str, set[str]] = {}
+        self.by_name: dict[str, set[str]] = {}
 
     def register_function(
         self, function: ParsedFunction, module_info: ModuleInfo
@@ -55,8 +54,8 @@ class FunctionRegistry:
         return canonical_name
 
     def find_function(
-        self, name: str, hint_module: Optional[str] = None
-    ) -> List[FunctionLocation]:
+        self, name: str, hint_module: str | None = None
+    ) -> list[FunctionLocation]:
         """
         Find functions by name, optionally with module hint.
 
@@ -98,7 +97,7 @@ class FunctionRegistry:
 
     def find_moved_function(
         self, old_function: ParsedFunction, old_module: str
-    ) -> Optional[FunctionLocation]:
+    ) -> FunctionLocation | None:
         """
         Find a function that might have moved to a different module.
 
@@ -122,7 +121,7 @@ class FunctionRegistry:
         # This will be implemented in the matcher
         return None
 
-    def get_module_functions(self, module_path: str) -> List[FunctionLocation]:
+    def get_module_functions(self, module_path: str) -> list[FunctionLocation]:
         """Get all functions in a module."""
         canonical_names = self.by_module.get(module_path, set())
         return [self.functions[name] for name in canonical_names]

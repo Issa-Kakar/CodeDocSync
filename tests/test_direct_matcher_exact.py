@@ -2,12 +2,12 @@
 
 from codedocsync.matcher import DirectMatcher, MatchType
 from codedocsync.parser import (
-    ParsedFunction,
-    FunctionSignature,
-    FunctionParameter,
-    RawDocstring,
-    ParsedDocstring,
     DocstringParameter,
+    FunctionParameter,
+    FunctionSignature,
+    ParsedDocstring,
+    ParsedFunction,
+    RawDocstring,
 )
 
 

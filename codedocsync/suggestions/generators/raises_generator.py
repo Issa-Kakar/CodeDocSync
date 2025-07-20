@@ -7,20 +7,19 @@ incorrect exception types, and comprehensive exception analysis.
 
 import ast
 import re
-from typing import List, Optional, Union
 from dataclasses import dataclass
 
+from ...parser.docstring_models import DocstringRaises
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
 from ..templates.base import get_template
-from ...parser.docstring_models import DocstringRaises
 
 
 @dataclass
@@ -29,8 +28,8 @@ class ExceptionInfo:
 
     exception_type: str
     description: str
-    condition: Optional[str] = None
-    line_number: Optional[int] = None
+    condition: str | None = None
+    line_number: int | None = None
     is_re_raised: bool = False
     confidence: float = 1.0
 
@@ -53,7 +52,7 @@ class ExceptionAnalyzer:
             "IOError": "When an I/O operation fails",
         }
 
-    def analyze_exceptions(self, source_code: str) -> List[ExceptionInfo]:
+    def analyze_exceptions(self, source_code: str) -> list[ExceptionInfo]:
         """Find all exceptions that can be raised."""
         exceptions = []
 
@@ -72,7 +71,7 @@ class ExceptionAnalyzer:
 
         return self._deduplicate_exceptions(exceptions)
 
-    def _analyze_ast(self, tree: ast.AST, exceptions: List[ExceptionInfo]) -> None:
+    def _analyze_ast(self, tree: ast.AST, exceptions: list[ExceptionInfo]) -> None:
         """Analyze AST for exception patterns."""
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) or isinstance(
@@ -83,8 +82,8 @@ class ExceptionAnalyzer:
 
     def _analyze_function_node(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        exceptions: List[ExceptionInfo],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        exceptions: list[ExceptionInfo],
     ) -> None:
         """Analyze a function node for exception patterns."""
         for child in ast.walk(node):
@@ -98,7 +97,7 @@ class ExceptionAnalyzer:
                 self._analyze_attribute_access(child, exceptions)
 
     def _analyze_raise_statement(
-        self, node: ast.Raise, exceptions: List[ExceptionInfo]
+        self, node: ast.Raise, exceptions: list[ExceptionInfo]
     ) -> None:
         """Analyze a raise statement."""
         if node.exc is None:
@@ -137,7 +136,7 @@ class ExceptionAnalyzer:
             )
 
     def _analyze_function_call(
-        self, node: ast.Call, exceptions: List[ExceptionInfo]
+        self, node: ast.Call, exceptions: list[ExceptionInfo]
     ) -> None:
         """Analyze function calls that might raise exceptions."""
         func_name = None
@@ -178,7 +177,7 @@ class ExceptionAnalyzer:
                     )
 
     def _analyze_subscript(
-        self, node: ast.Subscript, exceptions: List[ExceptionInfo]
+        self, node: ast.Subscript, exceptions: list[ExceptionInfo]
     ) -> None:
         """Analyze subscript operations that might raise exceptions."""
         # Dictionary/list access can raise KeyError/IndexError
@@ -202,7 +201,7 @@ class ExceptionAnalyzer:
         )
 
     def _analyze_attribute_access(
-        self, node: ast.Attribute, exceptions: List[ExceptionInfo]
+        self, node: ast.Attribute, exceptions: list[ExceptionInfo]
     ) -> None:
         """Analyze attribute access that might raise exceptions."""
         # Attribute access can raise AttributeError
@@ -217,8 +216,8 @@ class ExceptionAnalyzer:
         )
 
     def _deduplicate_exceptions(
-        self, exceptions: List[ExceptionInfo]
-    ) -> List[ExceptionInfo]:
+        self, exceptions: list[ExceptionInfo]
+    ) -> list[ExceptionInfo]:
         """Remove duplicate exceptions and merge similar ones."""
         unique_exceptions = {}
 
@@ -461,7 +460,7 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         )
 
     def _add_exceptions_to_docstring(
-        self, context: SuggestionContext, exceptions: List[ExceptionInfo]
+        self, context: SuggestionContext, exceptions: list[ExceptionInfo]
     ) -> str:
         """Add exception documentation to existing docstring."""
         docstring = context.docstring
@@ -491,7 +490,7 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         )
 
     def _update_raises_in_docstring(
-        self, context: SuggestionContext, raises_list: List[DocstringRaises]
+        self, context: SuggestionContext, raises_list: list[DocstringRaises]
     ) -> str:
         """Update raises documentation in existing docstring."""
         docstring = context.docstring

@@ -3,30 +3,30 @@ Main entry point for the CodeDocSync CLI application.
 """
 
 import json
-import typer
 from pathlib import Path
-from typing import Optional
-from typing_extensions import Annotated
+from typing import Annotated
+
+import typer
 from rich.console import Console
 from rich.table import Table
 
 from codedocsync import __version__
-from codedocsync.parser import IntegratedParser, ParsingError, ParsedDocstring
-from codedocsync.matcher import (
-    MatchingFacade,
-    MatchResult,
-    ContextualMatchingFacade,
-    UnifiedMatchingFacade,
-)
-from codedocsync.utils.config import CodeDocSyncConfig
 from codedocsync.analyzer import (
+    AnalysisCache,
     analyze_matched_pair,
     analyze_multiple_pairs,
-    AnalysisCache,
     get_development_config,
     get_fast_config,
     get_thorough_config,
 )
+from codedocsync.matcher import (
+    ContextualMatchingFacade,
+    MatchingFacade,
+    MatchResult,
+    UnifiedMatchingFacade,
+)
+from codedocsync.parser import IntegratedParser, ParsedDocstring, ParsingError
+from codedocsync.utils.config import CodeDocSyncConfig
 
 app = typer.Typer(
     help="CodeDocSync: An intelligent tool to find and fix documentation drift."
@@ -62,7 +62,10 @@ def _serialize_docstring(docstring):
                 else None
             ),
             "raises": [
-                {"exception_type": r.exception_type, "description": r.description,}
+                {
+                    "exception_type": r.exception_type,
+                    "description": r.description,
+                }
                 for r in docstring.raises
             ],
             "examples": docstring.examples,
@@ -119,7 +122,7 @@ def analyze(
         ),
     ] = 0.9,
     cache_dir: Annotated[
-        Optional[Path], typer.Option("--cache-dir", help="Directory for analysis cache")
+        Path | None, typer.Option("--cache-dir", help="Directory for analysis cache")
     ] = None,
     parallel: Annotated[
         bool, typer.Option("--parallel/--sequential", help="Use parallel analysis")
@@ -128,7 +131,7 @@ def analyze(
         str, typer.Option("--format", "-f", help="Output format (terminal/json)")
     ] = "terminal",
     output_file: Annotated[
-        Optional[Path], typer.Option("--output", "-o", help="Output file path")
+        Path | None, typer.Option("--output", "-o", help="Output file path")
     ] = None,
     config_profile: Annotated[
         str,
@@ -153,7 +156,8 @@ def analyze(
     """
     import asyncio
     import time
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
     # Validate path
     if not path.exists():
@@ -358,7 +362,7 @@ def check(
 def match(
     path: Annotated[Path, typer.Argument(help="File or directory to match")],
     config: Annotated[
-        Optional[Path], typer.Option("--config", "-c", help="Config file")
+        Path | None, typer.Option("--config", "-c", help="Config file")
     ] = None,
     show_unmatched: Annotated[
         bool, typer.Option("--show-unmatched", help="Show unmatched functions")
@@ -586,10 +590,10 @@ def match_contextual(
         str, typer.Option("--format", "-f", help="Output format (terminal/json)")
     ] = "terminal",
     output_file: Annotated[
-        Optional[Path], typer.Option("--output", "-o", help="Output file path")
+        Path | None, typer.Option("--output", "-o", help="Output file path")
     ] = None,
     config: Annotated[
-        Optional[Path], typer.Option("--config", "-c", help="Configuration file path")
+        Path | None, typer.Option("--config", "-c", help="Configuration file path")
     ] = None,
     show_stats: Annotated[
         bool, typer.Option("--stats", help="Show performance statistics")
@@ -706,8 +710,8 @@ def _format_terminal_contextual_result(
     result: MatchResult, show_unmatched: bool
 ) -> str:
     """Format contextual matching result for terminal."""
-    from io import StringIO
     import sys
+    from io import StringIO
 
     # Capture console output
     old_stdout = sys.stdout
@@ -862,8 +866,8 @@ def _format_json_unified_result(result: MatchResult, show_unmatched: bool) -> st
 
 def _format_terminal_unified_result(result: MatchResult, show_unmatched: bool) -> str:
     """Format unified matching result for terminal with enhanced display."""
-    from io import StringIO
     import sys
+    from io import StringIO
 
     # Capture console output
     old_stdout = sys.stdout
@@ -878,8 +882,8 @@ def _format_terminal_unified_result(result: MatchResult, show_unmatched: bool) -
 
 def _format_analysis_results(results, all_issues, total_time, show_summary):
     """Format analysis results for terminal output."""
-    from io import StringIO
     import sys
+    from io import StringIO
 
     # Capture console output
     old_stdout = sys.stdout
@@ -1008,7 +1012,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
         for match_type, count in summary.get("match_types", {}).items():
             if count > 0:
                 percentage = (
-                    f"{count/total_matches*100:.1f}%" if total_matches > 0 else "0%"
+                    f"{count / total_matches * 100:.1f}%" if total_matches > 0 else "0%"
                 )
                 description = match_descriptions.get(match_type, "Unknown strategy")
                 match_table.add_row(
@@ -1041,7 +1045,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
         for phase, time_val in phase_times.items():
             if time_val > 0:
                 percentage = (
-                    f"{time_val/total_time*100:.1f}%" if total_time > 0 else "0%"
+                    f"{time_val / total_time * 100:.1f}%" if total_time > 0 else "0%"
                 )
                 # Determine status based on time
                 if phase == "parsing" and time_val > total_time * 0.5:
@@ -1106,7 +1110,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             )
             system_table.add_row(
                 "Error Rate",
-                f"{errors.get('total_errors', 0)/max(unified_stats.get('functions_processed', 1), 1)*100:.1f}",
+                f"{errors.get('total_errors', 0) / max(unified_stats.get('functions_processed', 1), 1) * 100:.1f}",
                 "%",
             )
 
@@ -1118,7 +1122,9 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             console.print("\n[bold blue][Insights]:[/bold blue]")
 
             if profile.get("bottleneck") != "none":
-                console.print(f"  🚨 Bottleneck: {profile.get('bottleneck', 'unknown')}")
+                console.print(
+                    f"  🚨 Bottleneck: {profile.get('bottleneck', 'unknown')}"
+                )
                 console.print(
                     f"  [TIP] Recommendation: {profile.get('recommendation', 'No specific advice')}"
                 )
@@ -1138,9 +1144,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             confidence_color = (
                 "green"
                 if pair.confidence.overall >= 0.8
-                else "yellow"
-                if pair.confidence.overall >= 0.6
-                else "red"
+                else "yellow" if pair.confidence.overall >= 0.6 else "red"
             )
             match_icon = {
                 "EXACT": "[EXACT]",
@@ -1150,7 +1154,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
             }.get(pair.match_type.value, "📝")
 
             console.print(
-                f"  {i+1:2d}. {match_icon} {pair.function.signature.name} "
+                f"  {i + 1:2d}. {match_icon} {pair.function.signature.name} "
                 f"([{confidence_color}]{pair.confidence.overall:.2f}[/{confidence_color}]) "
                 f"- {pair.match_type.value.lower()} "
                 f"([dim]{pair.function.file_path}:{pair.function.line_number}[/dim])"
@@ -1181,7 +1185,7 @@ def _display_unified_results(result: MatchResult, show_unmatched: bool):
 
         for i, func in enumerate(result.unmatched_functions[:10]):  # Show first 10
             console.print(
-                f"  {i+1:2d}. [WARNING] {func.signature.name} "
+                f"  {i + 1:2d}. [WARNING] {func.signature.name} "
                 f"([dim]{func.file_path}:{func.line_number}[/dim])"
             )
             # Show signature for context
@@ -1204,10 +1208,8 @@ def match_unified(
     output_format: str = typer.Option(
         "terminal", "--format", "-f", help="Output format: terminal or json"
     ),
-    output_file: Optional[Path] = typer.Option(
-        None, "--output", "-o", help="Output file"
-    ),
-    config: Optional[Path] = typer.Option(
+    output_file: Path | None = typer.Option(None, "--output", "-o", help="Output file"),
+    config: Path | None = typer.Option(
         None, "--config", "-c", help="Configuration file"
     ),
     enable_semantic: bool = typer.Option(
@@ -1227,7 +1229,7 @@ def match_unified(
         "--recommendations/--no-recommendations",
         help="Show performance optimization recommendations",
     ),
-    max_functions: Optional[int] = typer.Option(
+    max_functions: int | None = typer.Option(
         None,
         "--max-functions",
         help="Maximum number of functions to process (for testing)",
@@ -1249,10 +1251,11 @@ def match_unified(
     recommendations for production use.
     """
     import asyncio
+
     from rich.progress import (
+        BarColumn,
         Progress,
         SpinnerColumn,
-        BarColumn,
         TextColumn,
         TimeElapsedColumn,
     )
@@ -1422,9 +1425,7 @@ def match_unified(
     match_rate_color = (
         "green"
         if float(summary["match_rate"].strip("%")) >= 80
-        else "yellow"
-        if float(summary["match_rate"].strip("%")) >= 60
-        else "red"
+        else "yellow" if float(summary["match_rate"].strip("%")) >= 60 else "red"
     )
     console.print(
         f"Matched [bold]{summary['matched']}[/bold]/{summary['total_functions']} functions "
@@ -1537,7 +1538,7 @@ def analyze_function(
             )
             console.print("[dim]Analysis will focus on function structure only[/dim]")
             # Create a dummy pair for analysis
-            from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
+            from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
 
             target_pair = MatchedPair(
                 function=target_function,
@@ -1685,8 +1686,9 @@ def clear_cache(
         codedocsync clear-cache --llm-only
         codedocsync clear-cache --older-than-days 30 --yes
     """
-    from codedocsync.analyzer.llm_analyzer import LLMCache
     from pathlib import Path
+
+    from codedocsync.analyzer.llm_analyzer import LLMCache
 
     # Get cache directories
     cache_dir = Path.home() / ".cache" / "codedocsync"

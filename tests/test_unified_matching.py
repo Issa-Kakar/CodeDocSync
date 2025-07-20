@@ -1,18 +1,19 @@
 """Tests for unified matching facade (First Half Implementation)."""
 
-import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
 import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+import pytest
+
 from codedocsync.matcher.models import (
-    MatchResult,
-    MatchedPair,
-    MatchType,
     MatchConfidence,
+    MatchedPair,
+    MatchResult,
+    MatchType,
 )
-from codedocsync.parser import ParsedFunction, FunctionSignature, RawDocstring
+from codedocsync.matcher.unified_facade import UnifiedMatchingFacade
+from codedocsync.parser import FunctionSignature, ParsedFunction, RawDocstring
 from codedocsync.utils.config import CodeDocSyncConfig
 
 
@@ -201,7 +202,9 @@ class TestUnifiedMatchingFacade:
         mock_direct_facade = Mock()
         mock_direct.return_value = mock_direct_facade
         empty_result = MatchResult(
-            total_functions=0, matched_pairs=[], unmatched_functions=[],
+            total_functions=0,
+            matched_pairs=[],
+            unmatched_functions=[],
         )
         mock_direct_facade.match_project.return_value = empty_result
 
@@ -289,7 +292,9 @@ class TestUnifiedMatchingIntegration:
                     mock_direct_facade = Mock()
                     mock_direct.return_value = mock_direct_facade
                     empty_result = MatchResult(
-                        total_functions=0, matched_pairs=[], unmatched_functions=[],
+                        total_functions=0,
+                        matched_pairs=[],
+                        unmatched_functions=[],
                     )
                     mock_direct_facade.match_project.return_value = empty_result
 

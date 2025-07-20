@@ -1,8 +1,8 @@
 """Configuration management for CodeDocSync."""
 
-from pydantic import BaseModel, Field, field_validator
-from typing import List, Dict
 import re
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class MatcherConfig(BaseModel):
@@ -23,7 +23,7 @@ class MatcherConfig(BaseModel):
     )
 
     # Pattern matching
-    custom_patterns: List[Dict[str, str]] = Field(
+    custom_patterns: list[dict[str, str]] = Field(
         default_factory=list,
         description="Custom regex patterns for name transformation",
     )
@@ -71,6 +71,6 @@ class CodeDocSyncConfig(BaseModel):
         """Load configuration from YAML file."""
         import yaml
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f)
         return cls(**data)

@@ -1,9 +1,10 @@
 import asyncio
-import time
 import logging
-from typing import List, Dict, Any, Optional, Callable
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 from ..parser import ParsedFunction
 from .semantic_models import FunctionEmbedding
@@ -43,7 +44,7 @@ class ErrorAnalysis:
     wait_seconds: float = 0.0
     max_retries: int = 3
     message: str = ""
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -74,11 +75,11 @@ class SemanticErrorRecovery:
     async def with_embedding_fallback(
         self,
         primary_func: Callable,
-        fallback_funcs: List[Callable],
+        fallback_funcs: list[Callable],
         function: ParsedFunction,
         *args,
         **kwargs,
-    ) -> Optional[FunctionEmbedding]:
+    ) -> FunctionEmbedding | None:
         """
         Try multiple embedding providers with intelligent fallback.
 
@@ -303,7 +304,7 @@ class SemanticErrorRecovery:
             base_wait = self.base_wait_time
 
         # Exponential backoff with jitter
-        backoff = base_wait * (2 ** attempt)
+        backoff = base_wait * (2**attempt)
 
         # Add some randomness to avoid thundering herd
         import random
@@ -331,7 +332,7 @@ class SemanticErrorRecovery:
             error_recovery=self,
         )
 
-    def get_error_summary(self) -> Dict[str, Any]:
+    def get_error_summary(self) -> dict[str, Any]:
         """Get comprehensive error statistics."""
         total_operations = (
             self.error_stats["recoveries_successful"]
@@ -355,7 +356,7 @@ class SemanticErrorRecovery:
             "most_common_errors": self._get_most_common_errors(),
         }
 
-    def _get_most_common_errors(self) -> List[Dict[str, Any]]:
+    def _get_most_common_errors(self) -> list[dict[str, Any]]:
         """Get the most common error types."""
         errors = [
             {"type": error_type, "count": count}
@@ -489,7 +490,7 @@ class CircuitBreaker:
         self.stats["circuit_closes"] += 1
         logger.info("Circuit breaker manually closed")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics."""
         success_rate = (
             self.stats["successful_requests"] / self.stats["total_requests"]
@@ -525,7 +526,7 @@ class CircuitBreakerOpenError(Exception):
 
 
 async def with_api_fallback(
-    primary_api_call: Callable, fallback_api_calls: List[Callable], *args, **kwargs
+    primary_api_call: Callable, fallback_api_calls: list[Callable], *args, **kwargs
 ) -> Any:
     """Convenience function for API calls with fallback."""
     recovery = SemanticErrorRecovery()

@@ -6,15 +6,16 @@ ensuring proper formatting of Python type annotations for different docstring st
 """
 
 import ast
+
 import pytest
 
+from codedocsync.suggestions.models import DocstringStyle
 from codedocsync.suggestions.type_formatter import (
     TypeAnnotationFormatter,
     TypeComplexity,
-    format_type_for_style,
     extract_type_from_ast,
+    format_type_for_style,
 )
-from codedocsync.suggestions.models import DocstringStyle
 
 
 class TestTypeAnnotationFormatter:

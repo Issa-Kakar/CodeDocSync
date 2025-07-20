@@ -1,16 +1,16 @@
 """Tests for cross-file documentation matching functionality."""
 
+import os
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock
-import tempfile
-import os
 
-from codedocsync.matcher.doc_location_finder import DocLocationFinder
 from codedocsync.matcher.contextual_matcher import ContextualMatcher
+from codedocsync.matcher.doc_location_finder import DocLocationFinder
 from codedocsync.parser import (
-    ParsedFunction,
     FunctionSignature,
     ParsedDocstring,
+    ParsedFunction,
     RawDocstring,
 )
 

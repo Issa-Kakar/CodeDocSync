@@ -6,10 +6,10 @@ fix suggestions, including different suggestion types, diff information,
 and metadata for quality tracking.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
-from enum import Enum
 import difflib
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 
 class SuggestionType(Enum):
@@ -37,8 +37,8 @@ class DocstringStyle(Enum):
 class SuggestionDiff:
     """Represents a diff between original and suggested text."""
 
-    original_lines: List[str]
-    suggested_lines: List[str]
+    original_lines: list[str]
+    suggested_lines: list[str]
     start_line: int
     end_line: int
 
@@ -88,12 +88,12 @@ class SuggestionMetadata:
 
     generator_type: str  # Which generator created this
     generator_version: str = "1.0.0"
-    template_used: Optional[str] = None  # Template name if applicable
-    style_detected: Optional[str] = None  # Detected docstring style
-    rule_triggers: List[str] = field(default_factory=list)  # Rules that triggered
+    template_used: str | None = None  # Template name if applicable
+    style_detected: str | None = None  # Detected docstring style
+    rule_triggers: list[str] = field(default_factory=list)  # Rules that triggered
     llm_used: bool = False  # Whether LLM was involved
     generation_time_ms: float = 0.0  # Time to generate
-    token_usage: Optional[int] = None  # Tokens if LLM used
+    token_usage: int | None = None  # Tokens if LLM used
 
     def __post_init__(self):
         """Validate metadata."""
@@ -113,7 +113,7 @@ class SuggestionContext:
     # Core data from analyzer
     issue: Any  # InconsistencyIssue from analyzer.models
     function: Any  # ParsedFunction from parser
-    docstring: Optional[Any] = None  # ParsedDocstring if available
+    docstring: Any | None = None  # ParsedDocstring if available
 
     # Project context
     project_style: str = "google"  # From configuration
@@ -121,9 +121,9 @@ class SuggestionContext:
     preserve_descriptions: bool = True  # Keep existing descriptions
 
     # Additional context for advanced suggestions
-    surrounding_code: Optional[str] = None  # For context-aware suggestions
-    related_functions: List[Any] = field(default_factory=list)  # Similar functions
-    file_imports: List[str] = field(default_factory=list)  # Available imports
+    surrounding_code: str | None = None  # For context-aware suggestions
+    related_functions: list[Any] = field(default_factory=list)  # Similar functions
+    file_imports: list[str] = field(default_factory=list)  # Available imports
 
     def __post_init__(self):
         """Validate context."""
@@ -164,8 +164,8 @@ class Suggestion:
     )
 
     # Additional context
-    affected_sections: List[str] = field(default_factory=list)  # Which parts changed
-    line_range: Tuple[int, int] = (1, 1)  # Target line range
+    affected_sections: list[str] = field(default_factory=list)  # Which parts changed
+    line_range: tuple[int, int] = (1, 1)  # Target line range
 
     def __post_init__(self):
         """Validate suggestion data."""
@@ -225,7 +225,7 @@ class Suggestion:
         ]
         return sum(factors) / len(factors)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to JSON-serializable dictionary."""
         return {
             "suggestion_type": self.suggestion_type.value,
@@ -262,7 +262,7 @@ class Suggestion:
 class SuggestionBatch:
     """A collection of related suggestions."""
 
-    suggestions: List[Suggestion] = field(default_factory=list)
+    suggestions: list[Suggestion] = field(default_factory=list)
     function_name: str = ""
     file_path: str = ""
     total_generation_time_ms: float = 0.0
@@ -276,12 +276,12 @@ class SuggestionBatch:
             )
 
     @property
-    def high_confidence_suggestions(self) -> List[Suggestion]:
+    def high_confidence_suggestions(self) -> list[Suggestion]:
         """Get all high-confidence suggestions."""
         return [s for s in self.suggestions if s.is_high_confidence]
 
     @property
-    def ready_to_apply_suggestions(self) -> List[Suggestion]:
+    def ready_to_apply_suggestions(self) -> list[Suggestion]:
         """Get suggestions ready for direct application."""
         return [s for s in self.suggestions if s.is_ready_to_apply]
 
@@ -292,19 +292,19 @@ class SuggestionBatch:
             return 0.0
         return sum(s.confidence for s in self.suggestions) / len(self.suggestions)
 
-    def get_best_suggestion(self) -> Optional[Suggestion]:
+    def get_best_suggestion(self) -> Suggestion | None:
         """Get the highest quality suggestion."""
         if not self.suggestions:
             return None
         return max(self.suggestions, key=lambda s: s.get_quality_score())
 
-    def sort_by_quality(self) -> List[Suggestion]:
+    def sort_by_quality(self) -> list[Suggestion]:
         """Get suggestions sorted by quality score (best first)."""
         return sorted(
             self.suggestions, key=lambda s: s.get_quality_score(), reverse=True
         )
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary statistics for this batch."""
         return {
             "total_suggestions": len(self.suggestions),
@@ -339,7 +339,7 @@ class StyleDetectionError(SuggestionError):
 class SuggestionGenerationError(SuggestionError):
     """Failed to generate suggestion."""
 
-    def __init__(self, message: str, partial_result: Optional[str] = None):
+    def __init__(self, message: str, partial_result: str | None = None):
         super().__init__(message)
         self.partial_result = partial_result
 

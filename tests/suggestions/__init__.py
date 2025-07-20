@@ -20,7 +20,12 @@ COVERAGE_TARGETS = {
 
 # Test categories
 TEST_CATEGORIES = {
-    "unit": ["test_models", "test_config", "test_style_detector", "test_base",],
+    "unit": [
+        "test_models",
+        "test_config",
+        "test_style_detector",
+        "test_base",
+    ],
     "integration": [
         # Integration tests will be added in future chunks
     ],

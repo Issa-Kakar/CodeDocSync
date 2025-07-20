@@ -6,15 +6,14 @@ which is one of the most popular Python docstring formats.
 """
 
 import re
-from typing import List, Dict, Optional
 
-from .base import DocstringTemplate
-from ..models import DocstringStyle
 from ...parser.docstring_models import (
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
 )
+from ..models import DocstringStyle
+from .base import DocstringTemplate
 
 
 class GoogleStyleTemplate(DocstringTemplate):
@@ -26,7 +25,7 @@ class GoogleStyleTemplate(DocstringTemplate):
         """Initialize Google template."""
         super().__init__(style, max_line_length)
 
-    def render_parameters(self, parameters: List[DocstringParameter]) -> List[str]:
+    def render_parameters(self, parameters: list[DocstringParameter]) -> list[str]:
         """
         Render parameters in Google style.
 
@@ -53,7 +52,7 @@ class GoogleStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def render_returns(self, returns: DocstringReturns) -> List[str]:
+    def render_returns(self, returns: DocstringReturns) -> list[str]:
         """
         Render return documentation in Google style.
 
@@ -80,7 +79,7 @@ class GoogleStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def render_raises(self, raises: List[DocstringRaises]) -> List[str]:
+    def render_raises(self, raises: list[DocstringRaises]) -> list[str]:
         """
         Render exception documentation in Google style.
 
@@ -125,7 +124,7 @@ class GoogleStyleTemplate(DocstringTemplate):
         else:
             return f"{name}{type_part}:"
 
-    def _wrap_parameter_description(self, description: str) -> List[str]:
+    def _wrap_parameter_description(self, description: str) -> list[str]:
         """Wrap parameter description with proper indentation."""
         if not description:
             return []
@@ -154,7 +153,7 @@ class GoogleStyleTemplate(DocstringTemplate):
 
         return result
 
-    def _match_parameter_line(self, line: str) -> Optional[str]:
+    def _match_parameter_line(self, line: str) -> str | None:
         """Match Google-style parameter line and extract parameter name."""
         # Google style: "    param_name (type): description"
         # or: "    param_name: description"
@@ -164,8 +163,8 @@ class GoogleStyleTemplate(DocstringTemplate):
         return None
 
     def _merge_descriptions(
-        self, new_lines: List[str], descriptions: Dict[str, str]
-    ) -> List[str]:
+        self, new_lines: list[str], descriptions: dict[str, str]
+    ) -> list[str]:
         """Merge preserved descriptions into new Google-style structure."""
         if not descriptions:
             return new_lines
@@ -205,7 +204,7 @@ class GoogleStyleTemplate(DocstringTemplate):
 
         return result
 
-    def _render_examples(self, examples: List[str]) -> List[str]:
+    def _render_examples(self, examples: list[str]) -> list[str]:
         """Render examples section in Google style."""
         if not examples:
             return []
@@ -229,9 +228,9 @@ class GoogleStyleTemplate(DocstringTemplate):
     def render_section_update(
         self,
         section_type: str,
-        content: List[DocstringParameter],
-        existing_docstring: Optional[str] = None,
-    ) -> List[str]:
+        content: list[DocstringParameter],
+        existing_docstring: str | None = None,
+    ) -> list[str]:
         """Render just a specific section for partial updates."""
         if section_type == "parameters":
             return self.render_parameters(content)
@@ -243,8 +242,8 @@ class GoogleStyleTemplate(DocstringTemplate):
             raise ValueError(f"Unsupported section type: {section_type}")
 
     def extract_section_boundaries(
-        self, docstring_lines: List[str]
-    ) -> Dict[str, tuple]:
+        self, docstring_lines: list[str]
+    ) -> dict[str, tuple]:
         """Extract section boundaries for precise section replacement."""
         boundaries = {}
         current_section = None
@@ -290,8 +289,8 @@ class GoogleStyleTemplate(DocstringTemplate):
         return boundaries
 
     def replace_section(
-        self, original_lines: List[str], section_type: str, new_section_lines: List[str]
-    ) -> List[str]:
+        self, original_lines: list[str], section_type: str, new_section_lines: list[str]
+    ) -> list[str]:
         """Replace a specific section in the docstring."""
         boundaries = self.extract_section_boundaries(original_lines)
 
@@ -311,8 +310,8 @@ class GoogleStyleTemplate(DocstringTemplate):
         return result
 
     def _append_new_section(
-        self, original_lines: List[str], section_type: str, new_section_lines: List[str]
-    ) -> List[str]:
+        self, original_lines: list[str], section_type: str, new_section_lines: list[str]
+    ) -> list[str]:
         """Append a new section to the docstring."""
         # Find insertion point (before closing quotes or at end)
         insert_point = len(original_lines)

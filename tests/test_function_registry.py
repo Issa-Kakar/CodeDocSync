@@ -1,6 +1,6 @@
-from codedocsync.matcher.function_registry import FunctionRegistry
 from codedocsync.matcher.contextual_models import ModuleInfo
-from codedocsync.parser import ParsedFunction, FunctionSignature
+from codedocsync.matcher.function_registry import FunctionRegistry
+from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
 class TestFunctionRegistry:

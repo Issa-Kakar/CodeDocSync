@@ -5,12 +5,12 @@ Provides structured JSON output for machine consumption, automation,
 and integration with other tools and systems.
 """
 
-from typing import Dict, List, Any, Optional
 import json
 from datetime import datetime, timezone
+from typing import Any
 
-from ..models import Suggestion, SuggestionBatch, DocstringStyle
 from ..integration import EnhancedAnalysisResult, EnhancedIssue
+from ..models import DocstringStyle, Suggestion, SuggestionBatch
 
 # Version for tracking output format changes
 OUTPUT_FORMAT_VERSION = "1.0.0"
@@ -21,7 +21,7 @@ class JSONSuggestionFormatter:
 
     def __init__(
         self,
-        indent: Optional[int] = 2,
+        indent: int | None = 2,
         include_metadata: bool = True,
         include_timestamps: bool = True,
     ):
@@ -30,7 +30,7 @@ class JSONSuggestionFormatter:
         self.include_metadata = include_metadata
         self.include_timestamps = include_timestamps
 
-    def format_suggestion(self, suggestion: Suggestion) -> Dict[str, Any]:
+    def format_suggestion(self, suggestion: Suggestion) -> dict[str, Any]:
         """Convert suggestion to JSON-serializable format."""
         result = {
             "suggestion_type": suggestion.suggestion_type.value,
@@ -88,7 +88,7 @@ class JSONSuggestionFormatter:
 
         return result
 
-    def format_enhanced_issue(self, issue: EnhancedIssue) -> Dict[str, Any]:
+    def format_enhanced_issue(self, issue: EnhancedIssue) -> dict[str, Any]:
         """Convert enhanced issue to JSON format."""
         result = {
             "issue_type": issue.issue_type,
@@ -114,7 +114,7 @@ class JSONSuggestionFormatter:
 
         return result
 
-    def format_analysis_result(self, result: EnhancedAnalysisResult) -> Dict[str, Any]:
+    def format_analysis_result(self, result: EnhancedAnalysisResult) -> dict[str, Any]:
         """Convert analysis result to JSON format."""
         output = {
             "function": self._format_function_info(result.matched_pair.function),
@@ -171,8 +171,8 @@ class JSONSuggestionFormatter:
         return output
 
     def format_batch_results(
-        self, results: List[EnhancedAnalysisResult]
-    ) -> Dict[str, Any]:
+        self, results: list[EnhancedAnalysisResult]
+    ) -> dict[str, Any]:
         """Format multiple analysis results."""
         output = {
             "results": [self.format_analysis_result(result) for result in results],
@@ -193,7 +193,7 @@ class JSONSuggestionFormatter:
 
         return output
 
-    def format_suggestion_batch(self, batch: SuggestionBatch) -> Dict[str, Any]:
+    def format_suggestion_batch(self, batch: SuggestionBatch) -> dict[str, Any]:
         """Format a suggestion batch."""
         output = {
             "suggestions": [
@@ -237,11 +237,11 @@ class JSONSuggestionFormatter:
 
         return output
 
-    def to_json_string(self, data: Dict[str, Any]) -> str:
+    def to_json_string(self, data: dict[str, Any]) -> str:
         """Convert data to JSON string."""
         return json.dumps(data, indent=self.indent, ensure_ascii=False)
 
-    def _format_function_info(self, function) -> Dict[str, Any]:
+    def _format_function_info(self, function) -> dict[str, Any]:
         """Extract function information for JSON."""
         info = {
             "name": "Unknown",
@@ -274,8 +274,8 @@ class JSONSuggestionFormatter:
         return info
 
     def _create_batch_summary(
-        self, results: List[EnhancedAnalysisResult]
-    ) -> Dict[str, Any]:
+        self, results: list[EnhancedAnalysisResult]
+    ) -> dict[str, Any]:
         """Create summary statistics for batch results."""
         if not results:
             return {
@@ -335,7 +335,7 @@ def analysis_result_to_json(result: EnhancedAnalysisResult, **kwargs) -> str:
     return formatter.to_json_string(data)
 
 
-def batch_results_to_json(results: List[EnhancedAnalysisResult], **kwargs) -> str:
+def batch_results_to_json(results: list[EnhancedAnalysisResult], **kwargs) -> str:
     """Convert batch results to JSON string."""
     formatter = JSONSuggestionFormatter(**kwargs)
     data = formatter.format_batch_results(results)

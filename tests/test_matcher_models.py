@@ -1,8 +1,9 @@
 """Test matcher data models."""
 
 import pytest
-from codedocsync.matcher import MatchType, MatchConfidence, MatchedPair, MatchResult
-from codedocsync.parser import ParsedFunction, FunctionSignature
+
+from codedocsync.matcher import MatchConfidence, MatchedPair, MatchResult, MatchType
+from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
 def test_match_confidence_validation():

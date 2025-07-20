@@ -21,11 +21,11 @@ from codedocsync.analyzer.llm_config import LLMConfig
 from codedocsync.analyzer.llm_models import LLMAnalysisRequest, LLMAnalysisResponse
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.models import (
-    ParsedFunction,
-    FunctionSignature,
-    ParsedDocstring,
     FunctionParameter,
+    FunctionSignature,
     ParameterKind,
+    ParsedDocstring,
+    ParsedFunction,
 )
 
 
@@ -531,8 +531,9 @@ class TestBatchingIntegration:
     @pytest.mark.asyncio
     async def test_batch_memory_efficiency(self, mock_analyzer):
         """Test batching is memory efficient."""
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss

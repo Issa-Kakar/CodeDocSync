@@ -4,21 +4,22 @@ Comprehensive tests for suggestion configuration system.
 Tests configuration classes, validation, loading/saving, and merging logic.
 """
 
-import pytest
 import tempfile
-import yaml
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
+import yaml
 
 from codedocsync.suggestions.config import (
-    SuggestionConfig,
-    RankingConfig,
     ConfigManager,
-    get_minimal_config,
+    RankingConfig,
+    SuggestionConfig,
+    config_manager,
     get_comprehensive_config,
     get_development_config,
     get_documentation_config,
-    config_manager,
+    get_minimal_config,
 )
 
 
@@ -115,7 +116,9 @@ class TestSuggestionConfig:
     def test_config_to_dict(self):
         """Test converting config to dictionary."""
         config = SuggestionConfig(
-            default_style="rest", max_line_length=90, include_examples=True,
+            default_style="rest",
+            max_line_length=90,
+            include_examples=True,
         )
 
         config_dict = config.to_dict()
@@ -177,7 +180,9 @@ class TestSuggestionConfig:
     def test_config_save_to_yaml(self):
         """Test saving config to YAML file."""
         config = SuggestionConfig(
-            default_style="sphinx", max_line_length=120, include_examples=True,
+            default_style="sphinx",
+            max_line_length=120,
+            include_examples=True,
         )
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -188,7 +193,7 @@ class TestSuggestionConfig:
             assert temp_path.exists()
 
             # Load and verify
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 saved_data = yaml.safe_load(f)
 
             assert saved_data["suggestions"]["default_style"] == "sphinx"
@@ -222,7 +227,9 @@ class TestSuggestionConfig:
     def test_config_is_feature_enabled(self):
         """Test feature flag checking."""
         config = SuggestionConfig(
-            include_types=True, include_examples=False, validate_syntax=True,
+            include_types=True,
+            include_examples=False,
+            validate_syntax=True,
         )
 
         assert config.is_feature_enabled("types") is True
@@ -233,7 +240,9 @@ class TestSuggestionConfig:
     def test_config_get_quality_thresholds(self):
         """Test getting quality control thresholds."""
         config = SuggestionConfig(
-            confidence_threshold=0.8, require_actionable=True, validate_syntax=True,
+            confidence_threshold=0.8,
+            require_actionable=True,
+            validate_syntax=True,
         )
 
         thresholds = config.get_quality_thresholds()
@@ -311,16 +320,19 @@ class TestRankingConfig:
         """Test score calculation for suggestions."""
         from codedocsync.suggestions.models import (
             Suggestion,
-            SuggestionType,
             SuggestionDiff,
             SuggestionMetadata,
+            SuggestionType,
         )
 
         config = RankingConfig()
 
         # Create a mock suggestion
         diff = SuggestionDiff(
-            original_lines=["test"], suggested_lines=["test"], start_line=1, end_line=1,
+            original_lines=["test"],
+            suggested_lines=["test"],
+            start_line=1,
+            end_line=1,
         )
 
         metadata = SuggestionMetadata(generator_type="test")
@@ -445,7 +457,9 @@ class TestConfigManager:
         manager = ConfigManager()
 
         base_config = SuggestionConfig(
-            default_style="google", max_line_length=88, confidence_threshold=0.7,
+            default_style="google",
+            max_line_length=88,
+            confidence_threshold=0.7,
         )
 
         override_config = SuggestionConfig(
@@ -550,7 +564,8 @@ class TestConfigIntegration:
             }
 
             config = manager.load_config(
-                config_path=temp_path, user_config=user_overrides,
+                config_path=temp_path,
+                user_config=user_overrides,
             )
 
             # Should have YAML values

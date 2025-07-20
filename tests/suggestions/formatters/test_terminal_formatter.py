@@ -5,22 +5,23 @@ Tests the terminal formatting functionality for suggestions,
 including rich output, plain text, and minimal formatting modes.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
 from codedocsync.suggestions.formatters.terminal_formatter import (
-    TerminalSuggestionFormatter,
-    TerminalFormatterConfig,
     OutputStyle,
+    TerminalFormatterConfig,
+    TerminalSuggestionFormatter,
 )
+from codedocsync.suggestions.integration import EnhancedAnalysisResult, EnhancedIssue
 from codedocsync.suggestions.models import (
+    DocstringStyle,
     Suggestion,
     SuggestionBatch,
-    SuggestionType,
     SuggestionDiff,
-    DocstringStyle,
+    SuggestionType,
 )
-from codedocsync.suggestions.integration import EnhancedIssue, EnhancedAnalysisResult
 
 
 # Test fixtures
@@ -142,7 +143,9 @@ class TestTerminalFormatterConfig:
     def test_custom_config(self):
         """Test custom configuration values."""
         config = TerminalFormatterConfig(
-            max_width=120, show_line_numbers=False, compact_mode=True,
+            max_width=120,
+            show_line_numbers=False,
+            compact_mode=True,
         )
 
         assert config.max_width == 120
@@ -287,7 +290,7 @@ class TestEnhancedIssueFormatting:
         severities = ["critical", "high", "medium", "low"]
         expected_indicators = ["[CRITICAL]", "[HIGH]", "[MEDIUM]", "[LOW]"]
 
-        for severity, expected in zip(severities, expected_indicators):
+        for severity, expected in zip(severities, expected_indicators, strict=False):
             issue = EnhancedIssue(
                 issue_type="test",
                 severity=severity,
@@ -323,7 +326,10 @@ class TestAnalysisResultFormatting:
         mock_pair = Mock()
         mock_pair.function = mock_function
 
-        empty_result = EnhancedAnalysisResult(matched_pair=mock_pair, issues=[],)
+        empty_result = EnhancedAnalysisResult(
+            matched_pair=mock_pair,
+            issues=[],
+        )
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_analysis_result(empty_result)
@@ -440,7 +446,10 @@ class TestUtilityMethods:
         mock_pair = Mock()
         mock_pair.function = mock_function
 
-        empty_result = EnhancedAnalysisResult(matched_pair=mock_pair, issues=[],)
+        empty_result = EnhancedAnalysisResult(
+            matched_pair=mock_pair,
+            issues=[],
+        )
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter._format_no_issues(empty_result)
@@ -523,7 +532,10 @@ class TestEdgeCases:
         mock_pair = Mock()
         mock_pair.function = mock_function
 
-        result = EnhancedAnalysisResult(matched_pair=mock_pair, issues=[],)
+        result = EnhancedAnalysisResult(
+            matched_pair=mock_pair,
+            issues=[],
+        )
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         formatted = formatter.format_analysis_result(result)

@@ -19,17 +19,17 @@ import asyncio
 import json
 import logging
 import sqlite3
+import threading
 import time
 import zlib
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
-from dataclasses import dataclass, asdict
 from contextlib import asynccontextmanager
-import threading
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from queue import Queue
+from typing import Any
 
-from .llm_models import LLMAnalysisResponse
 from ..parser.models import ParsedFunction
+from .llm_models import LLMAnalysisResponse
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class CacheStats:
     cache_size_mb: float
     hit_rate: float
     average_response_time_ms: float
-    most_accessed_keys: List[Tuple[str, int]]
+    most_accessed_keys: list[tuple[str, int]]
     cache_efficiency_score: float
 
 
@@ -188,7 +188,7 @@ class LLMCache:
                     None, conn.execute, index_sql
                 )
 
-    async def get(self, cache_key: str) -> Optional[LLMAnalysisResponse]:
+    async def get(self, cache_key: str) -> LLMAnalysisResponse | None:
         """
         Get cached response with freshness check.
 
@@ -272,7 +272,7 @@ class LLMCache:
         ttl_days: int = 7,
         function_complexity: int = 0,
         file_path: str = "",
-        analysis_types: List[str] = None,
+        analysis_types: list[str] = None,
     ) -> None:
         """
         Cache response with TTL and metadata.
@@ -491,8 +491,8 @@ class LLMCache:
             return 0
 
     async def warm_cache(
-        self, functions: List[ParsedFunction], max_concurrent: int = 5
-    ) -> Dict[str, Any]:
+        self, functions: list[ParsedFunction], max_concurrent: int = 5
+    ) -> dict[str, Any]:
         """
         Pre-populate cache for high-value functions.
 

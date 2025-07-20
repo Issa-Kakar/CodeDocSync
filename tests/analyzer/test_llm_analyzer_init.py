@@ -13,13 +13,14 @@ Test Categories:
 - Configuration validation
 """
 
+import asyncio
 import os
 import sqlite3
 import tempfile
-import pytest
-import asyncio
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from codedocsync.analyzer.llm_analyzer import LLMAnalyzer, TokenBucket
 from codedocsync.analyzer.llm_config import LLMConfig

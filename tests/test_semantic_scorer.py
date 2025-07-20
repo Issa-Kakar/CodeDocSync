@@ -1,12 +1,13 @@
 import pytest
+
+from codedocsync.matcher.models import MatchConfidence
 from codedocsync.matcher.semantic_scorer import SemanticScorer
 from codedocsync.parser import (
-    ParsedFunction,
-    FunctionSignature,
     FunctionParameter,
+    FunctionSignature,
+    ParsedFunction,
     RawDocstring,
 )
-from codedocsync.matcher.models import MatchConfidence
 
 
 class TestSemanticScorer:
@@ -74,7 +75,9 @@ class TestSemanticScorer:
     def test_validate_semantic_match_name_penalty(self, scorer, sample_function):
         """Test that very different names get penalized."""
         is_valid, adjusted_score = scorer.validate_semantic_match(
-            sample_function, "src.utils.xyz_random_name", 0.75,  # Very different name
+            sample_function,
+            "src.utils.xyz_random_name",
+            0.75,  # Very different name
         )
 
         # Should be penalized for name dissimilarity

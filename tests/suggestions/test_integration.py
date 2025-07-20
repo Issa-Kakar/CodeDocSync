@@ -5,20 +5,21 @@ Tests the integration between analyzer results and suggestion generation,
 including enhancement of analysis results and batch processing.
 """
 
-import pytest
 from unittest.mock import Mock
 
-from codedocsync.suggestions.integration import (
-    SuggestionIntegration,
-    SuggestionBatchProcessor,
-    EnhancedIssue,
-    EnhancedAnalysisResult,
-    enhance_with_suggestions,
-    enhance_multiple_with_suggestions,
-)
-from codedocsync.suggestions.config import SuggestionConfig
-from codedocsync.suggestions.models import Suggestion, SuggestionType, DocstringStyle
+import pytest
+
 from codedocsync.analyzer.models import AnalysisResult, InconsistencyIssue
+from codedocsync.suggestions.config import SuggestionConfig
+from codedocsync.suggestions.integration import (
+    EnhancedAnalysisResult,
+    EnhancedIssue,
+    SuggestionBatchProcessor,
+    SuggestionIntegration,
+    enhance_multiple_with_suggestions,
+    enhance_with_suggestions,
+)
+from codedocsync.suggestions.models import DocstringStyle, Suggestion, SuggestionType
 
 
 # Test fixtures
@@ -89,7 +90,9 @@ def mock_suggestion():
 def config():
     """Create a test configuration."""
     return SuggestionConfig(
-        default_style="google", confidence_threshold=0.5, preserve_descriptions=True,
+        default_style="google",
+        confidence_threshold=0.5,
+        preserve_descriptions=True,
     )
 
 
@@ -167,7 +170,10 @@ class TestEnhancedAnalysisResult:
             rich_suggestion=mock_suggestion,
         )
 
-        result = EnhancedAnalysisResult(matched_pair=mock_matched_pair, issues=[issue],)
+        result = EnhancedAnalysisResult(
+            matched_pair=mock_matched_pair,
+            issues=[issue],
+        )
 
         assert result.has_suggestions
         assert len(result.get_suggestions()) == 1

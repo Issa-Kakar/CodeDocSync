@@ -7,14 +7,14 @@ Tests each rule implementation, performance requirements, and edge cases.
 import time
 
 from codedocsync.analyzer.rule_engine import RuleEngine
-from codedocsync.matcher import MatchedPair, MatchConfidence, MatchType
+from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
 from codedocsync.parser import (
-    ParsedFunction,
-    FunctionSignature,
-    FunctionParameter,
-    ParsedDocstring,
     DocstringParameter,
     DocstringReturns,
+    FunctionParameter,
+    FunctionSignature,
+    ParsedDocstring,
+    ParsedFunction,
     RawDocstring,
 )
 

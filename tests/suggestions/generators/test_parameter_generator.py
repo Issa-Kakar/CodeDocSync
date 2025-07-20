@@ -1,25 +1,26 @@
 """Tests for parameter suggestion generator."""
 
-import pytest
 from unittest.mock import Mock, patch
 
-from codedocsync.suggestions.generators import ParameterSuggestionGenerator
-from codedocsync.suggestions.models import (
-    SuggestionContext,
-    SuggestionType,
-    DocstringStyle,
-)
-from codedocsync.suggestions.config import SuggestionConfig
+import pytest
+
 from codedocsync.analyzer.models import InconsistencyIssue
-from codedocsync.parser.docstring_models import (
-    DocstringParameter,
-    ParsedDocstring,
-    DocstringFormat,
-)
 from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
+)
+from codedocsync.parser.docstring_models import (
+    DocstringFormat,
+    DocstringParameter,
+    ParsedDocstring,
+)
+from codedocsync.suggestions.config import SuggestionConfig
+from codedocsync.suggestions.generators import ParameterSuggestionGenerator
+from codedocsync.suggestions.models import (
+    DocstringStyle,
+    SuggestionContext,
+    SuggestionType,
 )
 
 

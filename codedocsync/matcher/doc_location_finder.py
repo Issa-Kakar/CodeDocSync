@@ -1,9 +1,8 @@
 import ast
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
 
-from ..parser import ParsedDocstring, DocstringParser
+from ..parser import DocstringParser, ParsedDocstring
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +12,9 @@ class DocLocationFinder:
 
     def __init__(self):
         self.docstring_parser = DocstringParser()
-        self._cache: Dict[str, Dict[str, ParsedDocstring]] = {}
+        self._cache: dict[str, dict[str, ParsedDocstring]] = {}
 
-    def find_module_docs(self, module_path: str) -> Dict[str, ParsedDocstring]:
+    def find_module_docs(self, module_path: str) -> dict[str, ParsedDocstring]:
         """
         Find all docstrings in a module that might document functions.
 
@@ -28,12 +27,12 @@ class DocLocationFinder:
         docs = {}
 
         try:
-            with open(module_path, "r", encoding="utf-8") as f:
+            with open(module_path, encoding="utf-8") as f:
                 content = f.read()
         except UnicodeDecodeError:
             # Fallback to latin-1 for encoding issues
             try:
-                with open(module_path, "r", encoding="latin-1") as f:
+                with open(module_path, encoding="latin-1") as f:
                     content = f.read()
             except Exception as e:
                 logger.error(f"Failed to read {module_path}: {e}")
@@ -69,7 +68,7 @@ class DocLocationFinder:
             logger.error(f"Failed to find docs in {module_path}: {e}")
             return {}
 
-    def find_package_docs(self, package_path: str) -> Dict[str, ParsedDocstring]:
+    def find_package_docs(self, package_path: str) -> dict[str, ParsedDocstring]:
         """
         Find documentation in package __init__.py files.
 
@@ -83,7 +82,7 @@ class DocLocationFinder:
 
     def _extract_function_docs_from_module(
         self, module_docstring: str
-    ) -> Dict[str, ParsedDocstring]:
+    ) -> dict[str, ParsedDocstring]:
         """
         Extract function documentation from module docstring.
 
@@ -143,7 +142,7 @@ class DocLocationFinder:
 
     def _extract_method_docs_from_class(
         self, class_docstring: str, class_name: str
-    ) -> Dict[str, ParsedDocstring]:
+    ) -> dict[str, ParsedDocstring]:
         """
         Extract method documentation from class docstring.
 
@@ -173,9 +172,9 @@ class DocLocationFinder:
                                 )
                                 if method_parsed:
                                     # Use class.method format for method names
-                                    docs[
-                                        f"{class_name}.{current_method}"
-                                    ] = method_parsed
+                                    docs[f"{class_name}.{current_method}"] = (
+                                        method_parsed
+                                    )
 
                         # Extract method name
                         potential_method = line.split(":")[0].strip()
@@ -203,7 +202,7 @@ class DocLocationFinder:
 
     def find_related_docs(
         self, function_name: str, module_path: str, search_radius: int = 2
-    ) -> List[Tuple[str, ParsedDocstring]]:
+    ) -> list[tuple[str, ParsedDocstring]]:
         """
         Search for documentation in related files.
 
@@ -247,7 +246,7 @@ class DocLocationFinder:
         """Clear the documentation cache."""
         self._cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, int]:
+    def get_cache_stats(self) -> dict[str, int]:
         """Get cache statistics."""
         return {
             "cached_files": len(self._cache),

@@ -1,11 +1,11 @@
 import hashlib
-import time
-from typing import List, Dict, Optional
 import logging
+import time
+
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..parser import ParsedFunction
-from .semantic_models import EmbeddingModel, FunctionEmbedding, EmbeddingConfig
+from .semantic_models import EmbeddingConfig, EmbeddingModel, FunctionEmbedding
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingGenerator:
     """Generates embeddings for functions with fallback support."""
 
-    def __init__(self, config: Optional[EmbeddingConfig] = None):
+    def __init__(self, config: EmbeddingConfig | None = None):
         from ..storage.embedding_config import EmbeddingConfigManager
 
         self.config = config or EmbeddingConfig()
@@ -115,7 +115,7 @@ class EmbeddingGenerator:
     )
     async def generate_embedding(
         self, text: str, model: EmbeddingModel
-    ) -> Optional[List[float]]:
+    ) -> list[float] | None:
         """Generate embedding with retry logic."""
         try:
             if model in [
@@ -133,7 +133,7 @@ class EmbeddingGenerator:
             logger.error(f"Failed to generate embedding with {model}: {e}")
             raise
 
-    async def _generate_openai_embedding(self, text: str, model: str) -> List[float]:
+    async def _generate_openai_embedding(self, text: str, model: str) -> list[float]:
         """Generate embedding using OpenAI."""
         if "openai" not in self.providers:
             raise ValueError("OpenAI provider not initialized")
@@ -151,7 +151,7 @@ class EmbeddingGenerator:
             logger.error(f"OpenAI embedding failed: {e}")
             raise
 
-    def _generate_local_embedding(self, text: str) -> List[float]:
+    def _generate_local_embedding(self, text: str) -> list[float]:
         """Generate embedding using local model."""
         if "local" not in self.providers:
             raise ValueError("Local model not initialized")
@@ -161,8 +161,8 @@ class EmbeddingGenerator:
         return embedding.tolist()
 
     async def generate_function_embeddings(
-        self, functions: List[ParsedFunction], use_cache: bool = True
-    ) -> List[FunctionEmbedding]:
+        self, functions: list[ParsedFunction], use_cache: bool = True
+    ) -> list[FunctionEmbedding]:
         """
         Generate embeddings for multiple functions.
 
@@ -186,8 +186,8 @@ class EmbeddingGenerator:
         return embeddings
 
     async def _process_batch(
-        self, functions: List[ParsedFunction], use_cache: bool
-    ) -> List[FunctionEmbedding]:
+        self, functions: list[ParsedFunction], use_cache: bool
+    ) -> list[FunctionEmbedding]:
         """Process a batch of functions."""
         embeddings = []
 
@@ -240,7 +240,7 @@ class EmbeddingGenerator:
 
         return embeddings
 
-    def get_stats(self) -> Dict[str, float]:
+    def get_stats(self) -> dict[str, float]:
         """Get generation statistics."""
         avg_time = (
             self.stats["total_generation_time"] / self.stats["embeddings_generated"]

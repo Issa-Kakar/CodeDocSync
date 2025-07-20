@@ -1,12 +1,13 @@
 """Tests for Google-style docstring template."""
 
 import pytest
-from codedocsync.suggestions.templates import GoogleStyleTemplate
+
 from codedocsync.parser.docstring_models import (
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
 )
+from codedocsync.suggestions.templates import GoogleStyleTemplate
 
 
 class TestGoogleStyleTemplate:
@@ -268,7 +269,7 @@ class TestTemplateRegistry:
 
     def test_register_and_get_template(self):
         """Test registering and retrieving templates."""
-        from codedocsync.suggestions.templates import template_registry, DocstringStyle
+        from codedocsync.suggestions.templates import DocstringStyle, template_registry
 
         # GoogleStyleTemplate should be registered
         template = template_registry.get_template(DocstringStyle.GOOGLE)
@@ -276,14 +277,14 @@ class TestTemplateRegistry:
 
     def test_available_styles(self):
         """Test getting available template styles."""
-        from codedocsync.suggestions.templates import template_registry, DocstringStyle
+        from codedocsync.suggestions.templates import DocstringStyle, template_registry
 
         styles = template_registry.available_styles()
         assert DocstringStyle.GOOGLE in styles
 
     def test_invalid_style_raises_error(self):
         """Test that invalid style raises error."""
-        from codedocsync.suggestions.templates import template_registry, DocstringStyle
+        from codedocsync.suggestions.templates import DocstringStyle, template_registry
 
         with pytest.raises(ValueError):
             template_registry.get_template(DocstringStyle.NUMPY)  # Not registered yet

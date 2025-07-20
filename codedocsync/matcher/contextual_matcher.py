@@ -1,14 +1,13 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
 
-from .models import MatchResult, MatchedPair, MatchType, MatchConfidence
-from .contextual_models import ContextualMatcherState, ImportStatement, FunctionLocation
-from .module_resolver import ModuleResolver
+from ..parser import IntegratedParser, ParsedDocstring, ParsedFunction, RawDocstring
+from .contextual_models import ContextualMatcherState, FunctionLocation, ImportStatement
+from .doc_location_finder import DocLocationFinder
 from .function_registry import FunctionRegistry
 from .import_parser import ImportParser
-from .doc_location_finder import DocLocationFinder
-from ..parser import ParsedFunction, IntegratedParser, ParsedDocstring, RawDocstring
+from .models import MatchConfidence, MatchedPair, MatchResult, MatchType
+from .module_resolver import ModuleResolver
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class ContextualMatcher:
         }
 
     def analyze_project(
-        self, python_files: Optional[List[str]] = None
+        self, python_files: list[str] | None = None
     ) -> ContextualMatcherState:
         """
         Analyze all Python files to build project context.
@@ -72,8 +71,8 @@ class ContextualMatcher:
 
     def match_with_context(
         self,
-        functions: List[ParsedFunction],
-        direct_match_result: Optional[MatchResult] = None,
+        functions: list[ParsedFunction],
+        direct_match_result: MatchResult | None = None,
     ) -> MatchResult:
         """
         Perform contextual matching on functions.
@@ -147,7 +146,7 @@ class ContextualMatcher:
         except Exception as e:
             logger.error(f"Failed to analyze {file_path}: {e}")
 
-    def _find_contextual_match(self, function: ParsedFunction) -> Optional[MatchedPair]:
+    def _find_contextual_match(self, function: ParsedFunction) -> MatchedPair | None:
         """
         Find a contextual match for a function.
 
@@ -173,9 +172,7 @@ class ContextualMatcher:
 
         return None
 
-    def _match_imported_function(
-        self, function: ParsedFunction
-    ) -> Optional[MatchedPair]:
+    def _match_imported_function(self, function: ParsedFunction) -> MatchedPair | None:
         """Match a function that might be imported from another module."""
         # Get the module containing this function
         module_path = self.module_resolver.resolve_module_path(function.file_path)
@@ -208,7 +205,7 @@ class ContextualMatcher:
 
         return None
 
-    def _match_moved_function(self, function: ParsedFunction) -> Optional[MatchedPair]:
+    def _match_moved_function(self, function: ParsedFunction) -> MatchedPair | None:
         """Match a function that moved to a different file."""
         # Look for functions with same name in other modules
         module_path = self.module_resolver.resolve_module_path(function.file_path)
@@ -227,7 +224,7 @@ class ContextualMatcher:
 
         return None
 
-    def _match_cross_file_docs(self, function: ParsedFunction) -> Optional[MatchedPair]:
+    def _match_cross_file_docs(self, function: ParsedFunction) -> MatchedPair | None:
         """Find documentation in a different file."""
         # Skip if function already has good documentation
         if function.docstring:
@@ -335,7 +332,7 @@ class ContextualMatcher:
             docstring=function.docstring,
         )
 
-    def _discover_python_files(self) -> List[str]:
+    def _discover_python_files(self) -> list[str]:
         """Discover all Python files in the project."""
         python_files = []
 

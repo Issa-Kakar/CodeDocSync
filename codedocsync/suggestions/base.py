@@ -9,13 +9,13 @@ import ast
 import re
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 from .models import (
     Suggestion,
     SuggestionContext,
-    SuggestionMetadata,
     SuggestionError,
+    SuggestionMetadata,
     SuggestionValidationError,
 )
 
@@ -23,12 +23,12 @@ from .models import (
 class BaseSuggestionGenerator(ABC):
     """Base class for all suggestion generators."""
 
-    def __init__(self, config: Optional[Any] = None):
+    def __init__(self, config: Any | None = None):
         """Initialize the generator with configuration."""
         from .config import SuggestionConfig
 
         self.config = config or SuggestionConfig()
-        self._validation_cache: Dict[str, bool] = {}
+        self._validation_cache: dict[str, bool] = {}
 
     @abstractmethod
     def generate(self, context: SuggestionContext) -> Suggestion:
@@ -170,7 +170,7 @@ class BaseSuggestionGenerator(ABC):
             # Unknown style, just check basic structure
             return len(text.strip()) > 0
 
-    def _validate_google_style(self, text: str) -> List[str]:
+    def _validate_google_style(self, text: str) -> list[str]:
         """Validate Google-style docstring format."""
         issues = []
         google_sections = [
@@ -201,7 +201,7 @@ class BaseSuggestionGenerator(ABC):
                                 break
         return issues
 
-    def _validate_numpy_style(self, text: str) -> List[str]:
+    def _validate_numpy_style(self, text: str) -> list[str]:
         """Validate NumPy-style docstring format."""
         issues = []
         numpy_sections = [
@@ -230,7 +230,7 @@ class BaseSuggestionGenerator(ABC):
                         )
         return issues
 
-    def _validate_sphinx_style(self, text: str) -> List[str]:
+    def _validate_sphinx_style(self, text: str) -> list[str]:
         """Validate Sphinx-style docstring format."""
         issues = []
         sphinx_patterns = [
@@ -254,7 +254,7 @@ class BaseSuggestionGenerator(ABC):
 
         return issues
 
-    def _validate_rest_style(self, text: str) -> List[str]:
+    def _validate_rest_style(self, text: str) -> list[str]:
         """Validate reStructuredText style docstring format."""
         issues = []
 
@@ -309,9 +309,9 @@ class BaseSuggestionGenerator(ABC):
     def create_metadata(
         self,
         generator_type: str,
-        template_used: Optional[str] = None,
-        style_detected: Optional[str] = None,
-        rule_triggers: Optional[List[str]] = None,
+        template_used: str | None = None,
+        style_detected: str | None = None,
+        rule_triggers: list[str] | None = None,
     ) -> SuggestionMetadata:
         """Create metadata for a suggestion."""
         return SuggestionMetadata(
@@ -322,7 +322,7 @@ class BaseSuggestionGenerator(ABC):
             llm_used=False,  # Override in subclasses if needed
         )
 
-    def format_docstring_lines(self, content: str, indent: int = 4) -> List[str]:
+    def format_docstring_lines(self, content: str, indent: int = 4) -> list[str]:
         """Format docstring content with proper indentation."""
         lines = content.split("\n")
         formatted = []
@@ -335,7 +335,7 @@ class BaseSuggestionGenerator(ABC):
 
         return formatted
 
-    def wrap_long_lines(self, text: str, max_length: Optional[int] = None) -> str:
+    def wrap_long_lines(self, text: str, max_length: int | None = None) -> str:
         """Wrap long lines to respect max line length."""
         max_length = max_length or self.config.max_line_length
 

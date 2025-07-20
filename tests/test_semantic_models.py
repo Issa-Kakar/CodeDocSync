@@ -1,8 +1,10 @@
-import pytest
 import time
+
+import pytest
+
 from codedocsync.matcher.semantic_models import (
-    EmbeddingModel,
     EmbeddingConfig,
+    EmbeddingModel,
     FunctionEmbedding,
     SemanticMatch,
     SemanticSearchResult,

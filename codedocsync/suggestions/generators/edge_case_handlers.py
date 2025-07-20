@@ -6,20 +6,19 @@ overloaded functions, and other edge cases that require specialized documentatio
 """
 
 import ast
-from typing import List, Optional
 from dataclasses import dataclass
 
+from ...parser.docstring_models import DocstringParameter, DocstringReturns
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
 from ..templates.base import get_template
-from ...parser.docstring_models import DocstringParameter, DocstringReturns
 
 
 @dataclass
@@ -35,7 +34,7 @@ class SpecialConstruct:
 class SpecialConstructAnalyzer:
     """Analyze functions for special Python constructs."""
 
-    def analyze_function(self, function) -> List[SpecialConstruct]:
+    def analyze_function(self, function) -> list[SpecialConstruct]:
         """Analyze function for special constructs that need edge case handling."""
         constructs = []
 
@@ -292,7 +291,7 @@ class PropertyMethodHandler:
             suggestion_type=SuggestionType.FULL_DOCSTRING,
         )
 
-    def _infer_property_type(self, function) -> Optional[str]:
+    def _infer_property_type(self, function) -> str | None:
         """Infer property type from function signature or name."""
         if hasattr(function, "signature") and hasattr(
             function.signature, "return_annotation"

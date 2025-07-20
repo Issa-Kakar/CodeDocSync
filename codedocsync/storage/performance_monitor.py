@@ -1,13 +1,15 @@
-import time
-import threading
-import psutil
-import logging
-from typing import Dict, Any, List, Optional, Callable, ContextManager
-from dataclasses import dataclass, field
-from contextlib import contextmanager
-from collections import defaultdict, deque
 import json
+import logging
+import threading
+import time
+from collections import defaultdict, deque
+from collections.abc import Callable
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, ContextManager
+
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +26,8 @@ class OperationMetrics:
     memory_after: float  # MB
     memory_peak: float  # MB
     success: bool
-    error_message: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def memory_used(self) -> float:
@@ -59,7 +61,7 @@ class PerformanceMonitor:
 
     def __init__(
         self,
-        thresholds: Optional[PerformanceThresholds] = None,
+        thresholds: PerformanceThresholds | None = None,
         history_size: int = 1000,
         enable_real_time_alerts: bool = True,
     ):
@@ -89,10 +91,10 @@ class PerformanceMonitor:
         self._initial_memory = self._get_memory_usage()
 
         # Alert callbacks
-        self._alert_callbacks: List[Callable[[str, Dict[str, Any]], None]] = []
+        self._alert_callbacks: list[Callable[[str, dict[str, Any]], None]] = []
 
     def add_alert_callback(
-        self, callback: Callable[[str, Dict[str, Any]], None]
+        self, callback: Callable[[str, dict[str, Any]], None]
     ) -> None:
         """Add a callback function for performance alerts."""
         self._alert_callbacks.append(callback)
@@ -101,7 +103,7 @@ class PerformanceMonitor:
         """Get current memory usage in MB."""
         return self.process.memory_info().rss / 1024 / 1024
 
-    def _get_system_metrics(self) -> Dict[str, Any]:
+    def _get_system_metrics(self) -> dict[str, Any]:
         """Get current system performance metrics."""
         cpu_percent = psutil.cpu_percent(interval=0.1)
         memory = psutil.virtual_memory()
@@ -117,14 +119,14 @@ class PerformanceMonitor:
             "disk_usage": self._get_disk_usage(),
         }
 
-    def _get_disk_usage(self) -> Dict[str, float]:
+    def _get_disk_usage(self) -> dict[str, float]:
         """Get disk usage for current working directory."""
         try:
             disk = psutil.disk_usage(Path.cwd())
             return {
-                "total_gb": disk.total / (1024 ** 3),
-                "used_gb": disk.used / (1024 ** 3),
-                "free_gb": disk.free / (1024 ** 3),
+                "total_gb": disk.total / (1024**3),
+                "used_gb": disk.used / (1024**3),
+                "free_gb": disk.free / (1024**3),
                 "used_percent": (disk.used / disk.total) * 100,
             }
         except Exception as e:
@@ -133,7 +135,7 @@ class PerformanceMonitor:
 
     @contextmanager
     def track_operation(
-        self, operation_name: str, metadata: Optional[Dict[str, Any]] = None
+        self, operation_name: str, metadata: dict[str, Any] | None = None
     ) -> ContextManager["OperationTracker"]:
         """
         Context manager for tracking an operation.
@@ -160,8 +162,8 @@ class PerformanceMonitor:
         duration: float,
         success: bool,
         memory_used: float = 0.0,
-        error_message: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        error_message: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Record a completed operation manually."""
         current_memory = self._get_memory_usage()
@@ -261,7 +263,7 @@ class PerformanceMonitor:
         for alert in alerts:
             self._send_alert(alert["type"], alert)
 
-    def _send_alert(self, alert_type: str, alert_data: Dict[str, Any]) -> None:
+    def _send_alert(self, alert_type: str, alert_data: dict[str, Any]) -> None:
         """Send alert to registered callbacks."""
         for callback in self._alert_callbacks:
             try:
@@ -269,7 +271,7 @@ class PerformanceMonitor:
             except Exception as e:
                 logger.error(f"Alert callback failed: {e}")
 
-    def get_current_metrics(self) -> Dict[str, Any]:
+    def get_current_metrics(self) -> dict[str, Any]:
         """Get current performance metrics."""
         with self._lock:
             # Calculate derived metrics
@@ -308,8 +310,8 @@ class PerformanceMonitor:
             }
 
     def get_operation_history(
-        self, operation_name: Optional[str] = None, limit: Optional[int] = None
-    ) -> List[OperationMetrics]:
+        self, operation_name: str | None = None, limit: int | None = None
+    ) -> list[OperationMetrics]:
         """Get operation history, optionally filtered by operation name."""
         with self._lock:
             history = list(self._operation_history)
@@ -322,7 +324,7 @@ class PerformanceMonitor:
 
             return history
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Get comprehensive performance report."""
         current_metrics = self.get_current_metrics()
 
@@ -365,7 +367,7 @@ class PerformanceMonitor:
             },
         }
 
-    def _identify_performance_issues(self) -> List[Dict[str, Any]]:
+    def _identify_performance_issues(self) -> list[dict[str, Any]]:
         """Identify current performance issues."""
         issues = []
         metrics = self.get_current_metrics()
@@ -414,10 +416,10 @@ class PerformanceMonitor:
 
     def _generate_recommendations(
         self,
-        current_metrics: Dict[str, Any],
-        trends: Dict[str, Any],
-        issues: List[Dict[str, Any]],
-    ) -> List[str]:
+        current_metrics: dict[str, Any],
+        trends: dict[str, Any],
+        issues: list[dict[str, Any]],
+    ) -> list[str]:
         """Generate performance optimization recommendations."""
         recommendations = []
 
@@ -498,7 +500,7 @@ class OperationTracker:
         monitor: PerformanceMonitor,
         operation_id: str,
         operation_name: str,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ):
         self.monitor = monitor
         self.operation_id = operation_id
@@ -533,7 +535,7 @@ class OperationTracker:
         """Add metadata to the operation."""
         self.metadata[key] = value
 
-    def update_metadata(self, metadata: Dict[str, Any]) -> None:
+    def update_metadata(self, metadata: dict[str, Any]) -> None:
         """Update operation metadata."""
         self.metadata.update(metadata)
 
@@ -568,10 +570,10 @@ class OperationTracker:
 # Convenience functions for common monitoring patterns
 
 
-def create_console_alert_handler() -> Callable[[str, Dict[str, Any]], None]:
+def create_console_alert_handler() -> Callable[[str, dict[str, Any]], None]:
     """Create a console alert handler for debugging."""
 
-    def handle_alert(alert_type: str, alert_data: Dict[str, Any]) -> None:
+    def handle_alert(alert_type: str, alert_data: dict[str, Any]) -> None:
         logger.warning(
             f"PERFORMANCE ALERT [{alert_type}]: {alert_data.get('message', 'Unknown alert')}"
         )
@@ -579,10 +581,10 @@ def create_console_alert_handler() -> Callable[[str, Dict[str, Any]], None]:
     return handle_alert
 
 
-def create_file_alert_handler(file_path: str) -> Callable[[str, Dict[str, Any]], None]:
+def create_file_alert_handler(file_path: str) -> Callable[[str, dict[str, Any]], None]:
     """Create a file-based alert handler."""
 
-    def handle_alert(alert_type: str, alert_data: Dict[str, Any]) -> None:
+    def handle_alert(alert_type: str, alert_data: dict[str, Any]) -> None:
         alert_record = {
             "timestamp": time.time(),
             "alert_type": alert_type,

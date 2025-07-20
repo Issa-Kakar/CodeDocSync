@@ -5,12 +5,12 @@ Provides intelligent ranking and filtering of suggestions based on
 multiple criteria including severity, confidence, impact, and user preferences.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Callable
-from enum import Enum
 import logging
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from enum import Enum
 
-from .integration import EnhancedIssue, EnhancedAnalysisResult
+from .integration import EnhancedAnalysisResult, EnhancedIssue
 from .models import Suggestion
 
 logger = logging.getLogger(__name__)
@@ -43,11 +43,11 @@ class RankingConfig:
 
     strategy: RankingStrategy = RankingStrategy.BALANCED
     min_confidence: float = 0.5
-    max_suggestions_per_function: Optional[int] = None
-    max_total_suggestions: Optional[int] = None
+    max_suggestions_per_function: int | None = None
+    max_total_suggestions: int | None = None
 
     # Severity weights (higher = more important)
-    severity_weights: Dict[str, float] = field(
+    severity_weights: dict[str, float] = field(
         default_factory=lambda: {
             "critical": 10.0,
             "high": 7.0,
@@ -57,7 +57,7 @@ class RankingConfig:
     )
 
     # Issue type priorities (higher = more important)
-    issue_type_priorities: Dict[str, float] = field(
+    issue_type_priorities: dict[str, float] = field(
         default_factory=lambda: {
             "parameter_name_mismatch": 10.0,
             "parameter_missing": 9.0,
@@ -71,9 +71,9 @@ class RankingConfig:
     )
 
     # Filters
-    allowed_severities: Optional[List[str]] = None  # If None, allow all
-    allowed_issue_types: Optional[List[str]] = None  # If None, allow all
-    excluded_issue_types: Optional[List[str]] = None  # Types to exclude
+    allowed_severities: list[str] | None = None  # If None, allow all
+    allowed_issue_types: list[str] | None = None  # If None, allow all
+    excluded_issue_types: list[str] | None = None  # Types to exclude
     copy_paste_ready_only: bool = False
 
     # Advanced options
@@ -109,11 +109,11 @@ class RankingMetrics:
 class SuggestionRanker:
     """Rank and filter suggestions by quality and importance."""
 
-    def __init__(self, config: Optional[RankingConfig] = None):
+    def __init__(self, config: RankingConfig | None = None):
         """Initialize ranker with configuration."""
         self.config = config or RankingConfig()
 
-    def rank_suggestions(self, issues: List[EnhancedIssue]) -> List[EnhancedIssue]:
+    def rank_suggestions(self, issues: list[EnhancedIssue]) -> list[EnhancedIssue]:
         """Rank suggestions by importance and confidence."""
         if not issues:
             return []
@@ -141,8 +141,8 @@ class SuggestionRanker:
         return ranked_issues
 
     def rank_analysis_results(
-        self, results: List[EnhancedAnalysisResult]
-    ) -> List[EnhancedAnalysisResult]:
+        self, results: list[EnhancedAnalysisResult]
+    ) -> list[EnhancedAnalysisResult]:
         """Rank analysis results and their internal suggestions."""
         enhanced_results = []
 
@@ -261,7 +261,7 @@ class SuggestionRanker:
 
         return metrics
 
-    def _apply_filters(self, issues: List[EnhancedIssue]) -> List[EnhancedIssue]:
+    def _apply_filters(self, issues: list[EnhancedIssue]) -> list[EnhancedIssue]:
         """Apply filtering criteria to issues."""
         filtered = []
 
@@ -302,7 +302,7 @@ class SuggestionRanker:
 
         return filtered
 
-    def _apply_limits(self, issues: List[EnhancedIssue]) -> List[EnhancedIssue]:
+    def _apply_limits(self, issues: list[EnhancedIssue]) -> list[EnhancedIssue]:
         """Apply suggestion limits."""
         if (
             self.config.max_total_suggestions
@@ -318,34 +318,34 @@ class SuggestionFilter:
 
     @staticmethod
     def by_confidence(
-        issues: List[EnhancedIssue], min_confidence: float
-    ) -> List[EnhancedIssue]:
+        issues: list[EnhancedIssue], min_confidence: float
+    ) -> list[EnhancedIssue]:
         """Filter by minimum confidence."""
         return [issue for issue in issues if issue.confidence >= min_confidence]
 
     @staticmethod
     def by_severity(
-        issues: List[EnhancedIssue], severities: List[str]
-    ) -> List[EnhancedIssue]:
+        issues: list[EnhancedIssue], severities: list[str]
+    ) -> list[EnhancedIssue]:
         """Filter by severity levels."""
         return [issue for issue in issues if issue.severity in severities]
 
     @staticmethod
     def by_issue_type(
-        issues: List[EnhancedIssue], issue_types: List[str]
-    ) -> List[EnhancedIssue]:
+        issues: list[EnhancedIssue], issue_types: list[str]
+    ) -> list[EnhancedIssue]:
         """Filter by issue types."""
         return [issue for issue in issues if issue.issue_type in issue_types]
 
     @staticmethod
     def exclude_issue_types(
-        issues: List[EnhancedIssue], exclude_types: List[str]
-    ) -> List[EnhancedIssue]:
+        issues: list[EnhancedIssue], exclude_types: list[str]
+    ) -> list[EnhancedIssue]:
         """Exclude specific issue types."""
         return [issue for issue in issues if issue.issue_type not in exclude_types]
 
     @staticmethod
-    def copy_paste_ready_only(issues: List[EnhancedIssue]) -> List[EnhancedIssue]:
+    def copy_paste_ready_only(issues: list[EnhancedIssue]) -> list[EnhancedIssue]:
         """Filter to only copy-paste ready suggestions."""
         return [
             issue
@@ -354,7 +354,7 @@ class SuggestionFilter:
         ]
 
     @staticmethod
-    def top_n(issues: List[EnhancedIssue], n: int) -> List[EnhancedIssue]:
+    def top_n(issues: list[EnhancedIssue], n: int) -> list[EnhancedIssue]:
         """Get top N issues by ranking score."""
         sorted_issues = sorted(issues, key=lambda x: x.ranking_score or 0, reverse=True)
         return sorted_issues[:n]
@@ -365,7 +365,7 @@ class PriorityBooster:
 
     def __init__(self):
         """Initialize priority booster."""
-        self.boost_rules: List[Callable[[EnhancedIssue], float]] = []
+        self.boost_rules: list[Callable[[EnhancedIssue], float]] = []
         self._setup_default_rules()
 
     def _setup_default_rules(self):
@@ -390,7 +390,11 @@ class PriorityBooster:
             return 0.0
 
         self.boost_rules.extend(
-            [boost_critical_parameters, boost_public_functions, boost_frequently_used,]
+            [
+                boost_critical_parameters,
+                boost_public_functions,
+                boost_frequently_used,
+            ]
         )
 
     def add_boost_rule(self, rule: Callable[[EnhancedIssue], float]):
@@ -423,11 +427,17 @@ def create_strict_ranker() -> SuggestionRanker:
 
 def create_permissive_ranker() -> SuggestionRanker:
     """Create ranker with permissive filtering."""
-    config = RankingConfig(min_confidence=0.3, copy_paste_ready_only=False,)
+    config = RankingConfig(
+        min_confidence=0.3,
+        copy_paste_ready_only=False,
+    )
     return SuggestionRanker(config)
 
 
 def create_balanced_ranker() -> SuggestionRanker:
     """Create ranker with balanced settings."""
-    config = RankingConfig(strategy=RankingStrategy.BALANCED, min_confidence=0.6,)
+    config = RankingConfig(
+        strategy=RankingStrategy.BALANCED,
+        min_confidence=0.6,
+    )
     return SuggestionRanker(config)

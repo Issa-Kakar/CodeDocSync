@@ -1,6 +1,5 @@
-import re
-from typing import Tuple, Optional
 import logging
+import re
 
 from ..parser import ParsedFunction
 from .models import MatchConfidence
@@ -29,7 +28,7 @@ class SemanticScorer:
         source_function: ParsedFunction,
         candidate_function_id: str,
         raw_similarity: float,
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         """
         Validate and adjust semantic match score.
 
@@ -98,7 +97,7 @@ class SemanticScorer:
         self,
         similarity_score: float,
         source_function: ParsedFunction,
-        validation_context: Optional[dict] = None,
+        validation_context: dict | None = None,
     ) -> MatchConfidence:
         """
         Calculate confidence scores for semantic match.
@@ -261,7 +260,7 @@ class SemanticScorer:
 
         # Find common prefix
         common_prefix_len = 0
-        for i, (p1, p2) in enumerate(zip(parts1, parts2)):
+        for i, (p1, p2) in enumerate(zip(parts1, parts2, strict=False)):
             if p1 == p2:
                 common_prefix_len = i + 1
             else:
@@ -276,7 +275,7 @@ class SemanticScorer:
         self,
         source_function: ParsedFunction,
         similarity_score: float,
-        additional_context: Optional[dict] = None,
+        additional_context: dict | None = None,
     ) -> dict:
         """
         Assess overall match quality with detailed breakdown.

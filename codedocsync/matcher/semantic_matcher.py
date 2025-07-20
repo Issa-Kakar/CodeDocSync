@@ -1,14 +1,14 @@
-import time
 import logging
-from typing import List, Optional, Dict, Any
+import time
+from typing import Any
 
 from ..parser import ParsedFunction
-from ..storage.vector_store import VectorStore
 from ..storage.embedding_cache import EmbeddingCache
-from .semantic_models import EmbeddingConfig, FunctionEmbedding
+from ..storage.vector_store import VectorStore
 from .embedding_generator import EmbeddingGenerator
+from .models import MatchedPair, MatchResult, MatchType
+from .semantic_models import EmbeddingConfig, FunctionEmbedding
 from .semantic_scorer import SemanticScorer
-from .models import MatchResult, MatchedPair, MatchType
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class SemanticMatcher:
     Only handles ~2% of cases but critical for major refactorings.
     """
 
-    def __init__(self, project_root: str, config: Optional[EmbeddingConfig] = None):
+    def __init__(self, project_root: str, config: EmbeddingConfig | None = None):
         self.project_root = project_root
         self.config = config or EmbeddingConfig()
 
@@ -42,7 +42,7 @@ class SemanticMatcher:
         }
 
     async def prepare_semantic_index(
-        self, all_functions: List[ParsedFunction], force_reindex: bool = False
+        self, all_functions: list[ParsedFunction], force_reindex: bool = False
     ) -> None:
         """
         Prepare the semantic search index with all functions.
@@ -84,8 +84,10 @@ class SemanticMatcher:
         # Generate missing embeddings
         new_embeddings = []
         if embeddings_needed:
-            new_embeddings = await self.embedding_generator.generate_function_embeddings(
-                embeddings_needed, use_cache=True
+            new_embeddings = (
+                await self.embedding_generator.generate_function_embeddings(
+                    embeddings_needed, use_cache=True
+                )
             )
 
             # Cache the new embeddings
@@ -123,8 +125,8 @@ class SemanticMatcher:
 
     async def match_with_embeddings(
         self,
-        functions: List[ParsedFunction],
-        previous_results: Optional[List[MatchResult]] = None,
+        functions: list[ParsedFunction],
+        previous_results: list[MatchResult] | None = None,
     ) -> MatchResult:
         """
         Perform semantic matching on functions.
@@ -183,7 +185,7 @@ class SemanticMatcher:
 
     async def _find_semantic_match(
         self, function: ParsedFunction
-    ) -> Optional[MatchedPair]:
+    ) -> MatchedPair | None:
         """Find semantic match for a single function."""
         try:
             # Generate embedding for query function
@@ -199,8 +201,10 @@ class SemanticMatcher:
                 query_embedding = cached_embedding.embedding
             else:
                 # Generate new embedding
-                embeddings = await self.embedding_generator.generate_function_embeddings(
-                    [function], use_cache=True
+                embeddings = (
+                    await self.embedding_generator.generate_function_embeddings(
+                        [function], use_cache=True
+                    )
                 )
                 if not embeddings:
                     logger.warning(
@@ -263,7 +267,7 @@ class SemanticMatcher:
         source_function: ParsedFunction,
         matched_function_id: str,
         similarity_score: float,
-        metadata: Dict[str, str],
+        metadata: dict[str, str],
     ) -> MatchedPair:
         """Create a MatchedPair for semantic match."""
         # In a real implementation, we'd load the matched function
@@ -281,7 +285,7 @@ class SemanticMatcher:
             match_reason=f"Semantic similarity match with {matched_function_id} (score: {similarity_score:.2f})",
         )
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get matcher statistics."""
         avg_time = self.stats["total_time"] / max(self.stats["functions_processed"], 1)
 
@@ -331,7 +335,7 @@ class SemanticMatcher:
 
     def get_embedding_for_function(
         self, function: ParsedFunction
-    ) -> Optional[FunctionEmbedding]:
+    ) -> FunctionEmbedding | None:
         """
         Get cached embedding for a specific function.
 

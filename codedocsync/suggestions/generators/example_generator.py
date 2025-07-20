@@ -7,20 +7,21 @@ based on their signatures, behavior, and common usage patterns.
 
 import ast
 import re
-from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
+from ...parser.ast_parser import FunctionParameter
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
 from ..templates.base import get_template
-from ...parser.ast_parser import FunctionParameter
+
 # DocstringExample not needed - examples are stored as strings
 
 
@@ -28,10 +29,10 @@ from ...parser.ast_parser import FunctionParameter
 class ExampleTemplate:
     """Template for generating examples."""
 
-    setup_code: List[str]
+    setup_code: list[str]
     function_call: str
     expected_output: str
-    imports: List[str]
+    imports: list[str]
     description: str
     complexity: str  # 'basic', 'intermediate', 'advanced'
 
@@ -126,7 +127,7 @@ class ParameterValueGenerator:
 class ExamplePatternAnalyzer:
     """Analyze function patterns to generate appropriate examples."""
 
-    def analyze_function(self, function, source_code: str = "") -> Dict[str, Any]:
+    def analyze_function(self, function, source_code: str = "") -> dict[str, Any]:
         """Analyze function to determine example characteristics."""
         analysis = {
             "is_property": False,
@@ -165,7 +166,7 @@ class ExamplePatternAnalyzer:
 
         return analysis
 
-    def _analyze_ast(self, tree: ast.AST, analysis: Dict[str, Any]) -> None:
+    def _analyze_ast(self, tree: ast.AST, analysis: dict[str, Any]) -> None:
         """Analyze AST for function characteristics."""
         for node in ast.walk(tree):
             if isinstance(node, ast.AsyncFunctionDef):
@@ -175,7 +176,7 @@ class ExamplePatternAnalyzer:
             elif isinstance(node, ast.Call):
                 self._analyze_function_call(node, analysis)
 
-    def _analyze_function_call(self, node: ast.Call, analysis: Dict[str, Any]) -> None:
+    def _analyze_function_call(self, node: ast.Call, analysis: dict[str, Any]) -> None:
         """Analyze function calls for side effects and domain."""
         func_name = ""
         if isinstance(node.func, ast.Name):
@@ -220,7 +221,7 @@ class ExampleGenerator:
 
     def generate_examples(
         self, function, source_code: str = "", count: int = 1
-    ) -> List[ExampleTemplate]:
+    ) -> list[ExampleTemplate]:
         """Generate usage examples for a function."""
         analysis = self.pattern_analyzer.analyze_function(function, source_code)
         examples = []
@@ -246,8 +247,8 @@ class ExampleGenerator:
         return examples[:count]
 
     def _generate_basic_example(
-        self, function, analysis: Dict[str, Any]
-    ) -> Optional[ExampleTemplate]:
+        self, function, analysis: dict[str, Any]
+    ) -> ExampleTemplate | None:
         """Generate a basic usage example."""
         if not hasattr(function, "signature"):
             return None
@@ -313,8 +314,8 @@ class ExampleGenerator:
         )
 
     def _generate_edge_case_example(
-        self, function, analysis: Dict[str, Any]
-    ) -> Optional[ExampleTemplate]:
+        self, function, analysis: dict[str, Any]
+    ) -> ExampleTemplate | None:
         """Generate an edge case example."""
         if not hasattr(function, "signature"):
             return None
@@ -352,8 +353,8 @@ class ExampleGenerator:
         )
 
     def _generate_advanced_example(
-        self, function, analysis: Dict[str, Any]
-    ) -> Optional[ExampleTemplate]:
+        self, function, analysis: dict[str, Any]
+    ) -> ExampleTemplate | None:
         """Generate an advanced usage example."""
         if not hasattr(function, "signature"):
             return None
@@ -441,7 +442,7 @@ class ExampleGenerator:
         # Use default complex values
         return self.value_generator.generate_value(param)
 
-    def _generate_expected_output(self, analysis: Dict[str, Any]) -> str:
+    def _generate_expected_output(self, analysis: dict[str, Any]) -> str:
         """Generate expected output description."""
         if analysis["return_type"]:
             return_type = analysis["return_type"].lower()
@@ -563,7 +564,7 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         return "\n".join(code_lines)
 
     def _add_examples_to_docstring(
-        self, context: SuggestionContext, examples: List[str]
+        self, context: SuggestionContext, examples: list[str]
     ) -> str:
         """Add examples to existing docstring."""
         docstring = context.docstring

@@ -1,13 +1,14 @@
 """Tests for smart docstring merging functionality."""
 
 import pytest
+
+from codedocsync.parser.docstring_models import DocstringParameter
 from codedocsync.suggestions.merging import (
     DocstringMerger,
-    SectionType,
     SectionBoundary,
+    SectionType,
 )
 from codedocsync.suggestions.models import DocstringStyle
-from codedocsync.parser.docstring_models import DocstringParameter
 
 
 class TestDocstringMerger:

@@ -1,12 +1,13 @@
 """Tests for the integrated parser combining AST and docstring parsing."""
 
-import pytest
-import tempfile
 import os
+import tempfile
 
-from codedocsync.parser.integrated_parser import IntegratedParser
-from codedocsync.parser.docstring_models import ParsedDocstring, DocstringFormat
+import pytest
+
 from codedocsync.parser.ast_parser import RawDocstring
+from codedocsync.parser.docstring_models import DocstringFormat, ParsedDocstring
+from codedocsync.parser.integrated_parser import IntegratedParser
 
 
 class TestIntegratedParser:

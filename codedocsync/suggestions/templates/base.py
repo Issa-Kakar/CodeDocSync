@@ -8,15 +8,14 @@ the interface for rendering different sections and merging with existing content
 import re
 import textwrap
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
 
-from ..models import DocstringStyle
 from ...parser.docstring_models import (
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
     ParsedDocstring,
 )
+from ..models import DocstringStyle
 
 
 class DocstringTemplate(ABC):
@@ -29,28 +28,28 @@ class DocstringTemplate(ABC):
         self.indent_size = 4
 
     @abstractmethod
-    def render_parameters(self, parameters: List[DocstringParameter]) -> List[str]:
+    def render_parameters(self, parameters: list[DocstringParameter]) -> list[str]:
         """Render parameter documentation."""
         pass
 
     @abstractmethod
-    def render_returns(self, returns: DocstringReturns) -> List[str]:
+    def render_returns(self, returns: DocstringReturns) -> list[str]:
         """Render return documentation."""
         pass
 
     @abstractmethod
-    def render_raises(self, raises: List[DocstringRaises]) -> List[str]:
+    def render_raises(self, raises: list[DocstringRaises]) -> list[str]:
         """Render exception documentation."""
         pass
 
     def render_complete_docstring(
         self,
         summary: str,
-        description: Optional[str] = None,
-        parameters: Optional[List[DocstringParameter]] = None,
-        returns: Optional[DocstringReturns] = None,
-        raises: Optional[List[DocstringRaises]] = None,
-        examples: Optional[List[str]] = None,
+        description: str | None = None,
+        parameters: list[DocstringParameter] | None = None,
+        returns: DocstringReturns | None = None,
+        raises: list[DocstringRaises] | None = None,
+        examples: list[str] | None = None,
     ) -> str:
         """Render a complete docstring from components."""
         lines = ['"""']
@@ -99,10 +98,10 @@ class DocstringTemplate(ABC):
 
     def merge_with_existing(
         self,
-        new_content: List[str],
-        existing: List[str],
+        new_content: list[str],
+        existing: list[str],
         preserve_descriptions: bool = True,
-    ) -> List[str]:
+    ) -> list[str]:
         """Intelligently merge new content with existing."""
         if not existing or not preserve_descriptions:
             return new_content
@@ -113,7 +112,7 @@ class DocstringTemplate(ABC):
         # Merge descriptions with new structure
         return self._merge_descriptions(new_content, existing_descriptions)
 
-    def _wrap_text(self, text: str, subsequent_indent: str = "") -> List[str]:
+    def _wrap_text(self, text: str, subsequent_indent: str = "") -> list[str]:
         """Wrap text to max line length."""
         if not text:
             return []
@@ -132,7 +131,7 @@ class DocstringTemplate(ABC):
 
         return wrapped.split("\n")
 
-    def _format_type_annotation(self, type_str: Optional[str]) -> str:
+    def _format_type_annotation(self, type_str: str | None) -> str:
         """Format type annotation for docstring style."""
         if not type_str:
             return ""
@@ -154,7 +153,7 @@ class DocstringTemplate(ABC):
 
         return type_str
 
-    def _extract_descriptions(self, lines: List[str]) -> Dict[str, str]:
+    def _extract_descriptions(self, lines: list[str]) -> dict[str, str]:
         """Extract existing descriptions from docstring lines."""
         descriptions = {}
         current_param = None
@@ -186,19 +185,19 @@ class DocstringTemplate(ABC):
 
         return descriptions
 
-    def _match_parameter_line(self, line: str) -> Optional[str]:
+    def _match_parameter_line(self, line: str) -> str | None:
         """Match parameter definition line and extract parameter name."""
         # This is style-specific and should be overridden
         return None
 
     def _merge_descriptions(
-        self, new_lines: List[str], descriptions: Dict[str, str]
-    ) -> List[str]:
+        self, new_lines: list[str], descriptions: dict[str, str]
+    ) -> list[str]:
         """Merge preserved descriptions into new structure."""
         # This is style-specific and should be overridden
         return new_lines
 
-    def _render_examples(self, examples: List[str]) -> List[str]:
+    def _render_examples(self, examples: list[str]) -> list[str]:
         """Render examples section (style-specific)."""
         if not examples:
             return []
@@ -217,7 +216,7 @@ class DocstringTemplate(ABC):
         """Calculate indentation level of a line."""
         return len(line) - len(line.lstrip())
 
-    def _add_indent(self, lines: List[str], indent: int) -> List[str]:
+    def _add_indent(self, lines: list[str], indent: int) -> list[str]:
         """Add indentation to lines."""
         indent_str = " " * indent
         return [f"{indent_str}{line}" if line.strip() else line for line in lines]
@@ -228,7 +227,7 @@ class TemplateRegistry:
 
     def __init__(self):
         """Initialize empty registry."""
-        self._templates: Dict[DocstringStyle, type] = {}
+        self._templates: dict[DocstringStyle, type] = {}
 
     def register(self, style: DocstringStyle, template_class: type):
         """Register a template class for a style."""
@@ -245,7 +244,7 @@ class TemplateRegistry:
         template_class = self._templates[style]
         return template_class(style, **kwargs)
 
-    def available_styles(self) -> List[DocstringStyle]:
+    def available_styles(self) -> list[DocstringStyle]:
         """Get list of available styles."""
         return list(self._templates.keys())
 
@@ -264,10 +263,10 @@ class TemplateMerger:
 
     @staticmethod
     def merge_sections(
-        original_docstring: Optional[ParsedDocstring],
-        new_sections: Dict[str, List[str]],
+        original_docstring: ParsedDocstring | None,
+        new_sections: dict[str, list[str]],
         preserve_original: bool = True,
-    ) -> List[str]:
+    ) -> list[str]:
         """Merge new sections with original docstring content."""
         if not original_docstring or not preserve_original:
             # Return new content only
@@ -283,8 +282,8 @@ class TemplateMerger:
 
     @staticmethod
     def preserve_custom_sections(
-        original_lines: List[str], standard_sections: set
-    ) -> List[str]:
+        original_lines: list[str], standard_sections: set
+    ) -> list[str]:
         """Extract custom sections not in standard set."""
         custom_lines = []
         in_custom_section = False

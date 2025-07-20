@@ -6,12 +6,11 @@ docstring content while applying targeted fixes to specific sections.
 """
 
 import re
-from typing import List, Dict, Optional, Tuple, Set
 from dataclasses import dataclass
 from enum import Enum
 
-from .models import DocstringStyle
 from ..parser.docstring_models import DocstringParameter
+from .models import DocstringStyle
 
 
 class SectionType(Enum):
@@ -35,8 +34,8 @@ class SectionBoundary:
     section_type: SectionType
     start_line: int
     end_line: int
-    header_line: Optional[int] = None
-    content_lines: List[int] = None
+    header_line: int | None = None
+    content_lines: list[int] = None
 
     def __post_init__(self):
         """Initialize content lines if not provided."""
@@ -93,7 +92,7 @@ class DocstringMerger:
     def merge_multiple_sections(
         self,
         existing_docstring: str,
-        section_updates: Dict[str, str],
+        section_updates: dict[str, str],
         preserve_descriptions: bool = True,
     ) -> str:
         """Merge multiple section updates into existing docstring."""
@@ -132,7 +131,7 @@ class DocstringMerger:
         self,
         original_docstring: str,
         updated_docstring: str,
-        preserve_sections: Set[str] = None,
+        preserve_sections: set[str] = None,
     ) -> str:
         """Preserve custom sections and content from original docstring."""
         if preserve_sections is None:
@@ -183,10 +182,10 @@ class DocstringMerger:
 
     def smart_parameter_merge(
         self,
-        original_params: List[DocstringParameter],
-        new_params: List[DocstringParameter],
+        original_params: list[DocstringParameter],
+        new_params: list[DocstringParameter],
         preserve_descriptions: bool = True,
-    ) -> List[DocstringParameter]:
+    ) -> list[DocstringParameter]:
         """Intelligently merge parameter lists."""
         if not preserve_descriptions:
             return new_params
@@ -224,8 +223,8 @@ class DocstringMerger:
         return merged_params
 
     def _parse_section_boundaries(
-        self, lines: List[str]
-    ) -> Dict[SectionType, SectionBoundary]:
+        self, lines: list[str]
+    ) -> dict[SectionType, SectionBoundary]:
         """Parse docstring lines to identify section boundaries."""
         boundaries = {}
         current_section = None
@@ -268,7 +267,7 @@ class DocstringMerger:
 
         return boundaries
 
-    def _identify_section_type(self, line: str) -> Optional[SectionType]:
+    def _identify_section_type(self, line: str) -> SectionType | None:
         """Identify section type from line content."""
         line_lower = line.lower().strip()
 
@@ -284,7 +283,7 @@ class DocstringMerger:
 
         return None
 
-    def _get_section_patterns(self) -> Dict[SectionType, List[str]]:
+    def _get_section_patterns(self) -> dict[SectionType, list[str]]:
         """Get section patterns for current style."""
         if self.style == DocstringStyle.GOOGLE:
             return {
@@ -321,10 +320,10 @@ class DocstringMerger:
 
     def _replace_section(
         self,
-        existing_lines: List[str],
+        existing_lines: list[str],
         boundary: SectionBoundary,
-        new_section_lines: List[str],
-    ) -> List[str]:
+        new_section_lines: list[str],
+    ) -> list[str]:
         """Replace existing section with new content."""
         result = existing_lines[: boundary.start_line]
         result.extend(new_section_lines)
@@ -333,10 +332,10 @@ class DocstringMerger:
 
     def _insert_new_section(
         self,
-        existing_lines: List[str],
-        new_section_lines: List[str],
+        existing_lines: list[str],
+        new_section_lines: list[str],
         section_type: SectionType,
-    ) -> List[str]:
+    ) -> list[str]:
         """Insert new section at appropriate location."""
         # Find insertion point based on section order
         insertion_order = [
@@ -422,9 +421,7 @@ class DocstringMerger:
 
         return len(desc_lower) < 10  # Very short descriptions are likely generic
 
-    def extract_section_content(
-        self, docstring: str, section_type: str
-    ) -> Optional[str]:
+    def extract_section_content(self, docstring: str, section_type: str) -> str | None:
         """Extract content of specific section from docstring."""
         lines = docstring.split("\n")
         boundaries = self._parse_section_boundaries(lines)
@@ -464,7 +461,7 @@ class DocstringMerger:
             # Low confidence - minimal changes
             return original_content
 
-    def validate_merge_result(self, merged_docstring: str) -> Tuple[bool, List[str]]:
+    def validate_merge_result(self, merged_docstring: str) -> tuple[bool, list[str]]:
         """Validate that merge result is syntactically correct."""
         errors = []
 

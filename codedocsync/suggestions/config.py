@@ -6,8 +6,9 @@ how suggestions are generated, formatted, and validated.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
 from pathlib import Path
+from typing import Any
+
 import yaml
 
 
@@ -19,7 +20,7 @@ class SuggestionConfig:
     default_style: str = "google"  # Default if auto-detection fails
     preserve_descriptions: bool = True  # Keep existing descriptions
     preserve_examples: bool = True  # Keep existing examples
-    style_precedence: List[str] = field(
+    style_precedence: list[str] = field(
         default_factory=lambda: ["google", "numpy", "sphinx", "rest"]
     )
 
@@ -48,8 +49,8 @@ class SuggestionConfig:
     cache_suggestions: bool = True  # Cache generated suggestions
 
     # Advanced options
-    custom_templates: Dict[str, str] = field(default_factory=dict)
-    abbreviation_map: Dict[str, str] = field(
+    custom_templates: dict[str, str] = field(default_factory=dict)
+    abbreviation_map: dict[str, str] = field(
         default_factory=lambda: {
             "param": "parameter",
             "arg": "argument",
@@ -66,7 +67,7 @@ class SuggestionConfig:
     )
 
     # Section ordering for different styles
-    section_order: Dict[str, List[str]] = field(
+    section_order: dict[str, list[str]] = field(
         default_factory=lambda: {
             "google": [
                 "summary",
@@ -128,7 +129,7 @@ class SuggestionConfig:
             )
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> "SuggestionConfig":
+    def from_dict(cls, config_dict: dict[str, Any]) -> "SuggestionConfig":
         """Create configuration from dictionary."""
         # Filter out unknown keys to avoid TypeError
         valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
@@ -139,7 +140,7 @@ class SuggestionConfig:
     def from_yaml_file(cls, file_path: Path) -> "SuggestionConfig":
         """Load configuration from YAML file."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 config_data = yaml.safe_load(f) or {}
 
             # Extract suggestions section if it exists
@@ -152,7 +153,7 @@ class SuggestionConfig:
         except yaml.YAMLError as e:
             raise ValueError(f"Invalid YAML in config file {file_path}: {e}") from e
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
             field.name: getattr(self, field.name)
@@ -172,7 +173,7 @@ class SuggestionConfig:
                 sort_keys=False,
             )
 
-    def get_style_config(self, style: str) -> Dict[str, Any]:
+    def get_style_config(self, style: str) -> dict[str, Any]:
         """Get style-specific configuration."""
         if style == "google":
             return {
@@ -227,7 +228,7 @@ class SuggestionConfig:
 
         return feature_flags.get(feature, False)
 
-    def get_quality_thresholds(self) -> Dict[str, float]:
+    def get_quality_thresholds(self) -> dict[str, float]:
         """Get quality control thresholds."""
         return {
             "confidence": self.confidence_threshold,
@@ -253,7 +254,7 @@ class RankingConfig:
     prefer_ready_to_apply: bool = True  # Prioritize ready-to-apply suggestions
 
     # Severity priority order (higher index = higher priority)
-    severity_order: List[str] = field(
+    severity_order: list[str] = field(
         default_factory=lambda: ["low", "medium", "high", "critical"]
     )
 
@@ -386,13 +387,13 @@ class ConfigManager:
     """Manages configuration loading and precedence."""
 
     def __init__(self):
-        self._config_cache: Dict[str, SuggestionConfig] = {}
+        self._config_cache: dict[str, SuggestionConfig] = {}
 
     def load_config(
         self,
-        config_path: Optional[Path] = None,
-        project_path: Optional[Path] = None,
-        user_config: Optional[Dict[str, Any]] = None,
+        config_path: Path | None = None,
+        project_path: Path | None = None,
+        user_config: dict[str, Any] | None = None,
     ) -> SuggestionConfig:
         """
         Load configuration with proper precedence.

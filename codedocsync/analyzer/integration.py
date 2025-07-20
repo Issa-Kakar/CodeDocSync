@@ -5,19 +5,20 @@ This module contains the main analyze_matched_pair function that brings together
 all analyzer components into a cohesive analysis pipeline.
 """
 
-import asyncio
-import time
-import logging
-from typing import Optional, List, Dict, Any
 import ast
+import asyncio
+import logging
+import time
+from typing import Any
 
 from codedocsync.matcher import MatchedPair
-from codedocsync.parser import ParsedFunction, ParsedDocstring
-from .models import AnalysisResult, InconsistencyIssue, RuleCheckResult
-from .rule_engine import RuleEngine
+from codedocsync.parser import ParsedDocstring, ParsedFunction
+
+from .config import AnalysisConfig, get_development_config
 from .llm_analyzer import LLMAnalyzer
 from .llm_models import LLMAnalysisRequest
-from .config import AnalysisConfig, get_development_config
+from .models import AnalysisResult, InconsistencyIssue, RuleCheckResult
+from .rule_engine import RuleEngine
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ class IntegrationMetrics:
         self.total_issues_found += len(result.issues)
         self.total_time_ms += result.analysis_time_ms
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get current statistics."""
         return {
             "total_analyses": self.total_analyses,
@@ -92,7 +93,7 @@ metrics = IntegrationMetrics()
 
 
 def _should_use_llm(
-    rule_results: List[RuleCheckResult], config: AnalysisConfig, pair: MatchedPair
+    rule_results: list[RuleCheckResult], config: AnalysisConfig, pair: MatchedPair
 ) -> bool:
     """
     Determine if LLM analysis is needed based on rule results and context.
@@ -151,8 +152,8 @@ def _should_use_llm(
 
 
 def _determine_analysis_types(
-    pair: MatchedPair, rule_results: List[RuleCheckResult]
-) -> List[str]:
+    pair: MatchedPair, rule_results: list[RuleCheckResult]
+) -> list[str]:
     """Determine which LLM analysis types are needed."""
     analysis_types = []
     logger.debug(f"Determining analysis types for {pair.function.signature.name}")
@@ -203,7 +204,7 @@ def _determine_analysis_types(
 
 def _find_related_functions(
     function: ParsedFunction, max_functions: int = 3
-) -> List[ParsedFunction]:
+) -> list[ParsedFunction]:
     """Find related functions for context (simplified version)."""
     # In a real implementation, this would:
     # 1. Find functions in the same class
@@ -214,7 +215,7 @@ def _find_related_functions(
 
 
 def _create_llm_request(
-    pair: MatchedPair, rule_results: List[RuleCheckResult], config: AnalysisConfig
+    pair: MatchedPair, rule_results: list[RuleCheckResult], config: AnalysisConfig
 ) -> LLMAnalysisRequest:
     """Create optimized LLM request from matched pair."""
     # Determine which analysis types needed
@@ -246,8 +247,8 @@ def _create_llm_request(
 
 
 def _merge_results(
-    rule_issues: List[InconsistencyIssue], llm_issues: List[InconsistencyIssue]
-) -> List[InconsistencyIssue]:
+    rule_issues: list[InconsistencyIssue], llm_issues: list[InconsistencyIssue]
+) -> list[InconsistencyIssue]:
     """
     Merge rule engine and LLM results intelligently.
 
@@ -258,7 +259,7 @@ def _merge_results(
     4. Sort by severity, then line number
     """
     # Create a map for deduplication
-    issue_map: Dict[tuple, InconsistencyIssue] = {}
+    issue_map: dict[tuple, InconsistencyIssue] = {}
 
     # Process rule issues first (generally higher confidence)
     for issue in rule_issues:
@@ -319,9 +320,7 @@ class AnalysisCache:
         )
         return f"{func_sig}:{config_hash}"
 
-    def get(
-        self, pair: MatchedPair, config: AnalysisConfig
-    ) -> Optional[AnalysisResult]:
+    def get(self, pair: MatchedPair, config: AnalysisConfig) -> AnalysisResult | None:
         """Get cached analysis result."""
         key = self._generate_key(pair, config)
         result = self.cache.get(key)
@@ -344,10 +343,10 @@ class AnalysisCache:
 
 async def analyze_matched_pair(
     pair: MatchedPair,
-    config: Optional[AnalysisConfig] = None,
-    cache: Optional[AnalysisCache] = None,
-    rule_engine: Optional[RuleEngine] = None,
-    llm_analyzer: Optional[LLMAnalyzer] = None,
+    config: AnalysisConfig | None = None,
+    cache: AnalysisCache | None = None,
+    rule_engine: RuleEngine | None = None,
+    llm_analyzer: LLMAnalyzer | None = None,
 ) -> AnalysisResult:
     """
     Main entry point for analyzing a matched function-documentation pair.
@@ -453,7 +452,7 @@ async def analyze_matched_pair(
     # Step 2: Determine if LLM analysis needed
     needs_llm = _should_use_llm(rule_results, config, pair)
     used_llm = False
-    llm_issues: List[InconsistencyIssue] = []
+    llm_issues: list[InconsistencyIssue] = []
 
     # Step 3: Run LLM analysis if needed
     if needs_llm and llm_analyzer:
@@ -512,12 +511,12 @@ async def analyze_matched_pair(
 
 
 async def analyze_multiple_pairs(
-    pairs: List[MatchedPair],
-    config: Optional[AnalysisConfig] = None,
-    cache: Optional[AnalysisCache] = None,
-    rule_engine: Optional[RuleEngine] = None,
-    llm_analyzer: Optional[LLMAnalyzer] = None,
-) -> List[AnalysisResult]:
+    pairs: list[MatchedPair],
+    config: AnalysisConfig | None = None,
+    cache: AnalysisCache | None = None,
+    rule_engine: RuleEngine | None = None,
+    llm_analyzer: LLMAnalyzer | None = None,
+) -> list[AnalysisResult]:
     """
     Analyze multiple matched pairs with optional parallelization.
 
@@ -579,7 +578,7 @@ class AnalysisError(Exception):
     pass
 
 
-def get_integration_metrics() -> Dict[str, Any]:
+def get_integration_metrics() -> dict[str, Any]:
     """Get current integration metrics for monitoring."""
     return metrics.get_stats()
 

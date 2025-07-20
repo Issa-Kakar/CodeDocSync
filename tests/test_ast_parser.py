@@ -18,16 +18,16 @@ from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
-    parse_python_file,
-    _get_decorator_names,
     _get_annotation_string,
+    _get_decorator_names,
     _get_default_value,
     _is_method_function,
+    parse_python_file,
 )
 from codedocsync.utils.errors import (
-    ValidationError,
     FileAccessError,
     SyntaxParsingError,
+    ValidationError,
 )
 
 
@@ -290,7 +290,10 @@ class TestDataModels:
             FunctionParameter(name="param2", type_annotation="int", default_value="42"),
         ]
         sig = FunctionSignature(
-            name="test_func", parameters=params, return_type="bool", is_async=True,
+            name="test_func",
+            parameters=params,
+            return_type="bool",
+            is_async=True,
         )
 
         sig_str = sig.to_string()
@@ -305,19 +308,28 @@ class TestDataModels:
 
         # Valid function
         func = ParsedFunction(
-            signature=sig, line_number=1, end_line_number=5, file_path="test.py",
+            signature=sig,
+            line_number=1,
+            end_line_number=5,
+            file_path="test.py",
         )
         assert func.line_number == 1
 
         # Invalid line numbers
         with pytest.raises(ValidationError):
             ParsedFunction(
-                signature=sig, line_number=-1, end_line_number=5, file_path="test.py",
+                signature=sig,
+                line_number=-1,
+                end_line_number=5,
+                file_path="test.py",
             )
 
         with pytest.raises(ValidationError):
             ParsedFunction(
-                signature=sig, line_number=10, end_line_number=5, file_path="test.py",
+                signature=sig,
+                line_number=10,
+                end_line_number=5,
+                file_path="test.py",
             )
 
 

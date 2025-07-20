@@ -17,10 +17,10 @@ from unittest.mock import patch
 
 import pytest
 
-from codedocsync.analyzer.llm_cache import LLMCache, CacheStats, ConnectionPool
+from codedocsync.analyzer.llm_cache import CacheStats, ConnectionPool, LLMCache
 from codedocsync.analyzer.llm_models import LLMAnalysisResponse
 from codedocsync.analyzer.models import InconsistencyIssue
-from codedocsync.parser.models import ParsedFunction, FunctionSignature
+from codedocsync.parser.models import FunctionSignature, ParsedFunction
 
 
 @pytest.fixture

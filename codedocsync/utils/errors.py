@@ -5,13 +5,11 @@ This module defines the exception hierarchy used throughout the application
 for consistent error handling and reporting.
 """
 
-from typing import Optional
-
 
 class ParsingError(Exception):
     """Base exception for parsing errors."""
 
-    def __init__(self, message: str, recovery_hint: Optional[str] = None):
+    def __init__(self, message: str, recovery_hint: str | None = None):
         """
         Initialize a parsing error.
 

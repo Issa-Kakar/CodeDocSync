@@ -6,18 +6,18 @@ different styles (Google, NumPy, Sphinx, REST) while preserving all
 information and applying style-specific formatting rules.
 """
 
-from typing import Dict, List, Optional, Any
 import logging
+from typing import Any
 
+from ..parser.docstring_models import (
+    DocstringParameter,
+    DocstringRaises,
+    DocstringReturns,
+    ParsedDocstring,
+)
 from .models import DocstringStyle
 from .templates.base import get_template
 from .type_formatter import TypeAnnotationFormatter
-from ..parser.docstring_models import (
-    ParsedDocstring,
-    DocstringParameter,
-    DocstringReturns,
-    DocstringRaises,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class DocstringStyleConverter:
 
     def __init__(self):
         """Initialize the style converter."""
-        self._type_formatters: Dict[DocstringStyle, TypeAnnotationFormatter] = {}
+        self._type_formatters: dict[DocstringStyle, TypeAnnotationFormatter] = {}
         self._conversion_stats = {
             "conversions_performed": 0,
             "information_preserved": 0.0,
@@ -101,11 +101,11 @@ class DocstringStyleConverter:
 
     def convert_batch(
         self,
-        docstrings: List[ParsedDocstring],
+        docstrings: list[ParsedDocstring],
         from_style: DocstringStyle,
         to_style: DocstringStyle,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Convert multiple docstrings in batch.
 
@@ -142,7 +142,7 @@ class DocstringStyleConverter:
         docstring: ParsedDocstring,
         from_style: DocstringStyle,
         to_style: DocstringStyle,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate the quality of conversion between styles.
 
@@ -194,7 +194,7 @@ class DocstringStyleConverter:
 
         return quality
 
-    def get_conversion_statistics(self) -> Dict[str, Any]:
+    def get_conversion_statistics(self) -> dict[str, Any]:
         """Get statistics about conversions performed."""
         return self._conversion_stats.copy()
 
@@ -220,9 +220,9 @@ class DocstringStyleConverter:
 
     def _convert_parameters(
         self,
-        parameters: Optional[List[DocstringParameter]],
+        parameters: list[DocstringParameter] | None,
         type_formatter: TypeAnnotationFormatter,
-    ) -> Optional[List[DocstringParameter]]:
+    ) -> list[DocstringParameter] | None:
         """Convert parameter type annotations to target style."""
         if not parameters:
             return None
@@ -246,9 +246,9 @@ class DocstringStyleConverter:
 
     def _convert_returns(
         self,
-        returns: Optional[DocstringReturns],
+        returns: DocstringReturns | None,
         type_formatter: TypeAnnotationFormatter,
-    ) -> Optional[DocstringReturns]:
+    ) -> DocstringReturns | None:
         """Convert return type annotation to target style."""
         if not returns:
             return None
@@ -264,9 +264,9 @@ class DocstringStyleConverter:
 
     def _convert_raises(
         self,
-        raises: Optional[List[DocstringRaises]],
+        raises: list[DocstringRaises] | None,
         type_formatter: TypeAnnotationFormatter,
-    ) -> Optional[List[DocstringRaises]]:
+    ) -> list[DocstringRaises] | None:
         """Convert exception information to target style."""
         if not raises:
             return None
@@ -288,7 +288,7 @@ class DocstringStyleConverter:
         docstring: ParsedDocstring,
         from_style: DocstringStyle,
         to_style: DocstringStyle,
-    ) -> Optional[List[str]]:
+    ) -> list[str] | None:
         """Convert examples to target style format."""
         # Examples conversion is complex and style-dependent
         # For now, preserve examples as-is
@@ -304,7 +304,7 @@ class DocstringStyleConverter:
         docstring: ParsedDocstring,
         from_style: DocstringStyle,
         to_style: DocstringStyle,
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Handle conversion of style-specific sections."""
         sections = {}
 
@@ -331,12 +331,12 @@ class DocstringStyleConverter:
 
         return sections
 
-    def _convert_see_also_to_sphinx(self, see_also: str) -> List[str]:
+    def _convert_see_also_to_sphinx(self, see_also: str) -> list[str]:
         """Convert NumPy See Also section to Sphinx format."""
         # Simple conversion - in practice this would be more sophisticated
         return [f".. seealso:: {see_also}"]
 
-    def _simplify_sphinx_references(self, references: str) -> List[str]:
+    def _simplify_sphinx_references(self, references: str) -> list[str]:
         """Simplify Sphinx cross-references for other styles."""
         # Remove Sphinx-specific markup
         simplified = references.replace(":func:", "").replace(":class:", "")
@@ -348,7 +348,7 @@ class ConversionPreset:
     """Predefined conversion configurations."""
 
     @staticmethod
-    def scientific_to_api() -> Dict[str, Any]:
+    def scientific_to_api() -> dict[str, Any]:
         """Convert from scientific (NumPy) to API documentation (Google)."""
         return {
             "preserve_formatting": True,
@@ -357,7 +357,7 @@ class ConversionPreset:
         }
 
     @staticmethod
-    def api_to_sphinx() -> Dict[str, Any]:
+    def api_to_sphinx() -> dict[str, Any]:
         """Convert from API docs (Google) to Sphinx documentation."""
         return {
             "preserve_formatting": True,
@@ -366,7 +366,7 @@ class ConversionPreset:
         }
 
     @staticmethod
-    def legacy_cleanup() -> Dict[str, Any]:
+    def legacy_cleanup() -> dict[str, Any]:
         """Configuration for cleaning up legacy docstrings."""
         return {
             "preserve_formatting": False,  # Reformat everything
@@ -398,11 +398,11 @@ def convert_docstring(
 
 
 def batch_convert_docstrings(
-    docstrings: List[ParsedDocstring],
+    docstrings: list[ParsedDocstring],
     from_style: DocstringStyle,
     to_style: DocstringStyle,
     **kwargs,
-) -> List[str]:
+) -> list[str]:
     """
     Convenience function to convert multiple docstrings.
 

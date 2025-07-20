@@ -7,13 +7,12 @@ including Google, NumPy, Sphinx, and reStructuredText formats.
 
 # Import DocstringStyle for convenience
 from ..models import DocstringStyle
-
 from .base import (
     DocstringTemplate,
-    TemplateRegistry,
-    template_registry,
-    get_template,
     TemplateMerger,
+    TemplateRegistry,
+    get_template,
+    template_registry,
 )
 from .google_template import GoogleStyleTemplate
 from .numpy_template import NumpyStyleTemplate

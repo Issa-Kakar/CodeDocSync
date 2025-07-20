@@ -8,19 +8,19 @@ information and applying appropriate formatting.
 
 import pytest
 
+from codedocsync.parser.docstring_models import (
+    DocstringParameter,
+    DocstringRaises,
+    DocstringReturns,
+    ParsedDocstring,
+)
 from codedocsync.suggestions.converter import (
-    DocstringStyleConverter,
-    convert_docstring,
-    batch_convert_docstrings,
     ConversionPreset,
+    DocstringStyleConverter,
+    batch_convert_docstrings,
+    convert_docstring,
 )
 from codedocsync.suggestions.models import DocstringStyle
-from codedocsync.parser.docstring_models import (
-    ParsedDocstring,
-    DocstringParameter,
-    DocstringReturns,
-    DocstringRaises,
-)
 
 
 class TestDocstringStyleConverter:
@@ -141,7 +141,8 @@ class TestDocstringStyleConverter:
                 ),
             ],
             returns=DocstringReturns(
-                type_annotation="dict", description="Dictionary containing statistics",
+                type_annotation="dict",
+                description="Dictionary containing statistics",
             ),
             raises=None,
             raw_text="",
@@ -178,7 +179,8 @@ class TestDocstringStyleConverter:
                 ),
             ],
             returns=DocstringReturns(
-                type_annotation="dict", description="Parsed configuration data",
+                type_annotation="dict",
+                description="Parsed configuration data",
             ),
             raises=[
                 DocstringRaises(
@@ -593,7 +595,8 @@ class TestSpecialCases:
                 )
             ],
             returns=DocstringReturns(
-                type_annotation="str", description=long_description,
+                type_annotation="str",
+                description=long_description,
             ),
             raises=None,
             raw_text="",

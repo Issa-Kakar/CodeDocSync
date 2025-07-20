@@ -6,19 +6,18 @@ with support for different verbosity levels and terminal capabilities.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 from enum import Enum
 
-from ..models import Suggestion, SuggestionBatch
 from ..integration import EnhancedAnalysisResult, EnhancedIssue
+from ..models import Suggestion, SuggestionBatch
 
 try:
+    from rich import box
     from rich.console import Console
     from rich.panel import Panel
     from rich.syntax import Syntax
-    from rich.text import Text
     from rich.table import Table
-    from rich import box
+    from rich.text import Text
 
     RICH_AVAILABLE = True
 except ImportError:
@@ -51,7 +50,7 @@ class TerminalSuggestionFormatter:
 
     def __init__(
         self,
-        config: Optional[TerminalFormatterConfig] = None,
+        config: TerminalFormatterConfig | None = None,
         style: OutputStyle = OutputStyle.RICH,
     ):
         """Initialize formatter with configuration."""

@@ -5,16 +5,17 @@ Handles loading, merging, and managing configuration from multiple sources
 with proper precedence and validation.
 """
 
-from dataclasses import dataclass, field, asdict
-from typing import Optional, Dict, Any, List, Union
-from pathlib import Path
-import yaml
 import json
 import logging
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 from .config import SuggestionConfig
+from .formatters.terminal_formatter import OutputStyle, TerminalFormatterConfig
 from .ranking import RankingConfig, RankingStrategy
-from .formatters.terminal_formatter import TerminalFormatterConfig, OutputStyle
 
 logger = logging.getLogger(__name__)
 
@@ -56,13 +57,13 @@ class SuggestionConfigManager:
 
     def __init__(self):
         """Initialize configuration manager."""
-        self._config_cache: Optional[IntegratedSuggestionConfig] = None
-        self._config_sources: List[str] = []
+        self._config_cache: IntegratedSuggestionConfig | None = None
+        self._config_sources: list[str] = []
 
     def load_config(
         self,
-        config_path: Optional[Union[str, Path]] = None,
-        cli_overrides: Optional[Dict[str, Any]] = None,
+        config_path: str | Path | None = None,
+        cli_overrides: dict[str, Any] | None = None,
     ) -> IntegratedSuggestionConfig:
         """
         Load configuration with proper precedence.
@@ -129,18 +130,18 @@ class SuggestionConfigManager:
         logger.info(f"Loaded configuration from: {', '.join(config_sources)}")
         return config
 
-    def get_cached_config(self) -> Optional[IntegratedSuggestionConfig]:
+    def get_cached_config(self) -> IntegratedSuggestionConfig | None:
         """Get cached configuration if available."""
         return self._config_cache
 
-    def get_config_sources(self) -> List[str]:
+    def get_config_sources(self) -> list[str]:
         """Get list of configuration sources."""
         return self._config_sources.copy()
 
     def save_config(
         self,
         config: IntegratedSuggestionConfig,
-        path: Optional[Union[str, Path]] = None,
+        path: str | Path | None = None,
     ) -> Path:
         """Save configuration to file."""
         if path is None:
@@ -185,9 +186,9 @@ class SuggestionConfigManager:
             logger.warning(f"Unknown profile: {profile}, using default")
             return IntegratedSuggestionConfig()
 
-    def _load_config_file(self, path: Path) -> Dict[str, Any]:
+    def _load_config_file(self, path: Path) -> dict[str, Any]:
         """Load configuration from file."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             if path.suffix.lower() in [".yml", ".yaml"]:
                 return yaml.safe_load(f) or {}
             elif path.suffix.lower() == ".json":
@@ -196,7 +197,7 @@ class SuggestionConfigManager:
                 raise ValueError(f"Unsupported config file format: {path.suffix}")
 
     def _merge_configs(
-        self, base: IntegratedSuggestionConfig, override: Dict[str, Any]
+        self, base: IntegratedSuggestionConfig, override: dict[str, Any]
     ) -> IntegratedSuggestionConfig:
         """Merge configuration dictionaries."""
         # Convert base to dict for easier merging
@@ -209,8 +210,8 @@ class SuggestionConfigManager:
         return self._dict_to_config(merged_dict)
 
     def _deep_merge(
-        self, base: Dict[str, Any], override: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, base: dict[str, Any], override: dict[str, Any]
+    ) -> dict[str, Any]:
         """Deep merge two dictionaries."""
         result = base.copy()
 
@@ -227,7 +228,7 @@ class SuggestionConfigManager:
         return result
 
     def _apply_cli_overrides(
-        self, config: IntegratedSuggestionConfig, overrides: Dict[str, Any]
+        self, config: IntegratedSuggestionConfig, overrides: dict[str, Any]
     ) -> IntegratedSuggestionConfig:
         """Apply CLI overrides to configuration."""
         # Convert to dict and apply overrides
@@ -235,7 +236,7 @@ class SuggestionConfigManager:
         config_dict = self._deep_merge(config_dict, overrides)
         return self._dict_to_config(config_dict)
 
-    def _config_to_dict(self, config: IntegratedSuggestionConfig) -> Dict[str, Any]:
+    def _config_to_dict(self, config: IntegratedSuggestionConfig) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         result = {}
 
@@ -270,7 +271,7 @@ class SuggestionConfigManager:
         return result
 
     def _dict_to_config(
-        self, config_dict: Dict[str, Any]
+        self, config_dict: dict[str, Any]
     ) -> IntegratedSuggestionConfig:
         """Convert dictionary to configuration object."""
         # Create base config
@@ -340,13 +341,13 @@ class SuggestionConfigManager:
         if config.cache_ttl_hours < 0:
             raise ValueError("cache_ttl_hours must be non-negative")
 
-    def _get_user_config_path(self) -> Optional[Path]:
+    def _get_user_config_path(self) -> Path | None:
         """Get user configuration file path."""
         home = Path.home()
         config_dir = home / ".codedocsync"
         return config_dir / "config.yml"
 
-    def _find_project_config(self) -> Optional[Path]:
+    def _find_project_config(self) -> Path | None:
         """Find project configuration file."""
         # Look for config in current directory and parent directories
         current = Path.cwd()

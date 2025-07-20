@@ -28,7 +28,8 @@
       "Bash(pre-commit run:*)",
       "Bash(poetry:*)",
       "Bash(where python)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(conda:*)"
     ],
     "deny": []
   }

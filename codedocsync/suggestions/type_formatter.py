@@ -8,7 +8,6 @@ generics, and modern Python typing constructs.
 
 import ast
 import re
-from typing import Dict
 from enum import Enum
 
 from .models import DocstringStyle
@@ -30,7 +29,7 @@ class TypeAnnotationFormatter:
         """Initialize type formatter for specific docstring style."""
         self.style = style
         self._type_mappings = self._get_style_mappings()
-        self._complexity_cache: Dict[str, TypeComplexity] = {}
+        self._complexity_cache: dict[str, TypeComplexity] = {}
 
     def format_for_docstring(self, type_annotation: str) -> str:
         """
@@ -288,7 +287,7 @@ class TypeAnnotationFormatter:
 
         return types
 
-    def _get_style_mappings(self) -> Dict[str, str]:
+    def _get_style_mappings(self) -> dict[str, str]:
         """Get type mappings for the current style."""
         common_mappings = {
             "str": "str",

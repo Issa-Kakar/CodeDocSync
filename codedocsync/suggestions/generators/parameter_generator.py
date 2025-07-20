@@ -6,20 +6,19 @@ missing parameters, type inconsistencies, and other parameter-specific problems.
 """
 
 import re
-from typing import List, Optional
 
+from ...parser.ast_parser import FunctionParameter
+from ...parser.docstring_models import DocstringParameter
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
 from ..templates.base import get_template
-from ...parser.docstring_models import DocstringParameter
-from ...parser.ast_parser import FunctionParameter
 
 
 class ParameterSuggestionGenerator(BaseSuggestionGenerator):
@@ -225,21 +224,21 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         return suggestion
 
-    def _get_function_parameters(self, function) -> List[FunctionParameter]:
+    def _get_function_parameters(self, function) -> list[FunctionParameter]:
         """Extract function parameters, handling various function types."""
         if hasattr(function, "signature") and hasattr(function.signature, "parameters"):
             return function.signature.parameters
         return []
 
-    def _get_documented_parameters(self, docstring) -> List[DocstringParameter]:
+    def _get_documented_parameters(self, docstring) -> list[DocstringParameter]:
         """Extract documented parameters."""
         if hasattr(docstring, "parameters"):
             return docstring.parameters
         return []
 
     def _filter_special_parameters(
-        self, params: List[FunctionParameter], function
-    ) -> List[FunctionParameter]:
+        self, params: list[FunctionParameter], function
+    ) -> list[FunctionParameter]:
         """Filter out special parameters like 'self', 'cls' for accurate comparison."""
         filtered = []
 
@@ -268,9 +267,9 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
     def _find_parameter_mismatches(
         self,
-        actual_params: List[FunctionParameter],
-        documented_params: List[DocstringParameter],
-    ) -> List[tuple]:
+        actual_params: list[FunctionParameter],
+        documented_params: list[DocstringParameter],
+    ) -> list[tuple]:
         """Find parameter name mismatches using fuzzy matching."""
         from rapidfuzz import fuzz
 
@@ -300,7 +299,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         return mismatches
 
     def _types_differ(
-        self, actual_type: Optional[str], documented_type: Optional[str]
+        self, actual_type: str | None, documented_type: str | None
     ) -> bool:
         """Check if types are significantly different."""
         if not actual_type or not documented_type:
@@ -328,7 +327,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         return equivalencies.get(normalized, normalized)
 
     def _generate_corrected_parameter_docstring(
-        self, context: SuggestionContext, mismatched_pairs: List[tuple]
+        self, context: SuggestionContext, mismatched_pairs: list[tuple]
     ) -> str:
         """Generate docstring with corrected parameter names."""
         docstring = context.docstring
@@ -366,7 +365,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         )
 
     def _add_parameters_to_docstring(
-        self, context: SuggestionContext, missing_params: List[FunctionParameter]
+        self, context: SuggestionContext, missing_params: list[FunctionParameter]
     ) -> str:
         """Add missing parameters to existing docstring."""
         docstring = context.docstring
@@ -482,7 +481,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         )
 
     def _fix_parameter_types_in_docstring(
-        self, context: SuggestionContext, type_fixes: List[tuple]
+        self, context: SuggestionContext, type_fixes: list[tuple]
     ) -> str:
         """Fix parameter types in docstring."""
         # Implementation similar to _generate_corrected_parameter_docstring
@@ -558,9 +557,9 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
     def _reorder_documented_parameters(
         self,
-        actual_params: List[FunctionParameter],
-        documented_params: List[DocstringParameter],
-    ) -> List[DocstringParameter]:
+        actual_params: list[FunctionParameter],
+        documented_params: list[DocstringParameter],
+    ) -> list[DocstringParameter]:
         """Reorder documented parameters to match function signature order."""
         # Create a mapping from name to documented parameter
         doc_param_map = {p.name: p for p in documented_params}
@@ -580,7 +579,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         return reordered
 
     def _generate_reordered_docstring(
-        self, context: SuggestionContext, reordered_params: List[DocstringParameter]
+        self, context: SuggestionContext, reordered_params: list[DocstringParameter]
     ) -> str:
         """Generate docstring with reordered parameters."""
         docstring = context.docstring

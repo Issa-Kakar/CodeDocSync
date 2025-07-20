@@ -6,22 +6,22 @@ and the suggestion system's fix generation, creating enhanced analysis
 results with actionable suggestions.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
-import time
 import logging
+import time
+from dataclasses import dataclass, field
+from typing import Any
 
 from ..analyzer.models import AnalysisResult, InconsistencyIssue
 from ..matcher import MatchedPair
-from .models import Suggestion, SuggestionContext, SuggestionBatch
-from .config import SuggestionConfig
 from .base import BaseSuggestionGenerator
-from .generators.parameter_generator import ParameterSuggestionGenerator
-from .generators.return_generator import ReturnSuggestionGenerator
-from .generators.raises_generator import RaisesSuggestionGenerator
+from .config import SuggestionConfig
 from .generators.behavior_generator import BehaviorSuggestionGenerator
-from .generators.example_generator import ExampleSuggestionGenerator
 from .generators.edge_case_handlers import EdgeCaseSuggestionGenerator
+from .generators.example_generator import ExampleSuggestionGenerator
+from .generators.parameter_generator import ParameterSuggestionGenerator
+from .generators.raises_generator import RaisesSuggestionGenerator
+from .generators.return_generator import ReturnSuggestionGenerator
+from .models import Suggestion, SuggestionBatch, SuggestionContext
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +37,12 @@ class EnhancedIssue:
     suggestion: str  # Basic suggestion from analyzer
     line_number: int
     confidence: float = 1.0
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
     # Enhanced suggestion fields
-    rich_suggestion: Optional[Suggestion] = None
-    formatted_output: Optional[str] = None
-    ranking_score: Optional[float] = None
+    rich_suggestion: Suggestion | None = None
+    formatted_output: str | None = None
+    ranking_score: float | None = None
 
     def __post_init__(self):
         """Validate enhanced issue."""
@@ -58,7 +58,7 @@ class EnhancedAnalysisResult:
 
     # Original fields from AnalysisResult
     matched_pair: MatchedPair
-    issues: List[EnhancedIssue] = field(default_factory=list)
+    issues: list[EnhancedIssue] = field(default_factory=list)
     used_llm: bool = False
     analysis_time_ms: float = 0.0
     cache_hit: bool = False
@@ -78,7 +78,7 @@ class EnhancedAnalysisResult:
         """Check if any issues have rich suggestions."""
         return any(issue.rich_suggestion for issue in self.issues)
 
-    def get_suggestions(self) -> List[Suggestion]:
+    def get_suggestions(self) -> list[Suggestion]:
         """Get all rich suggestions."""
         return [
             issue.rich_suggestion
@@ -90,10 +90,10 @@ class EnhancedAnalysisResult:
 class SuggestionIntegration:
     """Integrate suggestions with analyzer output."""
 
-    def __init__(self, config: Optional[SuggestionConfig] = None):
+    def __init__(self, config: SuggestionConfig | None = None):
         """Initialize integration with configuration."""
         self.config = config or SuggestionConfig()
-        self._generators: Dict[str, BaseSuggestionGenerator] = {}
+        self._generators: dict[str, BaseSuggestionGenerator] = {}
         self._setup_generators()
 
     def _setup_generators(self):
@@ -211,7 +211,7 @@ class SuggestionIntegration:
 
     def _generate_suggestion(
         self, issue: InconsistencyIssue, context: SuggestionContext
-    ) -> Optional[Suggestion]:
+    ) -> Suggestion | None:
         """Generate suggestion for the given issue."""
         generator = self._generators.get(issue.issue_type)
         if not generator:
@@ -241,14 +241,14 @@ class SuggestionIntegration:
 class SuggestionBatchProcessor:
     """Process multiple analysis results with suggestions."""
 
-    def __init__(self, config: Optional[SuggestionConfig] = None):
+    def __init__(self, config: SuggestionConfig | None = None):
         """Initialize batch processor."""
         self.config = config or SuggestionConfig()
         self.integration = SuggestionIntegration(config)
 
     def process_batch(
-        self, results: List[AnalysisResult]
-    ) -> List[EnhancedAnalysisResult]:
+        self, results: list[AnalysisResult]
+    ) -> list[EnhancedAnalysisResult]:
         """Process multiple analysis results."""
         enhanced_results = []
 
@@ -271,7 +271,7 @@ class SuggestionBatchProcessor:
         return enhanced_results
 
     def create_suggestion_batch(
-        self, results: List[EnhancedAnalysisResult]
+        self, results: list[EnhancedAnalysisResult]
     ) -> SuggestionBatch:
         """Create a suggestion batch from enhanced results."""
         all_suggestions = []
@@ -288,7 +288,7 @@ class SuggestionBatchProcessor:
 
 # Factory functions for easy integration
 def enhance_with_suggestions(
-    result: AnalysisResult, config: Optional[SuggestionConfig] = None
+    result: AnalysisResult, config: SuggestionConfig | None = None
 ) -> EnhancedAnalysisResult:
     """Enhance a single analysis result with suggestions."""
     integration = SuggestionIntegration(config)
@@ -296,8 +296,8 @@ def enhance_with_suggestions(
 
 
 def enhance_multiple_with_suggestions(
-    results: List[AnalysisResult], config: Optional[SuggestionConfig] = None
-) -> List[EnhancedAnalysisResult]:
+    results: list[AnalysisResult], config: SuggestionConfig | None = None
+) -> list[EnhancedAnalysisResult]:
     """Enhance multiple analysis results with suggestions."""
     processor = SuggestionBatchProcessor(config)
     return processor.process_batch(results)

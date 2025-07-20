@@ -11,16 +11,17 @@ This module tests the LLM output parser functionality including:
 """
 
 import json
+
 import pytest
 
 from codedocsync.analyzer.llm_output_parser import (
     LLMOutputParser,
     ParseResult,
-    parse_llm_response,
     parse_and_filter_response,
+    parse_llm_response,
     validate_response_format,
 )
-from codedocsync.analyzer.models import InconsistencyIssue, ISSUE_TYPES
+from codedocsync.analyzer.models import ISSUE_TYPES, InconsistencyIssue
 
 
 class TestParseResult:

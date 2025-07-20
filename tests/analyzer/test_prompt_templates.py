@@ -12,13 +12,13 @@ This module tests the prompt templates for all analysis types, ensuring they:
 import pytest
 
 from codedocsync.analyzer.prompt_templates import (
-    get_prompt_template,
+    LLM_ISSUE_TYPE_MAPPING,
+    PROMPT_TEMPLATES,
     format_prompt,
     get_available_analysis_types,
-    validate_llm_response,
+    get_prompt_template,
     map_llm_issue_type,
-    PROMPT_TEMPLATES,
-    LLM_ISSUE_TYPE_MAPPING,
+    validate_llm_response,
 )
 
 

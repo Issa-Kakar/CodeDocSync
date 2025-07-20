@@ -5,22 +5,23 @@ Tests the ranking algorithms, filtering criteria, and priority boosting
 functionality for organizing suggestions by importance and quality.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from codedocsync.suggestions.integration import EnhancedAnalysisResult, EnhancedIssue
+from codedocsync.suggestions.models import DocstringStyle, Suggestion, SuggestionType
 from codedocsync.suggestions.ranking import (
-    SuggestionRanker,
-    SuggestionFilter,
-    RankingConfig,
-    RankingStrategy,
-    RankingMetrics,
     PriorityBooster,
-    create_strict_ranker,
-    create_permissive_ranker,
+    RankingConfig,
+    RankingMetrics,
+    RankingStrategy,
+    SuggestionFilter,
+    SuggestionRanker,
     create_balanced_ranker,
+    create_permissive_ranker,
+    create_strict_ranker,
 )
-from codedocsync.suggestions.integration import EnhancedIssue, EnhancedAnalysisResult
-from codedocsync.suggestions.models import Suggestion, SuggestionType, DocstringStyle
 
 
 # Test fixtures
@@ -300,7 +301,8 @@ class TestSuggestionRanker:
         mock_pair.function = Mock()
 
         result = EnhancedAnalysisResult(
-            matched_pair=mock_pair, issues=[critical_issue],
+            matched_pair=mock_pair,
+            issues=[critical_issue],
         )
 
         ranker = SuggestionRanker()

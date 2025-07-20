@@ -5,22 +5,23 @@ Tests cover special Python constructs like properties, class methods, magic meth
 async functions, and other edge cases requiring specialized documentation.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from codedocsync.analyzer.models import InconsistencyIssue
+from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.edge_case_handlers import (
-    EdgeCaseSuggestionGenerator,
-    SpecialConstructAnalyzer,
-    PropertyMethodHandler,
     ClassMethodHandler,
+    EdgeCaseSuggestionGenerator,
+    PropertyMethodHandler,
+    SpecialConstructAnalyzer,
 )
 from codedocsync.suggestions.models import (
     Suggestion,
     SuggestionContext,
     SuggestionType,
 )
-from codedocsync.suggestions.config import SuggestionConfig
-from codedocsync.analyzer.models import InconsistencyIssue
 
 
 class TestSpecialConstructAnalyzer:
@@ -418,7 +419,10 @@ class TestEdgeCaseSuggestionGenerator:
     @pytest.fixture
     def config(self):
         """Create test configuration."""
-        return SuggestionConfig(default_style="google", max_line_length=88,)
+        return SuggestionConfig(
+            default_style="google",
+            max_line_length=88,
+        )
 
     @pytest.fixture
     def generator(self, config):

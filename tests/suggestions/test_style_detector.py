@@ -4,17 +4,18 @@ Comprehensive tests for docstring style detection system.
 Tests style detection from files, individual docstrings, and validation.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+from codedocsync.suggestions.config import SuggestionConfig
+from codedocsync.suggestions.models import StyleDetectionError
 from codedocsync.suggestions.style_detector import (
     DocstringStyleDetector,
     style_detector,
 )
-from codedocsync.suggestions.models import StyleDetectionError
-from codedocsync.suggestions.config import SuggestionConfig
 
 
 class TestDocstringStyleDetector:

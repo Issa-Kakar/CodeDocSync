@@ -6,7 +6,8 @@ All fields must be validated and documented.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
+from typing import Any
+
 from codedocsync.matcher import MatchedPair
 
 # Issue type constants with default severities
@@ -53,7 +54,7 @@ class InconsistencyIssue:
     suggestion: str  # Actionable fix suggestion
     line_number: int  # Line where issue occurs
     confidence: float = 1.0  # 0.0-1.0, determines if LLM needed
-    details: Dict[str, Any] = field(default_factory=dict)  # Additional context
+    details: dict[str, Any] = field(default_factory=dict)  # Additional context
 
     def __post_init__(self):
         """Validate issue fields."""
@@ -105,7 +106,7 @@ class RuleCheckResult:
     rule_name: str  # String identifier for the rule
     passed: bool  # Whether the rule passed
     confidence: float  # Float indicating certainty
-    issues: List[InconsistencyIssue] = field(default_factory=list)
+    issues: list[InconsistencyIssue] = field(default_factory=list)
     execution_time_ms: float = 0.0  # Performance tracking
 
     def __post_init__(self):
@@ -138,10 +139,10 @@ class AnalysisResult:
     """Complete analysis result for a matched pair."""
 
     matched_pair: MatchedPair
-    issues: List[InconsistencyIssue] = field(default_factory=list)
+    issues: list[InconsistencyIssue] = field(default_factory=list)
     used_llm: bool = False
     analysis_time_ms: float = 0.0
-    rule_results: Optional[List[RuleCheckResult]] = None
+    rule_results: list[RuleCheckResult] | None = None
     cache_hit: bool = False
 
     def __post_init__(self):
@@ -153,12 +154,12 @@ class AnalysisResult:
             )
 
     @property
-    def critical_issues(self) -> List[InconsistencyIssue]:
+    def critical_issues(self) -> list[InconsistencyIssue]:
         """Get all critical issues."""
         return [issue for issue in self.issues if issue.severity == "critical"]
 
     @property
-    def high_issues(self) -> List[InconsistencyIssue]:
+    def high_issues(self) -> list[InconsistencyIssue]:
         """Get all high severity issues."""
         return [issue for issue in self.issues if issue.severity == "high"]
 
@@ -167,18 +168,18 @@ class AnalysisResult:
         """Check if there are any critical issues."""
         return len(self.critical_issues) > 0
 
-    def get_issues_by_severity(self) -> Dict[str, List[InconsistencyIssue]]:
+    def get_issues_by_severity(self) -> dict[str, list[InconsistencyIssue]]:
         """Group issues by severity."""
         result = {"critical": [], "high": [], "medium": [], "low": []}
         for issue in self.issues:
             result[issue.severity].append(issue)
         return result
 
-    def get_sorted_issues(self) -> List[InconsistencyIssue]:
+    def get_sorted_issues(self) -> list[InconsistencyIssue]:
         """Get issues sorted by severity (critical first)."""
         return sorted(self.issues, key=lambda x: x.severity_weight, reverse=True)
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary statistics for this analysis."""
         issues_by_severity = self.get_issues_by_severity()
         return {

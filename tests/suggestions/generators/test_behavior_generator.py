@@ -5,21 +5,22 @@ Tests cover behavioral pattern analysis, description enhancement, and suggestion
 generation for function behavior documentation.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from codedocsync.analyzer.models import InconsistencyIssue
+from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.behavior_generator import (
-    BehaviorSuggestionGenerator,
     BehaviorAnalyzer,
     BehaviorPattern,
+    BehaviorSuggestionGenerator,
 )
 from codedocsync.suggestions.models import (
     Suggestion,
     SuggestionContext,
     SuggestionType,
 )
-from codedocsync.suggestions.config import SuggestionConfig
-from codedocsync.analyzer.models import InconsistencyIssue
 
 
 class TestBehaviorAnalyzer:
@@ -205,7 +206,10 @@ class TestBehaviorSuggestionGenerator:
     @pytest.fixture
     def config(self):
         """Create test configuration."""
-        return SuggestionConfig(default_style="google", max_line_length=88,)
+        return SuggestionConfig(
+            default_style="google",
+            max_line_length=88,
+        )
 
     @pytest.fixture
     def generator(self, config):

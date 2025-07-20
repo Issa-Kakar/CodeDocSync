@@ -9,21 +9,22 @@ Tests the core LLM analysis functionality including:
 - Caching and error handling
 """
 
-import pytest
 import asyncio
 import json
 import time
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
 from codedocsync.analyzer.llm_config import LLMConfig
 from codedocsync.analyzer.llm_models import LLMAnalysisRequest, LLMAnalysisResponse
 from codedocsync.analyzer.models import InconsistencyIssue, RuleCheckResult
 from codedocsync.parser import (
-    ParsedFunction,
+    FunctionParameter,
     FunctionSignature,
     ParsedDocstring,
-    FunctionParameter,
+    ParsedFunction,
 )
 
 

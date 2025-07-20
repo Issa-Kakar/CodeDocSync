@@ -7,17 +7,17 @@ descriptions, identifying patterns, side effects, and operational characteristic
 
 import ast
 import re
-from typing import List, Dict, Any, Union
 from dataclasses import dataclass
+from typing import Any
 
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
-    SuggestionType,
     SuggestionDiff,
     SuggestionMetadata,
-    DocstringStyle,
+    SuggestionType,
 )
 from ..templates.base import get_template
 
@@ -29,8 +29,8 @@ class BehaviorPattern:
     pattern_type: str
     description: str
     confidence: float
-    line_numbers: List[int] = None
-    details: Dict[str, Any] = None
+    line_numbers: list[int] = None
+    details: dict[str, Any] = None
 
 
 class BehaviorAnalyzer:
@@ -41,7 +41,7 @@ class BehaviorAnalyzer:
 
     def analyze_behavior(
         self, source_code: str, function_name: str = ""
-    ) -> List[BehaviorPattern]:
+    ) -> list[BehaviorPattern]:
         """Analyze function code for behavioral patterns."""
         patterns = []
 
@@ -61,7 +61,7 @@ class BehaviorAnalyzer:
         return patterns
 
     def _analyze_ast(
-        self, tree: ast.AST, patterns: List[BehaviorPattern], function_name: str
+        self, tree: ast.AST, patterns: list[BehaviorPattern], function_name: str
     ) -> None:
         """Analyze AST for behavioral patterns."""
         for node in ast.walk(tree):
@@ -73,8 +73,8 @@ class BehaviorAnalyzer:
 
     def _analyze_function_node(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
         function_name: str,
     ) -> None:
         """Analyze a function node for behavioral patterns."""
@@ -88,8 +88,8 @@ class BehaviorAnalyzer:
 
     def _analyze_control_flow(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
     ) -> None:
         """Analyze control flow patterns."""
         has_loops = False
@@ -136,8 +136,8 @@ class BehaviorAnalyzer:
 
     def _analyze_data_operations(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
     ) -> None:
         """Analyze data manipulation patterns."""
         creates_collections = False
@@ -170,9 +170,7 @@ class BehaviorAnalyzer:
                     len(
                         child.elts
                         if hasattr(child, "elts")
-                        else child.keys
-                        if hasattr(child, "keys")
-                        else []
+                        else child.keys if hasattr(child, "keys") else []
                     )
                     > 0
                 ):
@@ -207,8 +205,8 @@ class BehaviorAnalyzer:
 
     def _analyze_side_effects(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
     ) -> None:
         """Analyze side effects and external interactions."""
         has_file_operations = False
@@ -285,8 +283,8 @@ class BehaviorAnalyzer:
 
     def _analyze_error_handling(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
     ) -> None:
         """Analyze error handling patterns."""
         has_try_except = False
@@ -332,8 +330,8 @@ class BehaviorAnalyzer:
 
     def _analyze_performance_characteristics(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
         function_name: str,
     ) -> None:
         """Analyze performance-related characteristics."""
@@ -394,8 +392,8 @@ class BehaviorAnalyzer:
 
     def _analyze_function_purpose(
         self,
-        node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
-        patterns: List[BehaviorPattern],
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        patterns: list[BehaviorPattern],
         function_name: str,
     ) -> None:
         """Analyze function purpose based on name and structure."""
@@ -549,7 +547,7 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
 
     def _generate_enhanced_description(
         self,
-        patterns: List[BehaviorPattern],
+        patterns: list[BehaviorPattern],
         function_name: str,
         docstring,
         focus_side_effects: bool = False,

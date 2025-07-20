@@ -1,8 +1,7 @@
 import hashlib
+import logging
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-import logging
 
 try:
     import chromadb
@@ -21,7 +20,7 @@ class VectorStore:
     """Manages ChromaDB collections for semantic search."""
 
     def __init__(
-        self, cache_dir: str = ".codedocsync_cache", project_id: Optional[str] = None
+        self, cache_dir: str = ".codedocsync_cache", project_id: str | None = None
     ):
         if not CHROMADB_AVAILABLE:
             raise ImportError("chromadb is required for VectorStore functionality")
@@ -74,9 +73,9 @@ class VectorStore:
 
     def add_embeddings(
         self,
-        embeddings: List[List[float]],
-        metadatas: List[Dict[str, str]],
-        ids: List[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, str]],
+        ids: list[str],
     ) -> None:
         """Add embeddings to the collection with metadata."""
         try:
@@ -95,10 +94,10 @@ class VectorStore:
 
     def search_similar(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         n_results: int = 5,
         min_similarity: float = 0.65,
-    ) -> List[Tuple[str, float, Dict[str, str]]]:
+    ) -> list[tuple[str, float, dict[str, str]]]:
         """
         Search for similar embeddings.
 
@@ -135,9 +134,7 @@ class VectorStore:
 
         return similar_items
 
-    def get_by_id(
-        self, function_id: str
-    ) -> Optional[Tuple[List[float], Dict[str, str]]]:
+    def get_by_id(self, function_id: str) -> tuple[list[float], dict[str, str]] | None:
         """Get specific embedding by ID."""
         try:
             result = self.collection.get(ids=[function_id])
@@ -171,7 +168,7 @@ class VectorStore:
 
         return len(old_ids)
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> dict[str, any]:
         """Get performance statistics."""
         avg_search_time = (
             self.metrics["total_search_time"] / self.metrics["searches_performed"]

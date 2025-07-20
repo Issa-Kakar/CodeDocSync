@@ -5,23 +5,24 @@ Tests cover example generation, parameter value generation, and usage example
 creation for various function scenarios.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from codedocsync.analyzer.models import InconsistencyIssue
+from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.example_generator import (
-    ExampleSuggestionGenerator,
     ExampleGenerator,
-    ParameterValueGenerator,
     ExamplePatternAnalyzer,
+    ExampleSuggestionGenerator,
     ExampleTemplate,
+    ParameterValueGenerator,
 )
 from codedocsync.suggestions.models import (
     Suggestion,
     SuggestionContext,
     SuggestionType,
 )
-from codedocsync.suggestions.config import SuggestionConfig
-from codedocsync.analyzer.models import InconsistencyIssue
 
 
 class TestParameterValueGenerator:
@@ -360,7 +361,10 @@ class TestExampleSuggestionGenerator:
     @pytest.fixture
     def config(self):
         """Create test configuration."""
-        return SuggestionConfig(default_style="google", max_line_length=88,)
+        return SuggestionConfig(
+            default_style="google",
+            max_line_length=88,
+        )
 
     @pytest.fixture
     def generator(self, config):

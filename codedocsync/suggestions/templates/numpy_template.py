@@ -6,15 +6,14 @@ which uses underlined section headers and specific formatting conventions.
 """
 
 import re
-from typing import List, Dict, Optional
 
-from .base import DocstringTemplate
-from ..models import DocstringStyle
 from ...parser.docstring_models import (
     DocstringParameter,
-    DocstringReturns,
     DocstringRaises,
+    DocstringReturns,
 )
+from ..models import DocstringStyle
+from .base import DocstringTemplate
 
 
 class NumpyStyleTemplate(DocstringTemplate):
@@ -26,7 +25,7 @@ class NumpyStyleTemplate(DocstringTemplate):
         """Initialize NumPy template."""
         super().__init__(style, max_line_length)
 
-    def render_parameters(self, parameters: List[DocstringParameter]) -> List[str]:
+    def render_parameters(self, parameters: list[DocstringParameter]) -> list[str]:
         """
         Render parameters in NumPy style.
 
@@ -62,7 +61,7 @@ class NumpyStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def render_returns(self, returns: DocstringReturns) -> List[str]:
+    def render_returns(self, returns: DocstringReturns) -> list[str]:
         """
         Render returns in NumPy style.
 
@@ -90,7 +89,7 @@ class NumpyStyleTemplate(DocstringTemplate):
 
         return lines
 
-    def render_raises(self, raises: List[DocstringRaises]) -> List[str]:
+    def render_raises(self, raises: list[DocstringRaises]) -> list[str]:
         """
         Render raises in NumPy style.
 
@@ -144,7 +143,7 @@ class NumpyStyleTemplate(DocstringTemplate):
         else:
             return return_name
 
-    def _match_parameter_line(self, line: str) -> Optional[str]:
+    def _match_parameter_line(self, line: str) -> str | None:
         """Match NumPy parameter definition and extract parameter name."""
         # NumPy format: "param_name : type" or just "param_name"
         match = re.match(r"^(\w+)\s*(?::\s*.+)?$", line.strip())
@@ -153,8 +152,8 @@ class NumpyStyleTemplate(DocstringTemplate):
         return None
 
     def _merge_descriptions(
-        self, new_lines: List[str], descriptions: Dict[str, str]
-    ) -> List[str]:
+        self, new_lines: list[str], descriptions: dict[str, str]
+    ) -> list[str]:
         """Merge preserved descriptions into NumPy structure."""
         merged_lines = []
         i = 0
@@ -182,7 +181,7 @@ class NumpyStyleTemplate(DocstringTemplate):
 
         return merged_lines
 
-    def _render_examples(self, examples: List[str]) -> List[str]:
+    def _render_examples(self, examples: list[str]) -> list[str]:
         """Render examples section in NumPy style."""
         if not examples:
             return []
@@ -198,7 +197,7 @@ class NumpyStyleTemplate(DocstringTemplate):
 
         return lines[:-1]  # Remove trailing empty line
 
-    def _format_type_annotation(self, type_str: Optional[str]) -> str:
+    def _format_type_annotation(self, type_str: str | None) -> str:
         """Format type annotation for NumPy style."""
         if not type_str:
             return ""

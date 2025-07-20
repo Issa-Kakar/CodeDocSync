@@ -1,7 +1,8 @@
 import os
 from unittest.mock import patch
-from codedocsync.storage.embedding_config import EmbeddingConfigManager
+
 from codedocsync.matcher.semantic_models import EmbeddingModel
+from codedocsync.storage.embedding_config import EmbeddingConfigManager
 
 
 class TestEmbeddingConfigManager:

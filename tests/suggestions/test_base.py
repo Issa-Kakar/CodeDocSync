@@ -4,23 +4,24 @@ Comprehensive tests for base suggestion generator functionality.
 Tests the abstract base class, validation methods, and utility functions.
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from codedocsync.suggestions.base import (
     BaseSuggestionGenerator,
     with_suggestion_fallback,
 )
+from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.models import (
     Suggestion,
     SuggestionContext,
     SuggestionDiff,
+    SuggestionError,
     SuggestionMetadata,
     SuggestionType,
-    SuggestionError,
     SuggestionValidationError,
 )
-from codedocsync.suggestions.config import SuggestionConfig
 
 
 class TestBaseSuggestionGenerator:
