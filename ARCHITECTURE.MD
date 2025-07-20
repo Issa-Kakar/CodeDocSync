@@ -99,7 +99,7 @@ Key Architectural Decisions
 ADR-001: Python 3.10+ Requirement
 
 Decision: Require Python 3.10+
-Reason: Match statements, better typing, ast.unparse()
+Reason: Match statements, better typing, ast.unparse(), parenthesized context managers
 
 ADR-002: AST Parser Choice
 
@@ -330,6 +330,8 @@ This project uses strict code quality enforcement through pre-commit hooks that 
 
 ### Pre-commit Hook Configuration
 
+**IMPORTANT**: All tool versions are synchronized between `pyproject.toml` and `.pre-commit-config.yaml` to ensure consistent code quality enforcement.
+
 The project uses the following pre-commit hooks (defined in `.pre-commit-config.yaml`):
 
 1. **Standard Pre-commit Hooks** (v4.6.0):
@@ -337,12 +339,15 @@ The project uses the following pre-commit hooks (defined in `.pre-commit-config.
    - `end-of-file-fixer`: Ensures files end with a newline
    - `trailing-whitespace`: Removes trailing whitespace
 
-2. **Ruff** (v0.4.10):
+2. **Ruff** (v0.12.3):
    - `ruff --fix`: Fast Python linter with auto-fix capabilities
    - `ruff-format`: Fast Python code formatter (alternative to Black)
 
-3. **Black** (v24.4.2):
+3. **Black** (v25.1.0):
    - `black`: Python code formatter for consistent style
+
+4. **Mypy** (v1.17.0):
+   - `mypy`: Static type checker for Python code
 
 ### Development Workflow
 

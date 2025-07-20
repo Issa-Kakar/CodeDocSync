@@ -19,7 +19,7 @@ from ..models import (
     DocstringStyle,
 )
 from ..templates.base import get_template
-from ...parser.docstring_models import DocstringReturn
+from ...parser.docstring_models import DocstringReturns
 
 
 class ReturnAnalysisResult:
@@ -347,7 +347,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
 
         # Create new return documentation
         description = self._generate_return_description(return_type, analysis)
-        new_return = DocstringReturn(type_str=return_type, description=description)
+        new_return = DocstringReturns(type_str=return_type, description=description)
 
         # Generate updated docstring
         return template.render_complete_docstring(
@@ -369,7 +369,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
 
         # Create return documentation
         description = self._generate_return_description(return_type, None)
-        new_return = DocstringReturn(type_str=return_type, description=description)
+        new_return = DocstringReturns(type_str=return_type, description=description)
 
         return template.render_complete_docstring(
             summary=getattr(docstring, "summary", ""),
@@ -456,12 +456,12 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         # Update existing return documentation
         current_return = getattr(docstring, "returns", None)
         if current_return:
-            updated_return = DocstringReturn(
+            updated_return = DocstringReturns(
                 type_str=getattr(current_return, "type_str", ""),
                 description=new_description,
             )
         else:
-            updated_return = DocstringReturn(type_str="", description=new_description)
+            updated_return = DocstringReturns(type_str="", description=new_description)
 
         return template.render_complete_docstring(
             summary=getattr(docstring, "summary", ""),

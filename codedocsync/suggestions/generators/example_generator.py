@@ -21,7 +21,7 @@ from ..models import (
 )
 from ..templates.base import get_template
 from ...parser.ast_parser import FunctionParameter
-from ...parser.docstring_models import DocstringExample
+# DocstringExample not needed - examples are stored as strings
 
 
 @dataclass
@@ -515,14 +515,17 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
                 context, "Could not generate examples for this function"
             )
 
-        # Convert to DocstringExample objects
+        # Convert to formatted example strings
         docstring_examples = []
         for example in examples:
             # Format example code
             example_code = self._format_example_code(example)
-            docstring_examples.append(
-                DocstringExample(description=example.description, code=example_code)
-            )
+            # Combine description and code into a single example string
+            if example.description:
+                example_str = f"{example.description}\n{example_code}"
+            else:
+                example_str = example_code
+            docstring_examples.append(example_str)
 
         # Update docstring with examples
         updated_docstring = self._add_examples_to_docstring(context, docstring_examples)
@@ -560,7 +563,7 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         return "\n".join(code_lines)
 
     def _add_examples_to_docstring(
-        self, context: SuggestionContext, examples: List[DocstringExample]
+        self, context: SuggestionContext, examples: List[str]
     ) -> str:
         """Add examples to existing docstring."""
         docstring = context.docstring

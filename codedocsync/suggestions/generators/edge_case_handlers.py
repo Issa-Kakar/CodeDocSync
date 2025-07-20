@@ -19,7 +19,7 @@ from ..models import (
     DocstringStyle,
 )
 from ..templates.base import get_template
-from ...parser.docstring_models import DocstringParameter, DocstringReturn
+from ...parser.docstring_models import DocstringParameter, DocstringReturns
 
 
 @dataclass
@@ -200,7 +200,7 @@ class PropertyMethodHandler:
 
         return_doc = None
         if return_type or property_desc:
-            return_doc = DocstringReturn(
+            return_doc = DocstringReturns(
                 type_str=return_type or "",
                 description=property_desc or "The property value",
             )
@@ -631,7 +631,7 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
         template = get_template(style, max_line_length=88)
 
         # Update return documentation for generators
-        generator_return = DocstringReturn(
+        generator_return = DocstringReturns(
             type_str="Generator", description="Generator yielding values"
         )
 

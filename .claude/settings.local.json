@@ -26,7 +26,9 @@
       "Bash(poetry run ruff:*)",
       "Bash(poetry run mypy:*)",
       "Bash(pre-commit run:*)",
-      "Bash(poetry:*)"
+      "Bash(poetry:*)",
+      "Bash(where python)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
