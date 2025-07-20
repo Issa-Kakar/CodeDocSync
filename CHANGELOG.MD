@@ -29,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - JSON extraction now correctly handles nested objects, arrays, and string values containing braces
 
 ### Added
+- **Template-Based Suggestion Engine (Chunk 2)** (2025-01-20)
+  - Complete template system architecture with DocstringTemplate base class and TemplateRegistry
+  - Google-style docstring template with comprehensive parameter, return, and exception rendering
+  - Intelligent parameter suggestion generator handling all parameter-related issue types
+  - Smart merging algorithm for partial docstring updates with content preservation
+  - Advanced template functionality: section boundaries detection, intelligent content merging, custom section preservation
+  - Parameter-specific generators: name mismatch fixing, missing parameter addition, type correction, order fixing
+  - Context-aware suggestion generation with confidence scoring and validation
+  - Comprehensive test suite with 200+ test cases covering templates, generators, and merging logic
+  - Production-ready error handling and fallback strategies for all suggestion scenarios
+  - Foundation for additional style templates (NumPy, Sphinx, REST) and specialized generators
 - **Suggestion Generator Foundation (Chunk 1)** (2025-01-20)
   - Complete data models for suggestion generation with comprehensive validation
   - Core models: Suggestion, SuggestionBatch, SuggestionContext, SuggestionDiff, SuggestionMetadata
