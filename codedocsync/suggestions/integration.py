@@ -278,11 +278,25 @@ class SuggestionBatchProcessor:
         for result in results:
             all_suggestions.extend(result.get_suggestions())
 
+        # Get function name and file path from first result if available
+        function_name = ""
+        file_path = ""
+        if results and results[0].matched_pair:
+            # Safely access function name and file path
+            if hasattr(results[0].matched_pair, "function"):
+                func = results[0].matched_pair.function
+                if hasattr(func, "signature") and hasattr(func.signature, "name"):
+                    function_name = func.signature.name
+                if hasattr(func, "file_path"):
+                    file_path = func.file_path
+
         return SuggestionBatch(
             suggestions=all_suggestions,
-            total_issues=sum(len(r.issues) for r in results),
-            functions_processed=len(results),
-            generation_time_ms=sum(r.suggestion_generation_time_ms for r in results),
+            function_name=function_name,
+            file_path=file_path,
+            total_generation_time_ms=sum(
+                r.suggestion_generation_time_ms for r in results
+            ),
         )
 
 

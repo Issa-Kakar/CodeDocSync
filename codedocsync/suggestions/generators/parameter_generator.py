@@ -451,9 +451,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         )
 
         metadata = SuggestionMetadata(
-            generator_name=self.__class__.__name__,
+            generator_type=self.__class__.__name__,
             generator_version="1.0.0",
-            analysis_type=suggestion_type.value,
         )
 
         return Suggestion(
@@ -461,7 +460,6 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),
@@ -472,12 +470,24 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         self, context: SuggestionContext, reason: str
     ) -> Suggestion:
         """Create a low-confidence fallback suggestion."""
+        # Get original text, handling both RawDocstring and ParsedDocstring
+        original_text = ""
+        if context.docstring:
+            if hasattr(context.docstring, "raw_text"):
+                original_text = context.docstring.raw_text
+            elif isinstance(context.docstring, str):
+                original_text = context.docstring
+
+        # If still empty, create a placeholder
+        if not original_text:
+            original_text = '"""TODO: Add docstring"""'
+
         return self._create_suggestion(
             context,
-            getattr(context.docstring, "raw_text", "") if context.docstring else "",
+            original_text,  # This will be the suggested text
             f"Unable to generate specific fix: {reason}",
-            confidence=0.1,
-            suggestion_type=SuggestionType.PARAMETER_UPDATE,
+            0.1,  # confidence
+            SuggestionType.PARAMETER_UPDATE,
         )
 
     def _fix_parameter_types_in_docstring(

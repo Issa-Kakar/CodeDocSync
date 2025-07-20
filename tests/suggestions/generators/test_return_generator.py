@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import pytest
 
 from codedocsync.analyzer.models import InconsistencyIssue
-from codedocsync.parser.docstring_models import DocstringReturn
+from codedocsync.parser.docstring_models import DocstringReturns
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.return_generator import (
     ReturnAnalysisResult,
@@ -203,7 +203,7 @@ def test_function():
         self, generator, mock_function, mock_docstring, mock_issue
     ):
         """Test improving vague return description."""
-        mock_docstring.returns = DocstringReturn(type_str="str", description="result")
+        mock_docstring.returns = DocstringReturns(type_str="str", description="result")
         mock_issue.issue_type = "return_description_vague"
 
         context = SuggestionContext(
@@ -413,7 +413,7 @@ def number_generator(n):
         docstring = Mock()
         docstring.format = "google"
         docstring.summary = "Generate numbers"
-        docstring.returns = DocstringReturn(
+        docstring.returns = DocstringReturns(
             type_str="list", description="List of numbers"
         )  # Wrong for generator
         docstring.parameters = []

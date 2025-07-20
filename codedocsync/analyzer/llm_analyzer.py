@@ -19,6 +19,7 @@ import logging
 import os
 import sqlite3
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -941,7 +942,7 @@ class LLMAnalyzer:
         self,
         requests: list[LLMAnalysisRequest],
         max_concurrent: int = 10,
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> list[LLMAnalysisResponse]:
         """
         Analyze multiple functions efficiently with smart batching.
@@ -1151,7 +1152,7 @@ class LLMAnalyzer:
         self,
         functions: list["ParsedFunction"],
         max_concurrent: int = 5,
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> dict[str, Any]:
         """
         Pre-populate cache for high-value functions.

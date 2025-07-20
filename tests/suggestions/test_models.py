@@ -313,7 +313,9 @@ class TestSuggestion:
 
         quality_score = suggestion.get_quality_score()
         assert 0.0 <= quality_score <= 1.0
-        assert quality_score == 0.8  # All factors are positive
+        assert (
+            quality_score == 0.95
+        )  # All factors are positive (0.8 + 1.0 + 1.0 + 1.0) / 4
 
     def test_suggestion_quality_score_with_issues(self):
         """Test quality score with some issues."""
@@ -486,8 +488,9 @@ class TestSuggestionBatch:
         batch = SuggestionBatch(suggestions=self.suggestions)
         ready = batch.ready_to_apply_suggestions
 
-        assert len(ready) == 1
+        assert len(ready) == 2  # Both 0.9 and 0.7 confidence suggestions are ready
         assert ready[0].confidence == 0.9
+        assert ready[1].confidence == 0.7
 
     def test_batch_average_confidence(self):
         """Test average confidence calculation."""

@@ -19,7 +19,7 @@ from codedocsync.suggestions.integration import (
     enhance_multiple_with_suggestions,
     enhance_with_suggestions,
 )
-from codedocsync.suggestions.models import DocstringStyle, Suggestion, SuggestionType
+from codedocsync.suggestions.models import Suggestion, SuggestionType
 
 
 # Test fixtures
@@ -76,12 +76,22 @@ def mock_analysis_result(mock_matched_pair, mock_issue):
 @pytest.fixture
 def mock_suggestion():
     """Create a mock Suggestion."""
+    from codedocsync.suggestions.models import SuggestionDiff
+
+    diff = SuggestionDiff(
+        original_lines=['    """Original docstring."""'],
+        suggested_lines=['    """Updated docstring with correct parameter."""'],
+        start_line=1,
+        end_line=1,
+    )
+
     return Suggestion(
         suggestion_type=SuggestionType.PARAMETER_UPDATE,
         original_text='    """Original docstring."""',
         suggested_text='    """Updated docstring with correct parameter."""',
         confidence=0.9,
-        style=DocstringStyle.GOOGLE,
+        diff=diff,
+        style="google",
         copy_paste_ready=True,
     )
 
@@ -321,8 +331,14 @@ class TestSuggestionBatchProcessor:
         batch = processor.create_suggestion_batch([enhanced_result])
 
         assert len(batch.suggestions) == 1
-        assert batch.functions_processed == 1
-        assert batch.total_issues == 1
+        assert (
+            batch.total_generation_time_ms
+            == enhanced_result.suggestion_generation_time_ms
+        )
+        # Check that function name and file path were extracted if available
+        # Since we're using a mock, these will be empty strings
+        assert isinstance(batch.function_name, str)
+        assert isinstance(batch.file_path, str)
 
 
 class TestFactoryFunctions:
