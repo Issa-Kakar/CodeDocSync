@@ -391,8 +391,8 @@ class TestAnalyzeMultiplePairs:
         pairs = self.create_test_pairs(3)
 
         config = AnalysisConfig(
-            parallel_analysis=False,  # Force sequential
-            use_llm=False,
+            parallel_analysis=False,
+            use_llm=False,  # Force sequential
         )
 
         results = await analyze_multiple_pairs(pairs, config=config)

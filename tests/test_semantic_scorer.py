@@ -48,7 +48,7 @@ class TestSemanticScorer:
             sample_function, "src.utils.fetch_user_data", 0.92
         )
 
-        assert is_valid == True
+        assert is_valid
         assert adjusted_score >= 0.92  # Should be at least the original score
 
     def test_validate_semantic_match_low_similarity(self, scorer, sample_function):
@@ -57,7 +57,7 @@ class TestSemanticScorer:
             sample_function, "src.other.completely_different_function", 0.45
         )
 
-        assert is_valid == False
+        assert not is_valid
         assert adjusted_score < 0.65  # Below threshold
 
     def test_validate_semantic_match_pattern_boost(self, scorer, sample_function):
@@ -68,15 +68,15 @@ class TestSemanticScorer:
             0.75,
         )
 
-        assert is_valid == True
+        assert is_valid
         assert adjusted_score > 0.75  # Should be boosted
 
     def test_validate_semantic_match_name_penalty(self, scorer, sample_function):
         """Test that very different names get penalized."""
         is_valid, adjusted_score = scorer.validate_semantic_match(
             sample_function,
-            "src.utils.xyz_random_name",  # Very different name
-            0.75,
+            "src.utils.xyz_random_name",
+            0.75,  # Very different name
         )
 
         # Should be penalized for name dissimilarity
@@ -121,36 +121,29 @@ class TestSemanticScorer:
 
     def test_names_follow_pattern_verb_changes(self, scorer):
         """Test recognition of verb change patterns."""
-        assert scorer._names_follow_pattern("get_user", "fetch_user") == True
-        assert scorer._names_follow_pattern("set_value", "update_value") == True
-        assert scorer._names_follow_pattern("create_record", "make_record") == True
-        assert scorer._names_follow_pattern("delete_item", "remove_item") == True
+        assert scorer._names_follow_pattern("get_user", "fetch_user")
+        assert scorer._names_follow_pattern("set_value", "update_value")
+        assert scorer._names_follow_pattern("create_record", "make_record")
+        assert scorer._names_follow_pattern("delete_item", "remove_item")
 
     def test_names_follow_pattern_noun_changes(self, scorer):
         """Test recognition of noun change patterns."""
-        assert scorer._names_follow_pattern("user_id", "user_identifier") == True
-        assert scorer._names_follow_pattern("data_dict", "data_map") == True
-        assert scorer._names_follow_pattern("item_list", "item_array") == True
+        assert scorer._names_follow_pattern("user_id", "user_identifier")
+        assert scorer._names_follow_pattern("data_dict", "data_map")
+        assert scorer._names_follow_pattern("item_list", "item_array")
 
     def test_names_follow_pattern_case_changes(self, scorer):
         """Test recognition of case style changes."""
-        assert (
-            scorer._is_camelcase_snake_case_pair("getUserData", "get_user_data") == True
+        assert scorer._is_camelcase_snake_case_pair("getUserData", "get_user_data")
+        assert scorer._is_camelcase_snake_case_pair(
+            "updateUserProfile", "update_user_profile"
         )
-        assert (
-            scorer._is_camelcase_snake_case_pair(
-                "updateUserProfile", "update_user_profile"
-            )
-            == True
-        )
-        assert (
-            scorer._is_camelcase_snake_case_pair("get_user_data", "getUserData") == True
-        )
+        assert scorer._is_camelcase_snake_case_pair("get_user_data", "getUserData")
 
     def test_names_follow_pattern_no_match(self, scorer):
         """Test that unrelated names don't match patterns."""
-        assert scorer._names_follow_pattern("get_user", "calculate_tax") == False
-        assert scorer._names_follow_pattern("process_data", "send_email") == False
+        assert scorer._names_follow_pattern("get_user", "calculate_tax") is False
+        assert scorer._names_follow_pattern("process_data", "send_email") is False
 
     def test_calculate_name_similarity_exact_match(self, scorer):
         """Test name similarity calculation for exact matches."""
@@ -282,22 +275,16 @@ class TestSemanticScorer:
     def test_camelcase_snake_case_edge_cases(self, scorer):
         """Test camelCase/snake_case conversion edge cases."""
         # Test single word
-        assert scorer._is_camelcase_snake_case_pair("user", "user") == False
+        assert scorer._is_camelcase_snake_case_pair("user", "user") is False
 
         # Test already matching format
-        assert scorer._is_camelcase_snake_case_pair("get_user", "get_user") == False
+        assert scorer._is_camelcase_snake_case_pair("get_user", "get_user") is False
 
         # Test with numbers
-        assert (
-            scorer._is_camelcase_snake_case_pair("getUserData2", "get_user_data2")
-            == True
-        )
+        assert scorer._is_camelcase_snake_case_pair("getUserData2", "get_user_data2")
 
         # Test with acronyms
-        assert (
-            scorer._is_camelcase_snake_case_pair("parseHTMLData", "parse_html_data")
-            == True
-        )
+        assert scorer._is_camelcase_snake_case_pair("parseHTMLData", "parse_html_data")
 
     def test_name_similarity_empty_strings(self, scorer):
         """Test name similarity with empty strings."""

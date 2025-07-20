@@ -196,7 +196,7 @@ class Class{i}:
             initial_memory = process.memory_info().rss / 1024 / 1024
 
             start_time = time.time()
-            result = await facade.match_project("/test/path", enable_semantic=True)
+            _result = await facade.match_project("/test/path", enable_semantic=True)
             total_time = time.time() - start_time
 
             # Monitor memory after test
@@ -275,7 +275,7 @@ class Class{i}:
                     unmatched_functions=mock_functions,
                 )
 
-                result = await facade.match_project(
+                _result = await facade.match_project(
                     str(large_project_structure), enable_semantic=False
                 )
 
@@ -368,7 +368,7 @@ class Class{i}:
                     (temp_path / "error_file.py").write_text("def test(): pass")
 
                     start_time = time.time()
-                    result = await facade.match_project(
+                    _result = await facade.match_project(
                         str(temp_path), enable_semantic=False
                     )
                     error_recovery_time = time.time() - start_time

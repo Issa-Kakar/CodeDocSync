@@ -234,7 +234,7 @@ Python 3.10+ (for match statements, modern typing)
 Key libraries: typer, rich, chromadb, openai, litellm, rapidfuzz
 pytest-asyncio for async test support
 
-## Completed Sprint: Suggestion Generator Module (Chunks 1-3) ✅
+## Completed Sprint: Suggestion Generator Module (Chunks 1-4) ✅
 
 ### Components Implemented:
 - **models.py** ✅: Complete data models for suggestion generation (Chunk 1)
@@ -336,9 +336,65 @@ pytest-asyncio for async test support
   - **test_converter.py** ✅: Style converter with multi-format transformation testing (Chunk 3)
   - High test coverage with edge case handling and performance validation
 
+### Issue-Specific Generators (Chunk 4):
+- **generators/return_generator.py** ✅: Return Type Suggestion Generator (Chunk 4)
+  - ReturnSuggestionGenerator: Handles return type mismatches, missing returns, vague descriptions, generator returns
+  - ReturnStatementAnalyzer: AST-based analysis of return statements, types, generators, async patterns
+  - Return type inference from function signatures, code analysis, and behavioral patterns
+  - Generator function detection with proper Generator[T] type documentation
+  - Async function handling with await-specific documentation notes
+  - Multiple return type analysis with Union type suggestions
+  - Confidence scoring based on return pattern complexity and analysis certainty
+- **generators/raises_generator.py** ✅: Exception Documentation Generator (Chunk 4)
+  - RaisesSuggestionGenerator: Handles missing raises, type mismatches, vague descriptions
+  - ExceptionAnalyzer: Comprehensive exception detection through AST analysis
+  - Direct raise statement analysis with exception type and condition detection
+  - Function call exception inference (open() → FileNotFoundError, int() → ValueError)
+  - Subscript operation analysis for KeyError and IndexError detection
+  - Exception deduplication with confidence-based preference
+  - Built-in exception description library with context-appropriate messages
+- **generators/behavior_generator.py** ✅: Behavioral Description Generator (Chunk 4)
+  - BehaviorSuggestionGenerator: Enhances vague, outdated, or missing behavioral descriptions
+  - BehaviorAnalyzer: Multi-pattern analysis of function behavior
+  - Control flow analysis: loops, conditionals, early returns, complexity assessment
+  - Data operation detection: creation, modification, transformation patterns
+  - Side effect identification: file I/O, network operations, logging, global modifications
+  - Performance characteristic analysis: nested loops, recursion, caching detection
+  - Function purpose inference from naming patterns and code structure
+  - Enhanced description generation with behavioral context and side effect documentation
+- **generators/example_generator.py** ✅: Example Generation System (Chunk 4)
+  - ExampleSuggestionGenerator: Adds, fixes, updates, and completes usage examples
+  - ExampleGenerator: Multi-complexity example generation (basic, edge case, advanced)
+  - ParameterValueGenerator: Realistic value generation based on names and types
+  - ExamplePatternAnalyzer: Function analysis for appropriate example characteristics
+  - Name-based value inference (filename → "example.txt", count → 10, email → "user@example.com")
+  - Type-based value generation with complex type handling (Union, Optional, generics)
+  - Edge case value generation (empty collections, zero values, None)
+  - Example templates with setup code, function calls, and expected outputs
+- **generators/edge_case_handlers.py** ✅: Edge Case Handlers (Chunk 4)
+  - EdgeCaseSuggestionGenerator: Handles special Python constructs requiring specialized documentation
+  - SpecialConstructAnalyzer: Detection of properties, class/static methods, magic methods, async/generator functions
+  - PropertyMethodHandler: Specialized handling for @property getters, setters, deleters
+  - ClassMethodHandler: Proper documentation excluding 'cls' parameter for @classmethod, handling all parameters for @staticmethod
+  - Magic method documentation with predefined descriptions (__init__, __str__, __len__, __eq__, etc.)
+  - Async function documentation with await usage notes and context requirements
+  - Generator function documentation with proper Generator type annotations
+  - Overloaded function handling with signature aggregation and documentation strategies
+
+### Testing Suite (Chunk 4):
+- **tests/suggestions/generators/** ✅: Comprehensive test suite for all generators (1000+ test cases)
+  - **test_return_generator.py** ✅: Return generator with return analysis, type inference, generator/async handling
+  - **test_raises_generator.py** ✅: Exception generator with exception detection, AST analysis, deduplication
+  - **test_behavior_generator.py** ✅: Behavior generator with pattern analysis, description enhancement, side effects
+  - **test_example_generator.py** ✅: Example generator with value generation, template system, complexity levels
+  - **test_edge_case_handlers.py** ✅: Edge case handlers with special construct detection and specialized documentation
+  - Integration tests for complete workflows and real-world scenarios
+  - Performance validation and error handling coverage
+  - Edge case testing for malformed input and graceful degradation
+
 Next Implementation Priority
 
-Complete Suggestion Generator Chunks 4-6: Issue-specific strategies, integration layer, CLI commands
+Complete Suggestion Generator Chunks 5-6: Integration layer and output formatting, CLI commands and production features
 Complete End-to-End Integration: Connect all modules for production use
 Performance Optimization: Fine-tune caching and parallel processing
 Production Deployment: CI/CD pipeline and release preparation
