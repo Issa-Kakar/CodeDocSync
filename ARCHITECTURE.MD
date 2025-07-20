@@ -35,6 +35,26 @@ CodeDocSync is a CLI tool that automatically detects inconsistencies between Pyt
 
 ## Component Specifications
 
+### CLI Module (`cli/`)
+
+**Purpose**: Provide a clean, maintainable command-line interface organized into logical submodules.
+
+**Structure** (Refactored from single 2191-line main.py):
+- `cli/main.py`: App initialization and command registration (~100 lines)
+- `cli/analyze.py`: `analyze` and `analyze_function` commands for documentation analysis (~425 lines)
+- `cli/match.py`: `match`, `match_contextual`, `match_unified` commands for function matching (~538 lines)
+- `cli/parse.py`: `parse` command for AST parsing demonstration (~130 lines)
+- `cli/suggest.py`: `suggest` and `suggest_interactive` commands for fix suggestions (~386 lines)
+- `cli/cache.py`: `clear_cache` command for cache management (~106 lines)
+- `cli/placeholders.py`: `watch` and `check` placeholder commands for future features (~25 lines)
+- `cli/formatting.py`: Shared formatting and display utilities (~300 lines)
+
+**Key Design Decisions**:
+- Modular structure for maintainability
+- Shared formatting utilities to avoid duplication
+- Clear separation of concerns by command type
+- Backward compatibility maintained with wrapper in original main.py
+
 ### Parser Module (`parser/`)
 
 **Purpose**: Extract code structure and documentation from Python files with high accuracy.

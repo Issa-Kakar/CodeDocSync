@@ -387,9 +387,8 @@ class PropertyMethodHandler:
         )
 
         metadata = SuggestionMetadata(
-            generator_name=self.__class__.__name__,
+            generator_type=self.__class__.__name__,
             generator_version="1.0.0",
-            analysis_type=suggestion_type.value,
         )
 
         return Suggestion(
@@ -531,9 +530,8 @@ class ClassMethodHandler:
         )
 
         metadata = SuggestionMetadata(
-            generator_name=self.__class__.__name__,
+            generator_type=self.__class__.__name__,
             generator_version="1.0.0",
-            analysis_type=suggestion_type.value,
         )
 
         return Suggestion(
@@ -781,9 +779,8 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
         )
 
         metadata = SuggestionMetadata(
-            generator_name=self.__class__.__name__,
+            generator_type=self.__class__.__name__,
             generator_version="1.0.0",
-            analysis_type=suggestion_type.value,
         )
 
         return Suggestion(
