@@ -50,7 +50,6 @@ from .base import (
 from .config import (
     # Main configuration classes
     SuggestionConfig,
-    RankingConfig,
     ConfigManager,
     # Predefined configurations
     get_minimal_config,
@@ -81,6 +80,44 @@ from .converter import (
     batch_convert_docstrings,
 )
 
+# Integration layer (Chunk 5)
+from .integration import (
+    SuggestionIntegration,
+    SuggestionBatchProcessor,
+    EnhancedIssue,
+    EnhancedAnalysisResult,
+    enhance_with_suggestions,
+    enhance_multiple_with_suggestions,
+)
+
+# Output formatters (Chunk 5)
+from .formatters import (
+    TerminalSuggestionFormatter,
+    JSONSuggestionFormatter,
+    OutputStyle,
+)
+
+# Ranking and filtering (Chunk 5)
+from .ranking import (
+    SuggestionRanker,
+    SuggestionFilter,
+    RankingStrategy,
+    RankingConfig,
+    RankingMetrics,
+    PriorityBooster,
+    create_strict_ranker,
+    create_permissive_ranker,
+    create_balanced_ranker,
+)
+
+# Configuration management (Chunk 5)
+from .config_manager import (
+    SuggestionConfigManager,
+    IntegratedSuggestionConfig,
+    get_config_manager,
+    load_suggestion_config,
+)
+
 # Version information
 __version__ = "1.0.0"
 
@@ -105,7 +142,6 @@ __all__ = [
     "with_suggestion_fallback",
     # Configuration
     "SuggestionConfig",
-    "RankingConfig",
     "ConfigManager",
     "config_manager",
     # Predefined configs
@@ -124,6 +160,32 @@ __all__ = [
     "DocstringStyleConverter",
     "convert_docstring",
     "batch_convert_docstrings",
+    # Integration layer (Chunk 5)
+    "SuggestionIntegration",
+    "SuggestionBatchProcessor",
+    "EnhancedIssue",
+    "EnhancedAnalysisResult",
+    "enhance_with_suggestions",
+    "enhance_multiple_with_suggestions",
+    # Output formatters (Chunk 5)
+    "TerminalSuggestionFormatter",
+    "JSONSuggestionFormatter",
+    "OutputStyle",
+    # Ranking and filtering (Chunk 5)
+    "SuggestionRanker",
+    "SuggestionFilter",
+    "RankingStrategy",
+    "RankingConfig",
+    "RankingMetrics",
+    "PriorityBooster",
+    "create_strict_ranker",
+    "create_permissive_ranker",
+    "create_balanced_ranker",
+    # Configuration management (Chunk 5)
+    "SuggestionConfigManager",
+    "IntegratedSuggestionConfig",
+    "get_config_manager",
+    "load_suggestion_config",
     # Exceptions
     "SuggestionError",
     "StyleDetectionError",
@@ -253,24 +315,20 @@ def enhance_analysis_result_with_suggestions(
     analysis_result, config: Optional[SuggestionConfig] = None
 ):
     """
-    Enhance an AnalysisResult with suggestions (placeholder for future integration).
+    Enhance an AnalysisResult with suggestions.
 
-    This function will be implemented in future chunks to integrate with
-    the analyzer module and add rich suggestions to analysis results.
+    This function integrates with the analyzer module and adds rich suggestions
+    to analysis results using the SuggestionIntegration system.
 
     Args:
         analysis_result: AnalysisResult from analyzer module
         config: Optional suggestion configuration
 
     Returns:
-        Enhanced analysis result with suggestions
+        EnhancedAnalysisResult with suggestions
     """
-    # Placeholder for future implementation
-    # This will be implemented in Chunk 5 (Integration Layer)
-    raise NotImplementedError(
-        "Suggestion integration will be implemented in future chunks. "
-        "Currently only the foundation (Chunk 1) is implemented."
-    )
+    # Use the integration layer to enhance the result
+    return enhance_with_suggestions(analysis_result, config)
 
 
 # Quality constants for suggestion evaluation
@@ -328,11 +386,11 @@ def get_module_info() -> Dict[str, Any]:
             "chunk_1": "✅ Complete - Core Data Models and Base Infrastructure",
             "chunk_2": "✅ Complete - Template-Based Suggestion Engine",
             "chunk_3": "✅ Complete - Style-Specific Formatters",
-            "chunk_4": "⏳ Pending - Issue-Specific Strategies",
-            "chunk_5": "⏳ Pending - Integration Layer and Output Formatting",
+            "chunk_4": "✅ Complete - Issue-Specific Strategies",
+            "chunk_5": "✅ Complete - Integration Layer and Output Formatting",
             "chunk_6": "⏳ Pending - Testing Suite and Production Integration",
         },
-        "integration_ready": False,  # Will be True after Chunk 5
+        "integration_ready": True,  # Chunk 5 completed
     }
 
 
@@ -344,9 +402,11 @@ def _print_initialization_info():
     if os.getenv("CODEDOCSYNC_DEBUG"):
         print(f"CodeDocSync Suggestions Module {__version__} initialized")
         print("✅ Chunk 1: Core Data Models and Base Infrastructure - Complete")
-        print(
-            "⚠️  Note: This is the foundation chunk. Full functionality requires additional chunks."
-        )
+        print("✅ Chunk 2: Template-Based Suggestion Engine - Complete")
+        print("✅ Chunk 3: Style-Specific Formatters - Complete")
+        print("✅ Chunk 4: Issue-Specific Strategies - Complete")
+        print("✅ Chunk 5: Integration Layer and Output Formatting - Complete")
+        print("🎉 Suggestion system ready for integration!")
 
 
 # Initialize module (only in debug mode)
