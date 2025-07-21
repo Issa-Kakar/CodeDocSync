@@ -592,7 +592,7 @@ The suggestion module depends on parser models with specific names:
   - All DocstringStyle enum issues resolved
   - All attribute name mismatches fixed
   - Generator type issues resolved
-- **CLI Commands**: 
+- **CLI Commands**:
   - `parse`: ✅ Working
   - `match`: ✅ Working (100% match rate on test files)
   - `analyze`: ✅ Working (detects inconsistencies correctly)
@@ -658,7 +658,7 @@ The suggestion module depends on parser models with specific names:
   - Tracks fixed files in persistent `fix_progress.json`
   - Provides mypy fix categorization (critical path → core → generators → utilities)
   - Commands: `summary`, `mypy`, `file <path>`, `mark-fixed <path> [tool]`
-  
+
 - **fix_project.py** ✅: Main execution script for automated fixes
   - Runs ruff and black with proper error handling
   - Shows detailed error breakdowns by type
@@ -670,7 +670,7 @@ The suggestion module depends on parser models with specific names:
 - **Phase 1**: Ruff issues (4-6 hours estimated)
   - Priority: B904 → UP038 → B007 → F841 → others
   - Strategy: Fix one error type across all files before moving to next
-- **Phase 2**: Mypy issues (8-10 hours estimated)  
+- **Phase 2**: Mypy issues (8-10 hours estimated)
   - Priority: Critical paths → Core functionality → Generators → Utilities
   - Strategy: Fix by file category, easiest files first
 

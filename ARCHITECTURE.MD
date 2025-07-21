@@ -656,10 +656,10 @@ This section documents the systematic approach for fixing linting (ruff) and typ
 
 ### Current Status (as of 2025-01-21)
 
-- **Initial State**: 
+- **Initial State**:
   - Ruff: 104 errors (10 auto-fixed, leaving 94)
   - Mypy: 556 errors
-- **After Black formatting**: 
+- **After Black formatting**:
   - Ruff: 86 errors
 - **Main Error Categories**:
   - 29 B904: raise-without-from errors
@@ -812,7 +812,7 @@ def process(doc: Union[RawDocstring, ParsedDocstring]):
    ```bash
    # Run initial status check
    python fix_project.py --phase status
-   
+
    # Create initial tracking data
    python fix_tracker.py summary
    ```
@@ -821,10 +821,10 @@ def process(doc: Union[RawDocstring, ParsedDocstring]):
    ```bash
    # For each error type, check examples
    python fix_project.py --phase examples --error-code B904
-   
+
    # Fix files with fewest errors first
    python fix_tracker.py summary  # See "Next Files to Fix"
-   
+
    # After fixing a file
    python fix_tracker.py mark-fixed <file_path> ruff
    ```
@@ -833,11 +833,11 @@ def process(doc: Union[RawDocstring, ParsedDocstring]):
    ```bash
    # Get strategic overview
    python fix_tracker.py mypy
-   
+
    # Fix by category (critical path first)
    # Check specific file errors
    python fix_tracker.py file codedocsync/__init__.py
-   
+
    # After fixing
    python fix_tracker.py mark-fixed <file_path> mypy
    ```
@@ -846,7 +846,7 @@ def process(doc: Union[RawDocstring, ParsedDocstring]):
    ```bash
    # Run full check periodically
    python fix_project.py --phase all
-   
+
    # Verify with pre-commit
    pre-commit run --all-files
    ```

@@ -2,16 +2,17 @@
 """
 Project Fix Coordinator - Systematically fixes linting and type issues
 """
-import subprocess
-from pathlib import Path
+
 import json
+import subprocess
 from datetime import datetime
-from typing import List, Tuple, Dict, Optional
+from pathlib import Path
+
 import click
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from rich.panel import Panel
 
 console = Console()
 
@@ -36,16 +37,16 @@ class ProjectFixer:
                 "phase": "start",
                 "ruff_fixed": [],
                 "mypy_fixed": [],
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
     def save_progress(self):
         """Save progress to JSON file."""
         self.progress["timestamp"] = datetime.now().isoformat()
-        with open(self.progress_file, 'w') as f:
+        with open(self.progress_file, "w") as f:
             json.dump(self.progress, f, indent=2)
 
-    def run_command(self, cmd: List[str]) -> Tuple[int, str, str]:
+    def run_command(self, cmd: list[str]) -> tuple[int, str, str]:
         """Run command and return (returncode, stdout, stderr)."""
         # Replace poetry run commands with direct Python path
         if cmd[0] == "poetry" and cmd[1] == "run":
@@ -62,17 +63,23 @@ class ProjectFixer:
 
     def fix_ruff_auto(self):
         """Phase 1: Auto-fix ruff issues."""
-        self.console.print("\n[bold blue]Phase 1: Auto-fixing Ruff issues...[/bold blue]")
+        self.console.print(
+            "\n[bold blue]Phase 1: Auto-fixing Ruff issues...[/bold blue]"
+        )
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        with Progress(
+            SpinnerColumn(), TextColumn("[progress.description]{task.description}")
+        ) as progress:
             task = progress.add_task("Running ruff --fix...", total=None)
-            returncode, stdout, stderr = self.run_command(["poetry", "run", "ruff", "check", ".", "--fix"])
+            returncode, stdout, stderr = self.run_command(
+                ["poetry", "run", "ruff", "check", ".", "--fix"]
+            )
             progress.update(task, completed=True)
 
         if returncode == 0:
             self.console.print("[green]✓ Ruff auto-fixes applied successfully![/green]")
         else:
-            self.console.print(f"[yellow]⚠ Ruff completed with warnings[/yellow]")
+            self.console.print("[yellow]⚠ Ruff completed with warnings[/yellow]")
             if stderr:
                 self.console.print(f"[dim]{stderr}[/dim]")
 
@@ -80,19 +87,25 @@ class ProjectFixer:
         """Phase 2: Format with Black."""
         self.console.print("\n[bold blue]Phase 2: Formatting with Black...[/bold blue]")
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        with Progress(
+            SpinnerColumn(), TextColumn("[progress.description]{task.description}")
+        ) as progress:
             task = progress.add_task("Running black...", total=None)
-            returncode, stdout, stderr = self.run_command(["poetry", "run", "black", "."])
+            returncode, stdout, stderr = self.run_command(
+                ["poetry", "run", "black", "."]
+            )
             progress.update(task, completed=True)
 
         if stdout:
             self.console.print(stdout)
         self.console.print("[green]✓ Black formatting complete![/green]")
 
-    def get_remaining_issues(self) -> Tuple[int, int]:
+    def get_remaining_issues(self) -> tuple[int, int]:
         """Get current count of issues."""
         # Ruff
-        _, ruff_out, _ = self.run_command(["poetry", "run", "ruff", "check", ".", "--format", "json"])
+        _, ruff_out, _ = self.run_command(
+            ["poetry", "run", "ruff", "check", ".", "--format", "json"]
+        )
         ruff_issues = 0
         if ruff_out:
             try:
@@ -100,11 +113,21 @@ class ProjectFixer:
                 ruff_issues = len(ruff_data)
             except json.JSONDecodeError:
                 # Fallback to counting lines
-                _, ruff_out, _ = self.run_command(["poetry", "run", "ruff", "check", "."])
-                ruff_issues = len([line for line in ruff_out.splitlines() if line.strip() and not line.startswith("warning:")])
+                _, ruff_out, _ = self.run_command(
+                    ["poetry", "run", "ruff", "check", "."]
+                )
+                ruff_issues = len(
+                    [
+                        line
+                        for line in ruff_out.splitlines()
+                        if line.strip() and not line.startswith("warning:")
+                    ]
+                )
 
         # Mypy - count lines since JSON format gives one error per line
-        _, mypy_out, _ = self.run_command(["poetry", "run", "mypy", ".", "--format", "json"])
+        _, mypy_out, _ = self.run_command(
+            ["poetry", "run", "mypy", ".", "--format", "json"]
+        )
         mypy_issues = len(mypy_out.strip().splitlines()) if mypy_out else 0
 
         return ruff_issues, mypy_issues
@@ -132,7 +155,9 @@ class ProjectFixer:
 
     def show_ruff_breakdown(self):
         """Show breakdown of remaining ruff issues by type."""
-        _, output, _ = self.run_command(["poetry", "run", "ruff", "check", ".", "--format", "concise"])
+        _, output, _ = self.run_command(
+            ["poetry", "run", "ruff", "check", ".", "--format", "concise"]
+        )
 
         if not output:
             return
@@ -147,12 +172,14 @@ class ProjectFixer:
                     msg_part = parts[2].strip()
                     if " " in msg_part:
                         code = msg_part.split()[0]
-                        if code.startswith(('B', 'UP', 'F', 'C')):  # Common ruff codes
+                        if code.startswith(("B", "UP", "F", "C")):  # Common ruff codes
                             error_counts[code] = error_counts.get(code, 0) + 1
 
         if error_counts:
             self.console.print("\n[bold]Ruff Issues by Type:[/bold]")
-            for code, count in sorted(error_counts.items(), key=lambda x: x[1], reverse=True):
+            for code, count in sorted(
+                error_counts.items(), key=lambda x: x[1], reverse=True
+            ):
                 self.console.print(f"  {code}: {count} occurrences")
                 # Show description for common codes
                 descriptions = {
@@ -167,7 +194,7 @@ class ProjectFixer:
                 if code in descriptions:
                     self.console.print(f"    [dim]{descriptions[code]}[/dim]")
 
-    def get_fix_patterns(self) -> Dict[str, str]:
+    def get_fix_patterns(self) -> dict[str, str]:
         """Get common fix patterns for ruff issues."""
         return {
             "B904": """
@@ -208,12 +235,14 @@ result = some_function()  # never used
 """,
         }
 
-    def show_fix_examples(self, error_code: Optional[str] = None):
+    def show_fix_examples(self, error_code: str | None = None):
         """Show examples of how to fix common issues."""
         patterns = self.get_fix_patterns()
 
         if error_code and error_code in patterns:
-            self.console.print(Panel(patterns[error_code], title=f"How to fix {error_code}"))
+            self.console.print(
+                Panel(patterns[error_code], title=f"How to fix {error_code}")
+            )
         else:
             self.console.print("\n[bold]Common Fix Patterns:[/bold]")
             for code, pattern in patterns.items():
@@ -221,39 +250,49 @@ result = some_function()  # never used
 
 
 @click.command()
-@click.option('--phase', type=click.Choice(['all', 'ruff', 'mypy', 'status', 'examples']),
-              default='status', help='Which phase to run')
-@click.option('--file', help='Fix specific file (mypy only)')
-@click.option('--error-code', help='Show fix example for specific error code')
-def main(phase: str, file: Optional[str], error_code: Optional[str]):
+@click.option(
+    "--phase",
+    type=click.Choice(["all", "ruff", "mypy", "status", "examples"]),
+    default="status",
+    help="Which phase to run",
+)
+@click.option("--file", help="Fix specific file (mypy only)")
+@click.option("--error-code", help="Show fix example for specific error code")
+def main(phase: str, file: str | None, error_code: str | None):
     """Systematic project fixer for CodeDocSync."""
     fixer = ProjectFixer()
 
-    if phase == 'status':
+    if phase == "status":
         fixer.show_status()
         if error_code:
             fixer.show_fix_examples(error_code)
-    elif phase == 'examples':
+    elif phase == "examples":
         fixer.show_fix_examples(error_code)
-    elif phase == 'all':
+    elif phase == "all":
         fixer.fix_ruff_auto()
         fixer.format_black()
         fixer.show_status()
-    elif phase == 'ruff':
+    elif phase == "ruff":
         fixer.fix_ruff_auto()
         fixer.format_black()
         fixer.show_status()
-    elif phase == 'mypy' and file:
+    elif phase == "mypy" and file:
         # TODO: Implement specific file fixing for mypy
-        console.print(f"[yellow]Mypy file-specific fixing not yet implemented for {file}[/yellow]")
-        console.print("[dim]This will be implemented as part of the systematic mypy fix strategy[/dim]")
+        console.print(
+            f"[yellow]Mypy file-specific fixing not yet implemented for {file}[/yellow]"
+        )
+        console.print(
+            "[dim]This will be implemented as part of the systematic mypy fix strategy[/dim]"
+        )
     else:
         console.print("[bold]CodeDocSync Project Fixer[/bold]")
         console.print("\nUsage:")
         console.print("  python fix_project.py --phase status  # Show current status")
         console.print("  python fix_project.py --phase all     # Run all auto-fixes")
         console.print("  python fix_project.py --phase examples # Show fix examples")
-        console.print("  python fix_project.py --phase examples --error-code B904  # Show specific fix")
+        console.print(
+            "  python fix_project.py --phase examples --error-code B904  # Show specific fix"
+        )
 
 
 if __name__ == "__main__":

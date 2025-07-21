@@ -2,12 +2,13 @@
 """
 Fix Tracker - Tracks progress for fixing linting and type issues in CodeDocSync
 """
-import subprocess
+
 import json
-from pathlib import Path
-from typing import Dict, List, Tuple, Any
+import subprocess
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 
 class FixTracker:
@@ -32,22 +33,22 @@ class FixTracker:
                     "initial_ruff_errors": 0,
                     "initial_mypy_errors": 0,
                     "current_ruff_errors": 0,
-                    "current_mypy_errors": 0
-                }
+                    "current_mypy_errors": 0,
+                },
             }
 
     def save_progress(self):
         """Save current progress to JSON file."""
         self.progress["timestamp"] = datetime.now().isoformat()
-        with open(self.progress_file, 'w') as f:
+        with open(self.progress_file, "w") as f:
             json.dump(self.progress, f, indent=2)
 
-    def get_ruff_errors_by_file(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
+    def get_ruff_errors_by_file(self) -> list[tuple[str, list[dict[str, Any]]]]:
         """Get ruff errors grouped by file, sorted by error count."""
         result = subprocess.run(
             ["poetry", "run", "ruff", "check", ".", "--format", "json"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         if result.returncode == 0 and not result.stdout.strip():
@@ -62,7 +63,7 @@ class FixTracker:
         # Group by file
         by_file = defaultdict(list)
         for error in errors:
-            file = error.get('filename', 'unknown')
+            file = error.get("filename", "unknown")
             by_file[file].append(error)
 
         # Sort by error count (fix files with fewer errors first)
@@ -76,12 +77,12 @@ class FixTracker:
 
         return sorted_files
 
-    def get_ruff_errors_by_type(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_ruff_errors_by_type(self) -> dict[str, list[dict[str, Any]]]:
         """Get ruff errors grouped by error code."""
         result = subprocess.run(
             ["poetry", "run", "ruff", "check", ".", "--format", "json"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         if result.returncode == 0 and not result.stdout.strip():
@@ -95,7 +96,7 @@ class FixTracker:
         # Group by error code
         by_code = defaultdict(list)
         for error in errors:
-            code = error.get('code', 'unknown')
+            code = error.get("code", "unknown")
             by_code[code].append(error)
 
         return dict(sorted(by_code.items(), key=lambda x: len(x[1]), reverse=True))
@@ -110,7 +111,7 @@ class FixTracker:
                 self.progress["mypy_fixed_files"].append(file_path)
         self.save_progress()
 
-    def get_next_files_to_fix(self, count: int = 5) -> List[Tuple[str, int]]:
+    def get_next_files_to_fix(self, count: int = 5) -> list[tuple[str, int]]:
         """Get the next files to fix based on error count."""
         files_with_errors = self.get_ruff_errors_by_file()
         unfixed_files = [
@@ -144,7 +145,7 @@ class FixTracker:
         for file, error_count in next_files:
             print(f"{file}: {error_count} errors")
 
-    def get_errors_for_file(self, file_path: str) -> List[Dict[str, Any]]:
+    def get_errors_for_file(self, file_path: str) -> list[dict[str, Any]]:
         """Get all ruff errors for a specific file."""
         errors_by_file = dict(self.get_ruff_errors_by_file())
         return errors_by_file.get(file_path, [])
@@ -156,20 +157,20 @@ class MypyFixStrategy:
     def __init__(self, tracker: FixTracker):
         self.tracker = tracker
 
-    def get_mypy_errors_by_file(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_mypy_errors_by_file(self) -> dict[str, list[dict[str, Any]]]:
         """Get mypy errors grouped by file."""
         result = subprocess.run(
             ["poetry", "run", "mypy", ".", "--format", "json"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         errors_by_file = defaultdict(list)
         for line in result.stdout.splitlines():
             try:
                 error = json.loads(line)
-                file = error.get('file', 'unknown')
-                if file != 'unknown':
+                file = error.get("file", "unknown")
+                if file != "unknown":
                     errors_by_file[file].append(error)
             except json.JSONDecodeError:
                 continue
@@ -182,16 +183,16 @@ class MypyFixStrategy:
 
         return dict(errors_by_file)
 
-    def categorize_files(self) -> Dict[str, List[Tuple[str, int]]]:
+    def categorize_files(self) -> dict[str, list[tuple[str, int]]]:
         """Categorize files by priority and complexity."""
         errors = self.get_mypy_errors_by_file()
 
         # Categorize files by priority and complexity
         categories = {
-            "critical_path": [],    # Main API files
-            "generators": [],       # Suggestion generators
-            "utilities": [],        # Helper files
-            "tests": []            # Test files (lowest priority)
+            "critical_path": [],  # Main API files
+            "generators": [],  # Suggestion generators
+            "utilities": [],  # Helper files
+            "tests": [],  # Test files (lowest priority)
         }
 
         for file, errs in errors.items():
@@ -223,7 +224,9 @@ class MypyFixStrategy:
         errors_by_file = self.get_mypy_errors_by_file()
 
         print("\n=== Mypy Fix Strategy ===")
-        print(f"Total mypy errors: {self.tracker.progress['statistics']['current_mypy_errors']}")
+        print(
+            f"Total mypy errors: {self.tracker.progress['statistics']['current_mypy_errors']}"
+        )
         print(f"Files with errors: {len(errors_by_file)}")
         print(f"Files already fixed: {len(self.tracker.progress['mypy_fixed_files'])}")
 
@@ -237,10 +240,12 @@ class MypyFixStrategy:
         error_types = defaultdict(int)
         for file_errors in errors_by_file.values():
             for error in file_errors:
-                error_types[error.get('code', 'unknown')] += 1
+                error_types[error.get("code", "unknown")] += 1
 
         print("\n--- Top Mypy Error Types ---")
-        for code, count in sorted(error_types.items(), key=lambda x: x[1], reverse=True)[:5]:
+        for code, count in sorted(
+            error_types.items(), key=lambda x: x[1], reverse=True
+        )[:5]:
             print(f"{code}: {count} occurrences")
 
 
@@ -274,7 +279,9 @@ def main():
             print(f"Marked {file_path} as fixed for {tool}")
 
         else:
-            print("Usage: python fix_tracker.py [summary|mypy|file <path>|mark-fixed <path> [tool]]")
+            print(
+                "Usage: python fix_tracker.py [summary|mypy|file <path>|mark-fixed <path> [tool]]"
+            )
 
     else:
         # Default: show summary
