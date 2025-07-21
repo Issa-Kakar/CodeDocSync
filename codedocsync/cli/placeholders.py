@@ -13,7 +13,7 @@ def watch(
     path: Annotated[
         str, typer.Argument(help="The path to the directory to watch.")
     ] = ".",
-):
+) -> None:
     """
     Watches files for changes and provides real-time feedback.
     """
@@ -26,7 +26,7 @@ def check(
     path: Annotated[
         str, typer.Argument(help="The path to the file or directory to check.")
     ] = ".",
-):
+) -> None:
     """
     Checks for inconsistencies, intended for CI/CD pipelines.
     """

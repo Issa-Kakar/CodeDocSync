@@ -25,7 +25,7 @@ app = typer.Typer(
 )
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     """Prints the version of the application and exits."""
     if value:
         print(f"CodeDocSync v{__version__}")
@@ -44,7 +44,7 @@ def main(
             help="Show the application's version and exit.",
         ),
     ] = False,
-):
+) -> None:
     """
     Manage documentation consistency checks for your codebase.
     """

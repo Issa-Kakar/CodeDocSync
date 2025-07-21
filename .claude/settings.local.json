@@ -1,5 +1,11 @@
+
 {
   "permissions": {
+    "includeCoAuthoredBy": false,
+    "defaultMode": "bypassPermissions",
+    "allowedTools": [
+      "WebSearch"
+    ],
     "allow": [
       "Bash(python -m pytest tests/test_ast_parser.py -v)",
       "Bash(python:*)",

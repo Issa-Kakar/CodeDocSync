@@ -9,19 +9,12 @@ from datetime import datetime
 from pathlib import Path
 
 import click
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.table import Table
-
-console = Console()
 
 
 class ProjectFixer:
     """Coordinates systematic fixing of linting and type issues."""
 
     def __init__(self):
-        self.console = console
         self.progress_file = Path(".fix_progress.json")
         self.load_progress()
         # Use direct Python path for Windows compatibility
@@ -58,47 +51,37 @@ class ProjectFixer:
             else:
                 cmd = [self.python_path, "-m"] + cmd[2:]
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
         return result.returncode, result.stdout, result.stderr
 
     def fix_ruff_auto(self):
         """Phase 1: Auto-fix ruff issues."""
-        self.console.print(
-            "\n[bold blue]Phase 1: Auto-fixing Ruff issues...[/bold blue]"
+        print("\n=== Phase 1: Auto-fixing Ruff issues... ===")
+
+        print("Running ruff --fix...")
+        returncode, stdout, stderr = self.run_command(
+            ["poetry", "run", "ruff", "check", ".", "--fix"]
         )
 
-        with Progress(
-            SpinnerColumn(), TextColumn("[progress.description]{task.description}")
-        ) as progress:
-            task = progress.add_task("Running ruff --fix...", total=None)
-            returncode, stdout, stderr = self.run_command(
-                ["poetry", "run", "ruff", "check", ".", "--fix"]
-            )
-            progress.update(task, completed=True)
-
         if returncode == 0:
-            self.console.print("[green]✓ Ruff auto-fixes applied successfully![/green]")
+            print("✓ Ruff auto-fixes applied successfully!")
         else:
-            self.console.print("[yellow]⚠ Ruff completed with warnings[/yellow]")
+            print("⚠ Ruff completed with warnings")
             if stderr:
-                self.console.print(f"[dim]{stderr}[/dim]")
+                print(f"  {stderr}")
 
     def format_black(self):
         """Phase 2: Format with Black."""
-        self.console.print("\n[bold blue]Phase 2: Formatting with Black...[/bold blue]")
+        print("\n=== Phase 2: Formatting with Black... ===")
 
-        with Progress(
-            SpinnerColumn(), TextColumn("[progress.description]{task.description}")
-        ) as progress:
-            task = progress.add_task("Running black...", total=None)
-            returncode, stdout, stderr = self.run_command(
-                ["poetry", "run", "black", "."]
-            )
-            progress.update(task, completed=True)
+        print("Running black...")
+        returncode, stdout, stderr = self.run_command(["poetry", "run", "black", "."])
 
         if stdout:
-            self.console.print(stdout)
-        self.console.print("[green]✓ Black formatting complete![/green]")
+            print(stdout)
+        print("✓ Black formatting complete!")
 
     def get_remaining_issues(self) -> tuple[int, int]:
         """Get current count of issues."""
@@ -136,18 +119,15 @@ class ProjectFixer:
         """Display current status."""
         ruff_count, mypy_count = self.get_remaining_issues()
 
-        table = Table(title="Project Status")
-        table.add_column("Issue Type", style="cyan")
-        table.add_column("Count", style="magenta")
-        table.add_column("Status", style="green")
+        print("\n=== Project Status ===")
+        print("Issue Type    Count    Status")
+        print("-" * 40)
 
         ruff_status = "✓ Complete" if ruff_count == 0 else f"⚠ {ruff_count} remaining"
         mypy_status = "✓ Complete" if mypy_count == 0 else f"⚠ {mypy_count} remaining"
 
-        table.add_row("Ruff Issues", str(ruff_count), ruff_status)
-        table.add_row("Mypy Issues", str(mypy_count), mypy_status)
-
-        self.console.print(table)
+        print(f"Ruff Issues   {ruff_count:<8} {ruff_status}")
+        print(f"Mypy Issues   {mypy_count:<8} {mypy_status}")
 
         # Show breakdown of ruff issues
         if ruff_count > 0:
@@ -176,11 +156,11 @@ class ProjectFixer:
                             error_counts[code] = error_counts.get(code, 0) + 1
 
         if error_counts:
-            self.console.print("\n[bold]Ruff Issues by Type:[/bold]")
+            print("\n=== Ruff Issues by Type ===")
             for code, count in sorted(
                 error_counts.items(), key=lambda x: x[1], reverse=True
             ):
-                self.console.print(f"  {code}: {count} occurrences")
+                print(f"  {code}: {count} occurrences")
                 # Show description for common codes
                 descriptions = {
                     "B904": "raise-without-from - Add 'from e' to exception chains",
@@ -192,7 +172,7 @@ class ProjectFixer:
                     "B023": "function-uses-loop-variable - Function doesn't bind loop variable",
                 }
                 if code in descriptions:
-                    self.console.print(f"    [dim]{descriptions[code]}[/dim]")
+                    print(f"    {descriptions[code]}")
 
     def get_fix_patterns(self) -> dict[str, str]:
         """Get common fix patterns for ruff issues."""
@@ -240,13 +220,13 @@ result = some_function()  # never used
         patterns = self.get_fix_patterns()
 
         if error_code and error_code in patterns:
-            self.console.print(
-                Panel(patterns[error_code], title=f"How to fix {error_code}")
-            )
+            print(f"\n=== How to fix {error_code} ===")
+            print(patterns[error_code])
         else:
-            self.console.print("\n[bold]Common Fix Patterns:[/bold]")
+            print("\n=== Common Fix Patterns ===")
             for code, pattern in patterns.items():
-                self.console.print(Panel(pattern, title=code))
+                print(f"\n--- {code} ---")
+                print(pattern)
 
 
 @click.command()
@@ -278,19 +258,15 @@ def main(phase: str, file: str | None, error_code: str | None):
         fixer.show_status()
     elif phase == "mypy" and file:
         # TODO: Implement specific file fixing for mypy
-        console.print(
-            f"[yellow]Mypy file-specific fixing not yet implemented for {file}[/yellow]"
-        )
-        console.print(
-            "[dim]This will be implemented as part of the systematic mypy fix strategy[/dim]"
-        )
+        print(f"Mypy file-specific fixing not yet implemented for {file}")
+        print("This will be implemented as part of the systematic mypy fix strategy")
     else:
-        console.print("[bold]CodeDocSync Project Fixer[/bold]")
-        console.print("\nUsage:")
-        console.print("  python fix_project.py --phase status  # Show current status")
-        console.print("  python fix_project.py --phase all     # Run all auto-fixes")
-        console.print("  python fix_project.py --phase examples # Show fix examples")
-        console.print(
+        print("=== CodeDocSync Project Fixer ===")
+        print("\nUsage:")
+        print("  python fix_project.py --phase status  # Show current status")
+        print("  python fix_project.py --phase all     # Run all auto-fixes")
+        print("  python fix_project.py --phase examples # Show fix examples")
+        print(
             "  python fix_project.py --phase examples --error-code B904  # Show specific fix"
         )
 

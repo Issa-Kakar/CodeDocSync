@@ -25,7 +25,7 @@ def parse(
         bool,
         typer.Option("--json", help="Output as JSON instead of pretty-printed table"),
     ] = False,
-):
+) -> None:
     """
     Parse a Python file and display extracted functions.
 

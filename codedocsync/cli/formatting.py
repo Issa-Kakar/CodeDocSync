@@ -13,12 +13,14 @@ from rich.console import Console
 from rich.table import Table
 
 from codedocsync.matcher import MatchResult
-from codedocsync.parser import ParsedDocstring
+from codedocsync.parser import ParsedDocstring, RawDocstring
 
 console = Console()
 
 
-def serialize_docstring(docstring):
+def serialize_docstring(
+    docstring: ParsedDocstring | RawDocstring | None,
+) -> dict | None:
     """Serialize docstring for JSON output."""
     if docstring is None:
         return None
@@ -61,7 +63,7 @@ def serialize_docstring(docstring):
         return {"raw_text": docstring.raw_text}
 
 
-def display_match_results(result: MatchResult, show_unmatched: bool):
+def display_match_results(result: MatchResult, show_unmatched: bool) -> None:
     """Display match results in terminal with Rich."""
     console.print("\n[bold]Matching Results[/bold]")
     console.print("=" * 50)
@@ -148,7 +150,7 @@ def format_terminal_contextual_result(result: MatchResult, show_unmatched: bool)
         sys.stdout = old_stdout
 
 
-def display_contextual_results(result: MatchResult, show_unmatched: bool):
+def display_contextual_results(result: MatchResult, show_unmatched: bool) -> None:
     """Display contextual matching results in terminal with Rich."""
     console.print("\n[bold]Contextual Matching Results[/bold]")
     console.print("=" * 60)
@@ -299,7 +301,9 @@ def format_terminal_unified_result(result: MatchResult, show_unmatched: bool) ->
         sys.stdout = old_stdout
 
 
-def format_analysis_results(results, all_issues, total_time, show_summary):
+def format_analysis_results(
+    results: list, all_issues: list, total_time: float, show_summary: bool
+) -> str:
     """Format analysis results for terminal output."""
     # Capture console output
     old_stdout = sys.stdout
@@ -312,7 +316,9 @@ def format_analysis_results(results, all_issues, total_time, show_summary):
         sys.stdout = old_stdout
 
 
-def display_analysis_results(results, all_issues, total_time, show_summary):
+def display_analysis_results(
+    results: list, all_issues: list, total_time: float, show_summary: bool
+) -> None:
     """Display analysis results in terminal with Rich."""
     console.print("\n[bold]Analysis Results[/bold]")
     console.print("=" * 60)
@@ -381,7 +387,7 @@ def display_analysis_results(results, all_issues, total_time, show_summary):
         console.print(f"[dim]Low Issues: {len(low_issues)}[/dim]")
 
 
-def display_unified_results(result: MatchResult, show_unmatched: bool):
+def display_unified_results(result: MatchResult, show_unmatched: bool) -> None:
     """Display unified matching results in terminal with comprehensive Rich formatting."""
     console.print(
         "\n[bold magenta][>>] Unified Matching Results (Direct + Contextual + Semantic)[/bold magenta]"

@@ -4,6 +4,7 @@ Fix Tracker - Tracks progress for fixing linting and type issues in CodeDocSync
 """
 
 import json
+import re
 import subprocess
 from collections import defaultdict
 from datetime import datetime
@@ -16,6 +17,7 @@ class FixTracker:
 
     def __init__(self):
         self.progress_file = Path("fix_progress.json")
+        self.python_path = r"C:\Users\issak\AppData\Local\pypoetry\Cache\virtualenvs\codedocsync-5yfwj9Sn-py3.12\Scripts\python.exe"
         self.load_progress()
 
     def load_progress(self):
@@ -43,21 +45,36 @@ class FixTracker:
         with open(self.progress_file, "w") as f:
             json.dump(self.progress, f, indent=2)
 
+    def run_command(self, cmd: list[str]) -> tuple[int, str, str]:
+        """Run command with proper Windows compatibility."""
+        # Use direct Python path instead of poetry run
+        if cmd[0] == "poetry" and cmd[1] == "run":
+            tool = cmd[2]
+            args = cmd[3:]
+            if tool in ["ruff", "black", "mypy"]:
+                cmd = [self.python_path, "-m", tool] + args
+            else:
+                cmd = [self.python_path, "-m"] + cmd[2:]
+
+        # Set encoding to avoid Unicode issues
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
+        return result.returncode, result.stdout, result.stderr
+
     def get_ruff_errors_by_file(self) -> list[tuple[str, list[dict[str, Any]]]]:
         """Get ruff errors grouped by file, sorted by error count."""
-        result = subprocess.run(
-            ["poetry", "run", "ruff", "check", ".", "--format", "json"],
-            capture_output=True,
-            text=True,
+        returncode, stdout, stderr = self.run_command(
+            ["poetry", "run", "ruff", "check", ".", "--format", "json"]
         )
 
-        if result.returncode == 0 and not result.stdout.strip():
+        if returncode == 0 and not stdout.strip():
             return []
 
         try:
-            errors = json.loads(result.stdout) if result.stdout else []
+            errors = json.loads(stdout) if stdout else []
         except json.JSONDecodeError:
-            print(f"Error parsing ruff output: {result.stdout}")
+            print(f"Error parsing ruff output: {stdout}")
             return []
 
         # Group by file
@@ -79,17 +96,15 @@ class FixTracker:
 
     def get_ruff_errors_by_type(self) -> dict[str, list[dict[str, Any]]]:
         """Get ruff errors grouped by error code."""
-        result = subprocess.run(
-            ["poetry", "run", "ruff", "check", ".", "--format", "json"],
-            capture_output=True,
-            text=True,
+        returncode, stdout, stderr = self.run_command(
+            ["poetry", "run", "ruff", "check", ".", "--format", "json"]
         )
 
-        if result.returncode == 0 and not result.stdout.strip():
+        if returncode == 0 and not stdout.strip():
             return {}
 
         try:
-            errors = json.loads(result.stdout) if result.stdout else []
+            errors = json.loads(stdout) if stdout else []
         except json.JSONDecodeError:
             return {}
 
@@ -159,21 +174,32 @@ class MypyFixStrategy:
 
     def get_mypy_errors_by_file(self) -> dict[str, list[dict[str, Any]]]:
         """Get mypy errors grouped by file."""
-        result = subprocess.run(
-            ["poetry", "run", "mypy", ".", "--format", "json"],
-            capture_output=True,
-            text=True,
-        )
+        # Run mypy with explicit format
+        cmd = [
+            self.python_path,
+            "-m",
+            "mypy",
+            "codedocsync",
+            "--no-error-summary",
+            "--show-error-codes",
+        ]
+        returncode, stdout, stderr = self.run_command(cmd)
 
         errors_by_file = defaultdict(list)
-        for line in result.stdout.splitlines():
-            try:
-                error = json.loads(line)
-                file = error.get("file", "unknown")
-                if file != "unknown":
-                    errors_by_file[file].append(error)
-            except json.JSONDecodeError:
-                continue
+        for line in stdout.splitlines():
+            if ": error:" in line and not line.startswith("Found "):
+                # Parse format: file.py:line: error: message [error-code]
+                match = re.match(r"(.+?):(\d+):\s*error:\s*(.+?)\s*\[(.+?)\]", line)
+                if match:
+                    file_path = match.group(1)
+                    errors_by_file[file_path].append(
+                        {
+                            "file": file_path,
+                            "line": int(match.group(2)),
+                            "message": match.group(3),
+                            "code": match.group(4),
+                        }
+                    )
 
         # Update statistics
         total_errors = sum(len(errors) for errors in errors_by_file.values())

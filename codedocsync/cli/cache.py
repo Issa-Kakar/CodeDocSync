@@ -25,7 +25,7 @@ def clear_cache(
     confirm: Annotated[
         bool, typer.Option("--yes", "-y", help="Skip confirmation prompt")
     ] = False,
-):
+) -> None:
     """
     Clear analysis cache.
 
@@ -59,7 +59,7 @@ def clear_cache(
                     return
 
             try:
-                llm_cache = LLMCache(cache_dir=cache_dir)
+                llm_cache = LLMCache(db_path=str(llm_cache_path))
                 cleared_count = llm_cache.clear(older_than_hours=older_than_days * 24)
                 total_cleared += cleared_count
                 console.print(
@@ -82,7 +82,7 @@ def clear_cache(
         llm_cache_path = cache_dir / "llm_analysis_cache.db"
         if llm_cache_path.exists():
             try:
-                llm_cache = LLMCache(cache_dir=cache_dir)
+                llm_cache = LLMCache(db_path=str(llm_cache_path))
                 llm_cleared = llm_cache.clear(older_than_hours=older_than_days * 24)
                 total_cleared += llm_cleared
                 console.print(f"[green]Cleared {llm_cleared} LLM cache entries[/green]")
