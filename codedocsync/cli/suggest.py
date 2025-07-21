@@ -8,7 +8,7 @@ import asyncio
 import json
 import shutil
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -82,7 +82,7 @@ def suggest(
         bool,
         typer.Option("--verbose", "-v", help="Verbose output"),
     ] = False,
-):
+) -> None:
     """
     Generate fix suggestions for documentation issues.
 
@@ -215,6 +215,7 @@ def suggest(
         ranked_issues = ranker.rank_suggestions([issue for _, issue in all_suggestions])
 
         # Prepare output
+        formatter: JSONSuggestionFormatter | TerminalSuggestionFormatter
         if output_format == "json":
             formatter = JSONSuggestionFormatter()
             output_data = {
@@ -232,8 +233,10 @@ def suggest(
                         "issue": issue.issue_type,
                         "severity": issue.severity,
                         "description": issue.description,
-                        "suggestion": formatter.format_suggestion(
-                            issue.rich_suggestion
+                        "suggestion": (
+                            formatter.format_suggestion(issue.rich_suggestion)
+                            if issue.rich_suggestion
+                            else None
                         ),
                     }
                     for result, issue in all_suggestions
@@ -271,7 +274,12 @@ def suggest(
                     console.print(
                         f"\n[bold]Suggestion {i + 1}/{len(all_suggestions)}[/bold]"
                     )
-                    console.print(formatter.format_suggestion(issue.rich_suggestion))
+                    if issue.rich_suggestion:
+                        console.print(
+                            formatter.format_suggestion(issue.rich_suggestion)
+                        )
+                    else:
+                        console.print("[yellow]No suggestion available[/yellow]")
 
                     if apply and not dry_run:
                         response = Confirm.ask("Apply this suggestion?", default=True)
@@ -291,7 +299,12 @@ def suggest(
                         continue
 
                     console.print("\n" + "=" * 80)
-                    console.print(formatter.format_suggestion(issue.rich_suggestion))
+                    if issue.rich_suggestion:
+                        console.print(
+                            formatter.format_suggestion(issue.rich_suggestion)
+                        )
+                    else:
+                        console.print("[yellow]No suggestion available[/yellow]")
 
                     displayed += 1
                     if displayed >= 10 and not verbose:
@@ -367,7 +380,7 @@ def suggest(
         raise typer.Exit(1) from None
 
 
-def apply_suggestion(file_path: str, suggestion, backup: bool = True) -> None:
+def apply_suggestion(file_path: str, suggestion: Any, backup: bool = True) -> None:
     """Apply a suggestion to a file."""
     file = Path(file_path)
 
@@ -396,7 +409,7 @@ def suggest_interactive(
         Path,
         typer.Argument(help="File or directory to analyze"),
     ] = Path("."),
-):
+) -> None:
     """
     Launch interactive suggestion browser.
 

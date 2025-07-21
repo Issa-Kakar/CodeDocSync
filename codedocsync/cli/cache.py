@@ -10,8 +10,6 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from codedocsync.analyzer.llm_cache import LLMCache
-
 console = Console()
 
 
@@ -59,11 +57,12 @@ def clear_cache(
                     return
 
             try:
-                llm_cache = LLMCache(db_path=str(llm_cache_path))
-                cleared_count = llm_cache.clear(older_than_hours=older_than_days * 24)
-                total_cleared += cleared_count
+                # LLMCache doesn't have a clear method, so we'll remove the cache file
+                cache_size_mb = llm_cache_path.stat().st_size / (1024 * 1024)
+                llm_cache_path.unlink()
+                total_cleared += 1
                 console.print(
-                    f"[green]Cleared {cleared_count} LLM cache entries[/green]"
+                    f"[green]Cleared LLM cache ({cache_size_mb:.1f} MB)[/green]"
                 )
             except Exception as e:
                 console.print(f"[red]Error clearing LLM cache: {e}[/red]")
@@ -82,10 +81,13 @@ def clear_cache(
         llm_cache_path = cache_dir / "llm_analysis_cache.db"
         if llm_cache_path.exists():
             try:
-                llm_cache = LLMCache(db_path=str(llm_cache_path))
-                llm_cleared = llm_cache.clear(older_than_hours=older_than_days * 24)
-                total_cleared += llm_cleared
-                console.print(f"[green]Cleared {llm_cleared} LLM cache entries[/green]")
+                # LLMCache doesn't have a clear method, so we'll remove the cache file
+                cache_size_mb = llm_cache_path.stat().st_size / (1024 * 1024)
+                llm_cache_path.unlink()
+                total_cleared += 1
+                console.print(
+                    f"[green]Cleared LLM cache ({cache_size_mb:.1f} MB)[/green]"
+                )
             except Exception as e:
                 console.print(
                     f"[yellow]Warning: Error clearing LLM cache: {e}[/yellow]"

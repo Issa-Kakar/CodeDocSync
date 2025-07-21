@@ -1,0 +1,20 @@
+{
+  "ruff_fixed_files": [],
+  "mypy_fixed_files": [
+    "codedocsync/cli/analyze.py",
+    "codedocsync/cli/parse.py",
+    "codedocsync/cli/suggest.py",
+    "codedocsync/cli/formatting.py",
+    "codedocsync/parser/ast_parser.py",
+    "codedocsync/parser/docstring_parser.py",
+    "codedocsync/parser/integrated_parser.py"
+  ],
+  "current_phase": "ruff",
+  "timestamp": "2025-07-21T02:40:29.283855",
+  "statistics": {
+    "initial_ruff_errors": 0,
+    "initial_mypy_errors": 0,
+    "current_ruff_errors": 0,
+    "current_mypy_errors": 0
+  }
+}

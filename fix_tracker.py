@@ -176,14 +176,14 @@ class MypyFixStrategy:
         """Get mypy errors grouped by file."""
         # Run mypy with explicit format
         cmd = [
-            self.python_path,
+            self.tracker.python_path,
             "-m",
             "mypy",
             "codedocsync",
             "--no-error-summary",
             "--show-error-codes",
         ]
-        returncode, stdout, stderr = self.run_command(cmd)
+        returncode, stdout, stderr = self.tracker.run_command(cmd)
 
         errors_by_file = defaultdict(list)
         for line in stdout.splitlines():

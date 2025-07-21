@@ -36,13 +36,15 @@ class DocstringParser:
         DocstringFormat.REST: DocstringStyle.REST,
     }
 
-    def __init__(self, cache_size: int = 500):
+    def __init__(self, cache_size: int = 500) -> None:
         """Initialize parser with caching configuration.
 
         Args:
             cache_size: Maximum number of parsed docstrings to cache
         """
-        self._parse_cache = {}  # Cache full parse results
+        self._parse_cache: dict[str, ParsedDocstring | None] = (
+            {}
+        )  # Cache full parse results
         self._cache_size = cache_size
 
     @staticmethod
@@ -354,7 +356,7 @@ class DocstringParser:
             )(),
         }
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear all caches to free memory."""
         self._parse_cache.clear()
         if hasattr(DocstringParser.detect_format, "cache_clear"):

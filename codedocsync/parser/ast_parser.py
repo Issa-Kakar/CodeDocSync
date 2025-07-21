@@ -39,7 +39,7 @@ class FunctionParameter:
     default_value: str | None = None
     is_required: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate parameter data after initialization."""
         # Validate parameter name follows Python identifier rules
         # Allow special prefixes for *args, **kwargs, and keyword-only parameters
@@ -87,7 +87,7 @@ class FunctionSignature:
     is_method: bool = False
     decorators: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate function signature after initialization."""
         # Validate function name
         if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", self.name):
@@ -124,7 +124,7 @@ class RawDocstring:
     raw_text: str
     line_number: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate raw docstring data."""
         if not isinstance(self.raw_text, str):
             raise ValidationError(
@@ -144,7 +144,7 @@ class ParsedFunction:
     end_line_number: int = 0
     source_code: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate parsed function data."""
         if self.line_number < 0:
             raise ValidationError(
@@ -620,9 +620,9 @@ def _get_annotation_string(annotation: ast.expr | None) -> str | None:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore
+            import astor  # type: ignore[import-not-found]
 
-            return astor.to_source(annotation).strip()
+            return str(astor.to_source(annotation).strip())
         except ImportError:
             return _annotation_to_string_fallback(annotation)
     except Exception:
@@ -683,9 +683,9 @@ def _get_default_value(default_node: ast.expr | None) -> str:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore
+            import astor  # type: ignore[import-not-found]
 
-            return astor.to_source(default_node).strip()
+            return str(astor.to_source(default_node).strip())
         except ImportError:
             return _default_value_fallback(default_node)
     except Exception:

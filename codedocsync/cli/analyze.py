@@ -74,7 +74,7 @@ def analyze(
     verbose: Annotated[
         bool, typer.Option("--verbose", "-v", help="Verbose output")
     ] = False,
-):
+) -> None:
     """
     Analyze code for documentation inconsistencies using rules and LLM.
 
@@ -163,7 +163,7 @@ def analyze(
 
         # Aggregate results
         all_issues = []
-        total_analysis_time = 0
+        total_analysis_time = 0.0
         used_llm_count = 0
         cache_hits = 0
 
@@ -273,7 +273,7 @@ def analyze_function(
         str,
         typer.Option("--profile", help="Analysis profile (fast/thorough/development)"),
     ] = "development",
-):
+) -> None:
     """
     Analyze a specific function in detail.
 
@@ -333,9 +333,14 @@ def analyze_function(
             # Create a dummy pair for analysis
             target_pair = MatchedPair(
                 function=target_function,
-                documentation=None,
-                confidence=MatchConfidence.HIGH,
-                match_type=MatchType.DIRECT,
+                docstring=None,
+                confidence=MatchConfidence(
+                    overall=1.0,
+                    name_similarity=1.0,
+                    location_score=1.0,
+                    signature_similarity=1.0,
+                ),
+                match_type=MatchType.EXACT,
                 match_reason="No documentation found",
             )
 
@@ -378,7 +383,7 @@ def analyze_function(
         )
         info_table.add_row("Parameters", str(len(target_function.signature.parameters)))
         info_table.add_row(
-            "Return Type", target_function.signature.return_annotation or "None"
+            "Return Type", target_function.signature.return_type or "None"
         )
 
         console.print(info_table)

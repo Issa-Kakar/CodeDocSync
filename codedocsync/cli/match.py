@@ -48,7 +48,7 @@ def match(
     output_format: Annotated[
         str, typer.Option("--format", "-f", help="Output format (terminal/json)")
     ] = "terminal",
-):
+) -> None:
     """
     Match functions to their documentation.
 
@@ -124,7 +124,7 @@ def match_contextual(
     show_unmatched: Annotated[
         bool, typer.Option("--show-unmatched", help="Show unmatched functions")
     ] = False,
-):
+) -> None:
     """
     Perform contextual matching on a project.
 
@@ -224,7 +224,7 @@ def match_unified(
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Verbose output with detailed progress"
     ),
-):
+) -> None:
     """
     Perform comprehensive unified matching using all three strategies.
 
@@ -281,7 +281,7 @@ def match_unified(
     # Set up progress tracking if verbose
     current_phase = ""
 
-    def progress_callback(phase: str, current: int, total: int):
+    def progress_callback(phase: str, current: int, total: int) -> None:
         nonlocal current_phase
         if verbose and phase != current_phase:
             current_phase = phase

@@ -49,6 +49,24 @@ class MypySystematicFixer:
             file_path.write_text("\n".join(lines), encoding="utf-8")
         return fixes
 
+    def fix_init_return_types(self, file_path: Path) -> int:
+        """Fix missing return type annotations for __init__ methods."""
+        content = file_path.read_text(encoding="utf-8")
+        original = content
+
+        # Pattern for __init__ without return type
+        pattern = r"(\s*)def __init__\(self([^)]*)\)(\s*):"
+        replacement = r"\1def __init__(self\2) -> None\3:"
+
+        content = re.sub(pattern, replacement, content)
+
+        if content != original:
+            file_path.write_text(content, encoding="utf-8")
+            return content.count("def __init__(self") - original.count(
+                "def __init__(self"
+            )
+        return 0
+
     def fix_void_method_return_types(self, file_path: Path) -> int:
         """Fix missing return type annotations for void methods."""
         content = file_path.read_text(encoding="utf-8")
@@ -63,8 +81,123 @@ class MypySystematicFixer:
                 # Check if it doesn't already have a return type
                 if "->" not in line:
                     indent, method_name, params, space = match.groups()
-                    lines[i] = f"{indent}def {method_name}({params}) -> None{space}:"
+
+                    # Heuristic: methods that likely return None
+                    void_patterns = [
+                        "set_",
+                        "update_",
+                        "clear_",
+                        "reset_",
+                        "save_",
+                        "load_",
+                        "print_",
+                        "show_",
+                        "mark_",
+                        "log_",
+                        "write_",
+                        "add_",
+                        "remove_",
+                        "delete_",
+                        "register_",
+                        "configure_",
+                        "initialize_",
+                        "cleanup_",
+                        "close_",
+                    ]
+
+                    if any(method_name.startswith(p) for p in void_patterns):
+                        lines[i] = (
+                            f"{indent}def {method_name}({params}) -> None{space}:"
+                        )
+                        fixes += 1
+
+        if fixes > 0:
+            file_path.write_text("\n".join(lines), encoding="utf-8")
+        return fixes
+
+    def fix_any_return_types(self, file_path: Path) -> int:
+        """Fix functions that should have specific return types instead of Any."""
+        content = file_path.read_text(encoding="utf-8")
+        fixes = 0
+
+        lines = content.splitlines()
+        for i, line in enumerate(lines):
+            # Look for common patterns that return specific types
+            if "-> Any:" in line:
+                # dict patterns
+                if any(
+                    p in line
+                    for p in ["get_config", "to_dict", "as_dict", "get_settings"]
+                ):
+                    lines[i] = line.replace("-> Any:", "-> dict[str, Any]:")
                     fixes += 1
+                # list patterns
+                elif any(p in line for p in ["get_list", "to_list", "get_items"]):
+                    lines[i] = line.replace("-> Any:", "-> list[Any]:")
+                    fixes += 1
+                # str patterns
+                elif any(p in line for p in ["get_name", "get_text", "to_string"]):
+                    lines[i] = line.replace("-> Any:", "-> str:")
+                    fixes += 1
+
+        if fixes > 0:
+            file_path.write_text("\n".join(lines), encoding="utf-8")
+        return fixes
+
+    def fix_attribute_definitions(self, file_path: Path) -> int:
+        """Fix common attribute name mistakes."""
+        content = file_path.read_text(encoding="utf-8")
+        fixes = 0
+
+        # Common attribute replacements based on IMPLEMENTATION_STATE.MD
+        replacements = [
+            (r"\.type_annotation\b", ".type_str"),
+            (r"\.enhanced_issues\b", ".issues"),
+            (r"\.suggestion_object\b", ".rich_suggestion"),
+            (r"documentation=", "docstring="),  # MatchedPair parameter fix
+        ]
+
+        for pattern, replacement in replacements:
+            new_content = re.sub(pattern, replacement, content)
+            if new_content != content:
+                fixes += len(re.findall(pattern, content))
+                content = new_content
+
+        if fixes > 0:
+            file_path.write_text(content, encoding="utf-8")
+        return fixes
+
+    def fix_union_type_handling(self, file_path: Path) -> int:
+        """Add isinstance checks for Union type handling."""
+        content = file_path.read_text(encoding="utf-8")
+        fixes = 0
+
+        lines = content.splitlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+
+            # Look for Union[RawDocstring, ParsedDocstring] access patterns
+            if "docstring" in line and ("summary" in line or "description" in line):
+                # Check if there's already an isinstance check
+                if i > 0 and "isinstance" not in lines[i - 1]:
+                    # Add isinstance check
+                    indent = len(line) - len(line.lstrip())
+                    indent_str = " " * indent
+
+                    if ".summary" in line:
+                        lines.insert(
+                            i, f"{indent_str}if isinstance(docstring, ParsedDocstring):"
+                        )
+                        lines[i + 1] = f"    {lines[i + 1]}"
+                        lines.insert(i + 2, f"{indent_str}else:")
+                        lines.insert(
+                            i + 3,
+                            f"{indent_str}    summary = docstring.content if hasattr(docstring, 'content') else ''",
+                        )
+                        fixes += 1
+                        i += 3
+            i += 1
 
         if fixes > 0:
             file_path.write_text("\n".join(lines), encoding="utf-8")
@@ -105,8 +238,13 @@ class MypySystematicFixer:
 
         # Apply automated fixes
         fixes += self.fix_post_init_return_types(file_path)
+        fixes += self.fix_init_return_types(file_path)
         fixes += self.fix_optional_parameters(file_path)
         fixes += self.fix_void_method_return_types(file_path)
+        fixes += self.fix_any_return_types(file_path)
+        fixes += self.fix_attribute_definitions(file_path)
+        # Temporarily disabled due to syntax issues
+        # fixes += self.fix_union_type_handling(file_path)
 
         # Get remaining errors
         errors = self.get_mypy_errors_for_file(file_path)
