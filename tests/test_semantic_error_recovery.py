@@ -18,6 +18,12 @@ from codedocsync.matcher.semantic_models import FunctionEmbedding
 from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
+class TestOperationError(Exception):
+    """Test exception for circuit breaker and error recovery testing."""
+
+    pass
+
+
 class TestSemanticErrorRecovery:
     """Test suite for SemanticErrorRecovery class."""
 
@@ -286,11 +292,11 @@ class TestCircuitBreaker:
     @pytest.mark.asyncio
     async def test_circuit_breaker_opens_on_failures(self, circuit_breaker):
         """Test circuit breaker opens after failure threshold."""
-        operation = AsyncMock(side_effect=Exception("Operation failed"))
+        operation = AsyncMock(side_effect=TestOperationError("Operation failed"))
 
         # First 3 failures should open the circuit
         for i in range(3):
-            with pytest.raises(Exception):
+            with pytest.raises(TestOperationError):
                 await circuit_breaker.call(operation)
 
             if i < 2:
@@ -307,16 +313,16 @@ class TestCircuitBreaker:
         """Test circuit breaker resets after recovery time."""
         operation = AsyncMock(
             side_effect=[
-                Exception("Fail 1"),
-                Exception("Fail 2"),
-                Exception("Fail 3"),  # Opens circuit
+                TestOperationError("Fail 1"),
+                TestOperationError("Fail 2"),
+                TestOperationError("Fail 3"),  # Opens circuit
                 "success",  # After recovery time
             ]
         )
 
         # Cause circuit to open
         for _ in range(3):
-            with pytest.raises(Exception):
+            with pytest.raises(TestOperationError):
                 await circuit_breaker.call(operation)
 
         assert circuit_breaker.is_open
@@ -335,17 +341,17 @@ class TestCircuitBreaker:
         """Test circuit breaker resets failure count on success."""
         operation = AsyncMock(
             side_effect=[
-                Exception("Fail 1"),
-                Exception("Fail 2"),
+                TestOperationError("Fail 1"),
+                TestOperationError("Fail 2"),
                 "success",  # Should reset failure count
-                Exception("Fail 3"),
-                Exception("Fail 4"),
+                TestOperationError("Fail 3"),
+                TestOperationError("Fail 4"),
             ]
         )
 
         # Two failures
         for _ in range(2):
-            with pytest.raises(Exception):
+            with pytest.raises(TestOperationError):
                 await circuit_breaker.call(operation)
 
         assert circuit_breaker.failure_count == 2
@@ -357,7 +363,7 @@ class TestCircuitBreaker:
 
         # Two more failures shouldn't open circuit yet
         for _ in range(2):
-            with pytest.raises(Exception):
+            with pytest.raises(TestOperationError):
                 await circuit_breaker.call(operation)
 
         assert not circuit_breaker.is_open  # Should still be closed
@@ -392,11 +398,11 @@ class TestCircuitBreaker:
             failure_threshold=2, recovery_time=0.5
         )
 
-        operation = AsyncMock(side_effect=Exception("Test failure"))
+        operation = AsyncMock(side_effect=TestOperationError("Test failure"))
 
         # Should fail twice then open circuit
         for _ in range(2):
-            with pytest.raises(Exception):
+            with pytest.raises(TestOperationError):
                 await circuit_breaker.call(operation)
 
         # Circuit should be open now
@@ -461,11 +467,11 @@ class TestIntegrationScenarios:
             failure_threshold=2, recovery_time=0.1
         )
 
-        failing_operation = AsyncMock(side_effect=Exception("Service down"))
+        failing_operation = AsyncMock(side_effect=TestOperationError("Service down"))
 
         # Cause circuit to open
         for _ in range(2):
-            with pytest.raises(Exception):
+            with pytest.raises(TestOperationError):
                 await circuit_breaker.call(failing_operation)
 
         # Should now reject requests immediately

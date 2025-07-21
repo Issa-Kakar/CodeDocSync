@@ -307,7 +307,9 @@ def broken_function(
         facade = ContextualMatchingFacade()
 
         # Should handle nonexistent file gracefully
-        with pytest.raises(Exception):
+        from codedocsync.utils.errors import FileAccessError
+
+        with pytest.raises(FileAccessError):
             facade.match_file(str(nonexistent_file))
 
     def test_mixed_content_project(self, temp_project):

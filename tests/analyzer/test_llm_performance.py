@@ -309,13 +309,13 @@ class TestPerformanceAlerts:
         monitor.alert_cooldown = 1  # 1 second cooldown
 
         # Trigger alert
-        for i in range(15):
+        for _i in range(15):
             monitor.record_request("behavior", 100, 50, False, error="test_error")
 
         initial_alert_count = len(monitor.get_alerts())
 
         # Trigger more errors immediately (should not generate new alerts due to cooldown)
-        for i in range(5):
+        for _i in range(5):
             monitor.record_request("behavior", 100, 50, False, error="test_error")
 
         # Should not have new alerts due to cooldown
@@ -326,7 +326,7 @@ class TestPerformanceAlerts:
         start_time = time.time()
 
         # Generate some alerts
-        for i in range(15):
+        for _i in range(15):
             performance_monitor.record_request(
                 "behavior", 100, 50, False, error="test_error"
             )
@@ -348,7 +348,7 @@ class TestPerformanceRecommendations:
         monitor = LLMPerformanceMonitor()
 
         # Add data with high response times
-        for i in range(20):
+        for _i in range(20):
             monitor.record_request("behavior", 3000, 100, False)  # 3s response time
 
         metrics = monitor.get_metrics()
@@ -366,7 +366,7 @@ class TestPerformanceRecommendations:
         monitor = LLMPerformanceMonitor()
 
         # Add data with low cache hit rate
-        for i in range(20):
+        for _i in range(20):
             monitor.record_request("behavior", 100, 50, cache_hit=False)
 
         metrics = monitor.get_metrics()
@@ -399,7 +399,7 @@ class TestPerformanceRecommendations:
         monitor = LLMPerformanceMonitor()
 
         # Add data with good performance
-        for i in range(20):
+        for _i in range(20):
             monitor.record_request("behavior", 100, 50, cache_hit=True)  # Fast, cached
 
         metrics = monitor.get_metrics()
@@ -434,7 +434,7 @@ class TestPerformanceScoring:
     def test_overall_performance_score(self, performance_monitor):
         """Test overall performance score calculation."""
         # Add good performance data
-        for i in range(20):
+        for _i in range(20):
             performance_monitor.record_request("behavior", 150, 50, cache_hit=True)
 
         metrics = performance_monitor.get_metrics()
@@ -504,7 +504,7 @@ class TestPerformanceIntegration:
         monitor = LLMPerformanceMonitor(window_size=100)
 
         # Add many requests
-        for i in range(1000):
+        for _i in range(1000):
             monitor.record_request("behavior", 100, 50, False)
 
         # Should not exceed window size

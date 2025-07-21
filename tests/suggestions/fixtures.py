@@ -15,6 +15,7 @@ from codedocsync.parser.ast_parser import (
     RawDocstring,
 )
 from codedocsync.parser.docstring_models import (
+    DocstringParameter,
     DocstringRaises,
     DocstringReturns,
     ParsedDocstring,
@@ -87,12 +88,12 @@ def create_parsed_docstring(
     doc_params = []
     for name, desc in params.items():
         doc_params.append(
-            DocstringParam(
-                arg_name=name,
+            DocstringParameter(
+                name=name,
                 description=desc,
-                type_name="str",
+                type_str="str",
                 is_optional=False,
-                default=None,
+                default_value=None,
             )
         )
 

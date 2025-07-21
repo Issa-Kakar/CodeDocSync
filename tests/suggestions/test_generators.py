@@ -590,7 +590,7 @@ class TestGeneratorIntegration:
             "property_documentation": EdgeCaseSuggestionGenerator,
         }
 
-        for issue_type, generator_class in issue_generator_map.items():
+        for _issue_type, generator_class in issue_generator_map.items():
             generator = generator_class(config)
             assert generator is not None
             assert hasattr(generator, "generate")
@@ -641,7 +641,7 @@ class TestPerformanceAndScale:
         )
 
         # Complex NumPy-style docstring
-        docstring_text = DOCSTRING_EXAMPLES["numpy_complex"]
+        DOCSTRING_EXAMPLES["numpy_complex"]
         context = SuggestionContext(
             issue,
             function,

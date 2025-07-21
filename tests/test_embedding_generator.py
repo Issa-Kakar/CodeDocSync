@@ -279,7 +279,7 @@ class TestEmbeddingGenerator:
 
             generator = EmbeddingGenerator()
 
-            with pytest.raises(Exception):
+            with pytest.raises(mock_openai.error.RateLimitError):
                 await generator._generate_openai_embedding(
                     "test text", "text-embedding-3-small"
                 )

@@ -271,7 +271,7 @@ class TestSemanticPerformanceValidation:
             (450, 100),  # High memory usage -> small batch
         ]
 
-        for memory_used_mb, expected_min_batch in test_scenarios:
+        for memory_used_mb, _expected_min_batch in test_scenarios:
             # Mock memory usage
             mock_memory_info = Mock()
             mock_memory_info.rss = (

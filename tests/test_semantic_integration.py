@@ -529,7 +529,7 @@ def test_data_retrieval():
             "tests/test_file.py",
         ]
 
-        for i, path in enumerate(test_paths):
+        for i, _path in enumerate(test_paths):
             embedding = FunctionEmbedding(
                 function_id=f"module.function_{i}",
                 embedding=[0.1] * 1536,

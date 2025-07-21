@@ -829,7 +829,7 @@ def process(doc: Union[RawDocstring, ParsedDocstring]):
    python fix_tracker.py mark-fixed <file_path> ruff
    ```
 
-3. **Fix Mypy Issues**:
+3. **Fix Issues**:
    ```bash
    # Get strategic overview
    python fix_tracker.py mypy

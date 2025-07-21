@@ -331,7 +331,7 @@ class TestRequestGrouping:
         # Verify that requests from same file are grouped together when possible
         file_paths_in_groups = []
         for group in groups:
-            group_files = set(req[0].function.file_path for req in group)
+            group_files = {req[0].function.file_path for req in group}
             file_paths_in_groups.append(group_files)
 
         # Most groups should have requests from same file
