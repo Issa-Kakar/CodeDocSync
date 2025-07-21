@@ -172,7 +172,7 @@ def _determine_analysis_types(
         # Simple heuristic: check for if/try statements
         try:
             if any(
-                isinstance(node, (ast.If, ast.Try))
+                isinstance(node, ast.If | ast.Try)
                 for node in ast.walk(ast.parse(pair.function.body))
             ):
                 analysis_types.append("edge_cases")
@@ -547,18 +547,18 @@ async def analyze_multiple_pairs(
         batch_size = config.batch_size
         max_workers = min(config.max_parallel_workers, len(pairs))
 
+        # Use semaphore to limit concurrent executions
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def analyze_with_semaphore(pair):
+            async with semaphore:
+                return await analyze_matched_pair(
+                    pair, config, cache, rule_engine, llm_analyzer
+                )
+
         results = []
         for i in range(0, len(pairs), batch_size):
             batch = pairs[i : i + batch_size]
-
-            # Use semaphore to limit concurrent executions
-            semaphore = asyncio.Semaphore(max_workers)
-
-            async def analyze_with_semaphore(pair):
-                async with semaphore:
-                    return await analyze_matched_pair(
-                        pair, config, cache, rule_engine, llm_analyzer
-                    )
 
             batch_results = await asyncio.gather(
                 *[analyze_with_semaphore(pair) for pair in batch]

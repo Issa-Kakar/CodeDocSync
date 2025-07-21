@@ -97,7 +97,7 @@ class BehaviorAnalyzer:
         loop_types = set()
 
         for child in ast.walk(node):
-            if isinstance(child, (ast.For, ast.While)):
+            if isinstance(child, ast.For | ast.While):
                 has_loops = True
                 loop_types.add(type(child).__name__.lower())
             elif isinstance(child, ast.If):
@@ -164,7 +164,7 @@ class BehaviorAnalyzer:
                         modifies_collections = True
                     elif attr_name in ("map", "filter", "reduce", "join", "split"):
                         transforms_data = True
-            elif isinstance(child, (ast.List, ast.Dict, ast.Set, ast.Tuple)):
+            elif isinstance(child, ast.List | ast.Dict | ast.Set | ast.Tuple):
                 if (
                     len(
                         child.elts
@@ -343,7 +343,7 @@ class BehaviorAnalyzer:
         max_loop_depth = 0
 
         for child in ast.walk(node):
-            if isinstance(child, (ast.For, ast.While)):
+            if isinstance(child, ast.For | ast.While):
                 loop_depth += 1
                 max_loop_depth = max(max_loop_depth, loop_depth)
                 loop_depth -= 1

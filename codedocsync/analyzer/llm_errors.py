@@ -133,7 +133,7 @@ class RetryStrategy:
             # Retry timeout once with no delay
             return attempt == 0, 0.0
 
-        if isinstance(error, (LLMNetworkError, LLMError)):
+        if isinstance(error, LLMNetworkError | LLMError):
             # Retry general LLM and network errors with backoff
             delay = self._calculate_delay(attempt)
             return True, delay

@@ -4,10 +4,10 @@ import threading
 import time
 from collections import defaultdict, deque
 from collections.abc import Callable
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ContextManager
+from typing import Any
 
 import psutil
 
@@ -136,7 +136,7 @@ class PerformanceMonitor:
     @contextmanager
     def track_operation(
         self, operation_name: str, metadata: dict[str, Any] | None = None
-    ) -> ContextManager["OperationTracker"]:
+    ) -> AbstractContextManager["OperationTracker"]:
         """
         Context manager for tracking an operation.
 

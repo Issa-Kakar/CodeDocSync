@@ -149,7 +149,7 @@ class DocstringStyleDetector:
         docstrings = []
 
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
+            if isinstance(node, ast.FunctionDef | ast.ClassDef | ast.AsyncFunctionDef):
                 docstring = ast.get_docstring(node)
                 if docstring:
                     docstrings.append(docstring)

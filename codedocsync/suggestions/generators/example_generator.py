@@ -170,7 +170,7 @@ class ExamplePatternAnalyzer:
         for node in ast.walk(tree):
             if isinstance(node, ast.AsyncFunctionDef):
                 analysis["is_async"] = True
-            elif isinstance(node, (ast.Yield, ast.YieldFrom)):
+            elif isinstance(node, ast.Yield | ast.YieldFrom):
                 analysis["is_generator"] = True
             elif isinstance(node, ast.Call):
                 self._analyze_function_call(node, analysis)

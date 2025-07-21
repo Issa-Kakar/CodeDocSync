@@ -258,7 +258,7 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
 
     # Walk through all nodes in the AST
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             try:
                 parsed_func = _extract_function(node, file_path, source_content)
                 functions.append(parsed_func)
@@ -350,8 +350,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
             logger.info(
                 f"Partial parse successful for {file_path}: found {len(functions)} functions"
             )
-            for func in functions:
-                yield func
+            yield from functions
             return
         else:
             raise SyntaxParsingError(
@@ -363,7 +362,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
 
     # Walk through all nodes in the AST
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             try:
                 parsed_func = _extract_function(node, file_path, source_content)
                 function_count += 1
@@ -720,10 +719,10 @@ def _is_imports_only(source_content: str) -> bool:
     try:
         tree = ast.parse(source_content)
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
                 return False
             # Check for any substantial code beyond imports
-            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            if isinstance(node, ast.Assign | ast.AnnAssign | ast.AugAssign):
                 # Allow simple constant assignments like VERSION = "1.0.0"
                 if isinstance(node, ast.Assign):
                     if not isinstance(node.value, ast.Constant):
@@ -760,7 +759,7 @@ def _parse_partial_file(
         functions = []
 
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                 try:
                     parsed_func = _extract_function(node, file_path, partial_content)
                     functions.append(parsed_func)

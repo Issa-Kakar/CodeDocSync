@@ -20,7 +20,7 @@ Key Features:
 - Quality scoring and ranking
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 # Base generator interface
 from .base import (

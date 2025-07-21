@@ -45,8 +45,9 @@ class DocstringParser:
         self._parse_cache = {}  # Cache full parse results
         self._cache_size = cache_size
 
+    @staticmethod
     @functools.lru_cache(maxsize=1000)
-    def detect_format(self, docstring: str) -> DocstringFormat:
+    def detect_format(docstring: str) -> DocstringFormat:
         """Auto-detect docstring format using heuristics.
 
         Detection priority:
@@ -126,7 +127,7 @@ class DocstringParser:
     def _parse_uncached(self, docstring: str) -> ParsedDocstring | None:
         """Parse docstring without caching."""
         # Detect format
-        detected_format = self.detect_format(docstring)
+        detected_format = DocstringParser.detect_format(docstring)
 
         try:
             # Use third-party parser
@@ -349,12 +350,12 @@ class DocstringParser:
             "cache_size": len(self._parse_cache),
             "cache_limit": self._cache_size,
             "cache_hit_ratio": getattr(
-                self.detect_format, "cache_info", lambda: None
+                DocstringParser.detect_format, "cache_info", lambda: None
             )(),
         }
 
     def clear_cache(self):
         """Clear all caches to free memory."""
         self._parse_cache.clear()
-        if hasattr(self.detect_format, "cache_clear"):
-            self.detect_format.cache_clear()
+        if hasattr(DocstringParser.detect_format, "cache_clear"):
+            DocstringParser.detect_format.cache_clear()

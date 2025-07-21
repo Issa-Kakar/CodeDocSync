@@ -159,7 +159,7 @@ class SpecialConstructAnalyzer:
         try:
             tree = ast.parse(source_code)
             for node in ast.walk(tree):
-                if isinstance(node, (ast.Yield, ast.YieldFrom)):
+                if isinstance(node, ast.Yield | ast.YieldFrom):
                     return True
         except SyntaxError:
             pass

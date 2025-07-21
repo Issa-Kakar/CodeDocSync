@@ -394,7 +394,7 @@ def validate_llm_response(response_data: dict[str, Any]) -> bool:
 
     # Must have 'confidence' field that's a number
     if "confidence" not in response_data or not isinstance(
-        response_data["confidence"], (int, float)
+        response_data["confidence"], int | float
     ):
         return False
 
@@ -416,7 +416,7 @@ def validate_llm_response(response_data: dict[str, Any]) -> bool:
 
         # Validate confidence is a number between 0 and 1
         if (
-            not isinstance(issue["confidence"], (int, float))
+            not isinstance(issue["confidence"], int | float)
             or not 0 <= issue["confidence"] <= 1
         ):
             return False

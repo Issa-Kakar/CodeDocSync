@@ -209,7 +209,7 @@ class LLMOutputParser:
         if "confidence" not in response_data:
             return False, "Response must have 'confidence' field"
 
-        if not isinstance(response_data["confidence"], (int, float)):
+        if not isinstance(response_data["confidence"], int | float):
             return False, "'confidence' field must be a number"
 
         # Validate confidence range
@@ -275,7 +275,7 @@ class LLMOutputParser:
         if not isinstance(suggestion, str) or not suggestion.strip():
             raise ValueError("suggestion must be non-empty string")
 
-        if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
+        if not isinstance(confidence, int | float) or not 0 <= confidence <= 1:
             raise ValueError(
                 f"confidence must be number between 0 and 1, got {confidence}"
             )
