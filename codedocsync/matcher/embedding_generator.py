@@ -34,7 +34,7 @@ class EmbeddingGenerator:
             "batch_count": 0,
         }
 
-    def _init_providers(self):
+    def _init_providers(self) -> None:
         """Initialize embedding providers based on available models."""
         self.providers = {}
 

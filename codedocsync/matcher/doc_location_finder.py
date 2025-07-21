@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class DocLocationFinder:
     """Finds documentation in non-standard locations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.docstring_parser = DocstringParser()
         self._cache: dict[str, dict[str, ParsedDocstring]] = {}
 

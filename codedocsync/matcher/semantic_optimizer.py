@@ -89,7 +89,7 @@ class SemanticOptimizer:
         # Limit concurrent API calls to avoid rate limits
         semaphore = asyncio.Semaphore(3)  # Max 3 concurrent batches
 
-        async def process_batch_with_limit(batch):
+        async def process_batch_with_limit(batch: list[ParsedFunction]) -> Any:
             async with semaphore:
                 return await generator_func(batch)
 
@@ -99,7 +99,7 @@ class SemanticOptimizer:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Flatten results and handle errors
-        all_embeddings = []
+        all_embeddings: list[Any] = []
         error_count = 0
         for i, result in enumerate(results):
             if isinstance(result, Exception):
@@ -125,7 +125,7 @@ class SemanticOptimizer:
         memory_used = current_memory - self.initial_memory
 
         # Trigger GC if using >80% of allowed memory
-        should_trigger = memory_used > (self.max_memory_mb * 0.8)
+        should_trigger: bool = memory_used > (self.max_memory_mb * 0.8)
 
         if should_trigger:
             logger.info(
@@ -310,7 +310,7 @@ class SemanticOptimizer:
             ),
         }
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up resources."""
         logger.info("Cleaning up SemanticOptimizer resources")
 

@@ -26,7 +26,7 @@ class MatchConfidence:
     location_score: float
     signature_similarity: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate confidence scores."""
         for attr in [
             "overall",
