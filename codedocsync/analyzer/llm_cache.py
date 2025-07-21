@@ -22,6 +22,7 @@ import sqlite3
 import threading
 import time
 import zlib
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -56,11 +57,11 @@ class ConnectionPool:
     and improve performance for concurrent operations.
     """
 
-    def __init__(self, db_path: str, max_connections: int = 5):
+    def __init__(self, db_path: str, max_connections: int = 5) -> None:
         """Initialize connection pool."""
         self.db_path = db_path
         self.max_connections = max_connections
-        self._pool = Queue(maxsize=max_connections)
+        self._pool: Queue[sqlite3.Connection] = Queue(maxsize=max_connections)
         self._lock = threading.Lock()
         self._initialized = False
 
@@ -82,7 +83,7 @@ class ConnectionPool:
         return conn
 
     @asynccontextmanager
-    async def get_connection(self):
+    async def get_connection(self) -> AsyncGenerator[sqlite3.Connection, None]:
         """Get a connection from the pool."""
         if not self._initialized:
             with self._lock:
@@ -101,7 +102,7 @@ class ConnectionPool:
             # Return connection to pool
             await asyncio.get_event_loop().run_in_executor(None, self._pool.put, conn)
 
-    def close_all(self):
+    def close_all(self) -> None:
         """Close all connections in the pool."""
         while not self._pool.empty():
             conn = self._pool.get()
@@ -120,7 +121,7 @@ class LLMCache:
     - Performance monitoring and optimization
     """
 
-    def __init__(self, db_path: str = ".codedocsync_cache/llm.db"):
+    def __init__(self, db_path: str = ".codedocsync_cache/llm.db") -> None:
         """
         Initialize with SQLite backend.
 
@@ -147,7 +148,7 @@ class LLMCache:
         # Initialize database schema
         asyncio.create_task(self._init_database())
 
-    async def _init_database(self):
+    async def _init_database(self) -> None:
         """Initialize database schema with optimizations."""
         async with self.connection_pool.get_connection() as conn:
             # Create main cache table with additional columns
@@ -272,7 +273,7 @@ class LLMCache:
         ttl_days: int = 7,
         function_complexity: int = 0,
         file_path: str = "",
-        analysis_types: list[str] = None,
+        analysis_types: list[str] | None = None,
     ) -> None:
         """
         Cache response with TTL and metadata.
@@ -333,7 +334,7 @@ class LLMCache:
         except Exception as e:
             logger.warning(f"Cache set error for key {cache_key}: {e}")
 
-    async def _maybe_cleanup(self):
+    async def _maybe_cleanup(self) -> None:
         """Trigger cleanup if cache size exceeds limits."""
         # Only check every 5 minutes
         if time.time() - self.stats["last_cleanup"] < 300:
@@ -349,7 +350,7 @@ class LLMCache:
         except Exception as e:
             logger.warning(f"Cache cleanup check failed: {e}")
 
-    async def _cleanup_cache(self):
+    async def _cleanup_cache(self) -> None:
         """Clean up old and unused cache entries."""
         async with self.connection_pool.get_connection() as conn:
             # Delete expired entries first
@@ -542,6 +543,6 @@ class LLMCache:
 
         return False
 
-    async def close(self):
+    async def close(self) -> None:
         """Close all database connections."""
         self.connection_pool.close_all()

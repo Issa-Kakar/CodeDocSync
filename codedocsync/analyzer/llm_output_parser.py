@@ -39,7 +39,7 @@ class ParseResult:
 class LLMOutputParser:
     """Parse and validate LLM responses."""
 
-    def __init__(self, strict_validation: bool = True):
+    def __init__(self, strict_validation: bool = True) -> None:
         """
         Initialize parser.
 
@@ -487,7 +487,7 @@ class LLMOutputParser:
         total_issues = sum(len(r.issues) for r in results)
 
         # Count error types
-        error_counts = {}
+        error_counts: dict[str, int] = {}
         for result in results:
             if not result.success and result.error_message:
                 error_type = result.error_message.split(":")[0]

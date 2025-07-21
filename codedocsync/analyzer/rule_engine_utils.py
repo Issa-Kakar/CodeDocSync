@@ -209,7 +209,7 @@ def generate_parameter_suggestion(
     param_name: str,
     expected_value: str = "",
     actual_value: str = "",
-    **kwargs,
+    **kwargs: Any,
 ) -> str:
     """
     Create fix suggestion for parameter issues.

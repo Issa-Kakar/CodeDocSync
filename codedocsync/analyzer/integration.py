@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class IntegrationMetrics:
     """Simple metrics collector for integration monitoring."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.total_analyses = 0
         self.cache_hits = 0
         self.llm_calls = 0
@@ -38,7 +38,7 @@ class IntegrationMetrics:
 
     def record_analysis(
         self, result: AnalysisResult, cache_hit: bool, error: bool = False
-    ):
+    ) -> None:
         """Record metrics from an analysis run."""
         self.total_analyses += 1
 
@@ -82,7 +82,7 @@ class IntegrationMetrics:
             ),
         }
 
-    def log_stats(self):
+    def log_stats(self) -> None:
         """Log current statistics."""
         stats = self.get_stats()
         logger.info(f"Integration metrics: {stats}")
@@ -302,7 +302,7 @@ def _merge_results(
 class AnalysisCache:
     """Simple in-memory cache for analysis results."""
 
-    def __init__(self, max_size: int = 1000):
+    def __init__(self, max_size: int = 1000) -> None:
         self.cache: dict = {}
         self.max_size = max_size
 
@@ -329,7 +329,9 @@ class AnalysisCache:
             result.cache_hit = True
         return result
 
-    def put(self, pair: MatchedPair, config: AnalysisConfig, result: AnalysisResult):
+    def put(
+        self, pair: MatchedPair, config: AnalysisConfig, result: AnalysisResult
+    ) -> None:
         """Store analysis result in cache."""
         if len(self.cache) >= self.max_size:
             # Simple LRU: remove oldest entry
@@ -550,7 +552,7 @@ async def analyze_multiple_pairs(
         # Use semaphore to limit concurrent executions
         semaphore = asyncio.Semaphore(max_workers)
 
-        async def analyze_with_semaphore(pair):
+        async def analyze_with_semaphore(pair: MatchedPair) -> AnalysisResult:
             async with semaphore:
                 return await analyze_matched_pair(
                     pair, config, cache, rule_engine, llm_analyzer
@@ -588,7 +590,7 @@ def get_integration_metrics() -> dict[str, Any]:
     return metrics.get_stats()
 
 
-def reset_integration_metrics():
+def reset_integration_metrics() -> None:
     """Reset integration metrics (useful for testing)."""
     global metrics
     metrics = IntegrationMetrics()

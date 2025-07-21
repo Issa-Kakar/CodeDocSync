@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import psutil
+import psutil  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +71,10 @@ class PerformanceMonitor:
 
         # Thread-safe operation tracking
         self._lock = threading.RLock()
-        self._operation_history = deque(maxlen=history_size)
-        self._active_operations = {}  # operation_id -> start_metrics
+        self._operation_history: deque[OperationMetrics] = deque(maxlen=history_size)
+        self._active_operations: dict[str, dict[str, Any]] = (
+            {}
+        )  # operation_id -> start_metrics
 
         # Aggregated statistics
         self._stats = {
@@ -131,7 +133,12 @@ class PerformanceMonitor:
             }
         except Exception as e:
             logger.warning(f"Could not get disk usage: {e}")
-            return {"error": str(e)}
+            return {
+                "total_gb": 0.0,
+                "used_gb": 0.0,
+                "free_gb": 0.0,
+                "used_percent": 0.0,
+            }
 
     @contextmanager
     def track_operation(

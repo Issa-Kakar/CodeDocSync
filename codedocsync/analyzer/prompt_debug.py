@@ -45,7 +45,7 @@ class PromptAnalysis:
 class PromptDebugger:
     """Debug and analyze LLM prompts."""
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         """Initialize with optional Rich console."""
         self.console = console or Console()
         self.parser = LLMOutputParser(strict_validation=True)
@@ -177,7 +177,7 @@ class PromptDebugger:
         """
         estimated_tokens = request.estimate_tokens()
 
-        validation_result = {
+        validation_result: dict[str, Any] = {
             "estimated_tokens": estimated_tokens,
             "max_tokens": max_tokens,
             "within_limit": estimated_tokens <= max_tokens,
@@ -484,7 +484,7 @@ def create_sample_function() -> ParsedFunction:
     # This is a placeholder - in real usage, you'd import actual parser classes
     # For now, we'll create a simple mock
     class MockSignature:
-        def __init__(self):
+        def __init__(self) -> None:
             self.name = "process_data"
             self.parameters = [
                 type(

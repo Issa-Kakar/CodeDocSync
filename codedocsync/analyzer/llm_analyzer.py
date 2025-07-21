@@ -45,9 +45,11 @@ from .llm_output_parser import parse_llm_response
 from .models import AnalysisResult, InconsistencyIssue, RuleCheckResult
 from .prompt_templates import format_prompt
 
-# Import ParsedFunction for type hints
+# Import ParsedFunction and ParsedDocstring for type hints
 if TYPE_CHECKING:
     from ..parser.ast_parser import ParsedFunction
+
+from ..parser.docstring_models import ParsedDocstring
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class TokenBucket:
     Ensures we don't exceed API rate limits while allowing bursts.
     """
 
-    def __init__(self, rate: float, burst_size: int):
+    def __init__(self, rate: float, burst_size: int) -> None:
         """
         Initialize token bucket.
 
@@ -124,7 +126,7 @@ class LLMAnalyzer:
     - Performance monitoring setup
     """
 
-    def __init__(self, config: LLMConfig | None = None):
+    def __init__(self, config: LLMConfig | None = None) -> None:
         """
         Initialize with configuration and OpenAI client.
 
@@ -1237,9 +1239,47 @@ class LLMAnalyzer:
             # Create analysis request
             from .llm_models import LLMAnalysisRequest
 
+            # Ensure we have a ParsedDocstring
+            parsed_docstring = None
+            if func.docstring:
+                if isinstance(func.docstring, ParsedDocstring):
+                    parsed_docstring = func.docstring
+                else:
+                    # Create a minimal ParsedDocstring if we have RawDocstring
+                    from codedocsync.parser import DocstringFormat
+
+                    parsed_docstring = ParsedDocstring(
+                        format=DocstringFormat.UNKNOWN,
+                        summary=(
+                            func.docstring.raw_text
+                            if hasattr(func.docstring, "raw_text")
+                            else ""
+                        ),
+                        parameters=[],
+                        returns=None,
+                        raises=[],
+                        raw_text=(
+                            func.docstring.raw_text
+                            if hasattr(func.docstring, "raw_text")
+                            else ""
+                        ),
+                    )
+            else:
+                # Create empty ParsedDocstring if none exists
+                from codedocsync.parser import DocstringFormat
+
+                parsed_docstring = ParsedDocstring(
+                    format=DocstringFormat.UNKNOWN,
+                    summary="",
+                    parameters=[],
+                    returns=None,
+                    raises=[],
+                    raw_text="",
+                )
+
             request = LLMAnalysisRequest(
                 function=func,
-                docstring=func.docstring,
+                docstring=parsed_docstring,
                 analysis_types=self._determine_warming_analysis_types(func),
                 rule_results=[],  # No rule results for warming
                 related_functions=[],
@@ -1263,7 +1303,7 @@ class LLMAnalyzer:
 
         successful_warming = 0
 
-        async def warm_single_function(request):
+        async def warm_single_function(request: LLMAnalysisRequest) -> bool:
             """Warm cache for a single function."""
             async with warming_semaphore:
                 try:
@@ -1282,7 +1322,7 @@ class LLMAnalyzer:
             # Track progress
             completed = 0
 
-            async def track_progress():
+            async def track_progress() -> None:
                 nonlocal completed
                 while completed < len(warming_tasks):
                     await asyncio.sleep(0.5)
@@ -1442,7 +1482,7 @@ class LLMAnalyzer:
             raise LLMError(f"Circuit breaker is {self.circuit_breaker.state.value}")
 
         # Use circuit breaker to protect LLM call
-        async def protected_llm_call():
+        async def protected_llm_call() -> AnalysisResult:
             try:
                 # Convert OpenAI errors to our error types
                 response = await self.analyze_function(request)
@@ -1528,11 +1568,10 @@ class LLMAnalyzer:
 
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
+            docstring=request.docstring,
             confidence=MatchConfidence.HIGH,
             match_type=MatchType.DIRECT,
             match_reason="Rule-only analysis",
-            docstring=request.docstring,
         )
 
         # Run rule analysis
@@ -1572,11 +1611,10 @@ class LLMAnalyzer:
         # Create minimal matched pair
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
+            docstring=request.docstring,
             confidence=MatchConfidence.LOW,
             match_type=MatchType.SEMANTIC,
             match_reason="Minimal fallback analysis",
-            docstring=request.docstring,
         )
 
         # Create basic analysis issue
@@ -1615,11 +1653,10 @@ class LLMAnalyzer:
         # Create error matched pair
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
+            docstring=request.docstring,
             confidence=MatchConfidence.NONE,
             match_type=MatchType.SEMANTIC,
             match_reason="Analysis failed",
-            docstring=request.docstring,
         )
 
         # Create error issue
@@ -1660,11 +1697,10 @@ class LLMAnalyzer:
         # Create matched pair
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
+            docstring=request.docstring,
             confidence=MatchConfidence.HIGH,
             match_type=MatchType.DIRECT,
             match_reason="LLM analysis",
-            docstring=request.docstring,
         )
 
         return AnalysisResult(

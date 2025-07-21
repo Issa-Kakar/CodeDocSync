@@ -12,7 +12,7 @@ from typing import Any, TypeVar
 class LLMError(Exception):
     """Base class for LLM-related errors."""
 
-    def __init__(self, message: str, retry_after: float | None = None):
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.retry_after = retry_after
 
@@ -20,7 +20,7 @@ class LLMError(Exception):
 class LLMRateLimitError(LLMError):
     """Rate limit exceeded."""
 
-    def __init__(self, message: str, retry_after: float | None = None):
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message, retry_after)
 
 
@@ -33,7 +33,7 @@ class LLMTimeoutError(LLMError):
 class LLMInvalidResponseError(LLMError):
     """Response doesn't match expected format."""
 
-    def __init__(self, message: str, raw_response: str = ""):
+    def __init__(self, message: str, raw_response: str = "") -> None:
         super().__init__(message)
         self.raw_response = raw_response
 
@@ -53,7 +53,7 @@ class LLMNetworkError(LLMError):
 class LLMQuotaExceededError(LLMError):
     """API quota exceeded."""
 
-    def __init__(self, message: str, retry_after: float | None = None):
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message, retry_after)
 
 
@@ -182,7 +182,7 @@ class RetryStrategy:
         if not self.retry_history:
             return {"total_attempts": 0}
 
-        error_types = {}
+        error_types: dict[str, int] = {}
         total_delay = 0.0
 
         for retry in self.retry_history:
@@ -287,7 +287,7 @@ class CircuitBreaker:
             ):
                 self.state = CircuitState.OPEN
 
-    async def call(self, func: Callable[..., T], *args, **kwargs) -> T:
+    async def call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """Execute function with circuit breaker protection.
 
         Args:
@@ -345,8 +345,8 @@ class CircuitBreaker:
 async def with_retry(
     func: Callable[..., T],
     retry_strategy: RetryStrategy | None = None,
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> T:
     """Execute function with retry logic.
 

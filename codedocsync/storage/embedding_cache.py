@@ -4,6 +4,7 @@ import sqlite3
 import time
 from collections import OrderedDict
 from pathlib import Path
+from typing import Any
 
 from ..matcher.semantic_models import FunctionEmbedding
 
@@ -32,7 +33,7 @@ class EmbeddingCache:
         # Performance metrics
         self.metrics = {"memory_hits": 0, "disk_hits": 0, "misses": 0, "saves": 0}
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database for embeddings."""
         conn = sqlite3.connect(str(self.db_path))
         cursor = conn.cursor()
@@ -266,7 +267,7 @@ class EmbeddingCache:
         finally:
             conn.close()
 
-    def get_stats(self) -> dict[str, any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = (
             self.metrics["memory_hits"]
