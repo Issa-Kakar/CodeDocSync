@@ -62,33 +62,32 @@ class FunctionParameter:
     default_value: Optional[str]
     is_required: bool
     kind: ParameterKind
+```
+
 Key Rules:
+- Parameter order: positional-only, positional-or-keyword, *args, keyword-only, **kwargs
+- Syntax errors: Parse up to error line, log warning, continue
+- Missing docstrings: Return None, not empty string
 
-Parameter order: positional-only, positional-or-keyword, *args, keyword-only, **kwargs
-Syntax errors: Parse up to error line, log warning, continue
-Missing docstrings: Return None, not empty string
-
-Matcher Module (matcher/)
+### Matcher Module (`matcher/`)
 Three-Layer Strategy:
-
-DirectMatcher (90%): Same file, confidence ≥ 0.7
-ContextualMatcher (8%): Cross-file, import-aware
-SemanticMatcher (2%): Embedding-based fallback
+- DirectMatcher (90%): Same file, confidence ≥ 0.7
+- ContextualMatcher (8%): Cross-file, import-aware
+- SemanticMatcher (2%): Embedding-based fallback
 
 Performance Targets:
+- Direct: <1ms per function
+- Contextual: <20ms per function
+- Semantic: <200ms per function
 
-Direct: <1ms per function
-Contextual: <20ms per function
-Semantic: <200ms per function
-
-Analyzer Module (analyzer/)
+### Analyzer Module (`analyzer/`)
 Two-Phase Analysis:
-
-RuleEngine: Fast structural checks (<5ms)
-LLMAnalyzer: Semantic understanding (<2s)
+- RuleEngine: Fast structural checks (<5ms)
+- LLMAnalyzer: Semantic understanding (<2s)
 
 Core Models:
-python@dataclass
+```python
+@dataclass
 class InconsistencyIssue:
     issue_type: str
     severity: str  # 'critical', 'high', 'medium', 'low'
@@ -96,23 +95,25 @@ class InconsistencyIssue:
     suggestion: str
     line_number: int
     confidence: float = 1.0
-Suggestion Generator (suggestions/)
+```
+
+### Suggestion Generator (`suggestions/`)
 Key Components:
 
-Template system for multiple docstring styles
-Issue-specific generators (parameters, returns, exceptions, behavior, examples)
-Smart merging for partial updates
-Multi-format output (terminal, JSON)
+- Template system for multiple docstring styles
+- Issue-specific generators (parameters, returns, exceptions, behavior, examples)
+- Smart merging for partial updates
+- Multi-format output (terminal, JSON)
 
-Storage Module (storage/)
+### Storage Module (`storage/`)
 Three-Layer Caching:
+- File Hash Cache: MD5(content) → parsed AST
+- Function Cache: LRU in-memory (max 1000)
+- Embedding Cache: SQLite + memory LRU
 
-File Hash Cache: MD5(content) → parsed AST
-Function Cache: LRU in-memory (max 1000)
-Embedding Cache: SQLite + memory LRU
-
-Critical Interfaces
-python@dataclass
+## Critical Interfaces
+```python
+@dataclass
 class MatchedPair:
     function: ParsedFunction
     documentation: Optional[ParsedDocstring]
@@ -120,26 +121,34 @@ class MatchedPair:
     match_type: MatchType
     match_reason: str
     docstring: Optional[Union[RawDocstring, ParsedDocstring]] = None
-Poetry Command Execution Guide
+```
+
+## Poetry Command Execution Guide
 Issue: Poetry commands fail in Windows Git Bash and some CI/CD environments
 Solution: Use direct virtual environment Python interpreter path.
 
 Find Virtual Environment Path:
-bashpoetry env info --path
+```bash
+poetry env info --path
+```
 
 Execute Commands:
-bash# Windows
+```bash
+# Windows
 "C:\path\to\venv\Scripts\python.exe" -m codedocsync analyze .
 
 # macOS/Linux
 /path/to/venv/bin/python -m codedocsync analyze .
 
+```
+
 Setup Alias (recommended):
-bash# Add to ~/.bashrc or equivalent
+```bash
+# Add to ~/.bashrc or equivalent
 alias pyexec='"C:\path\to\venv\Scripts\python.exe"'
+```
 
-
-Important: This project requires Python 3.10+ for modern syntax features. The local development environment needs Python 3.12.1 selected as the interpreter for Poetry to work correctly.
+**Important**: This project requires Python 3.10+ for modern syntax features. The local development environment needs Python 3.12.11 selected as the interpreter for Poetry to work correctly.
 Pre-commit Hooks Configuration
 The project enforces code quality through pre-commit hooks:
 
@@ -149,26 +158,39 @@ Black (v25.1.0): Code formatter (88 char line length)
 Mypy (v1.17.0): Static type checker
 
 Workflow:
-bash# Run manually before commit
+```bash
+# Run manually before commit
 pre-commit run --all-files
+```
 
+## Known Issues and Workarounds
+### Poetry Command Execution
+- **Issue**: Poetry commands fail in Windows Git Bash
+- **Workaround**: Use direct virtual environment Python path (see ARCHITECTURE.MD)
+- **Note**: Local development requires Python 3.12.1 interpreter selection
+
+### Type Annotations
+- **Status**: 0 mypy errors (fully resolved)
+- **Key Pattern**: FunctionParameter uses `type_annotation` not `type_str`
+
+```bash
 # Emergency bypass (use sparingly)
 git commit --no-verify -m "Emergency commit"
-Key Architectural Decisions
+```
+
+## Key Architectural Decisions
 ADR-001: Python 3.10+ requirement for modern features
 ADR-002: Built-in ast module (2.4x faster than alternatives)
 ADR-003: ChromaDB for embeddings (zero-config, handles 1M embeddings)
 ADR-004: docstring_parser>=0.16 (actively maintained, all formats)
-Performance Contracts
+## Performance Contracts
+- Small file (<100 lines): <10ms parsing
+- Medium project (100 files): <30s full analysis
+- Large project (1000 files): <5 minutes full analysis
+- Memory usage: <500MB for 10k functions
 
-Small file (<100 lines): <10ms parsing
-Medium project (100 files): <30s full analysis
-Large project (1000 files): <5 minutes full analysis
-Memory usage: <500MB for 10k functions
-
-Common Pitfalls
-
-Never use str() on custom objects - access specific attributes
-Check instance type before Union access
-Use content hash for cache keys, not file paths
-Respect confidence thresholds in matching
+## Common Pitfalls
+- Never use str() on custom objects - access specific attributes
+- Check instance type before Union access
+- Use content hash for cache keys, not file paths
+- Respect confidence thresholds in matching
