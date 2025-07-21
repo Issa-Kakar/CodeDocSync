@@ -51,8 +51,8 @@ class EmbeddingGenerator:
 
         # Initialize local model as fallback
         try:
-            from sentence_transformers import (
-                SentenceTransformer,  # type: ignore[import-untyped]
+            from sentence_transformers import (  # type: ignore[import-untyped]
+                SentenceTransformer,
             )
 
             self.providers["local"] = SentenceTransformer("all-MiniLM-L6-v2")

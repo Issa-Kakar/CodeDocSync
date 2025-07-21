@@ -11,6 +11,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from codedocsync.parser import ParsedFunction
+
 from ..analyzer.models import AnalysisResult, InconsistencyIssue
 from ..matcher import MatchedPair
 from .base import BaseSuggestionGenerator
@@ -44,7 +46,7 @@ class EnhancedIssue:
     formatted_output: str | None = None
     ranking_score: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate enhanced issue."""
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError(f"confidence must be 0.0-1.0, got {self.confidence}")
@@ -90,13 +92,13 @@ class EnhancedAnalysisResult:
 class SuggestionIntegration:
     """Integrate suggestions with analyzer output."""
 
-    def __init__(self, config: SuggestionConfig | None = None):
+    def __init__(self, config: SuggestionConfig | None = None) -> None:
         """Initialize integration with configuration."""
         self.config = config or SuggestionConfig()
         self._generators: dict[str, BaseSuggestionGenerator] = {}
         self._setup_generators()
 
-    def _setup_generators(self):
+    def _setup_generators(self) -> None:
         """Setup specialized generators for different issue types."""
         self._generators.update(
             {
@@ -143,6 +145,7 @@ class SuggestionIntegration:
                     context = self._create_context(issue, result.matched_pair)
 
                     # Check for edge cases first
+                    suggestion: Suggestion | None
                     if self._is_edge_case(result.matched_pair.function):
                         suggestion = self._edge_case_generator.generate(context)
                     else:
@@ -224,7 +227,7 @@ class SuggestionIntegration:
             logger.warning(f"Generator failed for {issue.issue_type}: {e}")
             return None
 
-    def _is_edge_case(self, function) -> bool:
+    def _is_edge_case(self, function: ParsedFunction) -> bool:
         """Check if function requires edge case handling."""
         # Check for special decorators or constructs
         if hasattr(function, "signature") and hasattr(function.signature, "name"):
@@ -241,7 +244,7 @@ class SuggestionIntegration:
 class SuggestionBatchProcessor:
     """Process multiple analysis results with suggestions."""
 
-    def __init__(self, config: SuggestionConfig | None = None):
+    def __init__(self, config: SuggestionConfig | None = None) -> None:
         """Initialize batch processor."""
         self.config = config or SuggestionConfig()
         self.integration = SuggestionIntegration(config)

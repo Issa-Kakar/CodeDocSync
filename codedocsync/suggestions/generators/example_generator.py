@@ -39,7 +39,7 @@ class ExampleTemplate:
 class ParameterValueGenerator:
     """Generate realistic parameter values for examples."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.type_defaults = {
             "str": '"example"',
             "int": "42",
@@ -94,8 +94,8 @@ class ParameterValueGenerator:
                 return value
 
         # Then try type-based generation
-        if param.type_annotation:
-            type_str = self._normalize_type(param.type_annotation)
+        if param.type_str:
+            type_str = self._normalize_type(param.type_str)
             for type_pattern, value in self.type_defaults.items():
                 if type_pattern.lower() in type_str.lower():
                     return value
@@ -214,7 +214,7 @@ class ExamplePatternAnalyzer:
 class ExampleGenerator:
     """Generate usage examples for functions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.value_generator = ParameterValueGenerator()
         self.pattern_analyzer = ExamplePatternAnalyzer()
 
@@ -409,8 +409,8 @@ class ExampleGenerator:
             return '""'  # Empty string
 
         # Edge cases by type
-        if param.type_annotation:
-            type_str = param.type_annotation.lower()
+        if param.type_str:
+            type_str = param.type_str.lower()
             if "int" in type_str:
                 return "0"
             elif "float" in type_str:

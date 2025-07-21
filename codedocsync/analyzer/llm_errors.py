@@ -255,7 +255,8 @@ class CircuitBreaker:
         if self.state == CircuitState.HALF_OPEN:
             return self.half_open_calls < self.half_open_max_calls
 
-        return False  # pragma: no cover
+        # This should never be reached as we handle all enum values
+        return True  # Default to allowing call if state is somehow unknown
 
     def record_success(self) -> None:
         """Record a successful execution."""
@@ -309,7 +310,7 @@ class CircuitBreaker:
 
         try:
             if asyncio.iscoroutinefunction(func):
-                result = await func(*args, **kwargs)
+                result: T = await func(*args, **kwargs)
             else:
                 result = func(*args, **kwargs)
 
@@ -370,9 +371,11 @@ async def with_retry(
     for attempt in range(retry_strategy.max_retries + 1):
         try:
             if asyncio.iscoroutinefunction(func):
-                return await func(*args, **kwargs)
+                result: T = await func(*args, **kwargs)
+                return result
             else:
-                return func(*args, **kwargs)
+                result: T = func(*args, **kwargs)
+                return result
 
         except Exception as e:
             last_exception = e

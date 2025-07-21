@@ -331,7 +331,7 @@ class SuggestionError(Exception):
 class StyleDetectionError(SuggestionError):
     """Failed to detect docstring style."""
 
-    def __init__(self, message: str, fallback_style: str = "google"):
+    def __init__(self, message: str, fallback_style: str = "google") -> None:
         super().__init__(message)
         self.fallback_style = fallback_style
 
@@ -339,7 +339,7 @@ class StyleDetectionError(SuggestionError):
 class SuggestionGenerationError(SuggestionError):
     """Failed to generate suggestion."""
 
-    def __init__(self, message: str, partial_result: str | None = None):
+    def __init__(self, message: str, partial_result: str | None = None) -> None:
         super().__init__(message)
         self.partial_result = partial_result
 
@@ -347,6 +347,6 @@ class SuggestionGenerationError(SuggestionError):
 class SuggestionValidationError(SuggestionError):
     """Suggestion failed validation."""
 
-    def __init__(self, message: str, suggestion_text: str):
+    def __init__(self, message: str, suggestion_text: str) -> None:
         super().__init__(message)
         self.suggestion_text = suggestion_text

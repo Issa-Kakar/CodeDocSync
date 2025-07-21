@@ -240,7 +240,7 @@ class PropertyMethodHandler:
                     parameters.append(
                         DocstringParameter(
                             name=param.name,
-                            type_str=param.type_annotation or "",
+                            type_str=param.type_str or "",
                             description=f"The new {param.name} value",
                             is_optional=not param.is_required,
                         )
@@ -415,7 +415,7 @@ class ClassMethodHandler:
                     parameters.append(
                         DocstringParameter(
                             name=param.name,
-                            type_str=param.type_annotation or "",
+                            type_str=param.type_str or "",
                             description=f"Description for {param.name}",
                             is_optional=not param.is_required,
                         )
@@ -457,7 +457,7 @@ class ClassMethodHandler:
                 parameters.append(
                     DocstringParameter(
                         name=param.name,
-                        type_str=param.type_annotation or "",
+                        type_str=param.type_str or "",
                         description=f"Description for {param.name}",
                         is_optional=not param.is_required,
                     )
@@ -535,7 +535,7 @@ class ClassMethodHandler:
 class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
     """Main edge case handler that delegates to specialized handlers."""
 
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         super().__init__(config)
         self.analyzer = SpecialConstructAnalyzer()
         self.property_handler = PropertyMethodHandler()

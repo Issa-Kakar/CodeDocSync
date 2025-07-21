@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore
 
 
 @dataclass
@@ -386,7 +386,7 @@ def get_documentation_config() -> SuggestionConfig:
 class ConfigManager:
     """Manages configuration loading and precedence."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._config_cache: dict[str, SuggestionConfig] = {}
 
     def load_config(

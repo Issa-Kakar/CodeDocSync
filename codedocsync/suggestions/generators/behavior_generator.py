@@ -28,14 +28,14 @@ class BehaviorPattern:
     pattern_type: str
     description: str
     confidence: float
-    line_numbers: list[int] = None
+    line_numbers: list[int] | None = None
     details: dict[str, Any] = None
 
 
 class BehaviorAnalyzer:
     """Analyze function code to extract behavioral patterns."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.patterns = []
 
     def analyze_behavior(

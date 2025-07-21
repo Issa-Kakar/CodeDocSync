@@ -426,8 +426,8 @@ class PromptDebugger:
 
         for param in sig.parameters:
             param_str = param.name
-            if param.type_annotation:
-                param_str += f": {param.type_annotation}"
+            if param.type_str:
+                param_str += f": {param.type_str}"
             if param.default_value:
                 param_str += f" = {param.default_value}"
             params.append(param_str)

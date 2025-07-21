@@ -261,8 +261,8 @@ class JSONSuggestionFormatter:
                         "name": param.name,
                         "is_required": param.is_required,
                     }
-                    if param.type_annotation:
-                        param_info["type_annotation"] = param.type_annotation
+                    if param.type_str:
+                        param_info["type_annotation"] = param.type_str
                     if param.default_value:
                         param_info["default_value"] = param.default_value
                     info["parameters"].append(param_info)

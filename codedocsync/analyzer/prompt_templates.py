@@ -375,7 +375,7 @@ def get_available_analysis_types() -> list[str]:
     return list(PROMPT_TEMPLATES.keys())
 
 
-def validate_llm_response(response_data: dict[str, Any]) -> bool:
+def validate_llm_response(response_data: Any) -> bool:
     """
     Validate that an LLM response has the expected structure.
 

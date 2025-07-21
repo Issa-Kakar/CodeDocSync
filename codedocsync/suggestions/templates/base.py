@@ -21,7 +21,7 @@ from ..models import DocstringStyle
 class DocstringTemplate(ABC):
     """Base template for docstring generation."""
 
-    def __init__(self, style: DocstringStyle, max_line_length: int = 88):
+    def __init__(self, style: DocstringStyle, max_line_length: int = 88) -> None:
         """Initialize template with style and formatting options."""
         self.style = style
         self.max_line_length = max_line_length
@@ -157,7 +157,7 @@ class DocstringTemplate(ABC):
         """Extract existing descriptions from docstring lines."""
         descriptions = {}
         current_param = None
-        current_desc_lines = []
+        current_desc_lines: list[str] = []
 
         for line in lines:
             line = line.strip()
@@ -225,24 +225,24 @@ class DocstringTemplate(ABC):
 class TemplateRegistry:
     """Registry for managing docstring templates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize empty registry."""
         self._templates: dict[DocstringStyle, type] = {}
 
-    def register(self, style: DocstringStyle, template_class: type):
+    def register(self, style: DocstringStyle, template_class: type) -> None:
         """Register a template class for a style."""
         if not issubclass(template_class, DocstringTemplate):
             raise ValueError("Template class must inherit from DocstringTemplate")
 
         self._templates[style] = template_class
 
-    def get_template(self, style: DocstringStyle, **kwargs) -> DocstringTemplate:
+    def get_template(self, style: DocstringStyle, **kwargs: int) -> DocstringTemplate:
         """Get template instance for style."""
         if style not in self._templates:
             raise ValueError(f"No template registered for style: {style}")
 
         template_class = self._templates[style]
-        return template_class(style, **kwargs)
+        return template_class(style, **kwargs)  # type: ignore[no-any-return]
 
     def available_styles(self) -> list[DocstringStyle]:
         """Get list of available styles."""
@@ -253,7 +253,7 @@ class TemplateRegistry:
 template_registry = TemplateRegistry()
 
 
-def get_template(style: DocstringStyle, **kwargs) -> DocstringTemplate:
+def get_template(style: DocstringStyle, **kwargs: int) -> DocstringTemplate:
     """Convenience function to get template from global registry."""
     return template_registry.get_template(style, **kwargs)
 
@@ -282,7 +282,7 @@ class TemplateMerger:
 
     @staticmethod
     def preserve_custom_sections(
-        original_lines: list[str], standard_sections: set
+        original_lines: list[str], standard_sections: set[str]
     ) -> list[str]:
         """Extract custom sections not in standard set."""
         custom_lines = []

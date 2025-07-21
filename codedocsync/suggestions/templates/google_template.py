@@ -232,20 +232,22 @@ class GoogleStyleTemplate(DocstringTemplate):
         existing_docstring: str | None = None,
     ) -> list[str]:
         """Render just a specific section for partial updates."""
-        if section_type == "parameters":
-            return self.render_parameters(content)
+        if section_type == "parameters" and isinstance(content, list):
+            # Type check to ensure it's a list of DocstringParameter
+            return self.render_parameters(content)  # type: ignore[arg-type]
         elif section_type == "returns" and isinstance(content, DocstringReturns):
             return self.render_returns(content)
-        elif section_type == "raises":
-            return self.render_raises(content)
+        elif section_type == "raises" and isinstance(content, list):
+            # Type check to ensure it's a list of DocstringRaises
+            return self.render_raises(content)  # type: ignore[arg-type]
         else:
             raise ValueError(f"Unsupported section type: {section_type}")
 
     def extract_section_boundaries(
         self, docstring_lines: list[str]
-    ) -> dict[str, tuple]:
+    ) -> dict[str, tuple[int, int]]:
         """Extract section boundaries for precise section replacement."""
-        boundaries = {}
+        boundaries: dict[str, tuple[int, int]] = {}
         current_section = None
         start_line = None
 

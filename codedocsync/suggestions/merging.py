@@ -46,7 +46,7 @@ class SectionBoundary:
 class DocstringMerger:
     """Merge new suggestions with existing docstrings."""
 
-    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE):
+    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE) -> None:
         """Initialize merger with docstring style."""
         self.style = style
         self._section_patterns = self._get_section_patterns()

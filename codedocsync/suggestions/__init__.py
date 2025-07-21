@@ -202,7 +202,7 @@ __all__ = [
 def create_suggestion_context(
     issue: Any,
     function: Any,
-    docstring: Any = None,
+    docstring: Any | None = None,
     project_style: str = "google",
     **kwargs: Any,
 ) -> SuggestionContext:

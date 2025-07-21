@@ -23,7 +23,7 @@ from ..templates.base import get_template
 class ReturnAnalysisResult:
     """Result of analyzing return statements in function code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.return_types: set[str] = set()
         self.has_explicit_return: bool = False
         self.has_implicit_none: bool = False

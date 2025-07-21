@@ -200,7 +200,7 @@ class RuleEngine:
             suggestion = generate_parameter_suggestion(
                 "missing_params",
                 param_name,
-                param_type=actual_param.type_annotation if actual_param else "",
+                param_type=actual_param.type_str if actual_param else "",
             )
 
             issues.append(
@@ -253,9 +253,7 @@ class RuleEngine:
         doc_params = self._get_doc_params(self._get_parsed_docstring(pair))
 
         # Create mapping of parameter names to types
-        func_types = {
-            p.name: p.type_annotation for p in func_params if p.type_annotation
-        }
+        func_types = {p.name: p.type_str for p in func_params if p.type_str}
         doc_types = {p.name: p.type_str for p in doc_params if p.type_str}
 
         # Check type consistency for parameters that have both
@@ -398,7 +396,7 @@ class RuleEngine:
             param_name = param.name.lstrip("*")
             if param_name not in documented_names:
                 suggestion = generate_parameter_suggestion(
-                    "missing_params", param.name, param_type=param.type_annotation
+                    "missing_params", param.name, param_type=param.type_str
                 )
 
                 issues.append(
@@ -622,11 +620,11 @@ class RuleEngine:
             if (
                 param.default_value
                 and param.default_value.lower() in ("none", "null")
-                and param.type_annotation
-                and "optional" not in param.type_annotation.lower()
-                and "| none" not in param.type_annotation.lower()
+                and param.type_str
+                and "optional" not in param.type_str.lower()
+                and "| none" not in param.type_str.lower()
             ):
-                suggestion = f"Update type annotation for '{param.name}' to Optional[{param.type_annotation}] since it has None default"
+                suggestion = f"Update type annotation for '{param.name}' to Optional[{param.type_str}] since it has None default"
 
                 issues.append(
                     self._create_issue(
@@ -637,8 +635,8 @@ class RuleEngine:
                         confidence=0.85,
                         details={
                             "param_name": param.name,
-                            "current_type": param.type_annotation,
-                            "suggested_type": f"Optional[{param.type_annotation}]",
+                            "current_type": param.type_str,
+                            "suggested_type": f"Optional[{param.type_str}]",
                         },
                     )
                 )

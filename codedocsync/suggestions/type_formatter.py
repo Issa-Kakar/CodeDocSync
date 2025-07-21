@@ -6,6 +6,8 @@ in different docstring styles, handling complex types like Union, Optional,
 generics, and modern Python typing constructs.
 """
 
+from __future__ import annotations
+
 import ast
 import re
 from enum import Enum
@@ -25,7 +27,7 @@ class TypeComplexity(Enum):
 class TypeAnnotationFormatter:
     """Format Python type annotations for docstrings."""
 
-    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE):
+    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE) -> None:
         """Initialize type formatter for specific docstring style."""
         self.style = style
         self._type_mappings = self._get_style_mappings()
@@ -60,7 +62,7 @@ class TypeAnnotationFormatter:
         else:  # COMPLEX
             return self._format_complex_type(normalized)
 
-    def extract_from_ast(self, node: ast.AST) -> str:
+    def extract_from_ast(self, node: ast.AST | None) -> str:
         """
         Extract type annotation from AST node.
 
@@ -264,7 +266,7 @@ class TypeAnnotationFormatter:
 
         return type_str
 
-    def _split_union_types(self, union_content: str) -> list:
+    def _split_union_types(self, union_content: str) -> list[str]:
         """Split Union type content, handling nested brackets."""
         types = []
         current_type = ""

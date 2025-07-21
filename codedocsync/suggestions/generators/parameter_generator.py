@@ -129,7 +129,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         for actual_param in actual_params:
             if actual_param.name in param_map:
                 doc_param = param_map[actual_param.name]
-                if self._types_differ(actual_param.type_annotation, doc_param.type_str):
+                if self._types_differ(actual_param.type_str, doc_param.type_str):
                     type_fixes.append((actual_param, doc_param))
 
         if not type_fixes:
@@ -141,7 +141,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         )
 
         fix_descriptions = [
-            f"{param.name}: {param.type_annotation}" for param, _ in type_fixes
+            f"{param.name}: {param.type_str}" for param, _ in type_fixes
         ]
         suggestion = self._create_suggestion(
             context,
@@ -379,7 +379,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         for param in missing_params:
             doc_param = DocstringParameter(
                 name=param.name,
-                type_str=param.type_annotation,
+                type_str=param.type_str,
                 description=self._generate_parameter_description(param),
                 is_optional=not param.is_required,
                 default_value=param.default_value,
@@ -405,8 +405,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         # Basic description based on parameter name and type
         base_desc = f"Description for {param.name}"
 
-        if param.type_annotation:
-            base_desc += f" ({param.type_annotation})"
+        if param.type_str:
+            base_desc += f" ({param.type_str})"
 
         if param.default_value:
             base_desc += f", defaults to {param.default_value}"
@@ -511,9 +511,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         # Update parameter types
         updated_params = []
         if hasattr(docstring, "parameters"):
-            param_fixes = {
-                actual.name: actual.type_annotation for actual, _ in type_fixes
-            }
+            param_fixes = {actual.name: actual.type_str for actual, _ in type_fixes}
 
             for param in docstring.parameters:
                 if param.name in param_fixes:

@@ -664,8 +664,8 @@ class LLMAnalyzer:
         params = []
         for param in signature.parameters:
             param_str = param.name
-            if param.type_annotation:
-                param_str += f": {param.type_annotation}"
+            if param.type_str:
+                param_str += f": {param.type_str}"
             if param.default_value:
                 param_str += f" = {param.default_value}"
             params.append(param_str)
@@ -1122,7 +1122,7 @@ class LLMAnalyzer:
 
         # Type annotations suggest more complex functions
         for param in function.signature.parameters:
-            if param.type_annotation:
+            if param.type_str:
                 complexity += 1
 
         if function.signature.return_type:
@@ -1364,8 +1364,8 @@ class LLMAnalyzer:
         # Functions with complex type annotations
         complex_types = 0
         for param in func.signature.parameters:
-            if param.type_annotation and any(
-                keyword in param.type_annotation.lower()
+            if param.type_str and any(
+                keyword in param.type_str.lower()
                 for keyword in ["union", "optional", "dict", "list", "callable"]
             ):
                 complex_types += 1
@@ -1393,7 +1393,7 @@ class LLMAnalyzer:
                 analysis_types.append("examples")
 
         # Add type consistency for complex typed functions
-        if any(param.type_annotation for param in func.signature.parameters):
+        if any(param.type_str for param in func.signature.parameters):
             analysis_types.append("type_consistency")
 
         return analysis_types

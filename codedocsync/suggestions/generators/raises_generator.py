@@ -36,7 +36,7 @@ class ExceptionInfo:
 class ExceptionAnalyzer:
     """Analyze function code to find all possible exceptions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.builtin_exceptions = {
             "ValueError": "When an invalid value is provided",
             "TypeError": "When an invalid type is provided",

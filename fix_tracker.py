@@ -12,7 +12,7 @@ import subprocess
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 class FixTracker:
@@ -207,7 +207,7 @@ result = some_function()  # never used
 """,
         }
 
-    def show_fix_examples(self, error_code: str | None = None) -> None:
+    def show_fix_examples(self, error_code: Optional[str] = None) -> None:
         """Show examples of how to fix common issues."""
         patterns = self.get_fix_patterns()
 

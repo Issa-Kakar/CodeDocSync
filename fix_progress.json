@@ -1,6 +1,16 @@
 {
   "ruff_fixed_files": [
-    "fix_tracker.py"
+    "fix_tracker.py",
+    "codedocsync/analyzer/llm_errors.py",
+    "codedocsync/matcher/embedding_generator.py",
+    "codedocsync/suggestions/config.py",
+    "codedocsync/suggestions/style_detector.py",
+    "codedocsync/suggestions/templates/base.py",
+    "codedocsync/suggestions/templates/google_template.py",
+    "codedocsync/suggestions/type_formatter.py",
+    "codedocsync/suggestions/errors.py",
+    "test_style_detector.py",
+    "verify_style_detector.py"
   ],
   "mypy_fixed_files": [
     "codedocsync/cli/analyze.py",
@@ -34,14 +44,24 @@
     "codedocsync/matcher/embedding_generator.py",
     "codedocsync/matcher/semantic_error_recovery.py",
     "codedocsync/matcher/semantic_matcher.py",
-    "codedocsync/matcher/semantic_optimizer.py"
+    "codedocsync/matcher/semantic_optimizer.py",
+    "codedocsync/suggestions/style_detector.py",
+    "codedocsync/suggestions/errors.py",
+    "codedocsync/suggestions/converter.py",
+    "codedocsync/suggestions/performance.py",
+    "codedocsync/suggestions/base.py",
+    "codedocsync/suggestions/integration.py",
+    "codedocsync/suggestions/config_manager.py",
+    "codedocsync/suggestions/type_formatter.py",
+    "codedocsync/suggestions/__init__.py",
+    "fix_tracker.py"
   ],
   "current_phase": "mypy",
-  "timestamp": "2025-07-21T05:45:00.000000",
+  "timestamp": "2025-07-21T06:30:00.000000",
   "statistics": {
     "initial_ruff_errors": 1,
     "initial_mypy_errors": 297,
     "current_ruff_errors": 0,
-    "current_mypy_errors": 247
+    "current_mypy_errors": 100
   }
 }

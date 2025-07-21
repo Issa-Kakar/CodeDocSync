@@ -9,7 +9,8 @@ import ast
 import re
 import time
 from abc import ABC, abstractmethod
-from typing import Any
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 from .models import (
     Suggestion,
@@ -19,11 +20,13 @@ from .models import (
     SuggestionValidationError,
 )
 
+T = TypeVar("T")
+
 
 class BaseSuggestionGenerator(ABC):
     """Base class for all suggestion generators."""
 
-    def __init__(self, config: Any | None = None):
+    def __init__(self, config: Any | None = None) -> None:
         """Initialize the generator with configuration."""
         from .config import SuggestionConfig
 
@@ -388,21 +391,24 @@ class BaseSuggestionGenerator(ABC):
         return updated_section
 
 
-def with_suggestion_fallback(func):
+def with_suggestion_fallback(func: Callable[..., T]) -> Callable[..., T]:
     """Decorator for graceful degradation in suggestion generation."""
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> T:
         try:
             return func(*args, **kwargs)
         except SuggestionError as e:
             # Return partial result if available
             if hasattr(e, "partial_result") and e.partial_result:
-                return e.partial_result
+                return cast(T, e.partial_result)
 
             # Create fallback suggestion
             if args and hasattr(args[0], "_create_fallback_suggestion"):
-                return args[0]._create_fallback_suggestion(
-                    args[1] if len(args) > 1 else None
+                return cast(
+                    T,
+                    args[0]._create_fallback_suggestion(
+                        args[1] if len(args) > 1 else None
+                    ),
                 )
 
             # Re-raise if no fallback possible

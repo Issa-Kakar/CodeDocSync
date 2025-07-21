@@ -291,7 +291,7 @@ def generate_docstring_template(
         template_parts.append("Args:")
         for param in missing_params:
             param_name = param.name.lstrip("*")
-            type_hint = f" ({param.type_annotation})" if param.type_annotation else ""
+            type_hint = f" ({param.type_str})" if param.type_str else ""
             default_hint = (
                 f" Defaults to {param.default_value}." if param.default_value else ""
             )
@@ -433,10 +433,10 @@ def validate_special_parameters(
                 )
 
         # Check for Optional type consistency
-        if param.default_value and param.type_annotation:
+        if param.default_value and param.type_str:
             if (
                 param.default_value.lower() in ("none", "null")
-                and "optional" not in param.type_annotation.lower()
+                and "optional" not in param.type_str.lower()
             ):
                 issues.append(
                     {
