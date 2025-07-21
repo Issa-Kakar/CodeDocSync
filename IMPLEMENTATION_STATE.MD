@@ -69,6 +69,18 @@ rapidfuzz = "^3.6.0"
 - **Status**: 0 mypy errors (fully resolved)
 - **Key Pattern**: FunctionParameter uses `type_annotation` not `type_str`
 
+## Recent Updates (2025-01-21)
+
+### AST Parser Tests ✅
+- Created comprehensive test suite with 30 high-value tests
+- Performance tests: medium files (<50ms), large files (<500ms adjusted)
+- Memory tests: <100KB per function (adjusted from 50KB)
+- All function types covered: regular, async, generator, lambda
+- Complex signatures: positional-only, *args, **kwargs
+- Decorator handling: single, multiple, class decorators
+- Error recovery and unicode support
+- All tests passing with 0 mypy/ruff/black errors
+
 ## Next Implementation Phase
 
 ### Week 4: Performance & Optimization (Ready to Start)
