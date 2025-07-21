@@ -328,7 +328,7 @@ def format_prompt(
     source_code: str,
     docstring: str,
     rule_issues: str | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> str:
     """
     Format a prompt template with actual function data.

@@ -93,7 +93,7 @@ class SuggestionConfig:
         }
     )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration values."""
         # Validate style
         valid_styles = ["google", "numpy", "sphinx", "rest"]
@@ -258,7 +258,7 @@ class RankingConfig:
         default_factory=lambda: ["low", "medium", "high", "critical"]
     )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate ranking configuration."""
         weights = [
             self.severity_weight,

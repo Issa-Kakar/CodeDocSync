@@ -200,7 +200,11 @@ __all__ = [
 
 
 def create_suggestion_context(
-    issue, function, docstring=None, project_style="google", **kwargs
+    issue: Any,
+    function: Any,
+    docstring: Any = None,
+    project_style: str = "google",
+    **kwargs: Any,
 ) -> SuggestionContext:
     """
     Factory function to create a SuggestionContext with sensible defaults.
@@ -237,14 +241,14 @@ def validate_suggestion_quality(suggestion: Suggestion) -> dict[str, Any]:
     from .base import BaseSuggestionGenerator
 
     # Create a temporary generator for validation
-    generator = type(
-        "TempGenerator",
-        (BaseSuggestionGenerator,),
-        {
-            "generate": lambda self, ctx: suggestion,
-            "__init__": lambda self: super().__init__(),
-        },
-    )()
+    class TempGenerator(BaseSuggestionGenerator):
+        def generate(self, ctx: Any) -> Suggestion:
+            return suggestion
+
+        def __init__(self) -> None:
+            super().__init__()
+
+    generator = TempGenerator()
 
     is_valid = generator.validate_suggestion(suggestion)
 
@@ -312,8 +316,8 @@ def create_diff_preview(
 
 # Integration helpers for working with the analyzer module
 def enhance_analysis_result_with_suggestions(
-    analysis_result, config: SuggestionConfig | None = None
-):
+    analysis_result: Any, config: SuggestionConfig | None = None
+) -> Any:
     """
     Enhance an AnalysisResult with suggestions.
 
@@ -395,7 +399,7 @@ def get_module_info() -> dict[str, Any]:
 
 
 # Module initialization message
-def _print_initialization_info():
+def _print_initialization_info() -> None:
     """Print module initialization information (for development)."""
     import os
 

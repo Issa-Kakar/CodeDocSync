@@ -37,7 +37,7 @@ class LLMConfig:
     max_context_tokens: int = 2000
     max_functions_in_context: int = 3
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         self._validate_provider()
         self._validate_model()

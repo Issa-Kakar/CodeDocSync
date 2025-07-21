@@ -42,7 +42,7 @@ class SuggestionDiff:
     start_line: int
     end_line: int
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate diff data."""
         if self.start_line < 1:
             raise ValueError(f"start_line must be positive, got {self.start_line}")
@@ -95,7 +95,7 @@ class SuggestionMetadata:
     generation_time_ms: float = 0.0  # Time to generate
     token_usage: int | None = None  # Tokens if LLM used
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate metadata."""
         if self.generation_time_ms < 0:
             raise ValueError(
@@ -125,7 +125,7 @@ class SuggestionContext:
     related_functions: list[Any] = field(default_factory=list)  # Similar functions
     file_imports: list[str] = field(default_factory=list)  # Available imports
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate context."""
         if self.max_line_length < 40:
             raise ValueError(
@@ -167,7 +167,7 @@ class Suggestion:
     affected_sections: list[str] = field(default_factory=list)  # Which parts changed
     line_range: tuple[int, int] = (1, 1)  # Target line range
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate suggestion data."""
         # Validate confidence
         if not 0.0 <= self.confidence <= 1.0:
@@ -267,7 +267,7 @@ class SuggestionBatch:
     file_path: str = ""
     total_generation_time_ms: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate batch data."""
         if self.total_generation_time_ms < 0:
             raise ValueError(
@@ -312,8 +312,8 @@ class SuggestionBatch:
             "ready_to_apply": len(self.ready_to_apply_suggestions),
             "average_confidence": self.average_confidence,
             "best_quality_score": (
-                self.get_best_suggestion().get_quality_score()
-                if self.get_best_suggestion()
+                best.get_quality_score()
+                if (best := self.get_best_suggestion())
                 else 0.0
             ),
             "total_generation_time_ms": self.total_generation_time_ms,

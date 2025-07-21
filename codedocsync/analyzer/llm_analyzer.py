@@ -88,7 +88,9 @@ class TokenBucket:
             time_passed = now - self.last_update
 
             # Add tokens based on time passed
-            self.tokens = min(self.burst_size, self.tokens + time_passed * self.rate)
+            self.tokens = int(
+                min(self.burst_size, self.tokens + time_passed * self.rate)
+            )
             self.last_update = now
 
             if self.tokens >= tokens:
@@ -366,7 +368,7 @@ class LLMAnalyzer:
         Returns:
             Dictionary with validation results
         """
-        validation_results = {
+        validation_results: dict[str, Any] = {
             "config_valid": True,
             "api_key_configured": bool(os.getenv("OPENAI_API_KEY")),
             "cache_accessible": False,
@@ -544,7 +546,7 @@ class LLMAnalyzer:
             openai.APIError: If API call fails after retries
             asyncio.TimeoutError: If request times out
         """
-        messages = []
+        messages: list[Any] = []
 
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -558,29 +560,37 @@ class LLMAnalyzer:
         for attempt in range(max_retries + 1):
             try:
                 # Apply timeout to the entire operation
-                async with asyncio.timeout(self.config.timeout_seconds):
-                    response = await self.openai_client.chat.completions.create(
+                response = await asyncio.wait_for(
+                    self.openai_client.chat.completions.create(
                         model=self.config.model,
                         messages=messages,
                         temperature=self.config.temperature,
                         max_tokens=self.config.max_tokens,
-                    )
+                    ),
+                    timeout=self.config.timeout_seconds,
+                )
 
                 # Extract response text
                 response_text = response.choices[0].message.content
 
                 # Extract token usage
-                token_usage = {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                }
+                if response.usage:
+                    token_usage = {
+                        "prompt_tokens": response.usage.prompt_tokens,
+                        "completion_tokens": response.usage.completion_tokens,
+                    }
+                else:
+                    token_usage = {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                    }
 
                 total_tokens = (
                     token_usage["prompt_tokens"] + token_usage["completion_tokens"]
                 )
                 logger.debug(f"OpenAI API call successful: {total_tokens} tokens used")
 
-                return response_text, token_usage
+                return response_text or "", token_usage
 
             except asyncio.TimeoutError:
                 logger.warning(f"OpenAI API call timed out (attempt {attempt + 1})")
@@ -609,8 +619,15 @@ class LLMAnalyzer:
                 logger.error(f"Unexpected error in OpenAI API call: {e}")
                 raise
 
+        # This should never be reached, but satisfies mypy
+        raise RuntimeError("All retry attempts failed")
+
     def _build_analysis_prompt(
-        self, function, docstring, analysis_types: list[str], context: dict[str, Any]
+        self,
+        function: Any,
+        docstring: Any,
+        analysis_types: list[str],
+        context: dict[str, Any],
     ) -> tuple[str, str]:
         """
         Build optimized prompt for analysis type.
@@ -975,11 +992,13 @@ class LLMAnalyzer:
         # Track progress
         completed = 0
         total = len(requests)
-        results = [None] * total  # Maintain original order
+        results: list[LLMAnalysisResponse | None] = [
+            None
+        ] * total  # Maintain original order
 
         async def analyze_single_with_semaphore(
             request: LLMAnalysisRequest, index: int
-        ):
+        ) -> tuple[LLMAnalysisResponse, int]:
             """Analyze single request with semaphore control."""
             async with semaphore:
                 try:
@@ -1015,12 +1034,13 @@ class LLMAnalyzer:
 
         # Process results and maintain original order
         for result in completed_results:
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 logger.error(f"Batch analysis exception: {result}")
                 continue
 
-            response, original_index = result
-            results[original_index] = response
+            if result is not None and isinstance(result, tuple):
+                response, original_index = result
+                results[original_index] = response
 
         # Fill any None results with error responses
         for i, result in enumerate(results):
@@ -1030,7 +1050,8 @@ class LLMAnalyzer:
                 )
 
         logger.info(f"Batch analysis completed: {len(results)} results")
-        return results
+        # Type assertion - we've ensured all None values are replaced above
+        return [r for r in results if r is not None]
 
     def _group_requests_for_efficiency(
         self, requests: list[LLMAnalysisRequest]
@@ -1053,7 +1074,7 @@ class LLMAnalyzer:
         indexed_requests = [(req, i) for i, req in enumerate(requests)]
 
         # Group by analysis type first
-        type_groups = {}
+        type_groups: dict[str, list[tuple[LLMAnalysisRequest, int]]] = {}
         for req, idx in indexed_requests:
             primary_type = req.analysis_types[0] if req.analysis_types else "behavior"
             if primary_type not in type_groups:
@@ -1061,7 +1082,7 @@ class LLMAnalyzer:
             type_groups[primary_type].append((req, idx))
 
         # Further group by file path within each type
-        final_groups = []
+        final_groups: list[list[tuple[LLMAnalysisRequest, int]]] = []
         for _, type_group in type_groups.items():
             # Sort by function complexity (more complex first for better parallelization)
             type_group.sort(
@@ -1070,7 +1091,7 @@ class LLMAnalyzer:
             )
 
             # Group by file path
-            file_groups = {}
+            file_groups: dict[str, list[tuple[LLMAnalysisRequest, int]]] = {}
             for req, idx in type_group:
                 file_path = req.function.file_path
                 if file_path not in file_groups:
@@ -1208,7 +1229,7 @@ class LLMAnalyzer:
                 )
 
                 # Check if already cached
-                cached_response = await self._get_cached_response(cache_key)
+                cached_response = await self._check_cache(cache_key)
                 if cached_response:
                     skipped_existing += 1
                     continue
