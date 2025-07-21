@@ -97,6 +97,6 @@ class MatchResult:
 class MatchingError(Exception):
     """Base exception for matching errors."""
 
-    def __init__(self, message: str, recovery_hint: str | None = None):
+    def __init__(self, message: str, recovery_hint: str | None = None) -> None:
         super().__init__(message)
         self.recovery_hint = recovery_hint

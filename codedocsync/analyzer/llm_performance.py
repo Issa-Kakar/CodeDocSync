@@ -23,6 +23,7 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +127,7 @@ class LLMPerformanceMonitor:
         self.total_cache_misses = 0
 
         # Token usage tracking
-        self.token_usage: deque[int] = deque(maxlen=window_size)
+        self.token_usage: deque[dict[str, Any]] = deque(maxlen=window_size)
         self.total_tokens = 0
 
         # Error tracking

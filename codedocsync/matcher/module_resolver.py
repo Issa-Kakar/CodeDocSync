@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ModuleResolver:
     """Resolves module paths and import chains."""
 
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str) -> None:
         self.project_root = Path(project_root).resolve()
         self.import_parser = ImportParser()
         self.module_cache: dict[str, ModuleInfo] = {}

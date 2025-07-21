@@ -21,7 +21,9 @@ class SemanticMatcher:
     Only handles ~2% of cases but critical for major refactorings.
     """
 
-    def __init__(self, project_root: str, config: EmbeddingConfig | None = None):
+    def __init__(
+        self, project_root: str, config: EmbeddingConfig | None = None
+    ) -> None:
         self.project_root = project_root
         self.config = config or EmbeddingConfig()
 
@@ -314,7 +316,7 @@ class SemanticMatcher:
         try:
             # Check if vector store has embeddings
             stats = self.vector_store.get_stats()
-            return stats.get("collection_count", 0) > 0
+            return bool(stats.get("collection_count", 0) > 0)
         except Exception as e:
             logger.error(f"Failed to check readiness: {e}")
             return False

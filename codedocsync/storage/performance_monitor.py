@@ -4,7 +4,7 @@ import threading
 import time
 from collections import defaultdict, deque
 from collections.abc import Callable
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -77,7 +77,7 @@ class PerformanceMonitor:
         )  # operation_id -> start_metrics
 
         # Aggregated statistics
-        self._stats = {
+        self._stats: dict[str, Any] = {
             "total_operations": 0,
             "successful_operations": 0,
             "failed_operations": 0,
@@ -103,7 +103,7 @@ class PerformanceMonitor:
 
     def _get_memory_usage(self) -> float:
         """Get current memory usage in MB."""
-        return self.process.memory_info().rss / 1024 / 1024
+        return float(self.process.memory_info().rss / 1024 / 1024)
 
     def _get_system_metrics(self) -> dict[str, Any]:
         """Get current system performance metrics."""
@@ -143,7 +143,7 @@ class PerformanceMonitor:
     @contextmanager
     def track_operation(
         self, operation_name: str, metadata: dict[str, Any] | None = None
-    ) -> AbstractContextManager["OperationTracker"]:
+    ) -> Any:  # Generator type is complex, simplified for decorator
         """
         Context manager for tracking an operation.
 
@@ -268,7 +268,7 @@ class PerformanceMonitor:
 
         # Send alerts
         for alert in alerts:
-            self._send_alert(alert["type"], alert)
+            self._send_alert(str(alert["type"]), alert)
 
     def _send_alert(self, alert_type: str, alert_data: dict[str, Any]) -> None:
         """Send alert to registered callbacks."""
@@ -519,7 +519,7 @@ class OperationTracker:
         self.memory_before = monitor._get_memory_usage()
         self.memory_peak = self.memory_before
         self.success = True
-        self.error_message = None
+        self.error_message: str | None = None
 
         # Monitor peak memory during operation
         self._monitoring = True

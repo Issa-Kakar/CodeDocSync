@@ -6,7 +6,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-import psutil
+import psutil  # type: ignore[import-untyped]
 
 from ..parser import ParsedFunction
 from .semantic_models import FunctionEmbedding
@@ -25,7 +25,7 @@ class SemanticOptimizer:
     - Resource monitoring
     """
 
-    def __init__(self, max_memory_mb: int = 500):
+    def __init__(self, max_memory_mb: int = 500) -> None:
         self.max_memory_mb = max_memory_mb
         self.executor = ThreadPoolExecutor(max_workers=4)
 
@@ -106,7 +106,8 @@ class SemanticOptimizer:
                 logger.error(f"Batch {i} failed: {result}")
                 error_count += 1
             else:
-                all_embeddings.extend(result)
+                if isinstance(result, list):
+                    all_embeddings.extend(result)
 
         # Update stats
         self.stats["parallel_operations"] += 1

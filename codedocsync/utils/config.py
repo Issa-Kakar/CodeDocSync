@@ -30,7 +30,7 @@ class MatcherConfig(BaseModel):
 
     @field_validator("custom_patterns")
     @classmethod
-    def validate_patterns(cls, patterns):
+    def validate_patterns(cls, patterns: list[dict[str, str]]) -> list[dict[str, str]]:
         """Validate regex patterns are valid."""
         for pattern_dict in patterns:
             if "pattern" not in pattern_dict or "replacement" not in pattern_dict:
@@ -69,7 +69,7 @@ class CodeDocSyncConfig(BaseModel):
     @classmethod
     def from_yaml(cls, file_path: str) -> "CodeDocSyncConfig":
         """Load configuration from YAML file."""
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         with open(file_path) as f:
             data = yaml.safe_load(f)

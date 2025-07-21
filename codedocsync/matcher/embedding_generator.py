@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingGenerator:
     """Generates embeddings for functions with fallback support."""
 
-    def __init__(self, config: EmbeddingConfig | None = None):
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
         from ..storage.embedding_config import EmbeddingConfigManager
 
         self.config = config or EmbeddingConfig()
@@ -51,7 +51,9 @@ class EmbeddingGenerator:
 
         # Initialize local model as fallback
         try:
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import (
+                SentenceTransformer,  # type: ignore[import-untyped]
+            )
 
             self.providers["local"] = SentenceTransformer("all-MiniLM-L6-v2")
             logger.info("Initialized local embedding model")
@@ -141,10 +143,11 @@ class EmbeddingGenerator:
         import openai
 
         try:
-            response = await openai.Embedding.acreate(input=text, model=model)
-            return response["data"][0]["embedding"]
+            client = openai.AsyncOpenAI()
+            response = await client.embeddings.create(input=text, model=model)
+            return response.data[0].embedding
 
-        except openai.error.RateLimitError:
+        except openai.RateLimitError:
             logger.warning("OpenAI rate limit hit")
             raise
         except Exception as e:
@@ -158,7 +161,7 @@ class EmbeddingGenerator:
 
         model = self.providers["local"]
         embedding = model.encode(text, convert_to_numpy=True)
-        return embedding.tolist()
+        return list(embedding.tolist())
 
     async def generate_function_embeddings(
         self, functions: list[ParsedFunction], use_cache: bool = True

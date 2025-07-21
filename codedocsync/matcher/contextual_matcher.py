@@ -22,7 +22,7 @@ class ContextualMatcher:
     - Cross-file documentation references
     """
 
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str) -> None:
         self.project_root = Path(project_root).resolve()
         self.state = ContextualMatcherState()
         self.module_resolver = ModuleResolver(project_root)

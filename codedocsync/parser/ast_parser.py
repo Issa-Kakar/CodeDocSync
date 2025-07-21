@@ -683,7 +683,7 @@ def _get_default_value(default_node: ast.expr | None) -> str:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore[import-not-found]
+            import astor
 
             return str(astor.to_source(default_node).strip())
         except ImportError:

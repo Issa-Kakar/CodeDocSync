@@ -25,7 +25,7 @@ class ContextualMatchingFacade:
     Combines direct and contextual matching for best results.
     """
 
-    def __init__(self, config: CodeDocSyncConfig | None = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None) -> None:
         self.config = config or CodeDocSyncConfig()
         self.stats = {
             "total_time": 0.0,
@@ -35,7 +35,9 @@ class ContextualMatchingFacade:
             "files_processed": 0,
         }
 
-    def match_project(self, project_path: str, use_cache: bool = True) -> MatchResult:
+    def match_project(
+        self, project_path: str | Path, use_cache: bool = True
+    ) -> MatchResult:
         """
         Perform complete matching on a project.
 
@@ -47,12 +49,12 @@ class ContextualMatchingFacade:
             Combined MatchResult with all matches
         """
         start_time = time.time()
-        project_path = Path(project_path).resolve()
+        project_path_obj = Path(project_path).resolve()
 
         # Initialize components
         parser = IntegratedParser()
         direct_matcher = DirectMatcher()
-        contextual_matcher = ContextualMatcher(str(project_path))
+        contextual_matcher = ContextualMatcher(str(project_path_obj))
 
         # Phase 1: Build project context
         logger.info("Building project context...")
@@ -63,7 +65,7 @@ class ContextualMatchingFacade:
         # Phase 2: Parse and match all files
         logger.info("Parsing and matching functions...")
         all_functions = []
-        python_files = self._discover_python_files(project_path)
+        python_files = self._discover_python_files(project_path_obj)
 
         parse_start = time.time()
         for file_path in python_files:
@@ -90,13 +92,7 @@ class ContextualMatchingFacade:
 
         # Add statistics to result
         self.stats["total_time"] = time.time() - start_time
-        final_result.metadata = {
-            "performance": self.stats,
-            "matcher_stats": {
-                "direct": direct_matcher.get_stats(),
-                "contextual": contextual_matcher.stats,
-            },
-        }
+        # Note: MatchResult doesn't have metadata field, stats are tracked separately
 
         return final_result
 
@@ -113,21 +109,21 @@ class ContextualMatchingFacade:
         Returns:
             MatchResult for the file
         """
-        file_path = Path(file_path).resolve()
+        file_path_obj = Path(file_path).resolve()
 
         # If no project path, use file's parent directory
         if not project_path:
-            project_path = file_path.parent
+            project_path = str(file_path_obj.parent)
 
         # For single file, we still build context but only for its dependencies
         parser = IntegratedParser()
-        contextual_matcher = ContextualMatcher(str(project_path))
+        contextual_matcher = ContextualMatcher(project_path)
 
         # Parse the file
-        functions = parser.parse_file(str(file_path))
+        functions = parser.parse_file(str(file_path_obj))
 
         # Build minimal context (just this file and its imports)
-        contextual_matcher._analyze_file(str(file_path))
+        contextual_matcher._analyze_file(str(file_path_obj))
 
         # Try direct matching first
         direct_matcher = DirectMatcher()

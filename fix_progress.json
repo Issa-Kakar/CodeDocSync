@@ -1,5 +1,7 @@
 {
-  "ruff_fixed_files": [],
+  "ruff_fixed_files": [
+    "fix_tracker.py"
+  ],
   "mypy_fixed_files": [
     "codedocsync/cli/analyze.py",
     "codedocsync/cli/parse.py",
@@ -26,14 +28,20 @@
     "codedocsync/storage/performance_monitor.py",
     "codedocsync/storage/embedding_cache.py",
     "codedocsync/storage/vector_store.py",
-    "codedocsync/storage/embedding_config.py"
+    "codedocsync/storage/embedding_config.py",
+    "codedocsync/utils/config.py",
+    "codedocsync/matcher/contextual_facade.py",
+    "codedocsync/matcher/embedding_generator.py",
+    "codedocsync/matcher/semantic_error_recovery.py",
+    "codedocsync/matcher/semantic_matcher.py",
+    "codedocsync/matcher/semantic_optimizer.py"
   ],
-  "current_phase": "ruff",
-  "timestamp": "2025-07-21T04:07:40.522864",
+  "current_phase": "mypy",
+  "timestamp": "2025-07-21T05:45:00.000000",
   "statistics": {
-    "initial_ruff_errors": 0,
-    "initial_mypy_errors": 0,
+    "initial_ruff_errors": 1,
+    "initial_mypy_errors": 297,
     "current_ruff_errors": 0,
-    "current_mypy_errors": 0
+    "current_mypy_errors": 247
   }
 }

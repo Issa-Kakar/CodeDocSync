@@ -110,19 +110,19 @@ class EmbeddingCache:
             return embedding
 
         # Check disk cache
-        embedding = self._get_from_disk(cache_key)
-        if embedding:
+        disk_embedding = self._get_from_disk(cache_key)
+        if disk_embedding:
             # Verify signature if provided
-            if signature_hash and embedding.signature_hash != signature_hash:
+            if signature_hash and disk_embedding.signature_hash != signature_hash:
                 # Function has changed, invalidate cache
                 self._delete_from_disk(cache_key)
                 self.metrics["misses"] += 1
                 return None
 
             # Add to memory cache
-            self._add_to_memory_cache(cache_key, embedding)
+            self._add_to_memory_cache(cache_key, disk_embedding)
             self.metrics["disk_hits"] += 1
-            return embedding
+            return disk_embedding
 
         self.metrics["misses"] += 1
         return None

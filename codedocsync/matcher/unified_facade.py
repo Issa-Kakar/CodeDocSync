@@ -67,7 +67,7 @@ class StatsDict(TypedDict):
 class EnhancedMatchResult(MatchResult):
     """MatchResult with additional metadata."""
 
-    def __init__(self, base_result: MatchResult):
+    def __init__(self, base_result: MatchResult) -> None:
         super().__init__(
             matched_pairs=base_result.matched_pairs,
             unmatched_functions=base_result.unmatched_functions,
@@ -90,7 +90,7 @@ class UnifiedMatchingFacade:
     and production-ready optimization features.
     """
 
-    def __init__(self, config: CodeDocSyncConfig | None = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None) -> None:
         self.config = config or CodeDocSyncConfig()
 
         # Enhanced statistics tracking

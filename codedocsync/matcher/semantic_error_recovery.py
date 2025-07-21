@@ -110,7 +110,7 @@ class SemanticErrorRecovery:
                         logger.info(
                             f"Successfully recovered using {func_name} for {function.signature.name}"
                         )
-                    return result
+                    return result  # type: ignore[no-any-return]
 
             except Exception as error:
                 self.error_stats["total_errors"] += 1
@@ -315,7 +315,7 @@ class SemanticErrorRecovery:
 
         jitter = random.uniform(0.5, 1.5)
 
-        return min(backoff * jitter, 60.0)  # Cap at 60 seconds
+        return float(min(backoff * jitter, 60.0))  # Cap at 60 seconds
 
     def create_circuit_breaker(
         self, failure_threshold: int = 5, recovery_time: float = 60.0
