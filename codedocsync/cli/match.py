@@ -37,7 +37,6 @@ from codedocsync.utils.config import CodeDocSyncConfig
 console = Console()
 
 
-@typer.command()
 def match(
     path: Annotated[Path, typer.Argument(help="File or directory to match")],
     config: Annotated[
@@ -105,7 +104,6 @@ def match(
         display_match_results(result, show_unmatched)
 
 
-@typer.command()
 def match_contextual(
     path: Annotated[Path, typer.Argument(help="Project directory to analyze")],
     output_format: Annotated[
@@ -162,7 +160,7 @@ def match_contextual(
         result = facade.match_project(str(path), use_cache=use_cache)
     except Exception as e:
         console.print(f"[red]Error during analysis: {str(e)}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Format output
     if output_format == "json":
@@ -192,7 +190,6 @@ def match_contextual(
     )
 
 
-@typer.command()
 def match_unified(
     path: Path = typer.Argument(..., help="Project directory to analyze"),
     output_format: str = typer.Option(
@@ -252,7 +249,7 @@ def match_unified(
                 console.print("[yellow][WARNING] Using default configuration[/yellow]")
     except Exception as e:
         console.print(f"[red][ERROR] Error loading configuration: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Enhanced path validation
     if not path.exists():
@@ -330,14 +327,14 @@ def match_unified(
     except KeyboardInterrupt:
         console.print("\n[yellow][WARNING] Analysis interrupted by user[/yellow]")
         console.print("[dim]Partial results may be available[/dim]")
-        raise typer.Exit(130)  # Standard exit code for SIGINT
+        raise typer.Exit(130) from None  # Standard exit code for SIGINT
 
     except MemoryError:
         console.print("[red][ERROR] Out of memory error during analysis[/red]")
         console.print(
             "[dim]Try using --no-cache or --max-functions to reduce memory usage[/dim]"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     except Exception as e:
         console.print(
@@ -350,7 +347,7 @@ def match_unified(
         console.print(
             "[dim]Check file permissions, disk space, and network connectivity[/dim]"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Enhanced output formatting with options
     try:
@@ -360,7 +357,7 @@ def match_unified(
             output = format_terminal_unified_result(result, show_unmatched)
     except Exception as e:
         console.print(f"[red][ERROR] Error formatting output: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Enhanced output handling
     try:
@@ -376,7 +373,7 @@ def match_unified(
             console.print(output)
     except Exception as e:
         console.print(f"[red][ERROR] Error writing output: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Enhanced statistics and recommendations
     if show_stats:

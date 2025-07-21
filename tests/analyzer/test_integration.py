@@ -59,20 +59,26 @@ class TestAnalysisCache:
             signature=FunctionSignature(
                 name="test_func",
                 parameters=[],
-                return_annotation=None,
+                return_type=None,
                 is_async=False,
                 decorators=[],
             ),
             docstring=None,
             file_path="/test/file.py",
             line_number=10,
+            end_line_number=15,
         )
 
         pair = MatchedPair(
             function=function,
-            documentation=None,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            docstring=None,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Test match",
         )
 
@@ -93,20 +99,26 @@ class TestAnalysisCache:
             signature=FunctionSignature(
                 name="test_func",
                 parameters=[],
-                return_annotation=None,
+                return_type=None,
                 is_async=False,
                 decorators=[],
             ),
             docstring=None,
             file_path="/test/file.py",
             line_number=10,
+            end_line_number=15,
         )
 
         pair = MatchedPair(
             function=function,
-            documentation=None,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            docstring=None,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Test match",
         )
 
@@ -134,20 +146,26 @@ class TestAnalysisCache:
                 signature=FunctionSignature(
                     name=f"test_func_{i}",
                     parameters=[],
-                    return_annotation=None,
+                    return_type=None,
                     is_async=False,
                     decorators=[],
                 ),
                 docstring=None,
                 file_path=f"/test/file_{i}.py",
                 line_number=10,
+                end_line_number=15,
             )
 
             pair = MatchedPair(
                 function=function,
-                documentation=None,
-                confidence=MatchConfidence.HIGH,
-                match_type=MatchType.DIRECT,
+                docstring=None,
+                confidence=MatchConfidence(
+                    overall=0.9,
+                    name_similarity=1.0,
+                    location_score=1.0,
+                    signature_similarity=0.9,
+                ),
+                match_type=MatchType.EXACT,
                 match_reason="Test match",
             )
             pairs.append(pair)
@@ -206,6 +224,7 @@ class TestAnalyzeMatchedPair:
             docstring=None,
             file_path="/test/file.py",
             line_number=10,
+            end_line_number=15,
         )
 
         docstring = ParsedDocstring(
@@ -224,8 +243,13 @@ class TestAnalyzeMatchedPair:
         return MatchedPair(
             function=function,
             documentation=docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Test match",
         )
 
@@ -321,9 +345,14 @@ class TestAnalyzeMatchedPair:
         # Test with pair having None function
         invalid_pair = MatchedPair(
             function=None,
-            documentation=None,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            docstring=None,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Test match",
         )
 
@@ -357,13 +386,14 @@ class TestAnalyzeMultiplePairs:
                 signature=FunctionSignature(
                     name=f"test_function_{i}",
                     parameters=[],
-                    return_annotation=None,
+                    return_type=None,
                     is_async=False,
                     decorators=[],
                 ),
                 docstring=None,
                 file_path=f"/test/file_{i}.py",
                 line_number=10,
+                end_line_number=15,
             )
 
             docstring = ParsedDocstring(
@@ -378,8 +408,13 @@ class TestAnalyzeMultiplePairs:
             pair = MatchedPair(
                 function=function,
                 documentation=docstring,
-                confidence=MatchConfidence.HIGH,
-                match_type=MatchType.DIRECT,
+                confidence=MatchConfidence(
+                    overall=0.9,
+                    name_similarity=1.0,
+                    location_score=1.0,
+                    signature_similarity=0.9,
+                ),
+                match_type=MatchType.EXACT,
                 match_reason="Test match",
             )
             pairs.append(pair)
@@ -626,8 +661,13 @@ class TestHelperFunctions:
         pair = MatchedPair(
             function=function,
             documentation=docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Direct match",
         )
 
@@ -731,7 +771,7 @@ class TestHelperFunctions:
             signature=FunctionSignature(
                 name="simple_func",
                 parameters=[],
-                return_annotation=None,
+                return_type=None,
                 is_async=False,
                 decorators=[],
             ),
@@ -742,9 +782,14 @@ class TestHelperFunctions:
 
         pair = MatchedPair(
             function=function,
-            documentation=None,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            docstring=None,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Test",
         )
 
@@ -777,7 +822,7 @@ class TestHelperFunctions:
             signature=FunctionSignature(
                 name="old_func",
                 parameters=[],
-                return_annotation=None,
+                return_type=None,
                 is_async=False,
                 decorators=["@deprecated"],
             ),
@@ -788,9 +833,14 @@ class TestHelperFunctions:
 
         pair = MatchedPair(
             function=function,
-            documentation=None,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            docstring=None,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Test",
         )
 
@@ -983,8 +1033,13 @@ class TestIntegrationFlow:
         pair = MatchedPair(
             function=function,
             documentation=docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Direct match",
         )
 
@@ -1038,13 +1093,14 @@ class TestIntegrationFlow:
                         is_required=True,
                     )
                 ],
-                return_annotation=None,
+                return_type=None,
                 is_async=False,
                 decorators=[],
             ),
             docstring=None,
             file_path="/test/process.py",
             line_number=10,
+            end_line_number=15,
         )
 
         docstring = ParsedDocstring(
@@ -1065,8 +1121,13 @@ class TestIntegrationFlow:
         pair = MatchedPair(
             function=function,
             documentation=docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Direct match",
         )
 

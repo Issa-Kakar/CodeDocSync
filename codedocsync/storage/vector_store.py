@@ -90,7 +90,7 @@ class VectorStore:
 
         except Exception as e:
             logger.error(f"Failed to add embeddings: {e}")
-            raise ValueError(f"Failed to store embeddings: {e}")
+            raise ValueError(f"Failed to store embeddings: {e}") from e
 
     def search_similar(
         self,

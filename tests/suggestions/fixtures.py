@@ -5,19 +5,19 @@ Provides reusable test data, mock objects, and utility functions
 for comprehensive testing of the suggestion generation system.
 """
 
+from inspect import Parameter as ParameterKind
+
 from codedocsync.analyzer.models import InconsistencyIssue
+from codedocsync.parser.ast_parser import (
+    FunctionParameter,
+    FunctionSignature,
+    ParsedFunction,
+    RawDocstring,
+)
 from codedocsync.parser.docstring_models import (
-    DocstringParam,
     DocstringRaises,
     DocstringReturns,
     ParsedDocstring,
-)
-from codedocsync.parser.models import (
-    FunctionParameter,
-    FunctionSignature,
-    ParameterKind,
-    ParsedFunction,
-    RawDocstring,
 )
 
 

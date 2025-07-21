@@ -12,6 +12,7 @@ Comprehensive test coverage for:
 
 import asyncio
 import time
+from inspect import Parameter as ParameterKind
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -20,13 +21,12 @@ from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
 from codedocsync.analyzer.llm_config import LLMConfig
 from codedocsync.analyzer.llm_models import LLMAnalysisRequest, LLMAnalysisResponse
 from codedocsync.analyzer.models import InconsistencyIssue
-from codedocsync.parser.models import (
+from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
-    ParameterKind,
-    ParsedDocstring,
     ParsedFunction,
 )
+from codedocsync.parser.docstring_models import ParsedDocstring
 
 
 @pytest.fixture

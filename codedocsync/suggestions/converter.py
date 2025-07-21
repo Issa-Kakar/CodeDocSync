@@ -97,7 +97,7 @@ class DocstringStyleConverter:
             logger.error(f"Failed to convert docstring: {e}")
             raise ValueError(
                 f"Conversion from {from_style.value} to {to_style.value} failed: {e}"
-            )
+            ) from e
 
     def convert_batch(
         self,

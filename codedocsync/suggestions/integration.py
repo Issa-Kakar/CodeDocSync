@@ -204,7 +204,7 @@ class SuggestionIntegration:
         return SuggestionContext(
             issue=issue,
             function=pair.function,
-            docstring=pair.documentation,
+            docstring=pair.docstring,
             project_style=self.config.default_style,
             surrounding_code=None,  # Could be enhanced later
         )

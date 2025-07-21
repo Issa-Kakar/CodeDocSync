@@ -280,6 +280,25 @@ class UnifiedMatchingFacade:
             self.stats["errors"]["total_errors"] += 1
             raise
 
+    def match_file(self, file_path: str | Path) -> MatchResult:
+        """
+        Match functions in a single file using the unified pipeline.
+
+        Args:
+            file_path: Path to Python file
+
+        Returns:
+            MatchResult with matched pairs
+        """
+        # Use the basic MatchingFacade for single file matching
+        from .facade import MatchingFacade
+
+        # Create a basic facade with same config
+        basic_facade = MatchingFacade(self.config)
+
+        # Use its match_file method
+        return basic_facade.match_file(file_path)
+
     def _create_empty_result(self) -> MatchResult:
         """Create an empty match result for error cases."""
         return MatchResult(total_functions=0, matched_pairs=[], unmatched_functions=[])

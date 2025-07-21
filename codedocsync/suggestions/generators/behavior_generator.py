@@ -12,7 +12,6 @@ from typing import Any
 
 from ..base import BaseSuggestionGenerator
 from ..models import (
-    DocstringStyle,
     Suggestion,
     SuggestionContext,
     SuggestionDiff,
@@ -681,20 +680,13 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             examples=getattr(docstring, "examples", []) if docstring else [],
         )
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring) -> str:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
+            # Return the string format directly
+            return docstring.format.value
 
-        return DocstringStyle.GOOGLE  # Default fallback
+        return "google"  # Default fallback
 
     def _create_suggestion(
         self,

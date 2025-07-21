@@ -35,7 +35,6 @@ from codedocsync.parser import IntegratedParser, ParsedDocstring
 console = Console()
 
 
-@typer.command()
 def analyze(
     path: Annotated[
         Path,
@@ -256,10 +255,9 @@ def analyze(
             import traceback
 
             console.print(f"[dim]{traceback.format_exc()}[/dim]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
-@typer.command()
 def analyze_function(
     file: Annotated[Path, typer.Argument(help="Python file containing the function")],
     function_name: Annotated[
@@ -452,4 +450,4 @@ def analyze_function(
             import traceback
 
             console.print(f"[dim]{traceback.format_exc()}[/dim]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

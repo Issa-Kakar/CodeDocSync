@@ -28,7 +28,7 @@ from pathlib import Path
 from queue import Queue
 from typing import Any
 
-from ..parser.models import ParsedFunction
+from ..parser.ast_parser import ParsedFunction
 from .llm_models import LLMAnalysisResponse
 
 logger = logging.getLogger(__name__)

@@ -367,7 +367,7 @@ def format_prompt(
     try:
         return template.format(**format_vars)
     except KeyError as e:
-        raise KeyError(f"Missing required formatting variable: {e}")
+        raise KeyError(f"Missing required formatting variable: {e}") from e
 
 
 def get_available_analysis_types() -> list[str]:

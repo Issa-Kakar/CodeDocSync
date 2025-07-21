@@ -228,7 +228,7 @@ class GoogleStyleTemplate(DocstringTemplate):
     def render_section_update(
         self,
         section_type: str,
-        content: list[DocstringParameter],
+        content: list[DocstringParameter] | DocstringReturns | list[DocstringRaises],
         existing_docstring: str | None = None,
     ) -> list[str]:
         """Render just a specific section for partial updates."""

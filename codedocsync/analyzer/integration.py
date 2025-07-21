@@ -130,8 +130,8 @@ def _should_use_llm(
         return True
 
     # Check if docstring has examples
-    if pair.documentation and hasattr(pair.documentation, "examples"):
-        if pair.documentation.examples:
+    if pair.docstring and hasattr(pair.docstring, "examples"):
+        if pair.docstring.examples:
             return True
 
     # Check for behavior-affecting decorators
@@ -163,8 +163,8 @@ def _determine_analysis_types(
         analysis_types.append("behavior")
 
     # Check examples if docstring contains them
-    if pair.documentation and hasattr(pair.documentation, "examples"):
-        if pair.documentation.examples:
+    if pair.docstring and hasattr(pair.docstring, "examples"):
+        if pair.docstring.examples:
             analysis_types.append("examples")
 
     # Check edge cases for functions with conditionals
@@ -231,7 +231,7 @@ def _create_llm_request(
     # Build request
     return LLMAnalysisRequest(
         function=pair.function,
-        docstring=pair.documentation
+        docstring=pair.docstring
         or ParsedDocstring(
             format="none",
             summary="",
@@ -408,12 +408,17 @@ async def analyze_matched_pair(
         )
 
     if llm_analyzer is None and config.use_llm:
-        llm_analyzer = LLMAnalyzer(
+        # Create LLMConfig from AnalysisConfig
+        from .llm_config import LLMConfig
+
+        llm_config = LLMConfig(
             provider=config.llm_provider,
             model=config.llm_model,
             temperature=config.llm_temperature,
-            cache_dir=None,  # Use default cache directory
+            max_tokens=config.llm_max_tokens,
+            timeout_seconds=int(config.llm_timeout_seconds),
         )
+        llm_analyzer = LLMAnalyzer(llm_config)
 
     # Step 1: Run rule engine checks (fast path)
     rule_start_time = time.time()

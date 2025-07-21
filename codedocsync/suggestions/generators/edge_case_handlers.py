@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from ...parser.docstring_models import DocstringParameter, DocstringReturns
 from ..base import BaseSuggestionGenerator
 from ..models import (
-    DocstringStyle,
     Suggestion,
     SuggestionContext,
     SuggestionDiff,
@@ -349,19 +348,12 @@ class PropertyMethodHandler:
 
         return f"Set the {words}"
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring) -> str:
         """Detect docstring style."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
-        return DocstringStyle.GOOGLE
+            # Return the string format directly
+            return docstring.format.value
+        return "google"
 
     def _create_suggestion(
         self,
@@ -492,19 +484,12 @@ class ClassMethodHandler:
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
         )
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring) -> str:
         """Detect docstring style."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
-        return DocstringStyle.GOOGLE
+            # Return the string format directly
+            return docstring.format.value
+        return "google"
 
     def _create_suggestion(
         self,
@@ -741,19 +726,12 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
             context, "No specific edge case handling available"
         )
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring) -> str:
         """Detect docstring style."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
-        return DocstringStyle.GOOGLE
+            # Return the string format directly
+            return docstring.format.value
+        return "google"
 
     def _create_suggestion(
         self,

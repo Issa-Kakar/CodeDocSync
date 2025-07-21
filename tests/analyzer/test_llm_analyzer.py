@@ -10,14 +10,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from codedocsync.analyzer.llm_analyzer import (
-    LLMAnalysisError,
-    LLMAnalysisResult,
-    LLMAnalyzer,
-    LLMCache,
-)
+from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
+from codedocsync.analyzer.llm_cache import LLMCache
+from codedocsync.analyzer.llm_errors import LLMError as LLMAnalysisError
+from codedocsync.analyzer.llm_models import LLMAnalysisResponse as LLMAnalysisResult
 from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
-from codedocsync.parser import FunctionSignature, ParsedDocstring, ParsedFunction
+from codedocsync.parser.ast_parser import FunctionSignature, ParsedFunction
+from codedocsync.parser.docstring_models import ParsedDocstring
 
 
 class TestLLMCache:

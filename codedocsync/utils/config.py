@@ -38,7 +38,7 @@ class MatcherConfig(BaseModel):
             try:
                 re.compile(pattern_dict["pattern"])
             except re.error as e:
-                raise ValueError(f"Invalid regex pattern: {e}")
+                raise ValueError(f"Invalid regex pattern: {e}") from e
         return patterns
 
 

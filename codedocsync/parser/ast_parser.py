@@ -196,18 +196,18 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
     try:
         with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         error_msg = f"File not found: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check the file path and ensure the file exists"
-        )
-    except PermissionError:
+        ) from e
+    except PermissionError as e:
         error_msg = f"Permission denied: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check file permissions and ensure read access"
-        )
+        ) from e
     except UnicodeDecodeError as e:
         # Try alternative encodings
         try:
@@ -220,7 +220,7 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
             raise ParsingError(
                 error_msg,
                 recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
-            )
+            ) from e
 
     if not source_content.strip():
         logger.info(f"Empty file: {file_path}")
@@ -252,7 +252,7 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
             raise SyntaxParsingError(
                 f"Syntax error in {file_path}:{e.lineno}: {e.msg}",
                 recovery_hint="Fix the syntax error and try again",
-            )
+            ) from e
 
     functions = []
 
@@ -299,18 +299,18 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     try:
         with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         error_msg = f"File not found: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check the file path and ensure the file exists"
-        )
-    except PermissionError:
+        ) from e
+    except PermissionError as e:
         error_msg = f"Permission denied: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check file permissions and ensure read access"
-        )
+        ) from e
     except UnicodeDecodeError as e:
         # Try alternative encodings
         try:
@@ -323,7 +323,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
             raise ParsingError(
                 error_msg,
                 recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
-            )
+            ) from e
 
     if not source_content.strip():
         logger.info(f"Empty file: {file_path}")
@@ -357,7 +357,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
             raise SyntaxParsingError(
                 f"Syntax error in {file_path}:{e.lineno}: {e.msg}",
                 recovery_hint="Fix the syntax error and try again",
-            )
+            ) from e
 
     function_count = 0
 

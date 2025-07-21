@@ -542,3 +542,340 @@ Generated docstrings must be syntactically valid Python
 Style must be consistent with project configuration
 Suggestions must be actionable (no vague instructions)
 Terminal output must be ANSI-safe, JSON must escape properly
+
+## Poetry Command Execution Guide
+
+### Issue: Poetry commands fail in certain shell environments
+
+**Problem**: When using Poetry in certain environments (particularly Windows Git Bash and some CI/CD environments), the `poetry run` command may fail with various shell-specific errors. This is a known issue with Poetry's shell detection and command execution.
+
+### Universal Solution: Direct Virtual Environment Execution
+
+Instead of using `poetry run`, execute commands directly using the virtual environment's Python interpreter. This method bypasses shell-specific bugs and works universally across all environments.
+
+#### Step-by-Step Guide:
+
+1. **Find Your Virtual Environment Path** (run once per project):
+   ```bash
+   poetry env info --path
+   ```
+   This will output a path like:
+   - Windows: `C:\Users\username\AppData\Local\pypoetry\Cache\virtualenvs\codedocsync-5yfwj9Sn-py3.12`
+   - macOS/Linux: `/Users/username/Library/Caches/pypoetry/virtualenvs/codedocsync-5yfwj9Sn-py3.12`
+
+2. **Construct the Python Executable Path**:
+   - Windows: `<path>\Scripts\python.exe`
+   - macOS/Linux: `<path>/bin/python`
+
+3. **Execute Commands Using Direct Path**:
+
+   **Instead of:**
+   ```bash
+   poetry run codedocsync analyze .
+   poetry run mypy .
+   poetry run pytest
+   ```
+
+   **Use:**
+   ```bash
+   # Windows example
+   "C:\Users\username\AppData\Local\pypoetry\Cache\virtualenvs\codedocsync-5yfwj9Sn-py3.12\Scripts\python.exe" -m codedocsync analyze .
+   "C:\Users\username\AppData\Local\pypoetry\Cache\virtualenvs\codedocsync-5yfwj9Sn-py3.12\Scripts\python.exe" -m mypy .
+   "C:\Users\username\AppData\Local\pypoetry\Cache\virtualenvs\codedocsync-5yfwj9Sn-py3.12\Scripts\python.exe" -m pytest
+   ```
+
+#### Setting Up Aliases (Recommended)
+
+For convenience, create shell aliases:
+
+**Windows (Git Bash):**
+```bash
+# Add to ~/.bashrc
+alias pyexec='"C:\Users\username\AppData\Local\pypoetry\Cache\virtualenvs\codedocsync-5yfwj9Sn-py3.12\Scripts\python.exe"'
+```
+
+**macOS/Linux:**
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+alias pyexec='/Users/username/Library/Caches/pypoetry/virtualenvs/codedocsync-5yfwj9Sn-py3.12/bin/python'
+```
+
+Then use:
+```bash
+pyexec -m codedocsync analyze .
+pyexec -m mypy .
+pyexec -m pytest
+```
+
+#### CI/CD Integration
+
+For CI/CD pipelines, store the virtual environment path in an environment variable:
+
+```yaml
+# GitHub Actions example
+- name: Get Poetry venv path
+  run: echo "VENV_PATH=$(poetry env info --path)" >> $GITHUB_ENV
+
+- name: Run tests
+  run: ${{ env.VENV_PATH }}/bin/python -m pytest
+```
+
+#### Why This Works
+
+- **No Shell Interpretation**: Commands go directly to Python, avoiding shell-specific parsing issues
+- **Universal Compatibility**: Works on all platforms and shell environments
+- **Reliable**: Eliminates Poetry's shell detection bugs
+- **Performance**: Slightly faster as it skips Poetry's wrapper overhead
+
+#### When to Use This Method
+
+- Always when experiencing `poetry run` failures
+- In CI/CD pipelines for reliability
+- When working in non-standard shell environments
+- For scripts that need to call Poetry commands
+
+### Note on Python Version
+
+This project requires Python 3.10+ due to:
+- Modern type annotations (`X | Y` union syntax)
+- Parenthesized context managers
+- Match statements
+- Enhanced error messages
+
+Ensure your Poetry environment uses Python 3.10 or higher by checking:
+```bash
+"<venv_path>\Scripts\python.exe" --version  # Windows
+<venv_path>/bin/python --version             # macOS/Linux
+```
+
+## Systematic Code Quality Fix Plan
+
+### Overview
+
+This section documents the systematic approach for fixing linting (ruff) and type checking (mypy) issues in the CodeDocSync codebase. The plan includes automated tracking, prioritized fixing strategies, and helper scripts to manage the process efficiently.
+
+### Current Status (as of 2025-01-21)
+
+- **Initial State**: 
+  - Ruff: 104 errors (10 auto-fixed, leaving 94)
+  - Mypy: 556 errors
+- **After Black formatting**: 
+  - Ruff: 86 errors
+- **Main Error Categories**:
+  - 29 B904: raise-without-from errors
+  - 18 UP038: isinstance with tuple instead of union
+  - 17 B007: unused loop control variables
+  - 8 B017: assert blind exception
+  - Various other minor issues
+
+### Fix Infrastructure
+
+Two helper scripts have been created to manage the fixing process:
+
+#### 1. fix_tracker.py
+
+A tracking script that monitors progress and helps identify which files to fix next:
+
+```python
+# Usage examples:
+python fix_tracker.py summary              # Show overall progress
+python fix_tracker.py mypy                 # Show mypy strategy
+python fix_tracker.py file <path>          # Show errors in specific file
+python fix_tracker.py mark-fixed <path>    # Mark file as fixed
+```
+
+**Features**:
+- Groups errors by file and sorts by error count (fix easier files first)
+- Groups errors by type to identify patterns
+- Tracks which files have been fixed
+- Persists progress in `fix_progress.json`
+- Provides strategic categorization for mypy fixes
+
+#### 2. fix_project.py
+
+The main execution script for systematic fixes:
+
+```python
+# Usage examples:
+python fix_project.py --phase status       # Show current status
+python fix_project.py --phase all          # Run all auto-fixes
+python fix_project.py --phase examples     # Show fix examples
+python fix_project.py --phase examples --error-code B904  # Specific fix example
+```
+
+**Features**:
+- Runs ruff and black with proper error handling
+- Shows detailed status with error breakdowns
+- Provides fix examples for common error patterns
+- Uses direct Python path to avoid Poetry issues on Windows
+
+### Systematic Fix Strategy
+
+#### Phase 1: Ruff Issues (Estimated 4-6 hours)
+
+**Priority Order**:
+1. **B904 (raise-without-from)**: Add `from e` to exception chains
+2. **UP038 (isinstance)**: Change `isinstance(x, (A, B))` to `isinstance(x, A | B)`
+3. **B007 (unused-loop-control-variable)**: Rename to `_` or use the variable
+4. **F841 (unused-variable)**: Remove or use the variable
+5. **Other minor issues**: Handle case by case
+
+**Fix Patterns**:
+
+```python
+# B904: raise-without-from
+# Before:
+except SomeError as e:
+    raise NewError("message")
+
+# After:
+except SomeError as e:
+    raise NewError("message") from e
+
+# UP038: isinstance union
+# Before:
+isinstance(x, (str, int))
+
+# After:
+isinstance(x, str | int)
+
+# B007: unused loop variable
+# Before:
+for item in items:
+    print("processing")
+
+# After:
+for _ in items:
+    print("processing")
+```
+
+#### Phase 2: Mypy Issues (Estimated 8-10 hours)
+
+**Strategic Categories** (fix in this order):
+
+1. **Critical Path Files** (Priority 1):
+   - `codedocsync/__init__.py`
+   - `codedocsync/cli/*.py`
+   - `codedocsync/analyzer/__init__.py`
+   - `codedocsync/suggestions/__init__.py`
+
+2. **Core Functionality** (Priority 2):
+   - `codedocsync/analyzer/*.py`
+   - `codedocsync/matcher/*.py`
+   - `codedocsync/parser/*.py`
+
+3. **Generators and Templates** (Priority 3):
+   - `codedocsync/suggestions/generators/*.py`
+   - `codedocsync/suggestions/templates/*.py`
+
+4. **Utilities and Tests** (Priority 4):
+   - Helper modules
+   - Test files (can often be ignored)
+
+**Common Mypy Fixes**:
+
+```python
+# Missing return type for __post_init__
+# Before:
+def __post_init__(self):
+    # code
+
+# After:
+def __post_init__(self) -> None:
+    # code
+
+# Attribute access errors
+# Before:
+if self.docstring.type_annotation:  # Error: no type_annotation
+
+# After:
+if hasattr(self.docstring, 'type_str') and self.docstring.type_str:
+    # or fix the actual attribute name
+
+# Union type handling
+# Before:
+def process(doc: Union[RawDocstring, ParsedDocstring]):
+    return doc.summary  # Error: RawDocstring has no summary
+
+# After:
+def process(doc: Union[RawDocstring, ParsedDocstring]):
+    if isinstance(doc, ParsedDocstring):
+        return doc.summary
+    else:
+        # Handle RawDocstring case
+        return None
+```
+
+### Execution Workflow
+
+1. **Initial Setup**:
+   ```bash
+   # Run initial status check
+   python fix_project.py --phase status
+   
+   # Create initial tracking data
+   python fix_tracker.py summary
+   ```
+
+2. **Fix Ruff Issues**:
+   ```bash
+   # For each error type, check examples
+   python fix_project.py --phase examples --error-code B904
+   
+   # Fix files with fewest errors first
+   python fix_tracker.py summary  # See "Next Files to Fix"
+   
+   # After fixing a file
+   python fix_tracker.py mark-fixed <file_path> ruff
+   ```
+
+3. **Fix Mypy Issues**:
+   ```bash
+   # Get strategic overview
+   python fix_tracker.py mypy
+   
+   # Fix by category (critical path first)
+   # Check specific file errors
+   python fix_tracker.py file codedocsync/__init__.py
+   
+   # After fixing
+   python fix_tracker.py mark-fixed <file_path> mypy
+   ```
+
+4. **Validate Progress**:
+   ```bash
+   # Run full check periodically
+   python fix_project.py --phase all
+   
+   # Verify with pre-commit
+   pre-commit run --all-files
+   ```
+
+### Best Practices
+
+1. **Fix One Error Type at a Time**: Focus on one ruff error code across all files before moving to the next
+2. **Test After Each Major Change**: Run relevant tests to ensure fixes don't break functionality
+3. **Commit Frequently**: Make small, focused commits for each type of fix
+4. **Document Non-Obvious Fixes**: Add comments when the fix might not be immediately clear
+5. **Skip Complex Test Files**: For mypy, consider adding test files to ignore list if fixes are too complex
+
+### Progress Tracking
+
+The `fix_progress.json` file maintains the current state:
+
+```json
+{
+  "phase": "ruff",
+  "ruff_fixed_files": ["file1.py", "file2.py"],
+  "mypy_fixed_files": ["file3.py"],
+  "timestamp": "2025-01-21T10:30:00",
+  "statistics": {
+    "initial_ruff_errors": 104,
+    "current_ruff_errors": 86,
+    "initial_mypy_errors": 556,
+    "current_mypy_errors": 556
+  }
+}
+```
+
+This systematic approach ensures consistent progress while maintaining code quality and functionality throughout the fixing process.

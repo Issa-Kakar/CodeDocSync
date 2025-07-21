@@ -10,12 +10,11 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from codedocsync.analyzer.llm_analyzer import LLMCache
+from codedocsync.analyzer.llm_cache import LLMCache
 
 console = Console()
 
 
-@typer.command()
 def clear_cache(
     llm_only: Annotated[
         bool, typer.Option("--llm-only", help="Clear only LLM analysis cache")

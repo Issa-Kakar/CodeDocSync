@@ -9,7 +9,6 @@ from typing import Annotated
 import typer
 
 
-@typer.command()
 def watch(
     path: Annotated[
         str, typer.Argument(help="The path to the directory to watch.")
@@ -23,7 +22,6 @@ def watch(
     print("Watch mode active. (Placeholder)")
 
 
-@typer.command()
 def check(
     path: Annotated[
         str, typer.Argument(help="The path to the file or directory to check.")

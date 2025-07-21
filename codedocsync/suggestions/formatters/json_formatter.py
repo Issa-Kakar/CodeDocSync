@@ -147,13 +147,13 @@ class JSONSuggestionFormatter:
         }
 
         # Add documentation info if available
-        if result.matched_pair.documentation:
+        if result.matched_pair.docstring:
             output["documentation"] = {
-                "format": result.matched_pair.documentation.format,
-                "summary": result.matched_pair.documentation.summary,
-                "parameter_count": len(result.matched_pair.documentation.parameters),
-                "has_returns": result.matched_pair.documentation.returns is not None,
-                "exception_count": len(result.matched_pair.documentation.raises),
+                "format": result.matched_pair.docstring.format,
+                "summary": result.matched_pair.docstring.summary,
+                "parameter_count": len(result.matched_pair.docstring.parameters),
+                "has_returns": result.matched_pair.docstring.returns is not None,
+                "exception_count": len(result.matched_pair.docstring.raises),
             }
 
         # Add metadata if requested
