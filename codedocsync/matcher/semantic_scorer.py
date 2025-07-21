@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Any
 
 from ..parser import ParsedFunction
 from .models import MatchConfidence
@@ -187,12 +188,12 @@ class SemanticScorer:
     def _is_camelcase_snake_case_pair(self, name1: str, name2: str) -> bool:
         """Check if names are camelCase/snake_case variants of each other."""
 
-        def camelcase_to_snake(name):
+        def camelcase_to_snake(name: str) -> str:
             # Convert camelCase to snake_case
             s1 = re.sub("([a-z0-9])([A-Z])", r"\1_\2", name)
             return s1.lower()
 
-        def snake_to_camelcase(name):
+        def snake_to_camelcase(name: str) -> str:
             # Convert snake_case to camelCase
             components = name.split("_")
             return components[0] + "".join(x.title() for x in components[1:])
@@ -288,7 +289,7 @@ class SemanticScorer:
         Returns:
             Dictionary with detailed quality assessment
         """
-        assessment = {
+        assessment: dict[str, Any] = {
             "similarity_score": similarity_score,
             "confidence_level": "low",
             "quality_factors": [],

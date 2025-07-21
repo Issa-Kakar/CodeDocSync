@@ -6,6 +6,8 @@ in different docstring styles, handling complex types like Union, Optional,
 generics, and modern Python typing constructs.
 """
 
+from __future__ import annotations
+
 import ast
 import re
 from enum import Enum
@@ -25,7 +27,7 @@ class TypeComplexity(Enum):
 class TypeAnnotationFormatter:
     """Format Python type annotations for docstrings."""
 
-    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE):
+    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE) -> None:
         """Initialize type formatter for specific docstring style."""
         self.style = style
         self._type_mappings = self._get_style_mappings()
@@ -60,7 +62,7 @@ class TypeAnnotationFormatter:
         else:  # COMPLEX
             return self._format_complex_type(normalized)
 
-    def extract_from_ast(self, node: ast.AST) -> str:
+    def extract_from_ast(self, node: ast.AST | None) -> str:
         """
         Extract type annotation from AST node.
 
@@ -178,11 +180,11 @@ class TypeAnnotationFormatter:
         if list_match:
             inner_type = list_match.group(1)
             if self.style == DocstringStyle.NUMPY:
-                return f"list of {self._format_for_docstring(inner_type)}"
+                return f"list of {self.format_for_docstring(inner_type)}"
             elif self.style == DocstringStyle.SPHINX:
-                return f"list of {self._format_for_docstring(inner_type)}"
+                return f"list of {self.format_for_docstring(inner_type)}"
             else:  # Google
-                return f"List[{self._format_for_docstring(inner_type)}]"
+                return f"List[{self.format_for_docstring(inner_type)}]"
 
         # Handle Dict types
         dict_match = re.match(r"Dict\[(.+)\]", type_str)
@@ -205,7 +207,7 @@ class TypeAnnotationFormatter:
         if set_match:
             inner_type = set_match.group(1)
             if self.style == DocstringStyle.NUMPY:
-                return f"set of {self._format_for_docstring(inner_type)}"
+                return f"set of {self.format_for_docstring(inner_type)}"
             else:
                 return type_str
 
@@ -217,27 +219,27 @@ class TypeAnnotationFormatter:
         optional_match = re.match(r"Optional\[(.+)\]", type_str)
         if optional_match:
             inner_type = optional_match.group(1)
-            formatted_inner = self._format_for_docstring(inner_type)
+            formatted_inner = self.format_for_docstring(inner_type)
             return f"{formatted_inner}, optional"
 
         # Handle Union[T, None] -> T, optional
         union_none_match = re.match(r"Union\[(.+), None\]", type_str)
         if union_none_match:
             inner_type = union_none_match.group(1)
-            formatted_inner = self._format_for_docstring(inner_type)
+            formatted_inner = self.format_for_docstring(inner_type)
             return f"{formatted_inner}, optional"
 
         # Handle Union[A, B, C] -> A or B or C
         union_match = re.match(r"Union\[(.+)\]", type_str)
         if union_match:
             types = self._split_union_types(union_match.group(1))
-            formatted_types = [self._format_for_docstring(t.strip()) for t in types]
+            formatted_types = [self.format_for_docstring(t.strip()) for t in types]
             return " or ".join(formatted_types)
 
         # Handle new-style unions (Python 3.10+): A | B
         if " | " in type_str:
             types = type_str.split(" | ")
-            formatted_types = [self._format_for_docstring(t.strip()) for t in types]
+            formatted_types = [self.format_for_docstring(t.strip()) for t in types]
             return " or ".join(formatted_types)
 
         return type_str
@@ -264,7 +266,7 @@ class TypeAnnotationFormatter:
 
         return type_str
 
-    def _split_union_types(self, union_content: str) -> list:
+    def _split_union_types(self, union_content: str) -> list[str]:
         """Split Union type content, handling nested brackets."""
         types = []
         current_type = ""

@@ -4,6 +4,7 @@ import sqlite3
 import time
 from collections import OrderedDict
 from pathlib import Path
+from typing import Any
 
 from ..matcher.semantic_models import FunctionEmbedding
 
@@ -32,7 +33,7 @@ class EmbeddingCache:
         # Performance metrics
         self.metrics = {"memory_hits": 0, "disk_hits": 0, "misses": 0, "saves": 0}
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database for embeddings."""
         conn = sqlite3.connect(str(self.db_path))
         cursor = conn.cursor()
@@ -109,19 +110,19 @@ class EmbeddingCache:
             return embedding
 
         # Check disk cache
-        embedding = self._get_from_disk(cache_key)
-        if embedding:
+        disk_embedding = self._get_from_disk(cache_key)
+        if disk_embedding:
             # Verify signature if provided
-            if signature_hash and embedding.signature_hash != signature_hash:
+            if signature_hash and disk_embedding.signature_hash != signature_hash:
                 # Function has changed, invalidate cache
                 self._delete_from_disk(cache_key)
                 self.metrics["misses"] += 1
                 return None
 
             # Add to memory cache
-            self._add_to_memory_cache(cache_key, embedding)
+            self._add_to_memory_cache(cache_key, disk_embedding)
             self.metrics["disk_hits"] += 1
-            return embedding
+            return disk_embedding
 
         self.metrics["misses"] += 1
         return None
@@ -266,7 +267,7 @@ class EmbeddingCache:
         finally:
             conn.close()
 
-    def get_stats(self) -> dict[str, any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = (
             self.metrics["memory_hits"]

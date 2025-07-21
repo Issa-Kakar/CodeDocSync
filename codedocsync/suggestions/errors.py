@@ -7,9 +7,15 @@ and error recovery mechanisms for the suggestion generation pipeline.
 
 import logging
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
-from .models import Suggestion, SuggestionContext, SuggestionType
+from .models import (
+    Suggestion,
+    SuggestionContext,
+    SuggestionDiff,
+    SuggestionMetadata,
+    SuggestionType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +66,7 @@ class StyleDetectionError(SuggestionError):
         message: str,
         fallback_style: str = "google",
         attempted_text: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Initialize style detection error.
@@ -84,7 +90,7 @@ class SuggestionGenerationError(SuggestionError):
         message: str,
         partial_result: str | None = None,
         suggestion_type: SuggestionType | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Initialize suggestion generation error.
@@ -108,7 +114,7 @@ class TemplateRenderError(SuggestionError):
         message: str,
         template_name: str,
         section: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Initialize template render error.
@@ -132,7 +138,7 @@ class ValidationError(SuggestionError):
         message: str,
         validation_type: str,
         invalid_content: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Initialize validation error.
@@ -170,18 +176,33 @@ def create_fallback_suggestion(
     if error:
         fallback_text += f"\n\n# Note: Automated suggestion failed: {error}"
 
+    # Create diff for the suggestion
+    original_lines = (
+        context.docstring.raw_text if context.docstring else ""
+    ).splitlines()
+    suggested_lines = fallback_text.splitlines()
+    diff = SuggestionDiff(
+        original_lines=original_lines,
+        suggested_lines=suggested_lines,
+        start_line=issue.line_number,
+        end_line=issue.line_number + len(original_lines),
+    )
+
+    # Create metadata
+    metadata = SuggestionMetadata(
+        generator_type="fallback",
+        rule_triggers=[issue.issue_type],
+    )
+
     return Suggestion(
-        type=SuggestionType.FULL_DOCSTRING,
+        suggestion_type=SuggestionType.FULL_DOCSTRING,
         original_text=context.docstring.raw_text if context.docstring else "",
         suggested_text=fallback_text,
         confidence=0.3,  # Low confidence for fallback
+        diff=diff,
         style=context.project_style or "google",
-        issue_id=f"{issue.issue_type}:{issue.line_number}",
         copy_paste_ready=False,  # Fallback suggestions need review
-        metadata={
-            "fallback": True,
-            "error": str(error) if error else None,
-        },
+        metadata=metadata,
     )
 
 
@@ -199,7 +220,7 @@ def with_suggestion_fallback(
     """
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        def wrapper(*args, **kwargs) -> T:
+        def wrapper(*args: Any, **kwargs: Any) -> T:
             try:
                 return func(*args, **kwargs)
             except SuggestionGenerationError as e:
@@ -207,18 +228,37 @@ def with_suggestion_fallback(
                 logger.warning(f"Suggestion generation failed: {e}")
 
                 # Return partial result if available
-                if e.partial_result and hasattr(e, "context"):
-                    return Suggestion(
-                        type=e.suggestion_type or SuggestionType.FULL_DOCSTRING,
+                if e.partial_result and hasattr(e, "context") and e.context:
+                    # Create diff for partial result
+                    original_lines = (
+                        e.context.docstring.raw_text if e.context.docstring else ""
+                    ).splitlines()
+                    suggested_lines = e.partial_result.splitlines()
+                    diff = SuggestionDiff(
+                        original_lines=original_lines,
+                        suggested_lines=suggested_lines,
+                        start_line=e.context.issue.line_number,
+                        end_line=e.context.issue.line_number + len(original_lines),
+                    )
+
+                    # Create metadata
+                    metadata = SuggestionMetadata(
+                        generator_type="partial_recovery",
+                        rule_triggers=[e.context.issue.issue_type],
+                    )
+
+                    return Suggestion(  # type: ignore[return-value]
+                        suggestion_type=e.suggestion_type
+                        or SuggestionType.FULL_DOCSTRING,
                         original_text=(
                             e.context.docstring.raw_text if e.context.docstring else ""
                         ),
                         suggested_text=e.partial_result,
                         confidence=0.5,  # Medium confidence for partial
+                        diff=diff,
                         style=e.context.project_style or "google",
-                        issue_id=f"{e.context.issue.issue_type}:{e.context.issue.line_number}",
                         copy_paste_ready=False,
-                        metadata={"partial": True, "error": str(e)},
+                        metadata=metadata,
                     )
 
                 # Use custom fallback if provided
@@ -228,11 +268,11 @@ def with_suggestion_fallback(
                         args[0] if isinstance(args[0], SuggestionContext) else None
                     )
                     if context:
-                        return fallback_func(context)
+                        return fallback_func(context)  # type: ignore[return-value]
 
                 # Use default fallback
                 if hasattr(e, "context") and e.context:
-                    return create_fallback_suggestion(e.context, e)
+                    return create_fallback_suggestion(e.context, e)  # type: ignore[return-value]
 
                 # Re-raise if no fallback possible
                 raise
@@ -242,7 +282,7 @@ def with_suggestion_fallback(
 
                 # Try to create minimal suggestion
                 if hasattr(e, "context") and e.context:
-                    return create_fallback_suggestion(e.context, e)
+                    return create_fallback_suggestion(e.context, e)  # type: ignore[return-value]
 
                 # Re-raise if no context
                 raise
@@ -259,7 +299,7 @@ def with_suggestion_fallback(
                         break
 
                 if context:
-                    return create_fallback_suggestion(context, e)
+                    return create_fallback_suggestion(context, e)  # type: ignore[return-value]
 
                 # Re-raise if no recovery possible
                 raise
@@ -331,7 +371,7 @@ class ErrorRecoveryStrategy:
 class SuggestionErrorHandler:
     """Centralized error handling for suggestion system."""
 
-    def __init__(self, recovery_strategy: ErrorRecoveryStrategy | None = None):
+    def __init__(self, recovery_strategy: ErrorRecoveryStrategy | None = None) -> None:
         """
         Initialize error handler.
 
@@ -377,23 +417,40 @@ class SuggestionErrorHandler:
         elif isinstance(error, SuggestionGenerationError):
             # Use partial result if available
             if error.partial_result:
+                # Create diff for partial result
+                original_text = (
+                    context.docstring.raw_text if context and context.docstring else ""
+                )
+                original_lines = original_text.splitlines()
+                suggested_lines = error.partial_result.splitlines()
+
+                # Determine line range
+                start_line = context.issue.line_number if context else 1
+                end_line = start_line + len(original_lines)
+
+                diff = SuggestionDiff(
+                    original_lines=original_lines,
+                    suggested_lines=suggested_lines,
+                    start_line=start_line,
+                    end_line=end_line,
+                )
+
+                # Create metadata
+                metadata = SuggestionMetadata(
+                    generator_type="error_recovery",
+                    rule_triggers=[context.issue.issue_type] if context else [],
+                )
+
                 return Suggestion(
-                    type=error.suggestion_type or SuggestionType.FULL_DOCSTRING,
-                    original_text=(
-                        context.docstring.raw_text
-                        if context and context.docstring
-                        else ""
-                    ),
+                    suggestion_type=error.suggestion_type
+                    or SuggestionType.FULL_DOCSTRING,
+                    original_text=original_text,
                     suggested_text=error.partial_result,
                     confidence=0.4,
+                    diff=diff,
                     style=context.project_style if context else "google",
-                    issue_id=(
-                        f"{context.issue.issue_type}:{context.issue.line_number}"
-                        if context
-                        else "unknown"
-                    ),
                     copy_paste_ready=False,
-                    metadata={"error_recovery": True},
+                    metadata=metadata,
                 )
 
         elif isinstance(error, ValidationError):

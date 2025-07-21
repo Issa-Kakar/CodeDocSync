@@ -8,7 +8,7 @@ import asyncio
 import json
 import shutil
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -31,7 +31,6 @@ from codedocsync.suggestions.ranking import create_balanced_ranker
 console = Console()
 
 
-@typer.command()
 def suggest(
     path: Annotated[
         Path,
@@ -83,7 +82,7 @@ def suggest(
         bool,
         typer.Option("--verbose", "-v", help="Verbose output"),
     ] = False,
-):
+) -> None:
     """
     Generate fix suggestions for documentation issues.
 
@@ -162,9 +161,11 @@ def suggest(
             analysis_config.use_llm = False  # Suggestions don't need LLM analysis
 
             # Analyze all pairs
-            analysis_results = asyncio.run(analyze_multiple_pairs(
-                match_result.matched_pairs, config=analysis_config
-            ))
+            analysis_results = asyncio.run(
+                analyze_multiple_pairs(
+                    match_result.matched_pairs, config=analysis_config
+                )
+            )
 
             progress.update(analysis_task, completed=len(analysis_results))
 
@@ -191,14 +192,14 @@ def suggest(
         # Filter and rank suggestions
         all_suggestions = []
         for result in enhanced_results:
-            for issue in result.enhanced_issues:
-                if issue.suggestion_object:
+            for issue in result.issues:
+                if issue.rich_suggestion:
                     # Apply filters
                     if severity and issue.severity != severity:
                         continue
                     if issue_type and issue.issue_type != issue_type:
                         continue
-                    if issue.suggestion_object.confidence < confidence_threshold:
+                    if issue.rich_suggestion.confidence < confidence_threshold:
                         continue
 
                     all_suggestions.append((result, issue))
@@ -211,11 +212,10 @@ def suggest(
 
         # Rank suggestions
         ranker = create_balanced_ranker()
-        ranked_issues = ranker.rank_suggestions(
-            [issue for _, issue in all_suggestions], ranker.config
-        )
+        ranked_issues = ranker.rank_suggestions([issue for _, issue in all_suggestions])
 
         # Prepare output
+        formatter: JSONSuggestionFormatter | TerminalSuggestionFormatter
         if output_format == "json":
             formatter = JSONSuggestionFormatter()
             output_data = {
@@ -233,7 +233,11 @@ def suggest(
                         "issue": issue.issue_type,
                         "severity": issue.severity,
                         "description": issue.description,
-                        "suggestion": formatter.format(issue.suggestion_object),
+                        "suggestion": (
+                            formatter.format_suggestion(issue.rich_suggestion)
+                            if issue.rich_suggestion
+                            else None
+                        ),
                     }
                     for result, issue in all_suggestions
                     if issue in ranked_issues
@@ -270,20 +274,19 @@ def suggest(
                     console.print(
                         f"\n[bold]Suggestion {i + 1}/{len(all_suggestions)}[/bold]"
                     )
-                    console.print(
-                        formatter.format(
-                            issue.suggestion_object,
-                            style=formatter.OutputStyle.RICH,
-                            show_diff=show_diff,
+                    if issue.rich_suggestion:
+                        console.print(
+                            formatter.format_suggestion(issue.rich_suggestion)
                         )
-                    )
+                    else:
+                        console.print("[yellow]No suggestion available[/yellow]")
 
                     if apply and not dry_run:
                         response = Confirm.ask("Apply this suggestion?", default=True)
                         if response:
                             apply_suggestion(
                                 result.matched_pair.function.file_path,
-                                issue.suggestion_object,
+                                issue.rich_suggestion,
                                 backup=backup,
                             )
                             console.print("[green]Applied![/green]")
@@ -291,18 +294,17 @@ def suggest(
             else:
                 # Batch display
                 displayed = 0
-                for result, issue in all_suggestions:
+                for _, issue in all_suggestions:
                     if issue not in ranked_issues:
                         continue
 
                     console.print("\n" + "=" * 80)
-                    console.print(
-                        formatter.format(
-                            issue.suggestion_object,
-                            style=formatter.OutputStyle.RICH,
-                            show_diff=show_diff,
+                    if issue.rich_suggestion:
+                        console.print(
+                            formatter.format_suggestion(issue.rich_suggestion)
                         )
-                    )
+                    else:
+                        console.print("[yellow]No suggestion available[/yellow]")
 
                     displayed += 1
                     if displayed >= 10 and not verbose:
@@ -350,7 +352,7 @@ def suggest(
                         try:
                             apply_suggestion(
                                 result.matched_pair.function.file_path,
-                                issue.suggestion_object,
+                                issue.rich_suggestion,
                                 backup=backup,
                             )
                             applied += 1
@@ -375,10 +377,10 @@ def suggest(
             import traceback
 
             console.print(f"[dim]{traceback.format_exc()}[/dim]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
-def apply_suggestion(file_path: str, suggestion, backup: bool = True) -> None:
+def apply_suggestion(file_path: str, suggestion: Any, backup: bool = True) -> None:
     """Apply a suggestion to a file."""
     file = Path(file_path)
 
@@ -402,13 +404,12 @@ def apply_suggestion(file_path: str, suggestion, backup: bool = True) -> None:
         raise ValueError("Could not find original text in file")
 
 
-@typer.command()
 def suggest_interactive(
     path: Annotated[
         Path,
         typer.Argument(help="File or directory to analyze"),
     ] = Path("."),
-):
+) -> None:
     """
     Launch interactive suggestion browser.
 

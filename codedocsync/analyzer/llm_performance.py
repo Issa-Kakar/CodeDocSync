@@ -23,6 +23,7 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -116,24 +117,26 @@ class LLMPerformanceMonitor:
         self._lock = threading.Lock()
 
         # Response time tracking (sliding window)
-        self.response_times = deque(maxlen=window_size)
+        self.response_times: deque[float] = deque(maxlen=window_size)
 
         # Cache performance tracking
-        self.cache_stats = defaultdict(lambda: {"hits": 0, "misses": 0})
+        self.cache_stats: defaultdict[str, dict[str, int]] = defaultdict(
+            lambda: {"hits": 0, "misses": 0}
+        )
         self.total_cache_hits = 0
         self.total_cache_misses = 0
 
         # Token usage tracking
-        self.token_usage = deque(maxlen=window_size)
+        self.token_usage: deque[dict[str, Any]] = deque(maxlen=window_size)
         self.total_tokens = 0
 
         # Error tracking
-        self.error_counts = defaultdict(int)
+        self.error_counts: defaultdict[str, int] = defaultdict(int)
         self.total_requests = 0
         self.successful_requests = 0
 
         # Rate limiter tracking
-        self.queue_depths = deque(maxlen=window_size)
+        self.queue_depths: deque[int] = deque(maxlen=window_size)
         self.rate_limit_hits = 0
 
         # Cost tracking (OpenAI pricing as of 2024)
@@ -156,15 +159,15 @@ class LLMPerformanceMonitor:
         }
 
         # Alert tracking
-        self.alerts = deque(maxlen=100)
-        self.last_alert_time = defaultdict(float)
+        self.alerts: deque[PerformanceAlert] = deque(maxlen=100)
+        self.last_alert_time: defaultdict[str, float] = defaultdict(float)
         self.alert_cooldown = 300  # 5 minutes
 
         # Start time for throughput calculation
         self.start_time = time.time()
 
         # Performance recommendations
-        self.recommendations = []
+        self.recommendations: list[str] = []
 
     def record_request(
         self,

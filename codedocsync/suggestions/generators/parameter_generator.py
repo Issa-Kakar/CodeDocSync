@@ -6,6 +6,7 @@ missing parameters, type inconsistencies, and other parameter-specific problems.
 """
 
 import re
+from typing import Any
 
 from ...parser.ast_parser import FunctionParameter
 from ...parser.docstring_models import DocstringParameter
@@ -224,20 +225,20 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         return suggestion
 
-    def _get_function_parameters(self, function) -> list[FunctionParameter]:
+    def _get_function_parameters(self, function: Any) -> list[FunctionParameter]:
         """Extract function parameters, handling various function types."""
         if hasattr(function, "signature") and hasattr(function.signature, "parameters"):
-            return function.signature.parameters
+            return list(function.signature.parameters)
         return []
 
-    def _get_documented_parameters(self, docstring) -> list[DocstringParameter]:
+    def _get_documented_parameters(self, docstring: Any) -> list[DocstringParameter]:
         """Extract documented parameters."""
         if hasattr(docstring, "parameters"):
-            return docstring.parameters
+            return list(docstring.parameters)
         return []
 
     def _filter_special_parameters(
-        self, params: list[FunctionParameter], function
+        self, params: list[FunctionParameter], function: Any
     ) -> list[FunctionParameter]:
         """Filter out special parameters like 'self', 'cls' for accurate comparison."""
         filtered = []
@@ -259,7 +260,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         return filtered
 
-    def _is_classmethod(self, function) -> bool:
+    def _is_classmethod(self, function: Any) -> bool:
         """Check if function is a classmethod."""
         if hasattr(function.signature, "decorators"):
             return "classmethod" in function.signature.decorators
@@ -290,7 +291,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
                         if (
                             score > best_score and score > 60
                         ):  # Threshold for similarity
-                            best_score = score
+                            best_score = int(score)
                             best_match = actual_param.name
 
                 if best_match:
@@ -332,11 +333,16 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         """Generate docstring with corrected parameter names."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = self._get_style_enum(style)
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Update parameter names
         corrected_params = []
-        if hasattr(docstring, "parameters"):
+        if (
+            hasattr(docstring, "parameters")
+            and docstring is not None
+            and docstring.parameters
+        ):
             for param in docstring.parameters:
                 # Check if this parameter needs to be renamed
                 new_name = param.name
@@ -347,7 +353,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
                 corrected_param = DocstringParameter(
                     name=new_name,
-                    type_str=param.type_str,
+                    type_str=param.type_annotation,
                     description=param.description,
                     is_optional=param.is_optional,
                     default_value=param.default_value,
@@ -370,7 +376,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         """Add missing parameters to existing docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = self._get_style_enum(style)
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Create DocstringParameter objects for missing parameters
         new_doc_params = []
@@ -411,20 +418,25 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         return base_desc
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
+            # Return the string format directly
+            return str(docstring.format.value)
 
-        return DocstringStyle.GOOGLE  # Default fallback
+        return "google"  # Default fallback
+
+    def _get_style_enum(self, style_str: str) -> DocstringStyle:
+        """Convert style string to DocstringStyle enum."""
+        style_map = {
+            "google": DocstringStyle.GOOGLE,
+            "numpy": DocstringStyle.NUMPY,
+            "sphinx": DocstringStyle.SPHINX,
+            "rest": DocstringStyle.REST,
+            "auto_detect": DocstringStyle.AUTO_DETECT,
+            "unknown": DocstringStyle.GOOGLE,  # Default unknown to Google style
+        }
+        return style_map.get(style_str, DocstringStyle.GOOGLE)
 
     def _create_suggestion(
         self,
@@ -498,11 +510,16 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         # but focused on type corrections
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = self._get_style_enum(style)
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Update parameter types
         updated_params = []
-        if hasattr(docstring, "parameters"):
+        if (
+            hasattr(docstring, "parameters")
+            and docstring is not None
+            and docstring.parameters
+        ):
             param_fixes = {
                 actual.name: actual.type_annotation for actual, _ in type_fixes
             }
@@ -542,7 +559,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         # Generate docstring with only valid parameters
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = self._get_style_enum(style)
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         corrected_docstring = template.render_complete_docstring(
             summary=getattr(docstring, "summary", ""),
@@ -594,7 +612,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         """Generate docstring with reordered parameters."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = self._get_style_enum(style)
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         return template.render_complete_docstring(
             summary=getattr(docstring, "summary", ""),
@@ -611,7 +630,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         """Add kwargs documentation to docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = self._get_style_enum(style)
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Create documentation for kwargs
         kwargs_doc = DocstringParameter(

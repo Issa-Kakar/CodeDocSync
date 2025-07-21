@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class EmbeddingModel(Enum):
@@ -24,7 +25,7 @@ class EmbeddingConfig:
     timeout_seconds: int = 30
     cache_embeddings: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.batch_size < 1 or self.batch_size > 2048:
             raise ValueError("Batch size must be between 1 and 2048")
         if self.timeout_seconds < 10:
@@ -42,7 +43,7 @@ class FunctionEmbedding:
     timestamp: float
     signature_hash: str  # For change detection
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Validate embedding dimensions based on model
         expected_dims = {
             "text-embedding-3-small": 1536,
@@ -67,9 +68,9 @@ class SemanticMatch:
     matched_function: str  # Potentially matching function
     similarity_score: float  # 0-1 similarity
     embedding_model: str
-    match_metadata: dict[str, any] = field(default_factory=dict)
+    match_metadata: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not 0 <= self.similarity_score <= 1:
             raise ValueError("Similarity score must be between 0 and 1")
 

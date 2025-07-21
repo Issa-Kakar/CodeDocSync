@@ -76,9 +76,12 @@ class AnalysisConfig:
     use_llm: bool = True  # Whether to use LLM analysis at all
     llm_provider: str = "openai"  # LLM provider (openai, anthropic, local)
     llm_model: str = "gpt-3.5-turbo"  # LLM model to use
-    llm_temperature: float = 0.1  # Temperature for LLM calls
+    llm_temperature: float = (
+        0.0  # Temperature for LLM calls (must be 0 for deterministic outputs)
+    )
     llm_max_tokens: int = 1000  # Max tokens for LLM responses
     llm_timeout_seconds: float = 30.0  # Timeout for LLM calls
+    llm_analysis_types: list[str] | None = None  # Specific analysis types to run
 
     # Caching configuration
     enable_cache: bool = True  # Whether to use caching

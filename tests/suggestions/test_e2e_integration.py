@@ -264,9 +264,7 @@ def process_data(items, threshold=0.5):
         test_file.write_text("def test(): pass")
 
         with patch("codedocsync.main.UnifiedMatchingFacade"):
-            result = runner.invoke(
-                app, ["suggest", str(test_file), "--apply", "--dry-run"]
-            )
+            runner.invoke(app, ["suggest", str(test_file), "--apply", "--dry-run"])
 
             # Should not actually modify files
             assert test_file.read_text() == "def test(): pass"
@@ -295,7 +293,7 @@ class TestPerformanceMonitoring:
 
         # Generate with performance tracking
         with monitor.measure("test_suggestion"):
-            suggestion = generator.generate(context)
+            generator.generate(context)
 
         # Check metrics
         stats = monitor.get_stats("test_suggestion")
@@ -311,7 +309,7 @@ class TestPerformanceMonitoring:
         # Simulate slow operations
         import time
 
-        for i in range(5):
+        for _i in range(5):
             with monitor.measure("slow_operation"):
                 time.sleep(0.1)  # Simulate slow operation
 
@@ -478,7 +476,7 @@ class TestProductionScenarios:
             from codedocsync.suggestions.generators import ParameterSuggestionGenerator
 
             generator = ParameterSuggestionGenerator(SuggestionConfig())
-            suggestion = generator.generate(context)
+            generator.generate(context)
 
         # Check memory didn't explode
         gc.collect()

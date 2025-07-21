@@ -154,10 +154,13 @@ class TerminalSuggestionFormatter:
             box=box.ROUNDED,
         )
 
-        with self.console.capture() as capture:
-            self.console.print(panel)
-
-        return capture.get()
+        if self.console is not None:
+            with self.console.capture() as capture:
+                self.console.print(panel)
+            result: str = capture.get()
+            return result
+        else:
+            return self._format_plain_suggestion(suggestion)
 
     def _format_rich_enhanced_issue(self, issue: EnhancedIssue) -> str:
         """Format enhanced issue with rich styling."""
@@ -226,15 +229,18 @@ class TerminalSuggestionFormatter:
             issue_outputs.append(issue_panel)
 
         # Combine all parts
-        with self.console.capture() as capture:
-            self.console.print(header)
-            self.console.print()
-
-            for issue_panel in issue_outputs:
-                self.console.print(issue_panel)
+        if self.console is not None:
+            with self.console.capture() as capture:
+                self.console.print(header)
                 self.console.print()
 
-        return capture.get()
+                for issue_panel in issue_outputs:
+                    self.console.print(issue_panel)
+                    self.console.print()
+            captured_output: str = capture.get()
+            return captured_output
+        else:
+            return self._format_plain_analysis_result(result)
 
     def _format_rich_batch_summary(self, batch: SuggestionBatch) -> str:
         """Format batch summary with rich styling."""
@@ -246,10 +252,12 @@ class TerminalSuggestionFormatter:
         table.add_column("Metric", style="bold blue")
         table.add_column("Value", style="green")
 
-        table.add_row("Functions Processed", str(batch.functions_processed))
-        table.add_row("Total Issues", str(batch.total_issues))
+        # Note: functions_processed and total_issues are not available in SuggestionBatch
+        # We'll use what's available instead
+        table.add_row("Function", batch.function_name)
+        table.add_row("File", batch.file_path)
         table.add_row("Suggestions Generated", str(len(batch.suggestions)))
-        table.add_row("Generation Time", f"{batch.generation_time_ms:.1f}ms")
+        table.add_row("Generation Time", f"{batch.total_generation_time_ms:.1f}ms")
 
         if batch.suggestions:
             avg_confidence = sum(s.confidence for s in batch.suggestions) / len(
@@ -257,10 +265,13 @@ class TerminalSuggestionFormatter:
             )
             table.add_row("Average Confidence", f"{avg_confidence:.1%}")
 
-        with self.console.capture() as capture:
-            self.console.print(table)
-
-        return capture.get()
+        if self.console is not None:
+            with self.console.capture() as capture:
+                self.console.print(table)
+            result: str = capture.get()
+            return result
+        else:
+            return self._format_plain_batch_summary(batch)
 
     def _create_rich_diff(self, suggestion: Suggestion) -> str:
         """Create rich diff display."""
@@ -363,10 +374,11 @@ class TerminalSuggestionFormatter:
 
         lines.append("Suggestion Generation Summary")
         lines.append("=" * 30)
-        lines.append(f"Functions Processed: {batch.functions_processed}")
-        lines.append(f"Total Issues: {batch.total_issues}")
+        # Note: functions_processed and total_issues are not available in SuggestionBatch
+        lines.append(f"Function: {batch.function_name}")
+        lines.append(f"File: {batch.file_path}")
         lines.append(f"Suggestions Generated: {len(batch.suggestions)}")
-        lines.append(f"Generation Time: {batch.generation_time_ms:.1f}ms")
+        lines.append(f"Generation Time: {batch.total_generation_time_ms:.1f}ms")
 
         if batch.suggestions:
             avg_confidence = sum(s.confidence for s in batch.suggestions) / len(
@@ -397,7 +409,7 @@ class TerminalSuggestionFormatter:
 
     def _format_minimal_batch_summary(self, batch: SuggestionBatch) -> str:
         """Format batch summary minimally."""
-        return f"Processed: {batch.functions_processed}, Issues: {batch.total_issues}, Suggestions: {len(batch.suggestions)}"
+        return f"Function: {batch.function_name}, Suggestions: {len(batch.suggestions)}, Time: {batch.total_generation_time_ms:.1f}ms"
 
     # Utility methods
     def _format_issue_only(self, issue: EnhancedIssue) -> str:

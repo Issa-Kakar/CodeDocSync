@@ -6,13 +6,13 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 
 class LLMError(Exception):
     """Base class for LLM-related errors."""
 
-    def __init__(self, message: str, retry_after: float | None = None):
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.retry_after = retry_after
 
@@ -20,7 +20,7 @@ class LLMError(Exception):
 class LLMRateLimitError(LLMError):
     """Rate limit exceeded."""
 
-    def __init__(self, message: str, retry_after: float | None = None):
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message, retry_after)
 
 
@@ -33,7 +33,7 @@ class LLMTimeoutError(LLMError):
 class LLMInvalidResponseError(LLMError):
     """Response doesn't match expected format."""
 
-    def __init__(self, message: str, raw_response: str = ""):
+    def __init__(self, message: str, raw_response: str = "") -> None:
         super().__init__(message)
         self.raw_response = raw_response
 
@@ -53,7 +53,7 @@ class LLMNetworkError(LLMError):
 class LLMQuotaExceededError(LLMError):
     """API quota exceeded."""
 
-    def __init__(self, message: str, retry_after: float | None = None):
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message, retry_after)
 
 
@@ -133,7 +133,7 @@ class RetryStrategy:
             # Retry timeout once with no delay
             return attempt == 0, 0.0
 
-        if isinstance(error, (LLMNetworkError, LLMError)):
+        if isinstance(error, LLMNetworkError | LLMError):
             # Retry general LLM and network errors with backoff
             delay = self._calculate_delay(attempt)
             return True, delay
@@ -182,7 +182,7 @@ class RetryStrategy:
         if not self.retry_history:
             return {"total_attempts": 0}
 
-        error_types = {}
+        error_types: dict[str, int] = {}
         total_delay = 0.0
 
         for retry in self.retry_history:
@@ -255,7 +255,8 @@ class CircuitBreaker:
         if self.state == CircuitState.HALF_OPEN:
             return self.half_open_calls < self.half_open_max_calls
 
-        return False
+        # This should never be reached as we handle all enum values
+        raise AssertionError(f"Unexpected circuit state: {self.state}")
 
     def record_success(self) -> None:
         """Record a successful execution."""
@@ -287,7 +288,7 @@ class CircuitBreaker:
             ):
                 self.state = CircuitState.OPEN
 
-    async def call(self, func: Callable[..., T], *args, **kwargs) -> T:
+    async def call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """Execute function with circuit breaker protection.
 
         Args:
@@ -309,7 +310,7 @@ class CircuitBreaker:
 
         try:
             if asyncio.iscoroutinefunction(func):
-                result = await func(*args, **kwargs)
+                result: T = await func(*args, **kwargs)
             else:
                 result = func(*args, **kwargs)
 
@@ -345,8 +346,8 @@ class CircuitBreaker:
 async def with_retry(
     func: Callable[..., T],
     retry_strategy: RetryStrategy | None = None,
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> T:
     """Execute function with retry logic.
 
@@ -370,9 +371,11 @@ async def with_retry(
     for attempt in range(retry_strategy.max_retries + 1):
         try:
             if asyncio.iscoroutinefunction(func):
-                return await func(*args, **kwargs)
+                result = await func(*args, **kwargs)
+                return cast(T, result)
             else:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                return result
 
         except Exception as e:
             last_exception = e

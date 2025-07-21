@@ -45,9 +45,11 @@ from .llm_output_parser import parse_llm_response
 from .models import AnalysisResult, InconsistencyIssue, RuleCheckResult
 from .prompt_templates import format_prompt
 
-# Import ParsedFunction for type hints
+# Import ParsedFunction and ParsedDocstring for type hints
 if TYPE_CHECKING:
-    from ..parser.models import ParsedFunction
+    from ..parser.ast_parser import ParsedFunction
+
+from ..parser.docstring_models import ParsedDocstring
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class TokenBucket:
     Ensures we don't exceed API rate limits while allowing bursts.
     """
 
-    def __init__(self, rate: float, burst_size: int):
+    def __init__(self, rate: float, burst_size: int) -> None:
         """
         Initialize token bucket.
 
@@ -88,7 +90,9 @@ class TokenBucket:
             time_passed = now - self.last_update
 
             # Add tokens based on time passed
-            self.tokens = min(self.burst_size, self.tokens + time_passed * self.rate)
+            self.tokens = int(
+                min(self.burst_size, self.tokens + time_passed * self.rate)
+            )
             self.last_update = now
 
             if self.tokens >= tokens:
@@ -122,7 +126,7 @@ class LLMAnalyzer:
     - Performance monitoring setup
     """
 
-    def __init__(self, config: LLMConfig | None = None):
+    def __init__(self, config: LLMConfig | None = None) -> None:
         """
         Initialize with configuration and OpenAI client.
 
@@ -366,7 +370,7 @@ class LLMAnalyzer:
         Returns:
             Dictionary with validation results
         """
-        validation_results = {
+        validation_results: dict[str, Any] = {
             "config_valid": True,
             "api_key_configured": bool(os.getenv("OPENAI_API_KEY")),
             "cache_accessible": False,
@@ -544,7 +548,7 @@ class LLMAnalyzer:
             openai.APIError: If API call fails after retries
             asyncio.TimeoutError: If request times out
         """
-        messages = []
+        messages: list[Any] = []
 
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -558,29 +562,37 @@ class LLMAnalyzer:
         for attempt in range(max_retries + 1):
             try:
                 # Apply timeout to the entire operation
-                async with asyncio.timeout(self.config.timeout_seconds):
-                    response = await self.openai_client.chat.completions.create(
+                response = await asyncio.wait_for(
+                    self.openai_client.chat.completions.create(
                         model=self.config.model,
                         messages=messages,
                         temperature=self.config.temperature,
                         max_tokens=self.config.max_tokens,
-                    )
+                    ),
+                    timeout=self.config.timeout_seconds,
+                )
 
                 # Extract response text
                 response_text = response.choices[0].message.content
 
                 # Extract token usage
-                token_usage = {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                }
+                if response.usage:
+                    token_usage = {
+                        "prompt_tokens": response.usage.prompt_tokens,
+                        "completion_tokens": response.usage.completion_tokens,
+                    }
+                else:
+                    token_usage = {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                    }
 
                 total_tokens = (
                     token_usage["prompt_tokens"] + token_usage["completion_tokens"]
                 )
                 logger.debug(f"OpenAI API call successful: {total_tokens} tokens used")
 
-                return response_text, token_usage
+                return response_text or "", token_usage
 
             except asyncio.TimeoutError:
                 logger.warning(f"OpenAI API call timed out (attempt {attempt + 1})")
@@ -609,8 +621,15 @@ class LLMAnalyzer:
                 logger.error(f"Unexpected error in OpenAI API call: {e}")
                 raise
 
+        # This should never be reached, but satisfies mypy
+        raise RuntimeError("All retry attempts failed")
+
     def _build_analysis_prompt(
-        self, function, docstring, analysis_types: list[str], context: dict[str, Any]
+        self,
+        function: Any,
+        docstring: Any,
+        analysis_types: list[str],
+        context: dict[str, Any],
     ) -> tuple[str, str]:
         """
         Build optimized prompt for analysis type.
@@ -645,7 +664,7 @@ class LLMAnalyzer:
         params = []
         for param in signature.parameters:
             param_str = param.name
-            if param.type_annotation:
+            if hasattr(param, "type_annotation") and param.type_annotation:
                 param_str += f": {param.type_annotation}"
             if param.default_value:
                 param_str += f" = {param.default_value}"
@@ -704,7 +723,7 @@ class LLMAnalyzer:
 
         # Add analysis type context if multiple types requested
         if len(analysis_types) > 1:
-            other_types = [t for t in analysis_types[1:]]
+            other_types = list(analysis_types[1:])
             user_prompt += f"\n\nADDITIONAL ANALYSIS: Also consider {', '.join(other_types)} if relevant."
 
         return system_prompt, user_prompt
@@ -975,11 +994,13 @@ class LLMAnalyzer:
         # Track progress
         completed = 0
         total = len(requests)
-        results = [None] * total  # Maintain original order
+        results: list[LLMAnalysisResponse | None] = [
+            None
+        ] * total  # Maintain original order
 
         async def analyze_single_with_semaphore(
             request: LLMAnalysisRequest, index: int
-        ):
+        ) -> tuple[LLMAnalysisResponse, int]:
             """Analyze single request with semaphore control."""
             async with semaphore:
                 try:
@@ -1011,26 +1032,34 @@ class LLMAnalyzer:
             all_tasks.extend(group_tasks)
 
         # Wait for all requests to complete, handling partial failures
-        completed_results = await asyncio.gather(*all_tasks, return_exceptions=True)
+        completed_results: list[tuple[LLMAnalysisResponse, int] | BaseException] = (
+            await asyncio.gather(*all_tasks, return_exceptions=True)
+        )
 
         # Process results and maintain original order
         for result in completed_results:
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 logger.error(f"Batch analysis exception: {result}")
                 continue
 
-            response, original_index = result
-            results[original_index] = response
+            if result is not None and isinstance(result, tuple) and len(result) == 2:
+                response, original_index = result
+                if isinstance(response, LLMAnalysisResponse) and isinstance(
+                    original_index, int
+                ):
+                    results[original_index] = response
 
         # Fill any None results with error responses
-        for i, result in enumerate(results):
-            if result is None:
+        result_item: LLMAnalysisResponse | None
+        for i, result_item in enumerate(results):
+            if result_item is None:
                 results[i] = self._create_error_response(
                     requests[i], "Failed to process request"
                 )
 
         logger.info(f"Batch analysis completed: {len(results)} results")
-        return results
+        # Type assertion - we've ensured all None values are replaced above
+        return [r for r in results if r is not None]
 
     def _group_requests_for_efficiency(
         self, requests: list[LLMAnalysisRequest]
@@ -1053,7 +1082,7 @@ class LLMAnalyzer:
         indexed_requests = [(req, i) for i, req in enumerate(requests)]
 
         # Group by analysis type first
-        type_groups = {}
+        type_groups: dict[str, list[tuple[LLMAnalysisRequest, int]]] = {}
         for req, idx in indexed_requests:
             primary_type = req.analysis_types[0] if req.analysis_types else "behavior"
             if primary_type not in type_groups:
@@ -1061,8 +1090,8 @@ class LLMAnalyzer:
             type_groups[primary_type].append((req, idx))
 
         # Further group by file path within each type
-        final_groups = []
-        for analysis_type, type_group in type_groups.items():
+        final_groups: list[list[tuple[LLMAnalysisRequest, int]]] = []
+        for _, type_group in type_groups.items():
             # Sort by function complexity (more complex first for better parallelization)
             type_group.sort(
                 key=lambda x: self._estimate_function_complexity(x[0].function),
@@ -1070,7 +1099,7 @@ class LLMAnalyzer:
             )
 
             # Group by file path
-            file_groups = {}
+            file_groups: dict[str, list[tuple[LLMAnalysisRequest, int]]] = {}
             for req, idx in type_group:
                 file_path = req.function.file_path
                 if file_path not in file_groups:
@@ -1099,7 +1128,7 @@ class LLMAnalyzer:
 
         # Type annotations suggest more complex functions
         for param in function.signature.parameters:
-            if param.type_annotation:
+            if hasattr(param, "type_annotation") and param.type_annotation:
                 complexity += 1
 
         if function.signature.return_type:
@@ -1208,7 +1237,7 @@ class LLMAnalyzer:
                 )
 
                 # Check if already cached
-                cached_response = await self._get_cached_response(cache_key)
+                cached_response = await self._check_cache(cache_key)
                 if cached_response:
                     skipped_existing += 1
                     continue
@@ -1216,9 +1245,47 @@ class LLMAnalyzer:
             # Create analysis request
             from .llm_models import LLMAnalysisRequest
 
+            # Ensure we have a ParsedDocstring
+            parsed_docstring = None
+            if func.docstring:
+                if isinstance(func.docstring, ParsedDocstring):
+                    parsed_docstring = func.docstring
+                else:
+                    # Create a minimal ParsedDocstring if we have RawDocstring
+                    from codedocsync.parser import DocstringFormat
+
+                    parsed_docstring = ParsedDocstring(
+                        format=DocstringFormat.UNKNOWN,
+                        summary=(
+                            func.docstring.raw_text
+                            if hasattr(func.docstring, "raw_text")
+                            else ""
+                        ),
+                        parameters=[],
+                        returns=None,
+                        raises=[],
+                        raw_text=(
+                            func.docstring.raw_text
+                            if hasattr(func.docstring, "raw_text")
+                            else ""
+                        ),
+                    )
+            else:
+                # Create empty ParsedDocstring if none exists
+                from codedocsync.parser import DocstringFormat
+
+                parsed_docstring = ParsedDocstring(
+                    format=DocstringFormat.UNKNOWN,
+                    summary="",
+                    parameters=[],
+                    returns=None,
+                    raises=[],
+                    raw_text="",
+                )
+
             request = LLMAnalysisRequest(
                 function=func,
-                docstring=func.docstring,
+                docstring=parsed_docstring,
                 analysis_types=self._determine_warming_analysis_types(func),
                 rule_results=[],  # No rule results for warming
                 related_functions=[],
@@ -1242,7 +1309,7 @@ class LLMAnalyzer:
 
         successful_warming = 0
 
-        async def warm_single_function(request):
+        async def warm_single_function(request: LLMAnalysisRequest) -> bool:
             """Warm cache for a single function."""
             async with warming_semaphore:
                 try:
@@ -1261,11 +1328,15 @@ class LLMAnalyzer:
             # Track progress
             completed = 0
 
-            async def track_progress():
+            async def track_progress() -> None:
                 nonlocal completed
                 while completed < len(warming_tasks):
                     await asyncio.sleep(0.5)
-                    current_completed = sum(1 for task in warming_tasks if task.done())
+                    current_completed = sum(
+                        1
+                        for task in warming_tasks
+                        if asyncio.isfuture(task) and task.done()
+                    )
                     if current_completed > completed:
                         completed = current_completed
                         await asyncio.get_event_loop().run_in_executor(
@@ -1303,9 +1374,13 @@ class LLMAnalyzer:
         # Functions with complex type annotations
         complex_types = 0
         for param in func.signature.parameters:
-            if param.type_annotation and any(
-                keyword in param.type_annotation.lower()
-                for keyword in ["union", "optional", "dict", "list", "callable"]
+            if (
+                hasattr(param, "type_annotation")
+                and param.type_annotation
+                and any(
+                    keyword in str(param.type_annotation).lower()
+                    for keyword in ["union", "optional", "dict", "list", "callable"]
+                )
             ):
                 complex_types += 1
 
@@ -1332,7 +1407,10 @@ class LLMAnalyzer:
                 analysis_types.append("examples")
 
         # Add type consistency for complex typed functions
-        if any(param.type_annotation for param in func.signature.parameters):
+        if any(
+            hasattr(param, "type_annotation") and param.type_annotation
+            for param in func.signature.parameters
+        ):
             analysis_types.append("type_consistency")
 
         return analysis_types
@@ -1382,12 +1460,7 @@ class LLMAnalyzer:
                 if confidence_multiplier < 1.0:
                     for issue in result.issues:
                         issue.confidence *= confidence_multiplier
-                    result.degraded = True
-                    result.degradation_reason = (
-                        f"Used {strategy_name} fallback strategy"
-                    )
-                else:
-                    result.degraded = False
+                    # Note: degraded and degradation_reason are not attributes of AnalysisResult
 
                 logger.info(f"Analysis successful using {strategy_name} strategy")
                 return result
@@ -1401,7 +1474,9 @@ class LLMAnalyzer:
         logger.error(
             f"All fallback strategies failed for {request.function.signature.name}"
         )
-        return self._empty_analysis(request, last_error)
+        return self._empty_analysis(
+            request, last_error if last_error else Exception("All strategies failed")
+        )
 
     async def _analyze_with_llm(self, request: LLMAnalysisRequest) -> AnalysisResult:
         """
@@ -1421,25 +1496,35 @@ class LLMAnalyzer:
             raise LLMError(f"Circuit breaker is {self.circuit_breaker.state.value}")
 
         # Use circuit breaker to protect LLM call
-        async def protected_llm_call():
+        async def protected_llm_call() -> AnalysisResult:
             try:
                 # Convert OpenAI errors to our error types
                 response = await self.analyze_function(request)
                 return self._llm_response_to_analysis_result(request, response)
 
             except openai.RateLimitError as e:
-                raise LLMRateLimitError(str(e), getattr(e, "retry_after", None))
+                raise LLMRateLimitError(str(e), getattr(e, "retry_after", None)) from e
             except openai.APIError as e:
                 if "api key" in str(e).lower():
-                    raise LLMAPIKeyError(str(e))
+                    raise LLMAPIKeyError(str(e)) from e
                 else:
-                    raise LLMNetworkError(str(e))
+                    raise LLMNetworkError(str(e)) from e
             except asyncio.TimeoutError as e:
-                raise LLMTimeoutError(str(e))
+                raise LLMTimeoutError(str(e)) from e
             except Exception as e:
-                raise LLMError(f"Unexpected error: {e}")
+                raise LLMError(f"Unexpected error: {e}") from e
 
-        return await self.circuit_breaker.call(protected_llm_call)
+        # Circuit breaker call is synchronous, but our function is async
+        # We need to handle this properly
+        try:
+            if not self.circuit_breaker.can_execute():
+                raise LLMError(f"Circuit breaker is {self.circuit_breaker.state.value}")
+            result = await protected_llm_call()
+            self.circuit_breaker.record_success()
+            return result
+        except Exception as e:
+            self.circuit_breaker.record_failure(e)
+            raise
 
     async def _analyze_with_simple_prompts(
         self, request: LLMAnalysisRequest
@@ -1495,27 +1580,41 @@ class LLMAnalyzer:
         Returns:
             AnalysisResult from rule engine only
         """
-        from .config import RuleEngineConfig
         from .rule_engine import RuleEngine
 
         # Create rule engine with default configuration
-        rule_config = RuleEngineConfig()
-        rule_engine = RuleEngine(rule_config)
+        rule_engine = RuleEngine()
 
         # Create matched pair for rule analysis
         from ..matcher.models import MatchConfidence, MatchedPair, MatchType
 
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
-            match_reason="Rule-only analysis",
             docstring=request.docstring,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=1.0,
+            ),
+            match_type=MatchType.EXACT,
+            match_reason="Rule-only analysis",
         )
 
         # Run rule analysis
-        rule_results = rule_engine.analyze(matched_pair)
+        # Get issues from rule engine
+        issues = rule_engine.check_matched_pair(matched_pair, confidence_threshold=0.9)
+
+        # Convert issues to rule results for compatibility
+        rule_results = [
+            RuleCheckResult(
+                rule_name="rule_engine",
+                passed=len(issues) == 0,
+                confidence=0.9,
+                issues=issues,
+                execution_time_ms=0.0,
+            )
+        ]
 
         # Convert rule results to issues
         issues = []
@@ -1551,11 +1650,15 @@ class LLMAnalyzer:
         # Create minimal matched pair
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
-            confidence=MatchConfidence.LOW,
+            docstring=request.docstring,
+            confidence=MatchConfidence(
+                overall=0.3,
+                name_similarity=0.5,
+                location_score=0.5,
+                signature_similarity=0.5,
+            ),
             match_type=MatchType.SEMANTIC,
             match_reason="Minimal fallback analysis",
-            docstring=request.docstring,
         )
 
         # Create basic analysis issue
@@ -1577,7 +1680,7 @@ class LLMAnalyzer:
         )
 
     def _empty_analysis(
-        self, request: LLMAnalysisRequest, error: Exception = None
+        self, request: LLMAnalysisRequest, error: Exception | None = None
     ) -> AnalysisResult:
         """
         Create empty analysis result when all strategies fail.
@@ -1594,11 +1697,15 @@ class LLMAnalyzer:
         # Create error matched pair
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
-            confidence=MatchConfidence.NONE,
+            docstring=request.docstring,
+            confidence=MatchConfidence(
+                overall=0.0,
+                name_similarity=0.0,
+                location_score=0.0,
+                signature_similarity=0.0,
+            ),
             match_type=MatchType.SEMANTIC,
             match_reason="Analysis failed",
-            docstring=request.docstring,
         )
 
         # Create error issue
@@ -1639,11 +1746,15 @@ class LLMAnalyzer:
         # Create matched pair
         matched_pair = MatchedPair(
             function=request.function,
-            documentation=request.docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
-            match_reason="LLM analysis",
             docstring=request.docstring,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=1.0,
+            ),
+            match_type=MatchType.EXACT,
+            match_reason="LLM analysis",
         )
 
         return AnalysisResult(

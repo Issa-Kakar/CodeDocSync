@@ -19,14 +19,13 @@ from codedocsync.parser import IntegratedParser, ParsedDocstring, ParsingError
 console = Console()
 
 
-@typer.command()
 def parse(
     file: Annotated[Path, typer.Argument(help="Python file to parse")],
     json_output: Annotated[
         bool,
         typer.Option("--json", help="Output as JSON instead of pretty-printed table"),
     ] = False,
-):
+) -> None:
     """
     Parse a Python file and display extracted functions.
 
@@ -130,7 +129,7 @@ def parse(
         console.print(f"[red]Error:[/red] {e.message}")
         if e.recovery_hint:
             console.print(f"[yellow]Hint:[/yellow] {e.recovery_hint}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except Exception as e:
         console.print(f"[red]Unexpected error:[/red] {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingGenerator:
     """Generates embeddings for functions with fallback support."""
 
-    def __init__(self, config: EmbeddingConfig | None = None):
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
         from ..storage.embedding_config import EmbeddingConfigManager
 
         self.config = config or EmbeddingConfig()
@@ -34,7 +34,7 @@ class EmbeddingGenerator:
             "batch_count": 0,
         }
 
-    def _init_providers(self):
+    def _init_providers(self) -> None:
         """Initialize embedding providers based on available models."""
         self.providers = {}
 
@@ -110,7 +110,7 @@ class EmbeddingGenerator:
         signature_str = function.signature.to_string()
         return hashlib.sha256(signature_str.encode()).hexdigest()[:16]
 
-    @retry(
+    @retry(  # type: ignore[misc]
         stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10)
     )
     async def generate_embedding(
@@ -141,10 +141,12 @@ class EmbeddingGenerator:
         import openai
 
         try:
-            response = await openai.Embedding.acreate(input=text, model=model)
-            return response["data"][0]["embedding"]
+            client = openai.AsyncOpenAI()
+            response = await client.embeddings.create(input=text, model=model)
+            embedding: list[float] = response.data[0].embedding
+            return embedding
 
-        except openai.error.RateLimitError:
+        except openai.RateLimitError:
             logger.warning("OpenAI rate limit hit")
             raise
         except Exception as e:
@@ -158,7 +160,7 @@ class EmbeddingGenerator:
 
         model = self.providers["local"]
         embedding = model.encode(text, convert_to_numpy=True)
-        return embedding.tolist()
+        return list(embedding.tolist())
 
     async def generate_function_embeddings(
         self, functions: list[ParsedFunction], use_cache: bool = True

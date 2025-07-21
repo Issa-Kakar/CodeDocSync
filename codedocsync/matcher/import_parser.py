@@ -133,7 +133,7 @@ class ImportParser:
         """Extract all public function and class names."""
         names = set()
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
                 if not node.name.startswith("_"):
                     names.add(node.name)
         return names

@@ -7,7 +7,9 @@ and integration with other tools and systems.
 
 import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
+
+from codedocsync.parser import ParsedDocstring, ParsedFunction
 
 from ..integration import EnhancedAnalysisResult, EnhancedIssue
 from ..models import DocstringStyle, Suggestion, SuggestionBatch
@@ -75,11 +77,11 @@ class JSONSuggestionFormatter:
         if self.include_metadata and suggestion.metadata:
             result["metadata"] = {
                 "generation_time_ms": suggestion.metadata.generation_time_ms,
-                "generator_used": suggestion.metadata.generator_used,
+                "generator_type": suggestion.metadata.generator_type,
                 "llm_used": suggestion.metadata.llm_used,
-                "cache_hit": suggestion.metadata.cache_hit,
-                "validation_passed": suggestion.metadata.validation_passed,
-                "quality_score": suggestion.metadata.quality_score,
+                "generator_version": suggestion.metadata.generator_version,
+                "template_used": suggestion.metadata.template_used,
+                "style_detected": suggestion.metadata.style_detected,
             }
 
         # Add timestamps if requested
@@ -119,7 +121,7 @@ class JSONSuggestionFormatter:
         output = {
             "function": self._format_function_info(result.matched_pair.function),
             "file_path": result.matched_pair.function.file_path,
-            "match_confidence": result.matched_pair.confidence.value,
+            "match_confidence": result.matched_pair.confidence.overall,
             "match_type": result.matched_pair.match_type.value,
             "match_reason": result.matched_pair.match_reason,
             "analysis": {
@@ -147,14 +149,21 @@ class JSONSuggestionFormatter:
         }
 
         # Add documentation info if available
-        if result.matched_pair.documentation:
-            output["documentation"] = {
-                "format": result.matched_pair.documentation.format,
-                "summary": result.matched_pair.documentation.summary,
-                "parameter_count": len(result.matched_pair.documentation.parameters),
-                "has_returns": result.matched_pair.documentation.returns is not None,
-                "exception_count": len(result.matched_pair.documentation.raises),
-            }
+        if result.matched_pair.docstring:
+            if isinstance(result.matched_pair.docstring, ParsedDocstring):
+                output["documentation"] = {
+                    "format": result.matched_pair.docstring.format.value,
+                    "summary": result.matched_pair.docstring.summary,
+                    "parameter_count": len(result.matched_pair.docstring.parameters),
+                    "has_returns": result.matched_pair.docstring.returns is not None,
+                    "exception_count": len(result.matched_pair.docstring.raises),
+                }
+            else:
+                # RawDocstring case
+                output["documentation"] = {
+                    "format": "raw",
+                    "raw_text": result.matched_pair.docstring.raw_text,
+                }
 
         # Add metadata if requested
         if self.include_metadata:
@@ -164,9 +173,8 @@ class JSONSuggestionFormatter:
             }
 
             if self.include_timestamps:
-                output["metadata"]["generated_at"] = datetime.now(
-                    timezone.utc
-                ).isoformat()
+                metadata = cast(dict[str, Any], output["metadata"])
+                metadata["generated_at"] = datetime.now(timezone.utc).isoformat()
 
         return output
 
@@ -187,9 +195,8 @@ class JSONSuggestionFormatter:
             }
 
             if self.include_timestamps:
-                output["metadata"]["generated_at"] = datetime.now(
-                    timezone.utc
-                ).isoformat()
+                metadata = cast(dict[str, Any], output["metadata"])
+                metadata["generated_at"] = datetime.now(timezone.utc).isoformat()
 
         return output
 
@@ -201,16 +208,17 @@ class JSONSuggestionFormatter:
             ],
             "summary": {
                 "total_suggestions": len(batch.suggestions),
-                "total_issues": batch.total_issues,
-                "functions_processed": batch.functions_processed,
-                "generation_time_ms": batch.generation_time_ms,
+                "function_name": batch.function_name,
+                "file_path": batch.file_path,
+                "total_generation_time_ms": batch.total_generation_time_ms,
             },
         }
 
         # Add confidence statistics
         if batch.suggestions:
             confidences = [s.confidence for s in batch.suggestions]
-            output["summary"]["confidence_stats"] = {
+            summary = cast(dict[str, Any], output["summary"])
+            summary["confidence_stats"] = {
                 "average": sum(confidences) / len(confidences),
                 "min": min(confidences),
                 "max": max(confidences),
@@ -218,11 +226,11 @@ class JSONSuggestionFormatter:
             }
 
             # Add suggestion type breakdown
-            type_counts = {}
+            type_counts: dict[str, int] = {}
             for suggestion in batch.suggestions:
                 suggestion_type = suggestion.suggestion_type.value
                 type_counts[suggestion_type] = type_counts.get(suggestion_type, 0) + 1
-            output["summary"]["suggestion_types"] = type_counts
+            summary["suggestion_types"] = type_counts
 
         if self.include_metadata:
             output["metadata"] = {
@@ -231,9 +239,8 @@ class JSONSuggestionFormatter:
             }
 
             if self.include_timestamps:
-                output["metadata"]["generated_at"] = datetime.now(
-                    timezone.utc
-                ).isoformat()
+                metadata = cast(dict[str, Any], output["metadata"])
+                metadata["generated_at"] = datetime.now(timezone.utc).isoformat()
 
         return output
 
@@ -241,7 +248,7 @@ class JSONSuggestionFormatter:
         """Convert data to JSON string."""
         return json.dumps(data, indent=self.indent, ensure_ascii=False)
 
-    def _format_function_info(self, function) -> dict[str, Any]:
+    def _format_function_info(self, function: ParsedFunction) -> dict[str, Any]:
         """Extract function information for JSON."""
         info = {
             "name": "Unknown",
@@ -265,7 +272,7 @@ class JSONSuggestionFormatter:
                         param_info["type_annotation"] = param.type_annotation
                     if param.default_value:
                         param_info["default_value"] = param.default_value
-                    info["parameters"].append(param_info)
+                    cast(list[dict[str, Any]], info["parameters"]).append(param_info)
 
             # Add return type if available
             if hasattr(signature, "return_annotation") and signature.return_annotation:
@@ -321,28 +328,28 @@ class JSONSuggestionFormatter:
 
 
 # Convenience functions for common use cases
-def suggestion_to_json(suggestion: Suggestion, **kwargs) -> str:
+def suggestion_to_json(suggestion: Suggestion, **kwargs: Any) -> str:
     """Convert single suggestion to JSON string."""
     formatter = JSONSuggestionFormatter(**kwargs)
     data = formatter.format_suggestion(suggestion)
     return formatter.to_json_string(data)
 
 
-def analysis_result_to_json(result: EnhancedAnalysisResult, **kwargs) -> str:
+def analysis_result_to_json(result: EnhancedAnalysisResult, **kwargs: Any) -> str:
     """Convert analysis result to JSON string."""
     formatter = JSONSuggestionFormatter(**kwargs)
     data = formatter.format_analysis_result(result)
     return formatter.to_json_string(data)
 
 
-def batch_results_to_json(results: list[EnhancedAnalysisResult], **kwargs) -> str:
+def batch_results_to_json(results: list[EnhancedAnalysisResult], **kwargs: Any) -> str:
     """Convert batch results to JSON string."""
     formatter = JSONSuggestionFormatter(**kwargs)
     data = formatter.format_batch_results(results)
     return formatter.to_json_string(data)
 
 
-def suggestion_batch_to_json(batch: SuggestionBatch, **kwargs) -> str:
+def suggestion_batch_to_json(batch: SuggestionBatch, **kwargs: Any) -> str:
     """Convert suggestion batch to JSON string."""
     formatter = JSONSuggestionFormatter(**kwargs)
     data = formatter.format_suggestion_batch(batch)

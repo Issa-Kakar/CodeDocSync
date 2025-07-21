@@ -55,7 +55,7 @@ from .rule_engine_utils import (
 
 # TYPE_CHECKING imports for future components
 if TYPE_CHECKING:
-    from .models import AnalysisCache
+    pass
 
 # Import matcher models we depend on
 from codedocsync.matcher import MatchedPair

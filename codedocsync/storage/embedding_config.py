@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingConfigManager:
     """Manages embedding configuration and API keys."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.api_keys = self._load_api_keys()
         self.config = self._load_config()
 
@@ -42,7 +42,9 @@ class EmbeddingConfigManager:
 
         if os.getenv("EMBEDDING_BATCH_SIZE"):
             try:
-                config.batch_size = int(os.getenv("EMBEDDING_BATCH_SIZE"))
+                batch_size_str = os.getenv("EMBEDDING_BATCH_SIZE")
+                if batch_size_str is not None:
+                    config.batch_size = int(batch_size_str)
             except ValueError:
                 logger.warning("Invalid EMBEDDING_BATCH_SIZE")
 

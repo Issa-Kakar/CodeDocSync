@@ -39,7 +39,7 @@ class FunctionParameter:
     default_value: str | None = None
     is_required: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate parameter data after initialization."""
         # Validate parameter name follows Python identifier rules
         # Allow special prefixes for *args, **kwargs, and keyword-only parameters
@@ -87,7 +87,7 @@ class FunctionSignature:
     is_method: bool = False
     decorators: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate function signature after initialization."""
         # Validate function name
         if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", self.name):
@@ -124,7 +124,7 @@ class RawDocstring:
     raw_text: str
     line_number: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate raw docstring data."""
         if not isinstance(self.raw_text, str):
             raise ValidationError(
@@ -144,7 +144,7 @@ class ParsedFunction:
     end_line_number: int = 0
     source_code: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate parsed function data."""
         if self.line_number < 0:
             raise ValidationError(
@@ -196,18 +196,18 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
     try:
         with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         error_msg = f"File not found: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check the file path and ensure the file exists"
-        )
-    except PermissionError:
+        ) from e
+    except PermissionError as e:
         error_msg = f"Permission denied: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check file permissions and ensure read access"
-        )
+        ) from e
     except UnicodeDecodeError as e:
         # Try alternative encodings
         try:
@@ -220,7 +220,7 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
             raise ParsingError(
                 error_msg,
                 recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
-            )
+            ) from e
 
     if not source_content.strip():
         logger.info(f"Empty file: {file_path}")
@@ -252,13 +252,13 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
             raise SyntaxParsingError(
                 f"Syntax error in {file_path}:{e.lineno}: {e.msg}",
                 recovery_hint="Fix the syntax error and try again",
-            )
+            ) from e
 
     functions = []
 
     # Walk through all nodes in the AST
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             try:
                 parsed_func = _extract_function(node, file_path, source_content)
                 functions.append(parsed_func)
@@ -299,18 +299,18 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     try:
         with open(file_path, encoding="utf-8") as f:
             source_content = f.read()
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         error_msg = f"File not found: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check the file path and ensure the file exists"
-        )
-    except PermissionError:
+        ) from e
+    except PermissionError as e:
         error_msg = f"Permission denied: {file_path}"
         logger.error(error_msg)
         raise FileAccessError(
             error_msg, recovery_hint="Check file permissions and ensure read access"
-        )
+        ) from e
     except UnicodeDecodeError as e:
         # Try alternative encodings
         try:
@@ -323,7 +323,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
             raise ParsingError(
                 error_msg,
                 recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
-            )
+            ) from e
 
     if not source_content.strip():
         logger.info(f"Empty file: {file_path}")
@@ -350,20 +350,19 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
             logger.info(
                 f"Partial parse successful for {file_path}: found {len(functions)} functions"
             )
-            for func in functions:
-                yield func
+            yield from functions
             return
         else:
             raise SyntaxParsingError(
                 f"Syntax error in {file_path}:{e.lineno}: {e.msg}",
                 recovery_hint="Fix the syntax error and try again",
-            )
+            ) from e
 
     function_count = 0
 
     # Walk through all nodes in the AST
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             try:
                 parsed_func = _extract_function(node, file_path, source_content)
                 function_count += 1
@@ -621,9 +620,9 @@ def _get_annotation_string(annotation: ast.expr | None) -> str | None:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore
+            import astor
 
-            return astor.to_source(annotation).strip()
+            return str(astor.to_source(annotation).strip())
         except ImportError:
             return _annotation_to_string_fallback(annotation)
     except Exception:
@@ -684,9 +683,9 @@ def _get_default_value(default_node: ast.expr | None) -> str:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore
+            import astor
 
-            return astor.to_source(default_node).strip()
+            return str(astor.to_source(default_node).strip())
         except ImportError:
             return _default_value_fallback(default_node)
     except Exception:
@@ -720,10 +719,10 @@ def _is_imports_only(source_content: str) -> bool:
     try:
         tree = ast.parse(source_content)
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
                 return False
             # Check for any substantial code beyond imports
-            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            if isinstance(node, ast.Assign | ast.AnnAssign | ast.AugAssign):
                 # Allow simple constant assignments like VERSION = "1.0.0"
                 if isinstance(node, ast.Assign):
                     if not isinstance(node.value, ast.Constant):
@@ -760,7 +759,7 @@ def _parse_partial_file(
         functions = []
 
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                 try:
                     parsed_func = _extract_function(node, file_path, partial_content)
                     functions.append(parsed_func)

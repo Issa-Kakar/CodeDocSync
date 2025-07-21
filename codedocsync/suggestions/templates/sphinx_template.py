@@ -52,8 +52,8 @@ class SphinxStyleTemplate(DocstringTemplate):
                 lines.append(f":param {param.name}:")
 
             # :type name: type annotation
-            if param.type_annotation:
-                type_str = self._format_type_annotation(param.type_annotation)
+            if param.type_str:
+                type_str = self._format_type_annotation(param.type_str)
                 type_line = f":type {param.name}: {type_str}"
                 wrapped_lines = self._wrap_sphinx_field(type_line, ":type")
                 lines.extend(wrapped_lines)
@@ -79,8 +79,8 @@ class SphinxStyleTemplate(DocstringTemplate):
             lines.extend(wrapped_lines)
 
         # :rtype: type
-        if returns.type_annotation:
-            type_str = self._format_type_annotation(returns.type_annotation)
+        if returns.type_str:
+            type_str = self._format_type_annotation(returns.type_str)
             rtype_line = f":rtype: {type_str}"
             wrapped_lines = self._wrap_sphinx_field(rtype_line, ":rtype")
             lines.extend(wrapped_lines)

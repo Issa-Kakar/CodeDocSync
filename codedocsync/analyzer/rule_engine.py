@@ -454,7 +454,7 @@ class RuleEngine:
     def _check_missing_raises(self, pair: MatchedPair) -> RuleCheckResult:
         """Find undocumented exceptions (basic check)."""
         start_time = time.time()
-        issues = []
+        issues: list[InconsistencyIssue] = []
 
         # This is a simplified check - full implementation would require AST analysis
         # For now, just pass all cases (keeping it simple for performance)

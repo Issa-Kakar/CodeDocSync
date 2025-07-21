@@ -328,7 +328,7 @@ def format_prompt(
     source_code: str,
     docstring: str,
     rule_issues: str | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> str:
     """
     Format a prompt template with actual function data.
@@ -367,7 +367,7 @@ def format_prompt(
     try:
         return template.format(**format_vars)
     except KeyError as e:
-        raise KeyError(f"Missing required formatting variable: {e}")
+        raise KeyError(f"Missing required formatting variable: {e}") from e
 
 
 def get_available_analysis_types() -> list[str]:
@@ -375,7 +375,7 @@ def get_available_analysis_types() -> list[str]:
     return list(PROMPT_TEMPLATES.keys())
 
 
-def validate_llm_response(response_data: dict[str, Any]) -> bool:
+def validate_llm_response(response_data: Any) -> bool:
     """
     Validate that an LLM response has the expected structure.
 
@@ -394,7 +394,7 @@ def validate_llm_response(response_data: dict[str, Any]) -> bool:
 
     # Must have 'confidence' field that's a number
     if "confidence" not in response_data or not isinstance(
-        response_data["confidence"], (int, float)
+        response_data["confidence"], int | float
     ):
         return False
 
@@ -416,7 +416,7 @@ def validate_llm_response(response_data: dict[str, Any]) -> bool:
 
         # Validate confidence is a number between 0 and 1
         if (
-            not isinstance(issue["confidence"], (int, float))
+            not isinstance(issue["confidence"], int | float)
             or not 0 <= issue["confidence"] <= 1
         ):
             return False

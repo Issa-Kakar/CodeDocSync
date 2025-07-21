@@ -126,8 +126,8 @@ class NumpyStyleTemplate(DocstringTemplate):
 
     def _format_parameter_line(self, param: DocstringParameter) -> str:
         """Format parameter line for NumPy style."""
-        if param.type_annotation:
-            type_str = self._format_type_annotation(param.type_annotation)
+        if param.type_str:
+            type_str = self._format_type_annotation(param.type_str)
             return f"{param.name} : {type_str}"
         else:
             return f"{param.name}"
@@ -137,8 +137,8 @@ class NumpyStyleTemplate(DocstringTemplate):
         # NumPy style often uses generic names like 'result' or 'output'
         return_name = getattr(returns, "name", None) or "result"
 
-        if returns.type_annotation:
-            type_str = self._format_type_annotation(returns.type_annotation)
+        if returns.type_str:
+            type_str = self._format_type_annotation(returns.type_str)
             return f"{return_name} : {type_str}"
         else:
             return return_name

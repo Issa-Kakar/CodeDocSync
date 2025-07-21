@@ -7,6 +7,7 @@ missing return documentation, and other return-specific problems.
 
 import ast
 import re
+from typing import Any
 
 from ...parser.docstring_models import DocstringReturns
 from ..base import BaseSuggestionGenerator
@@ -24,7 +25,7 @@ from ..templates.base import get_template
 class ReturnAnalysisResult:
     """Result of analyzing return statements in function code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.return_types: set[str] = set()
         self.has_explicit_return: bool = False
         self.has_implicit_none: bool = False
@@ -236,8 +237,9 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
                 function, return_analysis, current_return
             )
         else:
-            improved_description = self._generate_basic_return_description(
-                function, current_return
+            # Generate basic description based on function name
+            improved_description = self._generate_improved_return_description(
+                function, ReturnAnalysisResult(), current_return
             )
 
         # Update docstring with improved description
@@ -301,7 +303,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         return suggestion
 
     def _determine_best_return_type(
-        self, analysis: ReturnAnalysisResult, function
+        self, analysis: ReturnAnalysisResult, function: Any
     ) -> str | None:
         """Determine the best return type to document."""
         if analysis.is_generator:
@@ -325,12 +327,12 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
 
         return None
 
-    def _get_return_type_from_signature(self, function) -> str | None:
+    def _get_return_type_from_signature(self, function: Any) -> str | None:
         """Extract return type from function signature."""
         if hasattr(function, "signature") and hasattr(
             function.signature, "return_annotation"
         ):
-            return function.signature.return_annotation
+            return str(function.signature.return_annotation)
         return None
 
     def _update_return_type_in_docstring(
@@ -342,7 +344,8 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         """Update return type in existing docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = DocstringStyle(style) if isinstance(style, str) else style
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Create new return documentation
         description = self._generate_return_description(return_type, analysis)
@@ -364,7 +367,8 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         """Add return documentation to existing docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = DocstringStyle(style) if isinstance(style, str) else style
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Create return documentation
         description = self._generate_return_description(return_type, None)
@@ -407,7 +411,7 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         return type_descriptions.get(return_type, f"The {return_type.lower()} result")
 
     def _generate_improved_return_description(
-        self, function, analysis: ReturnAnalysisResult, current_return
+        self, function: Any, analysis: ReturnAnalysisResult, current_return: Any
     ) -> str:
         """Generate improved return description based on function analysis."""
         current_desc = getattr(current_return, "description", "")
@@ -450,7 +454,8 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         """Update return description in existing docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = DocstringStyle(style) if isinstance(style, str) else style
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Update existing return documentation
         current_return = getattr(docstring, "returns", None)
@@ -471,20 +476,13 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
             examples=getattr(docstring, "examples", []),
         )
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
+            # Return the string format directly
+            return str(docstring.format.value)
 
-        return DocstringStyle.GOOGLE  # Default fallback
+        return "google"  # Default fallback
 
     def _create_suggestion(
         self,
@@ -511,9 +509,8 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
         )
 
         metadata = SuggestionMetadata(
-            generator_name=self.__class__.__name__,
+            generator_type=self.__class__.__name__,
             generator_version="1.0.0",
-            analysis_type=suggestion_type.value,
         )
 
         return Suggestion(
@@ -521,7 +518,6 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),

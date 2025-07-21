@@ -8,6 +8,7 @@ incorrect exception types, and comprehensive exception analysis.
 import ast
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from ...parser.docstring_models import DocstringRaises
 from ..base import BaseSuggestionGenerator
@@ -37,7 +38,7 @@ class ExceptionInfo:
 class ExceptionAnalyzer:
     """Analyze function code to find all possible exceptions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.builtin_exceptions = {
             "ValueError": "When an invalid value is provided",
             "TypeError": "When an invalid type is provided",
@@ -54,7 +55,7 @@ class ExceptionAnalyzer:
 
     def analyze_exceptions(self, source_code: str) -> list[ExceptionInfo]:
         """Find all exceptions that can be raised."""
-        exceptions = []
+        exceptions: list[ExceptionInfo] = []
 
         try:
             tree = ast.parse(source_code)
@@ -219,7 +220,7 @@ class ExceptionAnalyzer:
         self, exceptions: list[ExceptionInfo]
     ) -> list[ExceptionInfo]:
         """Remove duplicate exceptions and merge similar ones."""
-        unique_exceptions = {}
+        unique_exceptions: dict[str, ExceptionInfo] = {}
 
         for exc in exceptions:
             key = exc.exception_type
@@ -506,18 +507,12 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
             examples=getattr(docstring, "examples", []),
         )
 
-    def _detect_style(self, docstring) -> DocstringStyle:
+    def _detect_style(self, docstring: Any) -> DocstringStyle:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
-            format_mapping = {
-                "google": DocstringStyle.GOOGLE,
-                "numpy": DocstringStyle.NUMPY,
-                "sphinx": DocstringStyle.SPHINX,
-                "rest": DocstringStyle.REST,
-            }
-            return format_mapping.get(
-                str(docstring.format).lower(), DocstringStyle.GOOGLE
-            )
+            # Convert string to DocstringStyle enum
+            style_value = docstring.format.value
+            return DocstringStyle(style_value)
 
         return DocstringStyle.GOOGLE  # Default fallback
 
@@ -546,9 +541,8 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         )
 
         metadata = SuggestionMetadata(
-            generator_name=self.__class__.__name__,
+            generator_type=self.__class__.__name__,
             generator_version="1.0.0",
-            analysis_type=suggestion_type.value,
         )
 
         return Suggestion(
@@ -556,10 +550,9 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
-            style=self._detect_style(context.docstring),
+            style=self._detect_style(context.docstring).value,
             copy_paste_ready=True,
         )
 

@@ -13,6 +13,7 @@ from typing import Any
 
 from codedocsync.matcher import MatchedPair
 from codedocsync.parser import ParsedDocstring, ParsedFunction
+from codedocsync.parser.docstring_models import DocstringFormat
 
 from .config import AnalysisConfig, get_development_config
 from .llm_analyzer import LLMAnalyzer
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 class IntegrationMetrics:
     """Simple metrics collector for integration monitoring."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.total_analyses = 0
         self.cache_hits = 0
         self.llm_calls = 0
@@ -38,7 +39,7 @@ class IntegrationMetrics:
 
     def record_analysis(
         self, result: AnalysisResult, cache_hit: bool, error: bool = False
-    ):
+    ) -> None:
         """Record metrics from an analysis run."""
         self.total_analyses += 1
 
@@ -82,7 +83,7 @@ class IntegrationMetrics:
             ),
         }
 
-    def log_stats(self):
+    def log_stats(self) -> None:
         """Log current statistics."""
         stats = self.get_stats()
         logger.info(f"Integration metrics: {stats}")
@@ -130,8 +131,8 @@ def _should_use_llm(
         return True
 
     # Check if docstring has examples
-    if pair.documentation and hasattr(pair.documentation, "examples"):
-        if pair.documentation.examples:
+    if pair.docstring and hasattr(pair.docstring, "examples"):
+        if pair.docstring.examples:
             return True
 
     # Check for behavior-affecting decorators
@@ -163,8 +164,8 @@ def _determine_analysis_types(
         analysis_types.append("behavior")
 
     # Check examples if docstring contains them
-    if pair.documentation and hasattr(pair.documentation, "examples"):
-        if pair.documentation.examples:
+    if pair.docstring and hasattr(pair.docstring, "examples"):
+        if pair.docstring.examples:
             analysis_types.append("examples")
 
     # Check edge cases for functions with conditionals
@@ -172,7 +173,7 @@ def _determine_analysis_types(
         # Simple heuristic: check for if/try statements
         try:
             if any(
-                isinstance(node, (ast.If, ast.Try))
+                isinstance(node, ast.If | ast.Try)
                 for node in ast.walk(ast.parse(pair.function.body))
             ):
                 analysis_types.append("edge_cases")
@@ -231,14 +232,17 @@ def _create_llm_request(
     # Build request
     return LLMAnalysisRequest(
         function=pair.function,
-        docstring=pair.documentation
-        or ParsedDocstring(
-            format="none",
-            summary="",
-            parameters=[],
-            returns=None,
-            raises=[],
-            raw_text="",
+        docstring=(
+            pair.docstring
+            if isinstance(pair.docstring, ParsedDocstring)
+            else ParsedDocstring(
+                format=DocstringFormat.GOOGLE,  # Default to Google format
+                summary="",
+                parameters=[],
+                returns=None,
+                raises=[],
+                raw_text=pair.docstring.raw_text if pair.docstring else "",
+            )
         ),
         analysis_types=analysis_types,
         rule_results=rule_results,
@@ -302,7 +306,7 @@ def _merge_results(
 class AnalysisCache:
     """Simple in-memory cache for analysis results."""
 
-    def __init__(self, max_size: int = 1000):
+    def __init__(self, max_size: int = 1000) -> None:
         self.cache: dict = {}
         self.max_size = max_size
 
@@ -329,7 +333,9 @@ class AnalysisCache:
             result.cache_hit = True
         return result
 
-    def put(self, pair: MatchedPair, config: AnalysisConfig, result: AnalysisResult):
+    def put(
+        self, pair: MatchedPair, config: AnalysisConfig, result: AnalysisResult
+    ) -> None:
         """Store analysis result in cache."""
         if len(self.cache) >= self.max_size:
             # Simple LRU: remove oldest entry
@@ -408,12 +414,17 @@ async def analyze_matched_pair(
         )
 
     if llm_analyzer is None and config.use_llm:
-        llm_analyzer = LLMAnalyzer(
+        # Create LLMConfig from AnalysisConfig
+        from .llm_config import LLMConfig
+
+        llm_config = LLMConfig(
             provider=config.llm_provider,
             model=config.llm_model,
             temperature=config.llm_temperature,
-            cache_dir=None,  # Use default cache directory
+            max_tokens=config.llm_max_tokens,
+            timeout_seconds=int(config.llm_timeout_seconds),
         )
+        llm_analyzer = LLMAnalyzer(llm_config)
 
     # Step 1: Run rule engine checks (fast path)
     rule_start_time = time.time()
@@ -542,18 +553,18 @@ async def analyze_multiple_pairs(
         batch_size = config.batch_size
         max_workers = min(config.max_parallel_workers, len(pairs))
 
+        # Use semaphore to limit concurrent executions
+        semaphore = asyncio.Semaphore(max_workers)
+
+        async def analyze_with_semaphore(pair: MatchedPair) -> AnalysisResult:
+            async with semaphore:
+                return await analyze_matched_pair(
+                    pair, config, cache, rule_engine, llm_analyzer
+                )
+
         results = []
         for i in range(0, len(pairs), batch_size):
             batch = pairs[i : i + batch_size]
-
-            # Use semaphore to limit concurrent executions
-            semaphore = asyncio.Semaphore(max_workers)
-
-            async def analyze_with_semaphore(pair):
-                async with semaphore:
-                    return await analyze_matched_pair(
-                        pair, config, cache, rule_engine, llm_analyzer
-                    )
 
             batch_results = await asyncio.gather(
                 *[analyze_with_semaphore(pair) for pair in batch]
@@ -583,7 +594,7 @@ def get_integration_metrics() -> dict[str, Any]:
     return metrics.get_stats()
 
 
-def reset_integration_metrics():
+def reset_integration_metrics() -> None:
     """Reset integration metrics (useful for testing)."""
     global metrics
     metrics = IntegrationMetrics()

@@ -28,9 +28,9 @@ class MatcherConfig(BaseModel):
         description="Custom regex patterns for name transformation",
     )
 
-    @field_validator("custom_patterns")
+    @field_validator("custom_patterns")  # type: ignore[misc]
     @classmethod
-    def validate_patterns(cls, patterns):
+    def validate_patterns(cls, patterns: list[dict[str, str]]) -> list[dict[str, str]]:
         """Validate regex patterns are valid."""
         for pattern_dict in patterns:
             if "pattern" not in pattern_dict or "replacement" not in pattern_dict:
@@ -38,7 +38,7 @@ class MatcherConfig(BaseModel):
             try:
                 re.compile(pattern_dict["pattern"])
             except re.error as e:
-                raise ValueError(f"Invalid regex pattern: {e}")
+                raise ValueError(f"Invalid regex pattern: {e}") from e
         return patterns
 
 
@@ -69,7 +69,7 @@ class CodeDocSyncConfig(BaseModel):
     @classmethod
     def from_yaml(cls, file_path: str) -> "CodeDocSyncConfig":
         """Load configuration from YAML file."""
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         with open(file_path) as f:
             data = yaml.safe_load(f)

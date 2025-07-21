@@ -35,9 +35,9 @@ class SectionBoundary:
     start_line: int
     end_line: int
     header_line: int | None = None
-    content_lines: list[int] = None
+    content_lines: list[int] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize content lines if not provided."""
         if self.content_lines is None:
             self.content_lines = list(range(self.start_line, self.end_line + 1))
@@ -46,7 +46,7 @@ class SectionBoundary:
 class DocstringMerger:
     """Merge new suggestions with existing docstrings."""
 
-    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE):
+    def __init__(self, style: DocstringStyle = DocstringStyle.GOOGLE) -> None:
         """Initialize merger with docstring style."""
         self.style = style
         self._section_patterns = self._get_section_patterns()
@@ -131,7 +131,7 @@ class DocstringMerger:
         self,
         original_docstring: str,
         updated_docstring: str,
-        preserve_sections: set[str] = None,
+        preserve_sections: set[str] | None = None,
     ) -> str:
         """Preserve custom sections and content from original docstring."""
         if preserve_sections is None:
@@ -167,7 +167,7 @@ class DocstringMerger:
                     break
 
             # Insert custom sections
-            for section_type, section_lines in custom_sections.items():
+            for _, section_lines in custom_sections.items():
                 if result_lines[insert_point - 1].strip():
                     result_lines.insert(insert_point, "")
                     insert_point += 1

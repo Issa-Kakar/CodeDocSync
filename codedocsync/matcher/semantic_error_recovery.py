@@ -44,9 +44,9 @@ class ErrorAnalysis:
     wait_seconds: float = 0.0
     max_retries: int = 3
     message: str = ""
-    metadata: dict[str, Any] = None
+    metadata: dict[str, Any] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.metadata is None:
             self.metadata = {}
 
@@ -59,12 +59,12 @@ class SemanticErrorRecovery:
     external service problems with intelligent fallback strategies.
     """
 
-    def __init__(self, max_retries: int = 3, base_wait_time: float = 1.0):
+    def __init__(self, max_retries: int = 3, base_wait_time: float = 1.0) -> None:
         self.max_retries = max_retries
         self.base_wait_time = base_wait_time
 
         # Error tracking statistics
-        self.error_stats = {
+        self.error_stats: dict[str, Any] = {
             "total_errors": 0,
             "errors_by_type": {error_type.value: 0 for error_type in ErrorType},
             "recoveries_successful": 0,
@@ -77,8 +77,8 @@ class SemanticErrorRecovery:
         primary_func: Callable,
         fallback_funcs: list[Callable],
         function: ParsedFunction,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> FunctionEmbedding | None:
         """
         Try multiple embedding providers with intelligent fallback.
@@ -110,7 +110,7 @@ class SemanticErrorRecovery:
                         logger.info(
                             f"Successfully recovered using {func_name} for {function.signature.name}"
                         )
-                    return result
+                    return result  # type: ignore[no-any-return]
 
             except Exception as error:
                 self.error_stats["total_errors"] += 1
@@ -232,7 +232,7 @@ class SemanticErrorRecovery:
         )
 
     async def with_retry(
-        self, operation: Callable, operation_name: str, *args, **kwargs
+        self, operation: Callable, operation_name: str, *args: Any, **kwargs: Any
     ) -> Any:
         """
         Execute an operation with intelligent retry logic.
@@ -248,7 +248,7 @@ class SemanticErrorRecovery:
         Raises:
             Last exception if all retries fail
         """
-        last_exception = None
+        last_exception: Exception | None = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -296,9 +296,13 @@ class SemanticErrorRecovery:
         # All retries failed
         self.error_stats["operations_aborted"] += 1
         logger.error(f"{operation_name} failed after {self.max_retries} retries")
-        raise last_exception
+        if last_exception is not None:
+            raise last_exception
+        raise RuntimeError(f"{operation_name} failed without exception")
 
-    def _calculate_backoff_time(self, attempt: int, base_wait: float = None) -> float:
+    def _calculate_backoff_time(
+        self, attempt: int, base_wait: float | None = None
+    ) -> float:
         """Calculate exponential backoff time."""
         if base_wait is None:
             base_wait = self.base_wait_time
@@ -311,7 +315,7 @@ class SemanticErrorRecovery:
 
         jitter = random.uniform(0.5, 1.5)
 
-        return min(backoff * jitter, 60.0)  # Cap at 60 seconds
+        return float(min(backoff * jitter, 60.0))  # Cap at 60 seconds
 
     def create_circuit_breaker(
         self, failure_threshold: int = 5, recovery_time: float = 60.0
@@ -391,8 +395,8 @@ class CircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_time: float = 60.0,
-        error_recovery: SemanticErrorRecovery = None,
-    ):
+        error_recovery: SemanticErrorRecovery | None = None,
+    ) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_time = recovery_time
         self.error_recovery = error_recovery
@@ -411,7 +415,7 @@ class CircuitBreaker:
             "circuit_closes": 0,
         }
 
-    async def call(self, operation: Callable, *args, **kwargs) -> Any:
+    async def call(self, operation: Callable, *args: Any, **kwargs: Any) -> Any:
         """
         Execute operation through circuit breaker.
 
@@ -526,7 +530,10 @@ class CircuitBreakerOpenError(Exception):
 
 
 async def with_api_fallback(
-    primary_api_call: Callable, fallback_api_calls: list[Callable], *args, **kwargs
+    primary_api_call: Callable,
+    fallback_api_calls: list[Callable],
+    *args: Any,
+    **kwargs: Any,
 ) -> Any:
     """Convenience function for API calls with fallback."""
     recovery = SemanticErrorRecovery()
@@ -536,7 +543,11 @@ async def with_api_fallback(
 
 
 async def with_resilient_retry(
-    operation: Callable, operation_name: str, max_retries: int = 3, *args, **kwargs
+    operation: Callable,
+    operation_name: str,
+    max_retries: int = 3,
+    *args: Any,
+    **kwargs: Any,
 ) -> Any:
     """Convenience function for resilient operation retry."""
     recovery = SemanticErrorRecovery(max_retries=max_retries)

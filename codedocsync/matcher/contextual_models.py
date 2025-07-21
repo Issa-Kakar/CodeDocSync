@@ -26,7 +26,7 @@ class ImportStatement:
     line_number: int
     level: int = 0  # Relative import level (number of dots)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate import statement."""
         if self.import_type == ImportType.WILDCARD and len(self.imported_names) != 1:
             raise ValueError("Wildcard imports must have exactly one '*' entry")
@@ -71,7 +71,7 @@ class CrossFileMatch:
     import_chain: list[str]  # Steps to resolve the import
     confidence: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not 0 <= self.confidence <= 1:
             raise ValueError(
                 f"Confidence must be between 0 and 1, got {self.confidence}"

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class MatchingFacade:
     """High-level interface for matching operations."""
 
-    def __init__(self, config: CodeDocSyncConfig | None = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None) -> None:
         """Initialize with optional configuration."""
         self.config = config or CodeDocSyncConfig()
 

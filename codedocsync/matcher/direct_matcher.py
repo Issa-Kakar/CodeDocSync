@@ -3,7 +3,7 @@
 import logging
 import time
 
-from codedocsync.parser import ParsedDocstring, ParsedFunction, RawDocstring
+from codedocsync.parser import ParsedFunction, RawDocstring
 
 from .models import MatchConfidence, MatchedPair, MatchResult, MatchType
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class DirectMatcher:
     """Matches functions to documentation within the same file."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the direct matcher."""
         self.stats = {
             "exact_matches": 0,
@@ -50,10 +50,10 @@ class DirectMatcher:
         # Group functions by file for efficient matching
         functions_by_file = self._group_by_file(functions)
 
-        for file_path, file_functions in functions_by_file.items():
+        for _, file_functions in functions_by_file.items():
             file_matches = self._match_functions_in_file(file_functions)
 
-            for i, (func, match) in file_matches.items():
+            for _, (func, match) in file_matches.items():
                 if match:
                     matched_pairs.append(match)
                 else:
@@ -79,7 +79,7 @@ class DirectMatcher:
         self, functions: list[ParsedFunction]
     ) -> dict[int, tuple[ParsedFunction, MatchedPair | None]]:
         """Match functions to their own documentation within a single file."""
-        matches = {}
+        matches: dict[int, tuple[ParsedFunction, MatchedPair | None]] = {}
 
         for i, func in enumerate(functions):
             self.stats["total_processed"] += 1
@@ -122,6 +122,7 @@ class DirectMatcher:
                 match_type=MatchType.EXACT,
                 confidence=confidence,
                 match_reason="Exact match: function and docstring aligned",
+                docstring=func.docstring,  # Include the docstring
             )
 
         return None
@@ -137,8 +138,10 @@ class DirectMatcher:
         # Calculate signature similarity (handles all docstring types)
         sig_score = self._calculate_signature_similarity(func)
 
-        # Overall confidence is weighted average
-        overall = (name_score + location_score + sig_score) / 3.0
+        # For exact matches (function with its own docstring), we want to match
+        # even if parameters don't align - that's what the analyzer will detect
+        # So we use a higher weight for name and location scores
+        overall = name_score * 0.4 + location_score * 0.4 + sig_score * 0.2
 
         return MatchConfidence(
             overall=overall,
@@ -161,9 +164,6 @@ class DirectMatcher:
             return 1.0  # RawDocstring - can't check parameters
 
         # Must be ParsedDocstring with parameters
-        if not isinstance(func.docstring, ParsedDocstring):
-            return 1.0  # Unknown type, can't check
-
         func_params = {p.name for p in func.signature.parameters}
         doc_params = {p.name for p in func.docstring.parameters}
 
@@ -183,14 +183,14 @@ class DirectMatcher:
         self, functions: list[ParsedFunction]
     ) -> dict[str, list[ParsedFunction]]:
         """Group functions by their file path."""
-        grouped = {}
+        grouped: dict[str, list[ParsedFunction]] = {}
         for func in functions:
             if func.file_path not in grouped:
                 grouped[func.file_path] = []
             grouped[func.file_path].append(func)
         return grouped
 
-    def _reset_stats(self):
+    def _reset_stats(self) -> None:
         """Reset statistics for a new matching run."""
         for key in self.stats:
             self.stats[key] = 0

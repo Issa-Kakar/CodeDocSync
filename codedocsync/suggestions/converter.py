@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 class DocstringStyleConverter:
     """Convert between different docstring styles."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the style converter."""
         self._type_formatters: dict[DocstringStyle, TypeAnnotationFormatter] = {}
-        self._conversion_stats = {
+        self._conversion_stats: dict[str, int | float | list[str]] = {
             "conversions_performed": 0,
             "information_preserved": 0.0,
             "common_issues": [],
@@ -88,7 +88,9 @@ class DocstringStyleConverter:
                 examples=self._convert_examples(docstring, from_style, to_style),
             )
 
-            self._conversion_stats["conversions_performed"] += 1
+            conversions = self._conversion_stats["conversions_performed"]
+            if isinstance(conversions, int):
+                self._conversion_stats["conversions_performed"] = conversions + 1
             logger.debug(f"Successfully converted docstring to {to_style.value}")
 
             return converted
@@ -97,15 +99,15 @@ class DocstringStyleConverter:
             logger.error(f"Failed to convert docstring: {e}")
             raise ValueError(
                 f"Conversion from {from_style.value} to {to_style.value} failed: {e}"
-            )
+            ) from e
 
     def convert_batch(
         self,
         docstrings: list[ParsedDocstring],
         from_style: DocstringStyle,
         to_style: DocstringStyle,
-        **kwargs,
-    ) -> list[str]:
+        **kwargs: Any,
+    ) -> list[str | None]:
         """
         Convert multiple docstrings in batch.
 
@@ -118,8 +120,8 @@ class DocstringStyleConverter:
         Returns:
             List of converted docstring strings
         """
-        results = []
-        errors = []
+        results: list[str | None] = []
+        errors: list[tuple[int, str]] = []
 
         for i, docstring in enumerate(docstrings):
             try:
@@ -154,7 +156,7 @@ class DocstringStyleConverter:
         Returns:
             Dictionary with quality metrics and warnings
         """
-        quality = {
+        quality: dict[str, str | float | list[str]] = {
             "information_loss_risk": "low",
             "formatting_changes": [],
             "unsupported_features": [],
@@ -165,32 +167,44 @@ class DocstringStyleConverter:
         # Check for style-specific features that might not convert well
         if from_style == DocstringStyle.NUMPY and to_style == DocstringStyle.GOOGLE:
             if any("See Also" in str(section) for section in [docstring.description]):
-                quality["unsupported_features"].append("See Also sections")
-                quality["confidence"] -= 0.1
+                unsupported = quality["unsupported_features"]
+                if isinstance(unsupported, list):
+                    unsupported.append("See Also sections")
+                confidence = quality["confidence"]
+                if isinstance(confidence, int | float):
+                    quality["confidence"] = confidence - 0.1
 
         if from_style == DocstringStyle.SPHINX and to_style in {
             DocstringStyle.GOOGLE,
             DocstringStyle.NUMPY,
         }:
-            quality["formatting_changes"].append("Cross-references will be simplified")
-            quality["confidence"] -= 0.05
+            formatting_changes = quality["formatting_changes"]
+            if isinstance(formatting_changes, list):
+                formatting_changes.append("Cross-references will be simplified")
+            confidence = quality["confidence"]
+            if isinstance(confidence, int | float):
+                quality["confidence"] = confidence - 0.05
 
         # Check for complex type annotations
         if docstring.parameters:
             complex_types = [
                 p
                 for p in docstring.parameters
-                if p.type_annotation
+                if p.type_str
                 and any(
-                    pattern in p.type_annotation
+                    pattern in p.type_str
                     for pattern in ["Callable", "Protocol", "TypeVar"]
                 )
             ]
             if complex_types:
-                quality["warnings"].append(
-                    f"Complex types found in {len(complex_types)} parameters"
-                )
-                quality["confidence"] -= 0.1
+                warnings = quality["warnings"]
+                if isinstance(warnings, list):
+                    warnings.append(
+                        f"Complex types found in {len(complex_types)} parameters"
+                    )
+                confidence = quality["confidence"]
+                if isinstance(confidence, int | float):
+                    quality["confidence"] = confidence - 0.1
 
         return quality
 
@@ -231,9 +245,9 @@ class DocstringStyleConverter:
         for param in parameters:
             converted_param = DocstringParameter(
                 name=param.name,
-                type_annotation=(
-                    type_formatter.format_for_docstring(param.type_annotation)
-                    if param.type_annotation
+                type_str=(
+                    type_formatter.format_for_docstring(param.type_str)
+                    if param.type_str
                     else None
                 ),
                 description=param.description,
@@ -254,9 +268,9 @@ class DocstringStyleConverter:
             return None
 
         return DocstringReturns(
-            type_annotation=(
-                type_formatter.format_for_docstring(returns.type_annotation)
-                if returns.type_annotation
+            type_str=(
+                type_formatter.format_for_docstring(returns.type_str)
+                if returns.type_str
                 else None
             ),
             description=returns.description,
@@ -379,7 +393,7 @@ def convert_docstring(
     docstring: ParsedDocstring,
     from_style: DocstringStyle,
     to_style: DocstringStyle,
-    **kwargs,
+    **kwargs: Any,
 ) -> str:
     """
     Convenience function to convert a single docstring.
@@ -401,8 +415,8 @@ def batch_convert_docstrings(
     docstrings: list[ParsedDocstring],
     from_style: DocstringStyle,
     to_style: DocstringStyle,
-    **kwargs,
-) -> list[str]:
+    **kwargs: Any,
+) -> list[str | None]:
     """
     Convenience function to convert multiple docstrings.
 

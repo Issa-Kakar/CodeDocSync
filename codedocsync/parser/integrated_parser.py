@@ -13,7 +13,7 @@ from .ast_parser import (
     parse_python_file,
     parse_python_file_lazy,
 )
-from .docstring_parser import DocstringParser
+from .docstring_parser import DocstringParser, ParsedDocstring
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,11 @@ logger = logging.getLogger(__name__)
 class IntegratedParser:
     """Combines AST and docstring parsing for complete function analysis."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.docstring_parser = DocstringParser()
-        self._cache = {}  # Simple cache for parsed docstrings
+        self._cache: dict[str, ParsedDocstring | None] = (
+            {}
+        )  # Simple cache for parsed docstrings
 
     def parse_file(self, file_path: str) -> list[ParsedFunction]:
         """Parse file and enrich with parsed docstrings.
@@ -51,7 +53,7 @@ class IntegratedParser:
         for func in functions:
             if func.docstring and isinstance(func.docstring, RawDocstring):
                 # Check cache first
-                cache_key = hash(func.docstring.raw_text)
+                cache_key = str(hash(func.docstring.raw_text))
                 if cache_key in self._cache:
                     func.docstring = self._cache[cache_key]
                 else:

@@ -26,7 +26,7 @@ class MatchConfidence:
     location_score: float
     signature_similarity: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate confidence scores."""
         for attr in [
             "overall",
@@ -97,6 +97,6 @@ class MatchResult:
 class MatchingError(Exception):
     """Base exception for matching errors."""
 
-    def __init__(self, message: str, recovery_hint: str | None = None):
+    def __init__(self, message: str, recovery_hint: str | None = None) -> None:
         super().__init__(message)
         self.recovery_hint = recovery_hint

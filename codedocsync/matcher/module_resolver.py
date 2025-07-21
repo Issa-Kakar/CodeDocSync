@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ModuleResolver:
     """Resolves module paths and import chains."""
 
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str) -> None:
         self.project_root = Path(project_root).resolve()
         self.import_parser = ImportParser()
         self.module_cache: dict[str, ModuleInfo] = {}
@@ -39,12 +39,12 @@ class ModuleResolver:
             /project/src/utils/helpers.py -> src.utils.helpers
             /project/src/utils/__init__.py -> src.utils
         """
-        file_path = Path(file_path).resolve()
+        resolved_path = Path(file_path).resolve()
 
         # Find the base path this file is relative to
         for base_path in self._python_paths:
             try:
-                relative_path = file_path.relative_to(base_path)
+                relative_path = resolved_path.relative_to(base_path)
 
                 # Convert to module path
                 parts = list(relative_path.parts)

@@ -8,6 +8,7 @@ performance optimization recommendations.
 import logging
 import time
 from collections import defaultdict, deque
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -102,7 +103,7 @@ class SuggestionPerformanceMonitor:
         self._active_timers: dict[str, float] = {}
 
     @contextmanager
-    def measure(self, operation: str, **metadata):
+    def measure(self, operation: str, **metadata: Any) -> Iterator[None]:
         """
         Measure operation performance.
 
@@ -361,7 +362,7 @@ class SuggestionPerformanceMonitor:
 class PerformanceOptimizer:
     """Optimize suggestion generation based on performance data."""
 
-    def __init__(self, monitor: SuggestionPerformanceMonitor):
+    def __init__(self, monitor: SuggestionPerformanceMonitor) -> None:
         """
         Initialize optimizer.
 
@@ -445,7 +446,7 @@ def get_performance_monitor() -> SuggestionPerformanceMonitor:
 
 
 @contextmanager
-def measure_performance(operation: str, **metadata):
+def measure_performance(operation: str, **metadata: Any) -> Iterator[None]:
     """
     Measure performance using global monitor.
 

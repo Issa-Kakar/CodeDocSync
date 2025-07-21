@@ -109,7 +109,7 @@ class RankingMetrics:
 class SuggestionRanker:
     """Rank and filter suggestions by quality and importance."""
 
-    def __init__(self, config: RankingConfig | None = None):
+    def __init__(self, config: RankingConfig | None = None) -> None:
         """Initialize ranker with configuration."""
         self.config = config or RankingConfig()
 
@@ -363,12 +363,12 @@ class SuggestionFilter:
 class PriorityBooster:
     """Boost priority of certain suggestions based on context."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize priority booster."""
         self.boost_rules: list[Callable[[EnhancedIssue], float]] = []
         self._setup_default_rules()
 
-    def _setup_default_rules(self):
+    def _setup_default_rules(self) -> None:
         """Setup default priority boost rules."""
 
         def boost_critical_parameters(issue: EnhancedIssue) -> float:
@@ -397,7 +397,7 @@ class PriorityBooster:
             ]
         )
 
-    def add_boost_rule(self, rule: Callable[[EnhancedIssue], float]):
+    def add_boost_rule(self, rule: Callable[[EnhancedIssue], float]) -> None:
         """Add a custom boost rule."""
         self.boost_rules.append(rule)
 

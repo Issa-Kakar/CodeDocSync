@@ -490,7 +490,7 @@ async def async_function():
         assert "sphinx" in scores
         assert "rest" in scores
 
-        for style, score in scores.items():
+        for _style, score in scores.items():
             assert 0.0 <= score <= 1.0
 
     def test_caching_behavior(self):

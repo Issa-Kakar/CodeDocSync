@@ -1,10 +1,11 @@
 import gc
 import logging
 import os
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import psutil
 
@@ -16,6 +17,64 @@ from .models import MatchResult
 from .semantic_matcher import SemanticMatcher
 
 logger = logging.getLogger(__name__)
+
+
+class MemoryUsageStats(TypedDict):
+    initial_mb: float
+    peak_mb: float
+    final_mb: float
+
+
+class ErrorStats(TypedDict):
+    parsing_errors: int
+    matching_errors: int
+    total_errors: int
+
+
+class CacheStats(TypedDict):
+    hits: int
+    misses: int
+    hit_rate: float
+
+
+class ThroughputStats(TypedDict):
+    functions_per_second: float
+    files_per_second: float
+
+
+class MatchesByType(TypedDict):
+    direct: int
+    contextual: int
+    semantic: int
+
+
+class StatsDict(TypedDict):
+    total_time: float
+    parsing_time: float
+    direct_matching_time: float
+    contextual_matching_time: float
+    semantic_matching_time: float
+    semantic_indexing_time: float
+    files_processed: int
+    functions_processed: int
+    matches_by_type: MatchesByType
+    memory_usage: MemoryUsageStats
+    errors: ErrorStats
+    cache_stats: CacheStats
+    throughput: ThroughputStats
+
+
+class EnhancedMatchResult(MatchResult):
+    """MatchResult with additional metadata."""
+
+    def __init__(self, base_result: MatchResult) -> None:
+        super().__init__(
+            matched_pairs=base_result.matched_pairs,
+            unmatched_functions=base_result.unmatched_functions,
+            total_functions=base_result.total_functions,
+            match_duration_ms=base_result.match_duration_ms,
+        )
+        self.metadata: dict[str, Any] = {}
 
 
 class UnifiedMatchingFacade:
@@ -31,11 +90,11 @@ class UnifiedMatchingFacade:
     and production-ready optimization features.
     """
 
-    def __init__(self, config: CodeDocSyncConfig | None = None):
+    def __init__(self, config: CodeDocSyncConfig | None = None) -> None:
         self.config = config or CodeDocSyncConfig()
 
         # Enhanced statistics tracking
-        self.stats = {
+        self.stats: StatsDict = {
             "total_time": 0.0,
             "parsing_time": 0.0,
             "direct_matching_time": 0.0,
@@ -72,7 +131,7 @@ class UnifiedMatchingFacade:
 
     def _monitor_memory(self) -> float:
         """Monitor current memory usage and update peak."""
-        current_mb = self.process.memory_info().rss / 1024 / 1024
+        current_mb: float = self.process.memory_info().rss / 1024 / 1024
         if current_mb > self.stats["memory_usage"]["peak_mb"]:
             self.stats["memory_usage"]["peak_mb"] = current_mb
         return current_mb
@@ -88,7 +147,7 @@ class UnifiedMatchingFacade:
         use_cache: bool = True,
         enable_semantic: bool = True,
         progress_callback: Callable[[str, int, int], None] | None = None,
-    ) -> MatchResult:
+    ) -> EnhancedMatchResult:
         """
         Perform complete matching on a project with advanced monitoring.
 
@@ -102,12 +161,14 @@ class UnifiedMatchingFacade:
             Unified MatchResult with all matches and comprehensive metadata
         """
         start_time = time.time()
-        project_path = Path(project_path).resolve()
+        project_path_obj = Path(project_path).resolve()
 
         if progress_callback:
             self.set_progress_callback(progress_callback)
 
-        logger.info(f"Starting enhanced unified matching for project: {project_path}")
+        logger.info(
+            f"Starting enhanced unified matching for project: {project_path_obj}"
+        )
 
         try:
             # Phase 1: Enhanced file discovery and parsing
@@ -115,10 +176,10 @@ class UnifiedMatchingFacade:
             parse_start = time.time()
 
             all_functions = []
-            python_files = self._discover_python_files(project_path)
+            python_files = self._discover_python_files(project_path_obj)
 
             if not python_files:
-                logger.warning(f"No Python files found in {project_path}")
+                logger.warning(f"No Python files found in {project_path_obj}")
                 return self._create_empty_result()
 
             parser = IntegratedParser()
@@ -158,7 +219,7 @@ class UnifiedMatchingFacade:
 
             try:
                 direct_facade = MatchingFacade(config=self.config)
-                direct_result = direct_facade.match_project(str(project_path))
+                direct_result = direct_facade.match_project(str(project_path_obj))
 
                 # Enhanced direct match analysis
                 direct_matches = [
@@ -182,7 +243,9 @@ class UnifiedMatchingFacade:
 
             try:
                 contextual_facade = ContextualMatchingFacade()
-                contextual_result = contextual_facade.match_project(str(project_path))
+                contextual_result = contextual_facade.match_project(
+                    str(project_path_obj)
+                )
 
                 # Enhanced contextual match analysis
                 prev_matched = {m.function.signature.name for m in direct_matches}
@@ -201,7 +264,7 @@ class UnifiedMatchingFacade:
                 contextual_matches = []
 
             self.stats["contextual_matching_time"] = time.time() - context_match_start
-            final_result = contextual_result
+            enhanced_result = EnhancedMatchResult(contextual_result)
 
             # Phase 4: Enhanced semantic matching with monitoring
             if enable_semantic and getattr(
@@ -210,7 +273,7 @@ class UnifiedMatchingFacade:
                 logger.info("Phase 4: Enhanced semantic matching with monitoring...")
 
                 try:
-                    semantic_matcher = SemanticMatcher(str(project_path))
+                    semantic_matcher = SemanticMatcher(str(project_path_obj))
 
                     # Build semantic index with progress tracking
                     index_start = time.time()
@@ -243,12 +306,10 @@ class UnifiedMatchingFacade:
                     ]
                     self.stats["matches_by_type"]["semantic"] = len(semantic_matches)
 
-                    final_result = semantic_result
+                    enhanced_result = EnhancedMatchResult(semantic_result)
 
                     # Add semantic stats to result
-                    if not hasattr(final_result, "metadata"):
-                        final_result.metadata = {}
-                    final_result.metadata["semantic_stats"] = (
+                    enhanced_result.metadata["semantic_stats"] = (
                         semantic_matcher.get_stats()
                     )
 
@@ -268,21 +329,43 @@ class UnifiedMatchingFacade:
             self._finalize_stats(start_time, len(all_functions), len(python_files))
 
             # Add comprehensive metadata
-            self._add_comprehensive_metadata(final_result)
+            self._add_comprehensive_metadata(enhanced_result)
 
             logger.info(
                 f"Enhanced unified matching completed in {self.stats['total_time']:.2f}s"
             )
-            return final_result
+            return enhanced_result
 
         except Exception as e:
             logger.error(f"Critical error in unified matching: {e}")
             self.stats["errors"]["total_errors"] += 1
             raise
 
-    def _create_empty_result(self) -> MatchResult:
+    def match_file(self, file_path: str | Path) -> MatchResult:
+        """
+        Match functions in a single file using the unified pipeline.
+
+        Args:
+            file_path: Path to Python file
+
+        Returns:
+            MatchResult with matched pairs
+        """
+        # Use the basic MatchingFacade for single file matching
+        from .facade import MatchingFacade
+
+        # Create a basic facade with same config
+        basic_facade = MatchingFacade(self.config)
+
+        # Use its match_file method
+        return basic_facade.match_file(file_path)
+
+    def _create_empty_result(self) -> EnhancedMatchResult:
         """Create an empty match result for error cases."""
-        return MatchResult(total_functions=0, matched_pairs=[], unmatched_functions=[])
+        base_result = MatchResult(
+            total_functions=0, matched_pairs=[], unmatched_functions=[]
+        )
+        return EnhancedMatchResult(base_result)
 
     def _finalize_stats(
         self, start_time: float, total_functions: int, total_files: int
@@ -304,17 +387,14 @@ class UnifiedMatchingFacade:
                 total_files / self.stats["total_time"]
             )
 
-    def _add_comprehensive_metadata(self, result: MatchResult) -> None:
+    def _add_comprehensive_metadata(self, result: EnhancedMatchResult) -> None:
         """Add comprehensive metadata to result."""
-        if not hasattr(result, "metadata"):
-            result.metadata = {}
-
         result.metadata.update(
             {
                 "unified_stats": self.get_comprehensive_stats(),
                 "system_info": {
                     "cpu_count": os.cpu_count(),
-                    "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}",
+                    "python_version": f"{sys.version_info.major}.{sys.version_info.minor}",
                     "platform": os.name,
                 },
                 "performance_profile": self._generate_performance_profile(),
@@ -387,7 +467,12 @@ class UnifiedMatchingFacade:
 
     def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get enhanced comprehensive statistics with performance insights."""
-        total_matches = sum(self.stats["matches_by_type"].values())
+        matches_by_type = self.stats["matches_by_type"]
+        total_matches = (
+            matches_by_type["direct"]
+            + matches_by_type["contextual"]
+            + matches_by_type["semantic"]
+        )
 
         return {
             "total_time_seconds": self.stats["total_time"],
@@ -426,10 +511,11 @@ class UnifiedMatchingFacade:
             "efficiency_metrics": self._calculate_efficiency_metrics(),
         }
 
-    def _calculate_efficiency_metrics(self) -> dict[str, float]:
+    def _calculate_efficiency_metrics(self) -> dict[str, Any]:
         """Calculate efficiency metrics for performance analysis."""
         total_time = self.stats["total_time"]
         total_functions = self.stats["functions_processed"]
+        matches_by_type = self.stats["matches_by_type"]
 
         if total_time == 0 or total_functions == 0:
             return {"status": "no_data"}
@@ -437,7 +523,11 @@ class UnifiedMatchingFacade:
         return {
             "functions_per_mb": total_functions
             / max(self.stats["memory_usage"]["peak_mb"], 1),
-            "matches_per_second": sum(self.stats["matches_by_type"].values())
+            "matches_per_second": (
+                matches_by_type["direct"]
+                + matches_by_type["contextual"]
+                + matches_by_type["semantic"]
+            )
             / total_time,
             "error_rate": self.stats["errors"]["total_errors"]
             / max(total_functions, 1),

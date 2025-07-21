@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from .models import ISSUE_TYPES, InconsistencyIssue
 from .prompt_templates import map_llm_issue_type
@@ -39,7 +39,7 @@ class ParseResult:
 class LLMOutputParser:
     """Parse and validate LLM responses."""
 
-    def __init__(self, strict_validation: bool = True):
+    def __init__(self, strict_validation: bool = True) -> None:
         """
         Initialize parser.
 
@@ -124,7 +124,7 @@ class LLMOutputParser:
         """Extract JSON from response that might have extra text."""
         # First try direct parsing
         try:
-            return json.loads(raw_response.strip())
+            return cast(dict[str, Any], json.loads(raw_response.strip()))
         except json.JSONDecodeError:
             pass
 
@@ -134,7 +134,7 @@ class LLMOutputParser:
         )
         if json_match:
             try:
-                return json.loads(json_match.group(1))
+                return cast(dict[str, Any], json.loads(json_match.group(1)))
             except json.JSONDecodeError:
                 pass
 
@@ -176,7 +176,7 @@ class LLMOutputParser:
                 potential_json = raw_response[start_idx:end_idx]
                 if '"issues"' in potential_json:
                     try:
-                        return json.loads(potential_json)
+                        return cast(dict[str, Any], json.loads(potential_json))
                     except json.JSONDecodeError:
                         pass
 
@@ -184,11 +184,9 @@ class LLMOutputParser:
             start_idx = raw_response.find("{", start_idx + 1)
 
         # If all else fails, try to parse the whole thing
-        return json.loads(raw_response)
+        return cast(dict[str, Any], json.loads(raw_response))
 
-    def _validate_response_structure(
-        self, response_data: dict[str, Any]
-    ) -> tuple[bool, str]:
+    def _validate_response_structure(self, response_data: Any) -> tuple[bool, str]:
         """
         Validate that response has expected structure.
 
@@ -209,7 +207,7 @@ class LLMOutputParser:
         if "confidence" not in response_data:
             return False, "Response must have 'confidence' field"
 
-        if not isinstance(response_data["confidence"], (int, float)):
+        if not isinstance(response_data["confidence"], int | float):
             return False, "'confidence' field must be a number"
 
         # Validate confidence range
@@ -275,7 +273,7 @@ class LLMOutputParser:
         if not isinstance(suggestion, str) or not suggestion.strip():
             raise ValueError("suggestion must be non-empty string")
 
-        if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
+        if not isinstance(confidence, int | float) or not 0 <= confidence <= 1:
             raise ValueError(
                 f"confidence must be number between 0 and 1, got {confidence}"
             )
@@ -487,7 +485,7 @@ class LLMOutputParser:
         total_issues = sum(len(r.issues) for r in results)
 
         # Count error types
-        error_counts = {}
+        error_counts: dict[str, int] = {}
         for result in results:
             if not result.success and result.error_message:
                 error_type = result.error_message.split(":")[0]

@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from .config import SuggestionConfig
 from .formatters.terminal_formatter import OutputStyle, TerminalFormatterConfig
@@ -55,7 +55,7 @@ class IntegratedSuggestionConfig:
 class SuggestionConfigManager:
     """Manage suggestion configuration with proper precedence."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize configuration manager."""
         self._config_cache: IntegratedSuggestionConfig | None = None
         self._config_sources: list[str] = []
@@ -81,7 +81,7 @@ class SuggestionConfigManager:
 
         # Load from user home directory
         user_config_path = self._get_user_config_path()
-        if user_config_path and user_config_path.exists():
+        if user_config_path.exists():
             try:
                 user_config = self._load_config_file(user_config_path)
                 config = self._merge_configs(config, user_config)
@@ -238,7 +238,7 @@ class SuggestionConfigManager:
 
     def _config_to_dict(self, config: IntegratedSuggestionConfig) -> dict[str, Any]:
         """Convert configuration to dictionary."""
-        result = {}
+        result: dict[str, Any] = {}
 
         # Handle dataclass fields
         result["suggestion"] = asdict(config.suggestion)
@@ -321,7 +321,7 @@ class SuggestionConfigManager:
 
         return config
 
-    def _validate_config(self, config: IntegratedSuggestionConfig):
+    def _validate_config(self, config: IntegratedSuggestionConfig) -> None:
         """Validate configuration values."""
         # Validate suggestion config
         if (
@@ -341,7 +341,7 @@ class SuggestionConfigManager:
         if config.cache_ttl_hours < 0:
             raise ValueError("cache_ttl_hours must be non-negative")
 
-    def _get_user_config_path(self) -> Path | None:
+    def _get_user_config_path(self) -> Path:
         """Get user configuration file path."""
         home = Path.home()
         config_dir = home / ".codedocsync"
@@ -456,6 +456,6 @@ def get_config_manager() -> SuggestionConfigManager:
     return _config_manager
 
 
-def load_suggestion_config(**kwargs) -> IntegratedSuggestionConfig:
+def load_suggestion_config(**kwargs: Any) -> IntegratedSuggestionConfig:
     """Load suggestion configuration with the global manager."""
     return _config_manager.load_config(**kwargs)

@@ -29,7 +29,7 @@ class DocstringParameter:
     is_optional: bool = False
     default_value: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate parameter name."""
         # Validate parameter name
         if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", self.name):
@@ -53,7 +53,7 @@ class DocstringRaises:
     exception_type: str
     description: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate exception type."""
         # Validate exception type is valid identifier
         if not re.match(

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class FunctionRegistry:
     """Global registry of all functions in the project."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.functions: dict[str, FunctionLocation] = {}
         # Secondary indices for efficient lookup
         self.by_module: dict[str, set[str]] = {}

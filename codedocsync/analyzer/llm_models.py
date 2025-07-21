@@ -42,7 +42,7 @@ class LLMAnalysisRequest:
     )  # Context from rule engine
     related_functions: list[ParsedFunction] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate request after initialization."""
         self._validate_analysis_types()
         self._validate_function()
@@ -204,7 +204,7 @@ class LLMAnalysisResponse:
     response_time_ms: float
     cache_hit: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate response after initialization."""
         self._validate_model_used()
         self._validate_tokens()
@@ -273,7 +273,12 @@ class LLMAnalysisResponse:
     @property
     def issues_by_severity(self) -> dict[str, list[InconsistencyIssue]]:
         """Group issues by severity level."""
-        result = {"critical": [], "high": [], "medium": [], "low": []}
+        result: dict[str, list[InconsistencyIssue]] = {
+            "critical": [],
+            "high": [],
+            "medium": [],
+            "low": [],
+        }
         for issue in self.issues:
             result[issue.severity].append(issue)
         return result

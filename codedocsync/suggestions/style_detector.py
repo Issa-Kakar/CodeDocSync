@@ -5,25 +5,37 @@ This module provides automatic detection of docstring styles from existing
 code and validates that suggestions match the detected or configured style.
 """
 
+from __future__ import annotations
+
 import ast
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import TypedDict
 
 from .config import SuggestionConfig
 from .models import StyleDetectionError
 
 
+class StyleIndicators(TypedDict):
+    """Type definition for style indicators."""
+
+    required: list[str]
+    optional: list[str]
+    forbidden: list[str]
+    weight: float
+
+
 class DocstringStyleDetector:
     """Detect docstring style from existing code."""
 
-    def __init__(self, config: SuggestionConfig | None = None):
+    def __init__(self, config: SuggestionConfig | None = None) -> None:
         """Initialize detector with configuration."""
         self.config = config or SuggestionConfig()
         self._detection_cache: dict[str, str] = {}
 
         # Style indicators and their weights
-        self._style_indicators = {
+        self._style_indicators: dict[str, StyleIndicators] = {
             "google": {
                 "required": [r"Args?:", r"Returns?:", r"Raises?:"],
                 "optional": [r"Yields?:", r"Note:", r"Example:"],
@@ -149,7 +161,7 @@ class DocstringStyleDetector:
         docstrings = []
 
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
+            if isinstance(node, ast.FunctionDef | ast.ClassDef | ast.AsyncFunctionDef):
                 docstring = ast.get_docstring(node)
                 if docstring:
                     docstrings.append(docstring)
@@ -173,7 +185,7 @@ class DocstringStyleDetector:
 
     def _analyze_single_docstring(self, docstring: str) -> str:
         """Analyze a single docstring to determine its style."""
-        scores = {}
+        scores: dict[str, float] = {}
 
         for style, indicators in self._style_indicators.items():
             score = self._calculate_style_score(docstring, indicators)
@@ -183,7 +195,7 @@ class DocstringStyleDetector:
         if not scores or max(scores.values()) == 0:
             return self.config.default_style
 
-        best_style = max(scores, key=scores.get)
+        best_style = max(scores, key=lambda x: scores[x])
 
         # Require minimum confidence for detection
         if scores[best_style] < 0.3:
@@ -196,18 +208,18 @@ class DocstringStyleDetector:
         if not docstrings:
             return self.config.default_style
 
-        style_votes = defaultdict(float)
+        style_votes: defaultdict[str, float] = defaultdict(float)
         total_confidence = 0.0
 
         for docstring in docstrings:
-            style_scores = {}
+            style_scores: dict[str, float] = {}
             for style, indicators in self._style_indicators.items():
                 score = self._calculate_style_score(docstring, indicators)
                 style_scores[style] = score
 
             # Vote for the best style from this docstring
             if style_scores and max(style_scores.values()) > 0:
-                best_style = max(style_scores, key=style_scores.get)
+                best_style = max(style_scores, key=lambda x: style_scores[x])
                 confidence = style_scores[best_style]
                 style_votes[best_style] += confidence
                 total_confidence += confidence
@@ -216,7 +228,7 @@ class DocstringStyleDetector:
             return self.config.default_style
 
         # Find style with most votes
-        winning_style = max(style_votes, key=style_votes.get)
+        winning_style = max(style_votes, key=lambda x: style_votes[x])
 
         # Check if there's clear winner (>40% of total confidence)
         if style_votes[winning_style] / total_confidence < 0.4:
@@ -225,7 +237,7 @@ class DocstringStyleDetector:
         return winning_style
 
     def _calculate_style_score(
-        self, docstring: str, indicators: dict[str, list[str]]
+        self, docstring: str, indicators: StyleIndicators
     ) -> float:
         """Calculate how well a docstring matches a style's indicators."""
         score = 0.0

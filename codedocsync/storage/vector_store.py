@@ -2,6 +2,7 @@ import hashlib
 import logging
 import time
 from pathlib import Path
+from typing import Any
 
 try:
     import chromadb
@@ -55,7 +56,7 @@ class VectorStore:
         project_path = Path.cwd().absolute()
         return hashlib.md5(str(project_path).encode()).hexdigest()
 
-    def _init_collection(self):
+    def _init_collection(self) -> Any:
         """Initialize or get existing collection."""
         try:
             # Try to get existing collection
@@ -90,7 +91,7 @@ class VectorStore:
 
         except Exception as e:
             logger.error(f"Failed to add embeddings: {e}")
-            raise ValueError(f"Failed to store embeddings: {e}")
+            raise ValueError(f"Failed to store embeddings: {e}") from e
 
     def search_similar(
         self,
@@ -168,7 +169,7 @@ class VectorStore:
 
         return len(old_ids)
 
-    def get_stats(self) -> dict[str, any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         avg_search_time = (
             self.metrics["total_search_time"] / self.metrics["searches_performed"]

@@ -56,7 +56,7 @@ class InconsistencyIssue:
     confidence: float = 1.0  # 0.0-1.0, determines if LLM needed
     details: dict[str, Any] = field(default_factory=dict)  # Additional context
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate issue fields."""
         # Validate issue_type
         if self.issue_type not in ISSUE_TYPES:
@@ -109,7 +109,7 @@ class RuleCheckResult:
     issues: list[InconsistencyIssue] = field(default_factory=list)
     execution_time_ms: float = 0.0  # Performance tracking
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate rule check result."""
         # Validate confidence
         if not 0.0 <= self.confidence <= 1.0:
@@ -145,7 +145,7 @@ class AnalysisResult:
     rule_results: list[RuleCheckResult] | None = None
     cache_hit: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate analysis result."""
         # Validate analysis_time_ms
         if self.analysis_time_ms < 0:
@@ -170,7 +170,12 @@ class AnalysisResult:
 
     def get_issues_by_severity(self) -> dict[str, list[InconsistencyIssue]]:
         """Group issues by severity."""
-        result = {"critical": [], "high": [], "medium": [], "low": []}
+        result: dict[str, list[InconsistencyIssue]] = {
+            "critical": [],
+            "high": [],
+            "medium": [],
+            "low": [],
+        }
         for issue in self.issues:
             result[issue.severity].append(issue)
         return result
