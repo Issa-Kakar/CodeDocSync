@@ -368,7 +368,7 @@ class PriorityBooster:
         self.boost_rules: list[Callable[[EnhancedIssue], float]] = []
         self._setup_default_rules()
 
-    def _setup_default_rules(self):
+    def _setup_default_rules(self) -> None:
         """Setup default priority boost rules."""
 
         def boost_critical_parameters(issue: EnhancedIssue) -> float:

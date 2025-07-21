@@ -8,11 +8,12 @@ based on their signatures, behavior, and common usage patterns.
 import ast
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from ...parser.ast_parser import FunctionParameter
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
     SuggestionDiff,
@@ -94,8 +95,8 @@ class ParameterValueGenerator:
                 return value
 
         # Then try type-based generation
-        if param.type_str:
-            type_str = self._normalize_type(param.type_str)
+        if param.type_annotation:
+            type_str = self._normalize_type(param.type_annotation)
             for type_pattern, value in self.type_defaults.items():
                 if type_pattern.lower() in type_str.lower():
                     return value
@@ -126,7 +127,7 @@ class ParameterValueGenerator:
 class ExamplePatternAnalyzer:
     """Analyze function patterns to generate appropriate examples."""
 
-    def analyze_function(self, function, source_code: str = "") -> dict[str, Any]:
+    def analyze_function(self, function: Any, source_code: str = "") -> dict[str, Any]:
         """Analyze function to determine example characteristics."""
         analysis = {
             "is_property": False,
@@ -219,7 +220,7 @@ class ExampleGenerator:
         self.pattern_analyzer = ExamplePatternAnalyzer()
 
     def generate_examples(
-        self, function, source_code: str = "", count: int = 1
+        self, function: Any, source_code: str = "", count: int = 1
     ) -> list[ExampleTemplate]:
         """Generate usage examples for a function."""
         analysis = self.pattern_analyzer.analyze_function(function, source_code)
@@ -246,7 +247,7 @@ class ExampleGenerator:
         return examples[:count]
 
     def _generate_basic_example(
-        self, function, analysis: dict[str, Any]
+        self, function: Any, analysis: dict[str, Any]
     ) -> ExampleTemplate | None:
         """Generate a basic usage example."""
         if not hasattr(function, "signature"):
@@ -258,7 +259,7 @@ class ExampleGenerator:
         # Generate parameter values
         call_args = []
         setup_lines = []
-        imports = []
+        imports: list[str] = []
 
         # Handle different function types
         if analysis["is_classmethod"]:
@@ -313,7 +314,7 @@ class ExampleGenerator:
         )
 
     def _generate_edge_case_example(
-        self, function, analysis: dict[str, Any]
+        self, function: Any, analysis: dict[str, Any]
     ) -> ExampleTemplate | None:
         """Generate an edge case example."""
         if not hasattr(function, "signature"):
@@ -352,7 +353,7 @@ class ExampleGenerator:
         )
 
     def _generate_advanced_example(
-        self, function, analysis: dict[str, Any]
+        self, function: Any, analysis: dict[str, Any]
     ) -> ExampleTemplate | None:
         """Generate an advanced usage example."""
         if not hasattr(function, "signature"):
@@ -409,8 +410,8 @@ class ExampleGenerator:
             return '""'  # Empty string
 
         # Edge cases by type
-        if param.type_str:
-            type_str = param.type_str.lower()
+        if param.type_annotation:
+            type_str = param.type_annotation.lower()
             if "int" in type_str:
                 return "0"
             elif "float" in type_str:
@@ -568,7 +569,8 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         """Add examples to existing docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        style_enum = DocstringStyle[style.upper()] if isinstance(style, str) else style
+        template = get_template(style_enum, max_line_length=self.config.max_line_length)
 
         # Combine with existing examples
         existing_examples = getattr(docstring, "examples", []) if docstring else []
@@ -583,11 +585,11 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
             examples=all_examples,
         )
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
             # Return the string format directly
-            return docstring.format.value
+            return cast(str, docstring.format.value)
 
         return "google"  # Default fallback
 
@@ -618,6 +620,8 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         metadata = SuggestionMetadata(
             generator_type=self.__class__.__name__,
             generator_version="1.0.0",
+            # Store the description in rule_triggers for now
+            rule_triggers=[description] if description else [],
         )
 
         return Suggestion(
@@ -625,7 +629,6 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),

@@ -8,10 +8,12 @@ incorrect exception types, and comprehensive exception analysis.
 import ast
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from ...parser.docstring_models import DocstringRaises
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
     SuggestionDiff,
@@ -53,7 +55,7 @@ class ExceptionAnalyzer:
 
     def analyze_exceptions(self, source_code: str) -> list[ExceptionInfo]:
         """Find all exceptions that can be raised."""
-        exceptions = []
+        exceptions: list[ExceptionInfo] = []
 
         try:
             tree = ast.parse(source_code)
@@ -218,7 +220,7 @@ class ExceptionAnalyzer:
         self, exceptions: list[ExceptionInfo]
     ) -> list[ExceptionInfo]:
         """Remove duplicate exceptions and merge similar ones."""
-        unique_exceptions = {}
+        unique_exceptions: dict[str, ExceptionInfo] = {}
 
         for exc in exceptions:
             key = exc.exception_type
@@ -505,13 +507,14 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
             examples=getattr(docstring, "examples", []),
         )
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any) -> DocstringStyle:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
-            # Return the string format directly
-            return docstring.format.value
+            # Convert string to DocstringStyle enum
+            style_value = docstring.format.value
+            return DocstringStyle(style_value)
 
-        return "google"  # Default fallback
+        return DocstringStyle.GOOGLE  # Default fallback
 
     def _create_suggestion(
         self,
@@ -547,10 +550,9 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
-            style=self._detect_style(context.docstring),
+            style=self._detect_style(context.docstring).value,
             copy_paste_ready=True,
         )
 

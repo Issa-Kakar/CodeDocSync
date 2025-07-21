@@ -6,6 +6,7 @@ missing parameters, type inconsistencies, and other parameter-specific problems.
 """
 
 import re
+from typing import Any
 
 from ...parser.ast_parser import FunctionParameter
 from ...parser.docstring_models import DocstringParameter
@@ -129,7 +130,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         for actual_param in actual_params:
             if actual_param.name in param_map:
                 doc_param = param_map[actual_param.name]
-                if self._types_differ(actual_param.type_str, doc_param.type_str):
+                if self._types_differ(actual_param.type_annotation, doc_param.type_str):
                     type_fixes.append((actual_param, doc_param))
 
         if not type_fixes:
@@ -141,7 +142,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         )
 
         fix_descriptions = [
-            f"{param.name}: {param.type_str}" for param, _ in type_fixes
+            f"{param.name}: {param.type_annotation}" for param, _ in type_fixes
         ]
         suggestion = self._create_suggestion(
             context,
@@ -224,20 +225,20 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         return suggestion
 
-    def _get_function_parameters(self, function) -> list[FunctionParameter]:
+    def _get_function_parameters(self, function: Any) -> list[FunctionParameter]:
         """Extract function parameters, handling various function types."""
         if hasattr(function, "signature") and hasattr(function.signature, "parameters"):
-            return function.signature.parameters
+            return list(function.signature.parameters)
         return []
 
-    def _get_documented_parameters(self, docstring) -> list[DocstringParameter]:
+    def _get_documented_parameters(self, docstring: Any) -> list[DocstringParameter]:
         """Extract documented parameters."""
         if hasattr(docstring, "parameters"):
-            return docstring.parameters
+            return list(docstring.parameters)
         return []
 
     def _filter_special_parameters(
-        self, params: list[FunctionParameter], function
+        self, params: list[FunctionParameter], function: Any
     ) -> list[FunctionParameter]:
         """Filter out special parameters like 'self', 'cls' for accurate comparison."""
         filtered = []
@@ -259,7 +260,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         return filtered
 
-    def _is_classmethod(self, function) -> bool:
+    def _is_classmethod(self, function: Any) -> bool:
         """Check if function is a classmethod."""
         if hasattr(function.signature, "decorators"):
             return "classmethod" in function.signature.decorators
@@ -290,7 +291,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
                         if (
                             score > best_score and score > 60
                         ):  # Threshold for similarity
-                            best_score = score
+                            best_score = int(score)
                             best_match = actual_param.name
 
                 if best_match:
@@ -337,7 +338,11 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         # Update parameter names
         corrected_params = []
-        if hasattr(docstring, "parameters"):
+        if (
+            hasattr(docstring, "parameters")
+            and docstring is not None
+            and docstring.parameters
+        ):
             for param in docstring.parameters:
                 # Check if this parameter needs to be renamed
                 new_name = param.name
@@ -348,7 +353,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
                 corrected_param = DocstringParameter(
                     name=new_name,
-                    type_str=param.type_str,
+                    type_str=param.type_annotation,
                     description=param.description,
                     is_optional=param.is_optional,
                     default_value=param.default_value,
@@ -379,7 +384,7 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         for param in missing_params:
             doc_param = DocstringParameter(
                 name=param.name,
-                type_str=param.type_str,
+                type_str=param.type_annotation,
                 description=self._generate_parameter_description(param),
                 is_optional=not param.is_required,
                 default_value=param.default_value,
@@ -405,19 +410,19 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         # Basic description based on parameter name and type
         base_desc = f"Description for {param.name}"
 
-        if param.type_str:
-            base_desc += f" ({param.type_str})"
+        if param.type_annotation:
+            base_desc += f" ({param.type_annotation})"
 
         if param.default_value:
             base_desc += f", defaults to {param.default_value}"
 
         return base_desc
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style from parsed docstring."""
         if hasattr(docstring, "format"):
             # Return the string format directly
-            return docstring.format.value
+            return str(docstring.format.value)
 
         return "google"  # Default fallback
 
@@ -510,8 +515,14 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         # Update parameter types
         updated_params = []
-        if hasattr(docstring, "parameters"):
-            param_fixes = {actual.name: actual.type_str for actual, _ in type_fixes}
+        if (
+            hasattr(docstring, "parameters")
+            and docstring is not None
+            and docstring.parameters
+        ):
+            param_fixes = {
+                actual.name: actual.type_annotation for actual, _ in type_fixes
+            }
 
             for param in docstring.parameters:
                 if param.name in param_fixes:

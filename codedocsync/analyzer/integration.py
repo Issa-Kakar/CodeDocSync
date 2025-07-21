@@ -13,6 +13,7 @@ from typing import Any
 
 from codedocsync.matcher import MatchedPair
 from codedocsync.parser import ParsedDocstring, ParsedFunction
+from codedocsync.parser.docstring_models import DocstringFormat
 
 from .config import AnalysisConfig, get_development_config
 from .llm_analyzer import LLMAnalyzer
@@ -231,14 +232,17 @@ def _create_llm_request(
     # Build request
     return LLMAnalysisRequest(
         function=pair.function,
-        docstring=pair.docstring
-        or ParsedDocstring(
-            format="none",
-            summary="",
-            parameters=[],
-            returns=None,
-            raises=[],
-            raw_text="",
+        docstring=(
+            pair.docstring
+            if isinstance(pair.docstring, ParsedDocstring)
+            else ParsedDocstring(
+                format=DocstringFormat.GOOGLE,  # Default to Google format
+                summary="",
+                parameters=[],
+                returns=None,
+                raises=[],
+                raw_text=pair.docstring.raw_text if pair.docstring else "",
+            )
         ),
         analysis_types=analysis_types,
         rule_results=rule_results,

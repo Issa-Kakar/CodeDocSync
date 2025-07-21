@@ -664,8 +664,8 @@ class LLMAnalyzer:
         params = []
         for param in signature.parameters:
             param_str = param.name
-            if param.type_str:
-                param_str += f": {param.type_str}"
+            if hasattr(param, "type_annotation") and param.type_annotation:
+                param_str += f": {param.type_annotation}"
             if param.default_value:
                 param_str += f" = {param.default_value}"
             params.append(param_str)
@@ -1032,7 +1032,9 @@ class LLMAnalyzer:
             all_tasks.extend(group_tasks)
 
         # Wait for all requests to complete, handling partial failures
-        completed_results = await asyncio.gather(*all_tasks, return_exceptions=True)
+        completed_results: list[tuple[LLMAnalysisResponse, int] | BaseException] = (
+            await asyncio.gather(*all_tasks, return_exceptions=True)
+        )
 
         # Process results and maintain original order
         for result in completed_results:
@@ -1040,13 +1042,17 @@ class LLMAnalyzer:
                 logger.error(f"Batch analysis exception: {result}")
                 continue
 
-            if result is not None and isinstance(result, tuple):
+            if result is not None and isinstance(result, tuple) and len(result) == 2:
                 response, original_index = result
-                results[original_index] = response
+                if isinstance(response, LLMAnalysisResponse) and isinstance(
+                    original_index, int
+                ):
+                    results[original_index] = response
 
         # Fill any None results with error responses
-        for i, result in enumerate(results):
-            if result is None:
+        result_item: LLMAnalysisResponse | None
+        for i, result_item in enumerate(results):
+            if result_item is None:
                 results[i] = self._create_error_response(
                     requests[i], "Failed to process request"
                 )
@@ -1122,7 +1128,7 @@ class LLMAnalyzer:
 
         # Type annotations suggest more complex functions
         for param in function.signature.parameters:
-            if param.type_str:
+            if hasattr(param, "type_annotation") and param.type_annotation:
                 complexity += 1
 
         if function.signature.return_type:
@@ -1326,7 +1332,11 @@ class LLMAnalyzer:
                 nonlocal completed
                 while completed < len(warming_tasks):
                     await asyncio.sleep(0.5)
-                    current_completed = sum(1 for task in warming_tasks if task.done())
+                    current_completed = sum(
+                        1
+                        for task in warming_tasks
+                        if asyncio.isfuture(task) and task.done()
+                    )
                     if current_completed > completed:
                         completed = current_completed
                         await asyncio.get_event_loop().run_in_executor(
@@ -1364,9 +1374,13 @@ class LLMAnalyzer:
         # Functions with complex type annotations
         complex_types = 0
         for param in func.signature.parameters:
-            if param.type_str and any(
-                keyword in param.type_str.lower()
-                for keyword in ["union", "optional", "dict", "list", "callable"]
+            if (
+                hasattr(param, "type_annotation")
+                and param.type_annotation
+                and any(
+                    keyword in str(param.type_annotation).lower()
+                    for keyword in ["union", "optional", "dict", "list", "callable"]
+                )
             ):
                 complex_types += 1
 
@@ -1393,7 +1407,10 @@ class LLMAnalyzer:
                 analysis_types.append("examples")
 
         # Add type consistency for complex typed functions
-        if any(param.type_str for param in func.signature.parameters):
+        if any(
+            hasattr(param, "type_annotation") and param.type_annotation
+            for param in func.signature.parameters
+        ):
             analysis_types.append("type_consistency")
 
         return analysis_types
@@ -1443,12 +1460,7 @@ class LLMAnalyzer:
                 if confidence_multiplier < 1.0:
                     for issue in result.issues:
                         issue.confidence *= confidence_multiplier
-                    result.degraded = True
-                    result.degradation_reason = (
-                        f"Used {strategy_name} fallback strategy"
-                    )
-                else:
-                    result.degraded = False
+                    # Note: degraded and degradation_reason are not attributes of AnalysisResult
 
                 logger.info(f"Analysis successful using {strategy_name} strategy")
                 return result
@@ -1462,7 +1474,9 @@ class LLMAnalyzer:
         logger.error(
             f"All fallback strategies failed for {request.function.signature.name}"
         )
-        return self._empty_analysis(request, last_error)
+        return self._empty_analysis(
+            request, last_error if last_error else Exception("All strategies failed")
+        )
 
     async def _analyze_with_llm(self, request: LLMAnalysisRequest) -> AnalysisResult:
         """
@@ -1500,7 +1514,17 @@ class LLMAnalyzer:
             except Exception as e:
                 raise LLMError(f"Unexpected error: {e}") from e
 
-        return await self.circuit_breaker.call(protected_llm_call)
+        # Circuit breaker call is synchronous, but our function is async
+        # We need to handle this properly
+        try:
+            if not self.circuit_breaker.can_execute():
+                raise LLMError(f"Circuit breaker is {self.circuit_breaker.state.value}")
+            result = await protected_llm_call()
+            self.circuit_breaker.record_success()
+            return result
+        except Exception as e:
+            self.circuit_breaker.record_failure(e)
+            raise
 
     async def _analyze_with_simple_prompts(
         self, request: LLMAnalysisRequest
@@ -1556,12 +1580,10 @@ class LLMAnalyzer:
         Returns:
             AnalysisResult from rule engine only
         """
-        from .config import RuleEngineConfig
         from .rule_engine import RuleEngine
 
         # Create rule engine with default configuration
-        rule_config = RuleEngineConfig()
-        rule_engine = RuleEngine(rule_config)
+        rule_engine = RuleEngine()
 
         # Create matched pair for rule analysis
         from ..matcher.models import MatchConfidence, MatchedPair, MatchType
@@ -1569,13 +1591,30 @@ class LLMAnalyzer:
         matched_pair = MatchedPair(
             function=request.function,
             docstring=request.docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=1.0,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="Rule-only analysis",
         )
 
         # Run rule analysis
-        rule_results = rule_engine.analyze(matched_pair)
+        # Get issues from rule engine
+        issues = rule_engine.check_matched_pair(matched_pair, confidence_threshold=0.9)
+
+        # Convert issues to rule results for compatibility
+        rule_results = [
+            RuleCheckResult(
+                rule_name="rule_engine",
+                passed=len(issues) == 0,
+                confidence=0.9,
+                issues=issues,
+                execution_time_ms=0.0,
+            )
+        ]
 
         # Convert rule results to issues
         issues = []
@@ -1612,7 +1651,12 @@ class LLMAnalyzer:
         matched_pair = MatchedPair(
             function=request.function,
             docstring=request.docstring,
-            confidence=MatchConfidence.LOW,
+            confidence=MatchConfidence(
+                overall=0.3,
+                name_similarity=0.5,
+                location_score=0.5,
+                signature_similarity=0.5,
+            ),
             match_type=MatchType.SEMANTIC,
             match_reason="Minimal fallback analysis",
         )
@@ -1636,7 +1680,7 @@ class LLMAnalyzer:
         )
 
     def _empty_analysis(
-        self, request: LLMAnalysisRequest, error: Exception = None
+        self, request: LLMAnalysisRequest, error: Exception | None = None
     ) -> AnalysisResult:
         """
         Create empty analysis result when all strategies fail.
@@ -1654,7 +1698,12 @@ class LLMAnalyzer:
         matched_pair = MatchedPair(
             function=request.function,
             docstring=request.docstring,
-            confidence=MatchConfidence.NONE,
+            confidence=MatchConfidence(
+                overall=0.0,
+                name_similarity=0.0,
+                location_score=0.0,
+                signature_similarity=0.0,
+            ),
             match_type=MatchType.SEMANTIC,
             match_reason="Analysis failed",
         )
@@ -1698,8 +1747,13 @@ class LLMAnalyzer:
         matched_pair = MatchedPair(
             function=request.function,
             docstring=request.docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=1.0,
+                location_score=1.0,
+                signature_similarity=1.0,
+            ),
+            match_type=MatchType.EXACT,
             match_reason="LLM analysis",
         )
 

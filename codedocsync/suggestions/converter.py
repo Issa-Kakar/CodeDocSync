@@ -171,7 +171,7 @@ class DocstringStyleConverter:
                 if isinstance(unsupported, list):
                     unsupported.append("See Also sections")
                 confidence = quality["confidence"]
-                if isinstance(confidence, (int, float)):
+                if isinstance(confidence, int | float):
                     quality["confidence"] = confidence - 0.1
 
         if from_style == DocstringStyle.SPHINX and to_style in {
@@ -182,7 +182,7 @@ class DocstringStyleConverter:
             if isinstance(formatting_changes, list):
                 formatting_changes.append("Cross-references will be simplified")
             confidence = quality["confidence"]
-            if isinstance(confidence, (int, float)):
+            if isinstance(confidence, int | float):
                 quality["confidence"] = confidence - 0.05
 
         # Check for complex type annotations
@@ -203,7 +203,7 @@ class DocstringStyleConverter:
                         f"Complex types found in {len(complex_types)} parameters"
                     )
                 confidence = quality["confidence"]
-                if isinstance(confidence, (int, float)):
+                if isinstance(confidence, int | float):
                     quality["confidence"] = confidence - 0.1
 
         return quality

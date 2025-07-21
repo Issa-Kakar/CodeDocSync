@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from .models import ISSUE_TYPES, InconsistencyIssue
 from .prompt_templates import map_llm_issue_type
@@ -124,7 +124,7 @@ class LLMOutputParser:
         """Extract JSON from response that might have extra text."""
         # First try direct parsing
         try:
-            return json.loads(raw_response.strip())
+            return cast(dict[str, Any], json.loads(raw_response.strip()))
         except json.JSONDecodeError:
             pass
 
@@ -134,7 +134,7 @@ class LLMOutputParser:
         )
         if json_match:
             try:
-                return json.loads(json_match.group(1))
+                return cast(dict[str, Any], json.loads(json_match.group(1)))
             except json.JSONDecodeError:
                 pass
 
@@ -176,7 +176,7 @@ class LLMOutputParser:
                 potential_json = raw_response[start_idx:end_idx]
                 if '"issues"' in potential_json:
                     try:
-                        return json.loads(potential_json)
+                        return cast(dict[str, Any], json.loads(potential_json))
                     except json.JSONDecodeError:
                         pass
 
@@ -184,11 +184,9 @@ class LLMOutputParser:
             start_idx = raw_response.find("{", start_idx + 1)
 
         # If all else fails, try to parse the whole thing
-        return json.loads(raw_response)
+        return cast(dict[str, Any], json.loads(raw_response))
 
-    def _validate_response_structure(
-        self, response_data: dict[str, Any]
-    ) -> tuple[bool, str]:
+    def _validate_response_structure(self, response_data: Any) -> tuple[bool, str]:
         """
         Validate that response has expected structure.
 

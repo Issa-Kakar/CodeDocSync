@@ -51,9 +51,7 @@ class EmbeddingGenerator:
 
         # Initialize local model as fallback
         try:
-            from sentence_transformers import (  # type: ignore[import-untyped]
-                SentenceTransformer,
-            )
+            from sentence_transformers import SentenceTransformer
 
             self.providers["local"] = SentenceTransformer("all-MiniLM-L6-v2")
             logger.info("Initialized local embedding model")
@@ -112,7 +110,7 @@ class EmbeddingGenerator:
         signature_str = function.signature.to_string()
         return hashlib.sha256(signature_str.encode()).hexdigest()[:16]
 
-    @retry(
+    @retry(  # type: ignore[misc]
         stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10)
     )
     async def generate_embedding(
@@ -145,7 +143,8 @@ class EmbeddingGenerator:
         try:
             client = openai.AsyncOpenAI()
             response = await client.embeddings.create(input=text, model=model)
-            return response.data[0].embedding
+            embedding: list[float] = response.data[0].embedding
+            return embedding
 
         except openai.RateLimitError:
             logger.warning("OpenAI rate limit hit")

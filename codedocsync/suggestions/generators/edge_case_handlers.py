@@ -7,10 +7,12 @@ overloaded functions, and other edge cases that require specialized documentatio
 
 import ast
 from dataclasses import dataclass
+from typing import Any
 
 from ...parser.docstring_models import DocstringParameter, DocstringReturns
 from ..base import BaseSuggestionGenerator
 from ..models import (
+    DocstringStyle,
     Suggestion,
     SuggestionContext,
     SuggestionDiff,
@@ -33,9 +35,9 @@ class SpecialConstruct:
 class SpecialConstructAnalyzer:
     """Analyze functions for special Python constructs."""
 
-    def analyze_function(self, function) -> list[SpecialConstruct]:
+    def analyze_function(self, function: Any) -> list[SpecialConstruct]:
         """Analyze function for special constructs that need edge case handling."""
-        constructs = []
+        constructs: list[SpecialConstruct] = []
 
         if not hasattr(function, "signature"):
             return constructs
@@ -166,7 +168,7 @@ class SpecialConstructAnalyzer:
 
         return False
 
-    def _is_context_manager(self, function) -> bool:
+    def _is_context_manager(self, function: Any) -> bool:
         """Check if function is designed as a context manager."""
         if not hasattr(function, "signature"):
             return False
@@ -190,7 +192,7 @@ class PropertyMethodHandler:
         # Property getters should not document parameters (except self)
         # They should focus on return value
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         # Generate appropriate return documentation
         return_type = self._infer_property_type(function)
@@ -230,7 +232,7 @@ class PropertyMethodHandler:
         docstring = context.docstring
 
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         # Property setters typically have one parameter (value)
         parameters = []
@@ -269,7 +271,7 @@ class PropertyMethodHandler:
         """Handle property deleter documentation."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         deleter_desc = "Delete the property value."
 
@@ -290,12 +292,12 @@ class PropertyMethodHandler:
             suggestion_type=SuggestionType.FULL_DOCSTRING,
         )
 
-    def _infer_property_type(self, function) -> str | None:
+    def _infer_property_type(self, function: Any) -> str | None:
         """Infer property type from function signature or name."""
         if hasattr(function, "signature") and hasattr(
             function.signature, "return_annotation"
         ):
-            return function.signature.return_annotation
+            return str(function.signature.return_annotation)
 
         # Try to infer from name
         function_name = (
@@ -312,7 +314,7 @@ class PropertyMethodHandler:
 
         return None
 
-    def _generate_property_description(self, function) -> str:
+    def _generate_property_description(self, function: Any) -> str:
         """Generate description for property based on function name."""
         function_name = (
             getattr(function.signature, "name", "property")
@@ -330,7 +332,7 @@ class PropertyMethodHandler:
 
         return f"Get the {words}"
 
-    def _generate_setter_description(self, function) -> str:
+    def _generate_setter_description(self, function: Any) -> str:
         """Generate description for setter based on function name."""
         function_name = (
             getattr(function.signature, "name", "property")
@@ -348,11 +350,11 @@ class PropertyMethodHandler:
 
         return f"Set the {words}"
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style."""
         if hasattr(docstring, "format"):
             # Return the string format directly
-            return docstring.format.value
+            return str(docstring.format.value)
         return "google"
 
     def _create_suggestion(
@@ -388,7 +390,6 @@ class PropertyMethodHandler:
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),
@@ -405,7 +406,7 @@ class ClassMethodHandler:
         docstring = context.docstring
 
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         # Filter out 'cls' parameter from documentation
         parameters = []
@@ -448,7 +449,7 @@ class ClassMethodHandler:
         docstring = context.docstring
 
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         # Static methods document all parameters normally
         parameters = []
@@ -484,11 +485,11 @@ class ClassMethodHandler:
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
         )
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style."""
         if hasattr(docstring, "format"):
             # Return the string format directly
-            return docstring.format.value
+            return str(docstring.format.value)
         return "google"
 
     def _create_suggestion(
@@ -524,7 +525,6 @@ class ClassMethodHandler:
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),
@@ -535,7 +535,7 @@ class ClassMethodHandler:
 class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
     """Main edge case handler that delegates to specialized handlers."""
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: Any) -> None:
         super().__init__(config)
         self.analyzer = SpecialConstructAnalyzer()
         self.property_handler = PropertyMethodHandler()
@@ -574,7 +574,7 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
         """Handle async function documentation."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         # Add note about async nature to description
         current_desc = getattr(docstring, "description", None) if docstring else None
@@ -610,7 +610,7 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
         """Handle generator function documentation."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         # Update return documentation for generators
         generator_return = DocstringReturns(
@@ -672,7 +672,7 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
 
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         suggested_docstring = template.render_complete_docstring(
             summary=description,
@@ -695,7 +695,7 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
         """Handle overloaded function documentation."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=88)
+        template = get_template(DocstringStyle(style), max_line_length=88)
 
         overload_note = "This function is overloaded. See individual overload signatures for specific parameter types."
 
@@ -726,11 +726,11 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
             context, "No specific edge case handling available"
         )
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any) -> str:
         """Detect docstring style."""
         if hasattr(docstring, "format"):
             # Return the string format directly
-            return docstring.format.value
+            return str(docstring.format.value)
         return "google"
 
     def _create_suggestion(
@@ -766,7 +766,6 @@ class EdgeCaseSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),

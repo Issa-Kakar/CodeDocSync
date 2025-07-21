@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TypedDict
 
-import psutil  # type: ignore[import-untyped]
+import psutil
 
 from ..parser import IntegratedParser
 from ..utils.config import CodeDocSyncConfig

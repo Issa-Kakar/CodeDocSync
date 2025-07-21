@@ -620,7 +620,7 @@ def _get_annotation_string(annotation: ast.expr | None) -> str | None:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore[import-not-found]
+            import astor
 
             return str(astor.to_source(annotation).strip())
         except ImportError:

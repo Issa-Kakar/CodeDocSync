@@ -14,7 +14,7 @@ Key Features:
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from rich.console import Console
 from rich.panel import Panel
@@ -426,8 +426,8 @@ class PromptDebugger:
 
         for param in sig.parameters:
             param_str = param.name
-            if param.type_str:
-                param_str += f": {param.type_str}"
+            if param.type_annotation:
+                param_str += f": {param.type_annotation}"
             if param.default_value:
                 param_str += f" = {param.default_value}"
             params.append(param_str)
@@ -508,20 +508,29 @@ def create_sample_function() -> ParsedFunction:
             ]
             self.return_type = "Dict[str, Any]"
 
-    return type(
-        "MockFunction",
-        (),
-        {"signature": MockSignature(), "file_path": "example.py", "line_number": 10},
-    )()
+    return cast(
+        ParsedFunction,
+        type(
+            "MockFunction",
+            (),
+            {
+                "signature": MockSignature(),
+                "file_path": "example.py",
+                "line_number": 10,
+            },
+        )(),
+    )
 
 
 def create_sample_docstring() -> ParsedDocstring:
     """Create a sample ParsedDocstring for testing."""
-    return type(
-        "MockDocstring",
-        (),
-        {
-            "raw_text": """Process input data with optional validation.
+    return cast(
+        ParsedDocstring,
+        type(
+            "MockDocstring",
+            (),
+            {
+                "raw_text": """Process input data with optional validation.
 
         Args:
             data: List of dictionaries containing raw data
@@ -538,8 +547,9 @@ def create_sample_docstring() -> ParsedDocstring:
             >>> print(result["count"])
             1
         """
-        },
-    )()
+            },
+        )(),
+    )
 
 
 # Sample LLM responses for testing

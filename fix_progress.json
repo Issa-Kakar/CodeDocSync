@@ -10,7 +10,8 @@
     "codedocsync/suggestions/type_formatter.py",
     "codedocsync/suggestions/errors.py",
     "test_style_detector.py",
-    "verify_style_detector.py"
+    "verify_style_detector.py",
+    "codedocsync/suggestions/converter.py"
   ],
   "mypy_fixed_files": [
     "codedocsync/cli/analyze.py",
@@ -54,14 +55,23 @@
     "codedocsync/suggestions/config_manager.py",
     "codedocsync/suggestions/type_formatter.py",
     "codedocsync/suggestions/__init__.py",
-    "fix_tracker.py"
+    "fix_tracker.py",
+    "codedocsync/suggestions/generators/edge_case_handlers.py",
+    "codedocsync/suggestions/formatters/json_formatter.py",
+    "codedocsync/suggestions/formatters/terminal_formatter.py",
+    "codedocsync/suggestions/generators/parameter_generator.py",
+    "codedocsync/suggestions/generators/example_generator.py",
+    "codedocsync/suggestions/generators/return_generator.py",
+    "codedocsync/suggestions/generators/behavior_generator.py",
+    "codedocsync/suggestions/generators/raises_generator.py",
+    "codedocsync/suggestions/ranking.py"
   ],
-  "current_phase": "mypy",
-  "timestamp": "2025-07-21T06:30:00.000000",
+  "current_phase": "completed",
+  "timestamp": "2025-07-21T07:00:00.000000",
   "statistics": {
     "initial_ruff_errors": 1,
     "initial_mypy_errors": 297,
     "current_ruff_errors": 0,
-    "current_mypy_errors": 100
+    "current_mypy_errors": 0
   }
 }

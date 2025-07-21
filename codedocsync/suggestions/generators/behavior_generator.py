@@ -29,20 +29,20 @@ class BehaviorPattern:
     description: str
     confidence: float
     line_numbers: list[int] | None = None
-    details: dict[str, Any] = None
+    details: dict[str, Any] | None = None
 
 
 class BehaviorAnalyzer:
     """Analyze function code to extract behavioral patterns."""
 
     def __init__(self) -> None:
-        self.patterns = []
+        self.patterns: list[BehaviorPattern] = []
 
     def analyze_behavior(
         self, source_code: str, function_name: str = ""
     ) -> list[BehaviorPattern]:
         """Analyze function code for behavioral patterns."""
-        patterns = []
+        patterns: list[BehaviorPattern] = []
 
         try:
             tree = ast.parse(source_code)
@@ -548,7 +548,7 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         self,
         patterns: list[BehaviorPattern],
         function_name: str,
-        docstring,
+        docstring: Any | None,
         focus_side_effects: bool = False,
     ) -> str:
         """Generate enhanced description based on behavioral patterns."""
@@ -655,7 +655,11 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         """Update description in existing docstring."""
         docstring = context.docstring
         style = self._detect_style(docstring)
-        template = get_template(style, max_line_length=self.config.max_line_length)
+        from ..models import DocstringStyle
+
+        template = get_template(
+            DocstringStyle(style), max_line_length=self.config.max_line_length
+        )
 
         # Determine if this should be summary or description
         current_summary = getattr(docstring, "summary", "") if docstring else ""
@@ -680,11 +684,11 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             examples=getattr(docstring, "examples", []) if docstring else [],
         )
 
-    def _detect_style(self, docstring) -> str:
+    def _detect_style(self, docstring: Any | None) -> str:
         """Detect docstring style from parsed docstring."""
-        if hasattr(docstring, "format"):
+        if docstring is not None and hasattr(docstring, "format"):
             # Return the string format directly
-            return docstring.format.value
+            return str(docstring.format.value)
 
         return "google"  # Default fallback
 
@@ -722,7 +726,6 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             suggested_text=suggested_text,
             suggestion_type=suggestion_type,
             confidence=confidence,
-            description=description,
             diff=diff,
             metadata=metadata,
             style=self._detect_style(context.docstring),

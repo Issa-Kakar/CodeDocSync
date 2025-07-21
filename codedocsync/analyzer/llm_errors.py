@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 
 class LLMError(Exception):
@@ -256,7 +256,7 @@ class CircuitBreaker:
             return self.half_open_calls < self.half_open_max_calls
 
         # This should never be reached as we handle all enum values
-        return True  # Default to allowing call if state is somehow unknown
+        raise AssertionError(f"Unexpected circuit state: {self.state}")
 
     def record_success(self) -> None:
         """Record a successful execution."""
@@ -371,10 +371,10 @@ async def with_retry(
     for attempt in range(retry_strategy.max_retries + 1):
         try:
             if asyncio.iscoroutinefunction(func):
-                result: T = await func(*args, **kwargs)
-                return result
+                result = await func(*args, **kwargs)
+                return cast(T, result)
             else:
-                result: T = func(*args, **kwargs)
+                result = func(*args, **kwargs)
                 return result
 
         except Exception as e:
