@@ -50,10 +50,10 @@ class DirectMatcher:
         # Group functions by file for efficient matching
         functions_by_file = self._group_by_file(functions)
 
-        for file_path, file_functions in functions_by_file.items():
+        for _, file_functions in functions_by_file.items():
             file_matches = self._match_functions_in_file(file_functions)
 
-            for i, (func, match) in file_matches.items():
+            for _, (func, match) in file_matches.items():
                 if match:
                     matched_pairs.append(match)
                 else:
@@ -122,6 +122,7 @@ class DirectMatcher:
                 match_type=MatchType.EXACT,
                 confidence=confidence,
                 match_reason="Exact match: function and docstring aligned",
+                docstring=func.docstring,  # Include the docstring
             )
 
         return None
@@ -137,8 +138,10 @@ class DirectMatcher:
         # Calculate signature similarity (handles all docstring types)
         sig_score = self._calculate_signature_similarity(func)
 
-        # Overall confidence is weighted average
-        overall = (name_score + location_score + sig_score) / 3.0
+        # For exact matches (function with its own docstring), we want to match
+        # even if parameters don't align - that's what the analyzer will detect
+        # So we use a higher weight for name and location scores
+        overall = name_score * 0.4 + location_score * 0.4 + sig_score * 0.2
 
         return MatchConfidence(
             overall=overall,

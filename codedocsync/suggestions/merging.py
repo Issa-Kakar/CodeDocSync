@@ -167,7 +167,7 @@ class DocstringMerger:
                     break
 
             # Insert custom sections
-            for section_type, section_lines in custom_sections.items():
+            for _, section_lines in custom_sections.items():
                 if result_lines[insert_point - 1].strip():
                     result_lines.insert(insert_point, "")
                     insert_point += 1

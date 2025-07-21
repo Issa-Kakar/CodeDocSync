@@ -47,7 +47,7 @@ from .prompt_templates import format_prompt
 
 # Import ParsedFunction for type hints
 if TYPE_CHECKING:
-    from ..parser.models import ParsedFunction
+    from ..parser.ast_parser import ParsedFunction
 
 logger = logging.getLogger(__name__)
 
@@ -704,7 +704,7 @@ class LLMAnalyzer:
 
         # Add analysis type context if multiple types requested
         if len(analysis_types) > 1:
-            other_types = [t for t in analysis_types[1:]]
+            other_types = list(analysis_types[1:])
             user_prompt += f"\n\nADDITIONAL ANALYSIS: Also consider {', '.join(other_types)} if relevant."
 
         return system_prompt, user_prompt
@@ -1062,7 +1062,7 @@ class LLMAnalyzer:
 
         # Further group by file path within each type
         final_groups = []
-        for analysis_type, type_group in type_groups.items():
+        for _, type_group in type_groups.items():
             # Sort by function complexity (more complex first for better parallelization)
             type_group.sort(
                 key=lambda x: self._estimate_function_complexity(x[0].function),
@@ -1428,16 +1428,16 @@ class LLMAnalyzer:
                 return self._llm_response_to_analysis_result(request, response)
 
             except openai.RateLimitError as e:
-                raise LLMRateLimitError(str(e), getattr(e, "retry_after", None))
+                raise LLMRateLimitError(str(e), getattr(e, "retry_after", None)) from e
             except openai.APIError as e:
                 if "api key" in str(e).lower():
-                    raise LLMAPIKeyError(str(e))
+                    raise LLMAPIKeyError(str(e)) from e
                 else:
-                    raise LLMNetworkError(str(e))
+                    raise LLMNetworkError(str(e)) from e
             except asyncio.TimeoutError as e:
-                raise LLMTimeoutError(str(e))
+                raise LLMTimeoutError(str(e)) from e
             except Exception as e:
-                raise LLMError(f"Unexpected error: {e}")
+                raise LLMError(f"Unexpected error: {e}") from e
 
         return await self.circuit_breaker.call(protected_llm_call)
 

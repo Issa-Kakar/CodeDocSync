@@ -271,7 +271,7 @@ class TemplateMerger:
         if not original_docstring or not preserve_original:
             # Return new content only
             result = []
-            for section_name, lines in new_sections.items():
+            for _, lines in new_sections.items():
                 result.extend(lines)
                 result.append("")  # Blank line between sections
             return result[:-1] if result else []  # Remove trailing blank line
