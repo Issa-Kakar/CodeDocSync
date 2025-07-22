@@ -350,7 +350,7 @@ class LLMOutputParser:
 
         # Pattern to find issue-like content
         patterns = [
-            r"(?:issue|problem|error):\s*(.+?)(?:suggestion|fix):\s*(.+?)(?:\n|$)",
+            r"(?:Union[issue, problem]|error):\s*(.+?)(?:Union[suggestion, fix]):\s*(.+?)(?:\n|$)",
             r'(?:description):\s*"([^"]+)".*?(?:suggestion):\s*"([^"]+)"',
             r"- (.+?)\s*\(line\s*(\d+)\)",
         ]

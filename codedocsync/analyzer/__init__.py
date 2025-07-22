@@ -6,7 +6,7 @@ function signatures don't match their documentation. It's designed to run fast
 deterministic checks first, then fall back to LLM analysis only when needed.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 # Import configuration classes
 from .config import (

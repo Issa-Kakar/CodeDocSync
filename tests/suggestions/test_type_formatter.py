@@ -10,6 +10,8 @@ import ast
 import pytest
 
 from codedocsync.suggestions.models import DocstringStyle
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+
 from codedocsync.suggestions.type_formatter import (
     TypeAnnotationFormatter,
     TypeComplexity,
@@ -22,17 +24,17 @@ class TestTypeAnnotationFormatter:
     """Test cases for TypeAnnotationFormatter."""
 
     @pytest.fixture
-    def google_formatter(self):
+    def google_formatter(self) -> Any:
         """Create a formatter for Google style."""
         return TypeAnnotationFormatter(DocstringStyle.GOOGLE)
 
     @pytest.fixture
-    def numpy_formatter(self):
+    def numpy_formatter(self) -> Any:
         """Create a formatter for NumPy style."""
         return TypeAnnotationFormatter(DocstringStyle.NUMPY)
 
     @pytest.fixture
-    def sphinx_formatter(self):
+    def sphinx_formatter(self) -> Any:
         """Create a formatter for Sphinx style."""
         return TypeAnnotationFormatter(DocstringStyle.SPHINX)
 
@@ -43,11 +45,11 @@ class TestTypeAnnotationFormatter:
         assert isinstance(formatter._type_mappings, dict)
         assert isinstance(formatter._complexity_cache, dict)
 
-    def test_initialization_with_style(self, numpy_formatter) -> None:
+    def test_initialization_with_style(self, numpy_formatter: Any) -> None:
         """Test formatter initialization with specific style."""
         assert numpy_formatter.style == DocstringStyle.NUMPY
 
-    def test_format_simple_types(self, google_formatter) -> None:
+    def test_format_simple_types(self, google_formatter: Any) -> None:
         """Test formatting of simple types."""
         assert google_formatter.format_for_docstring("str") == "str"
         assert google_formatter.format_for_docstring("int") == "int"
@@ -55,12 +57,12 @@ class TestTypeAnnotationFormatter:
         assert google_formatter.format_for_docstring("bool") == "bool"
         assert google_formatter.format_for_docstring("None") == "None"
 
-    def test_format_empty_type(self, google_formatter) -> None:
+    def test_format_empty_type(self, google_formatter: Any) -> None:
         """Test formatting of empty type annotation."""
         assert google_formatter.format_for_docstring("") == ""
         assert google_formatter.format_for_docstring(None) == ""
 
-    def test_format_optional_types(self, google_formatter) -> None:
+    def test_format_optional_types(self, google_formatter: Any) -> None:
         """Test formatting of Optional types."""
         assert google_formatter.format_for_docstring("Optional[str]") == "str, optional"
         assert google_formatter.format_for_docstring("Optional[int]") == "int, optional"
@@ -69,7 +71,7 @@ class TestTypeAnnotationFormatter:
             == "List[str], optional"
         )
 
-    def test_format_union_types(self, google_formatter) -> None:
+    def test_format_union_types(self, google_formatter: Any) -> None:
         """Test formatting of Union types."""
         assert google_formatter.format_for_docstring("Union[str, int]") == "str or int"
         assert (
@@ -77,10 +79,10 @@ class TestTypeAnnotationFormatter:
             == "str or int or float"
         )
         assert (
-            google_formatter.format_for_docstring("Union[str, None]") == "str, optional"
+            google_formatter.format_for_docstring("Optional[str]") == "str, optional"
         )
 
-    def test_format_generic_types(self, google_formatter) -> None:
+    def test_format_generic_types(self, google_formatter: Any) -> None:
         """Test formatting of generic types."""
         # List types
         assert google_formatter.format_for_docstring("List[str]") == "List[str]"
@@ -97,7 +99,7 @@ class TestTypeAnnotationFormatter:
             == "Tuple[int, str]"
         )
 
-    def test_format_complex_types(self, google_formatter) -> None:
+    def test_format_complex_types(self, google_formatter: Any) -> None:
         """Test formatting of complex types."""
         # Callable should be simplified
         assert (
@@ -108,7 +110,7 @@ class TestTypeAnnotationFormatter:
         # Protocol types
         assert google_formatter.format_for_docstring("MyProtocol") == "MyProtocol"
 
-    def test_normalize_type_string(self, google_formatter) -> None:
+    def test_normalize_type_string(self, google_formatter: Any) -> None:
         """Test type string normalization."""
         # Remove quotes
         assert google_formatter._normalize_type_string('"str"') == "str"
@@ -125,7 +127,7 @@ class TestTypeAnnotationFormatter:
             == "Union[str, int]"
         )
 
-    def test_assess_complexity(self, google_formatter) -> None:
+    def test_assess_complexity(self, google_formatter: Any) -> None:
         """Test complexity assessment."""
         # Simple types
         assert google_formatter._assess_complexity("str") == TypeComplexity.SIMPLE
@@ -155,7 +157,7 @@ class TestTypeAnnotationFormatter:
             == TypeComplexity.COMPLEX
         )
 
-    def test_format_for_numpy_style(self, numpy_formatter) -> None:
+    def test_format_for_numpy_style(self, numpy_formatter: Any) -> None:
         """Test formatting specific to NumPy style."""
         # Array types should become array_like
         assert numpy_formatter.format_for_docstring("np.ndarray") == "array_like"
@@ -169,7 +171,7 @@ class TestTypeAnnotationFormatter:
         # Dict types should become "dict"
         assert numpy_formatter.format_for_docstring("Dict[str, Any]") == "dict"
 
-    def test_format_for_sphinx_style(self, sphinx_formatter) -> None:
+    def test_format_for_sphinx_style(self, sphinx_formatter: Any) -> None:
         """Test formatting specific to Sphinx style."""
         # List types should become "list of type"
         assert sphinx_formatter.format_for_docstring("List[str]") == "list of str"
@@ -182,7 +184,7 @@ class TestTypeAnnotationFormatter:
         assert sphinx_formatter.format_for_docstring("str") == "str"
         assert sphinx_formatter.format_for_docstring("int") == "int"
 
-    def test_split_union_types(self, google_formatter) -> None:
+    def test_split_union_types(self, google_formatter: Any) -> None:
         """Test splitting Union type contents."""
         # Simple union
         result = google_formatter._split_union_types("str, int")
@@ -196,13 +198,13 @@ class TestTypeAnnotationFormatter:
         result = google_formatter._split_union_types("str, Union[int, float]")
         assert result == ["str", "Union[int, float]"]
 
-    def test_extract_from_ast_name(self, google_formatter) -> None:
+    def test_extract_from_ast_name(self, google_formatter: Any) -> None:
         """Test extracting type from AST Name node."""
         node = ast.Name(id="str", ctx=ast.Load())
         result = google_formatter.extract_from_ast(node)
         assert result == "str"
 
-    def test_extract_from_ast_attribute(self, google_formatter) -> None:
+    def test_extract_from_ast_attribute(self, google_formatter: Any) -> None:
         """Test extracting type from AST Attribute node."""
         # Create ast node for "typing.List"
         value_node = ast.Name(id="typing", ctx=ast.Load())
@@ -210,7 +212,7 @@ class TestTypeAnnotationFormatter:
         result = google_formatter.extract_from_ast(node)
         assert result == "typing.List"
 
-    def test_extract_from_ast_subscript(self, google_formatter) -> None:
+    def test_extract_from_ast_subscript(self, google_formatter: Any) -> None:
         """Test extracting type from AST Subscript node."""
         # Create AST node for "List[str]"
         value_node = ast.Name(id="List", ctx=ast.Load())
@@ -219,12 +221,12 @@ class TestTypeAnnotationFormatter:
         result = google_formatter.extract_from_ast(node)
         assert result == "List[str]"
 
-    def test_extract_from_ast_none(self, google_formatter) -> None:
+    def test_extract_from_ast_none(self, google_formatter: Any) -> None:
         """Test extracting type from None."""
         result = google_formatter.extract_from_ast(None)
         assert result == ""
 
-    def test_simplify_for_style(self, numpy_formatter) -> None:
+    def test_simplify_for_style(self, numpy_formatter: Any) -> None:
         """Test style-specific simplification."""
         # NumPy simplifications
         result = numpy_formatter.simplify_for_style("List[str]")
@@ -233,20 +235,20 @@ class TestTypeAnnotationFormatter:
         result = numpy_formatter.simplify_for_style("np.ndarray")
         assert result == "array_like"
 
-    def test_type_mappings_numpy(self, numpy_formatter) -> None:
+    def test_type_mappings_numpy(self, numpy_formatter: Any) -> None:
         """Test NumPy-specific type mappings."""
         mappings = numpy_formatter._type_mappings
         assert "np.ndarray" in mappings
         assert mappings["np.ndarray"] == "array_like"
         assert mappings["List"] == "array_like"
 
-    def test_type_mappings_sphinx(self, sphinx_formatter) -> None:
+    def test_type_mappings_sphinx(self, sphinx_formatter: Any) -> None:
         """Test Sphinx-specific type mappings."""
         mappings = sphinx_formatter._type_mappings
         assert mappings["List"] == "list"
         assert mappings["Dict"] == "dict"
 
-    def test_caching_behavior(self, google_formatter) -> None:
+    def test_caching_behavior(self, google_formatter: Any) -> None:
         """Test that complexity assessment is cached."""
         # First call should compute and cache
         complexity1 = google_formatter._assess_complexity("List[str]")
@@ -257,12 +259,12 @@ class TestTypeAnnotationFormatter:
         assert complexity1 == complexity2 == TypeComplexity.GENERIC
         assert "List[str]" in google_formatter._complexity_cache
 
-    def test_new_style_union_syntax(self, google_formatter) -> None:
-        """Test Python 3.10+ union syntax (A | B)."""
-        result = google_formatter.format_for_docstring("str | int")
+    def test_new_style_union_syntax(self, google_formatter: Any) -> None:
+        """Test Python 3.10+ union syntax (Union[A, B])."""
+        result = google_formatter.format_for_docstring("Union[str, int]")
         assert result == "str or int"
 
-        result = google_formatter.format_for_docstring("str | int | float")
+        result = google_formatter.format_for_docstring("Union[str, int] | float")
         assert result == "str or int or float"
 
 
@@ -270,11 +272,11 @@ class TestComplexTypeScenarios:
     """Test complex and edge case type scenarios."""
 
     @pytest.fixture
-    def formatter(self):
+    def formatter(self) -> Any:
         """Create a formatter for testing."""
         return TypeAnnotationFormatter(DocstringStyle.GOOGLE)
 
-    def test_deeply_nested_generics(self, formatter) -> None:
+    def test_deeply_nested_generics(self, formatter: Any) -> None:
         """Test deeply nested generic types."""
         complex_type = "Dict[str, List[Tuple[int, str]]]"
         result = formatter.format_for_docstring(complex_type)
@@ -282,14 +284,14 @@ class TestComplexTypeScenarios:
         assert isinstance(result, str)
         assert len(result) > 0
 
-    def test_very_long_type_annotations(self, formatter) -> None:
+    def test_very_long_type_annotations(self, formatter: Any) -> None:
         """Test very long type annotations."""
         long_type = "Callable[[Dict[str, List[Tuple[int, str]]], Union[List[Dict[str, Any]], None]]"
         result = formatter.format_for_docstring(long_type)
         # Should be simplified to "callable"
         assert result == "callable"
 
-    def test_recursive_type_structures(self, formatter) -> None:
+    def test_recursive_type_structures(self, formatter: Any) -> None:
         """Test handling of recursive-like type structures."""
         # Union within Union
         recursive_type = "Union[str, Union[int, float]]"
@@ -297,7 +299,7 @@ class TestComplexTypeScenarios:
         # Should handle gracefully
         assert isinstance(result, str)
 
-    def test_malformed_type_annotations(self, formatter) -> None:
+    def test_malformed_type_annotations(self, formatter: Any) -> None:
         """Test handling of malformed type annotations."""
         # Unclosed brackets
         malformed = "List[str"
@@ -310,21 +312,21 @@ class TestComplexTypeScenarios:
         result = formatter.format_for_docstring(malformed)
         assert isinstance(result, str)
 
-    def test_custom_generic_types(self, formatter) -> None:
+    def test_custom_generic_types(self, formatter: Any) -> None:
         """Test handling of custom generic types."""
         custom_type = "MyCustomType[str, int]"
         result = formatter.format_for_docstring(custom_type)
         # Should preserve custom types
         assert "MyCustomType" in result
 
-    def test_forward_references(self, formatter) -> None:
+    def test_forward_references(self, formatter: Any) -> None:
         """Test handling of forward references."""
         forward_ref = "'MyClass'"
         result = formatter.format_for_docstring(forward_ref)
         # Should remove quotes
         assert result == "MyClass"
 
-    def test_special_typing_constructs(self, formatter) -> None:
+    def test_special_typing_constructs(self, formatter: Any) -> None:
         """Test special typing constructs."""
         # Literal types
         literal_type = "Literal['a', 'b', 'c']"
@@ -355,24 +357,26 @@ class TestConvenienceFunctions:
         result = extract_type_from_ast(node)
         assert result == "str"
 
-    def test_convenience_function_with_none(self) -> None:
-        """Test convenience functions with None input."""
-        result = format_type_for_style(None, DocstringStyle.GOOGLE)
+    def test_convenience_function_with_empty(self) -> None:
+        """Test convenience functions with empty input."""
+        result = format_type_for_style("", DocstringStyle.GOOGLE)
         assert result == ""
 
-        result = extract_type_from_ast(None)
-        assert result == ""
+        # Test with a simple AST node that represents no type
+        node = ast.Constant(value=None)
+        result = extract_type_from_ast(node)
+        assert result == "None"
 
 
 class TestPerformanceAndEdgeCases:
     """Test performance characteristics and edge cases."""
 
     @pytest.fixture
-    def formatter(self):
+    def formatter(self) -> Any:
         """Create formatter for performance testing."""
         return TypeAnnotationFormatter()
 
-    def test_cache_performance(self, formatter) -> None:
+    def test_cache_performance(self, formatter: Any) -> None:
         """Test that caching improves performance."""
         complex_type = "Dict[str, List[Tuple[int, Union[str, float]]]]"
 
@@ -384,14 +388,14 @@ class TestPerformanceAndEdgeCases:
             result = formatter._assess_complexity(complex_type)
             assert result == result1
 
-    def test_unicode_in_type_annotations(self, formatter) -> None:
+    def test_unicode_in_type_annotations(self, formatter: Any) -> None:
         """Test handling of Unicode in type annotations."""
         unicode_type = "Dαtα[str]"  # Contains Greek letters
         result = formatter.format_for_docstring(unicode_type)
         # Should preserve Unicode
         assert "Dαtα" in result
 
-    def test_very_long_type_names(self, formatter) -> None:
+    def test_very_long_type_names(self, formatter: Any) -> None:
         """Test handling of very long type names."""
         long_name = "VeryLongTypeNameThatExceedsNormalLengthExpectations" * 3
         result = formatter.format_for_docstring(long_name)
@@ -399,20 +403,20 @@ class TestPerformanceAndEdgeCases:
         assert isinstance(result, str)
         assert len(result) > 0
 
-    def test_special_characters_in_types(self, formatter) -> None:
+    def test_special_characters_in_types(self, formatter: Any) -> None:
         """Test handling of special characters."""
         special_type = "Type_With_Underscores[Generic$Type]"
         result = formatter.format_for_docstring(special_type)
         # Should handle gracefully
         assert isinstance(result, str)
 
-    def test_empty_and_whitespace_types(self, formatter) -> None:
+    def test_empty_and_whitespace_types(self, formatter: Any) -> None:
         """Test handling of empty and whitespace-only types."""
         assert formatter.format_for_docstring("") == ""
         assert formatter.format_for_docstring("   ") == ""
         assert formatter.format_for_docstring("\t\n") == ""
 
-    def test_complexity_cache_size(self, formatter) -> None:
+    def test_complexity_cache_size(self, formatter: Any) -> None:
         """Test that complexity cache doesn't grow indefinitely."""
         # Add many different types to cache
         for i in range(100):

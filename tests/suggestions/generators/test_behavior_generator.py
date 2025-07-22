@@ -6,12 +6,14 @@ generation for function behavior documentation.
 """
 
 from unittest.mock import Mock
+from typing import Any
 
 import pytest
 
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.behavior_generator import (
+from pytest_mock import MockerFixture
     BehaviorAnalyzer,
     BehaviorPattern,
     BehaviorSuggestionGenerator,
@@ -29,7 +31,7 @@ class TestBehaviorAnalyzer:
     def test_analyze_control_flow_loops(self) -> None:
         """Test analyzing control flow with loops."""
         source_code = """
-def test_func(items) -> None:
+def test_func(items: Any) -> None:
     result = []
     for item in items:
         if item > 0:
@@ -46,7 +48,7 @@ def test_func(items) -> None:
     def test_analyze_data_operations(self) -> None:
         """Test analyzing data manipulation patterns."""
         source_code = """
-def test_func(data) -> None:
+def test_func(data: Any) -> None:
     processed = [x * 2 for x in data]
     result = {}
     for item in processed:
@@ -63,7 +65,7 @@ def test_func(data) -> None:
     def test_analyze_side_effects(self) -> None:
         """Test analyzing side effects."""
         source_code = """
-def test_func(filename, data) -> None:
+def test_func(filename: Any, data: Any) -> None:
     import logging
     logging.info("Processing file")
 
@@ -82,7 +84,7 @@ def test_func(filename, data) -> None:
     def test_analyze_error_handling(self) -> None:
         """Test analyzing error handling patterns."""
         source_code = """
-def test_func(value) -> None:
+def test_func(value: Any) -> None:
     assert isinstance(value, str), "Value must be string"
 
     if not value:
@@ -107,7 +109,7 @@ def test_func(value) -> None:
     def test_analyze_performance_characteristics(self) -> None:
         """Test analyzing performance-related patterns."""
         source_code = """
-def test_func(matrix) -> None:
+def test_func(matrix: Any) -> None:
     result = []
     for i in range(len(matrix)):
         row = []
@@ -173,7 +175,7 @@ def {func_name}():
         # expects an AST node, but we can test it indirectly through the
         # full analysis
         source_code = """
-def test_func(value) -> None:
+def test_func(value: Any) -> None:
     if not isinstance(value, str):
         return False
     if len(value) == 0:
@@ -204,7 +206,7 @@ class TestBehaviorSuggestionGenerator:
     """Test the behavior suggestion generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(
             default_style="google",
@@ -212,14 +214,14 @@ class TestBehaviorSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create behavior suggestion generator."""
         return BehaviorSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self):
+    def mock_function(self) -> MockerFixture:
         """Create mock function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "process_data"
         function.line_number = 10
@@ -235,9 +237,9 @@ def process_data(items):
         return function
 
     @pytest.fixture
-    def mock_docstring(self):
+    def mock_docstring(self) -> MockerFixture:
         """Create mock docstring."""
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Process data"
         docstring.description = None
@@ -249,7 +251,7 @@ def process_data(items):
         return docstring
 
     @pytest.fixture
-    def mock_issue(self):
+    def mock_issue(self) -> MockerFixture:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="description_vague",
@@ -344,7 +346,7 @@ def process_data(items, log_file):
             or "log" in suggested_text
         )
 
-    def test_generate_enhanced_description(self, generator) -> None:
+    def test_generate_enhanced_description(self, generator: Any) -> None:
         """Test generation of enhanced descriptions."""
         # Mock patterns for testing
         patterns = [
@@ -354,7 +356,7 @@ def process_data(items, log_file):
             BehaviorPattern("file_io", "Performs file input/output operations", 0.9),
         ]
 
-        mock_docstring = Mock()
+        mock_docstring: Mock = Mock()
         mock_docstring.summary = "Process data"
         mock_docstring.description = None
 
@@ -376,7 +378,7 @@ def process_data(items, log_file):
             BehaviorPattern("logging", "Logs information for debugging", 0.8),
         ]
 
-        mock_docstring = Mock()
+        mock_docstring: Mock = Mock()
         mock_docstring.summary = "Process data"
 
         result = generator._generate_enhanced_description(
@@ -386,7 +388,7 @@ def process_data(items, log_file):
         assert "side effects" in result.lower()
         assert any(effect in result.lower() for effect in ["file", "log"])
 
-    def test_generate_basic_purpose(self, generator) -> None:
+    def test_generate_basic_purpose(self, generator: Any) -> None:
         """Test generation of basic purpose from function names."""
         test_cases = [
             ("get_user_data", "user data"),
@@ -434,7 +436,7 @@ def simple_func():
         # Should be a fallback suggestion
         assert suggestion.confidence == 0.1
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
+    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_behavior_issue",
@@ -459,18 +461,18 @@ class TestBehaviorGeneratorIntegration:
     """Integration tests for behavior generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create behavior suggestion generator."""
         return BehaviorSuggestionGenerator(config)
 
-    def test_complete_workflow_data_processing(self, generator) -> None:
+    def test_complete_workflow_data_processing(self, generator: Any) -> None:
         """Test complete workflow for data processing function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "filter_and_transform_data"
         function.line_number = 5
@@ -501,7 +503,7 @@ def filter_and_transform_data(raw_data, threshold=0.5):
     return filtered
 '''
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Filter data"  # Vague
         docstring.description = None
@@ -539,9 +541,9 @@ def filter_and_transform_data(raw_data, threshold=0.5):
         # Should be more detailed than original
         assert len(suggested_text) > len(docstring.raw_text)
 
-    def test_complete_workflow_file_operations(self, generator) -> None:
+    def test_complete_workflow_file_operations(self, generator: Any) -> None:
         """Test complete workflow for file operations with side effects."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "backup_and_process_file"
         function.line_number = 8
@@ -570,7 +572,7 @@ def backup_and_process_file(filepath, backup_dir):
     return backup_path
 '''
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Process file"
         docstring.description = None
@@ -606,9 +608,9 @@ def backup_and_process_file(filepath, backup_dir):
             effect in suggested_text for effect in ["file", "backup", "log", "modif"]
         )
 
-    def test_performance_pattern_detection(self, generator) -> None:
+    def test_performance_pattern_detection(self, generator: Any) -> None:
         """Test detection of performance-related patterns."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "matrix_multiply"
         function.line_number = 3
@@ -627,7 +629,7 @@ def matrix_multiply(a, b):
     return result
 '''
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Multiply matrices"
         docstring.description = None

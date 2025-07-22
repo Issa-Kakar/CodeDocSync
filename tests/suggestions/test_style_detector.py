@@ -7,12 +7,14 @@ Tests style detection from files, individual docstrings, and validation.
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+from typing import List
 
 import pytest
 
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.models import StyleDetectionError
 from codedocsync.suggestions.style_detector import (
+from pytest_mock import MockerFixture
     DocstringStyleDetector,
     style_detector,
 )
@@ -555,7 +557,7 @@ async def async_function():
         assert templates == google_templates
 
     @patch("random.sample")
-    def test_detect_from_project_sampling(self, mock_sample) -> None:
+    def test_detect_from_project_sampling(self, mock_sample: MockerFixture) -> None:
         """Test project detection with file sampling."""
         # Create temporary project structure
         with tempfile.TemporaryDirectory() as temp_dir:

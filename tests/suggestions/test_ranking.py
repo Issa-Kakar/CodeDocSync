@@ -6,6 +6,7 @@ functionality for organizing suggestions by importance and quality.
 """
 
 from unittest.mock import Mock
+from typing import Any
 
 import pytest
 
@@ -26,7 +27,7 @@ from codedocsync.suggestions.ranking import (
 
 # Test fixtures
 @pytest.fixture
-def critical_issue():
+def critical_issue() -> Any:
     """Create a critical severity issue."""
     return EnhancedIssue(
         issue_type="parameter_name_mismatch",
@@ -39,7 +40,7 @@ def critical_issue():
 
 
 @pytest.fixture
-def high_issue():
+def high_issue() -> Any:
     """Create a high severity issue."""
     return EnhancedIssue(
         issue_type="return_type_mismatch",
@@ -52,7 +53,7 @@ def high_issue():
 
 
 @pytest.fixture
-def medium_issue():
+def medium_issue() -> Any:
     """Create a medium severity issue."""
     return EnhancedIssue(
         issue_type="missing_raises",
@@ -65,7 +66,7 @@ def medium_issue():
 
 
 @pytest.fixture
-def low_issue():
+def low_issue() -> Any:
     """Create a low severity issue."""
     return EnhancedIssue(
         issue_type="example_invalid",
@@ -78,7 +79,7 @@ def low_issue():
 
 
 @pytest.fixture
-def low_confidence_issue():
+def low_confidence_issue() -> Any:
     """Create a low confidence issue."""
     return EnhancedIssue(
         issue_type="description_outdated",
@@ -91,7 +92,7 @@ def low_confidence_issue():
 
 
 @pytest.fixture
-def high_quality_suggestion():
+def high_quality_suggestion() -> Any:
     """Create a high quality suggestion."""
     return Suggestion(
         suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -104,7 +105,7 @@ def high_quality_suggestion():
 
 
 @pytest.fixture
-def low_quality_suggestion():
+def low_quality_suggestion() -> Any:
     """Create a low quality suggestion."""
     return Suggestion(
         suggestion_type=SuggestionType.DESCRIPTION_UPDATE,
@@ -195,7 +196,7 @@ class TestSuggestionRanker:
         low_index = next(i for i, s in enumerate(severities) if s == "low")
         assert critical_index < low_index
 
-    def test_rank_by_confidence(self, critical_issue, low_confidence_issue) -> None:
+    def test_rank_by_confidence(self, critical_issue: Any, low_confidence_issue: Any) -> None:
         """Test ranking considers confidence."""
         config = RankingConfig(strategy=RankingStrategy.CONFIDENCE_FIRST)
         ranker = SuggestionRanker(config)
@@ -206,7 +207,7 @@ class TestSuggestionRanker:
         # Higher confidence should rank higher
         assert ranked[0].confidence > ranked[1].confidence
 
-    def test_filter_by_confidence(self, critical_issue, low_confidence_issue) -> None:
+    def test_filter_by_confidence(self, critical_issue: Any, low_confidence_issue: Any) -> None:
         """Test filtering by minimum confidence."""
         config = RankingConfig(min_confidence=0.7)
         ranker = SuggestionRanker(config)
@@ -218,7 +219,7 @@ class TestSuggestionRanker:
         assert len(ranked) == 1
         assert ranked[0].confidence >= 0.7
 
-    def test_filter_by_severity(self, critical_issue, low_issue) -> None:
+    def test_filter_by_severity(self, critical_issue: Any, low_issue: Any) -> None:
         """Test filtering by allowed severities."""
         config = RankingConfig(allowed_severities=["critical", "high"])
         ranker = SuggestionRanker(config)
@@ -230,7 +231,7 @@ class TestSuggestionRanker:
         assert len(ranked) == 1
         assert ranked[0].severity in ["critical", "high"]
 
-    def test_exclude_issue_types(self, critical_issue, high_issue) -> None:
+    def test_exclude_issue_types(self, critical_issue: Any, high_issue: Any) -> None:
         """Test excluding specific issue types."""
         config = RankingConfig(excluded_issue_types=["parameter_name_mismatch"])
         ranker = SuggestionRanker(config)
@@ -289,7 +290,7 @@ class TestSuggestionRanker:
 
         assert ranked == []
 
-    def test_ranking_score_assignment(self, critical_issue) -> None:
+    def test_ranking_score_assignment(self, critical_issue: Any) -> None:
         """Test that ranking scores are assigned."""
         ranker = SuggestionRanker()
         ranked = ranker.rank_suggestions([critical_issue])
@@ -297,9 +298,9 @@ class TestSuggestionRanker:
         assert ranked[0].ranking_score is not None
         assert ranked[0].ranking_score > 0
 
-    def test_rank_analysis_results(self, critical_issue) -> None:
+    def test_rank_analysis_results(self, critical_issue: Any) -> None:
         """Test ranking analysis results."""
-        mock_pair = Mock()
+        mock_pair: Mock = Mock()
         mock_pair.function = Mock()
 
         result = EnhancedAnalysisResult(
@@ -318,7 +319,7 @@ class TestSuggestionRanker:
 class TestSuggestionFilter:
     """Test SuggestionFilter static methods."""
 
-    def test_by_confidence(self, critical_issue, low_confidence_issue) -> None:
+    def test_by_confidence(self, critical_issue: Any, low_confidence_issue: Any) -> None:
         """Test filtering by confidence."""
         issues = [critical_issue, low_confidence_issue]
         filtered = SuggestionFilter.by_confidence(issues, 0.7)
@@ -326,7 +327,7 @@ class TestSuggestionFilter:
         assert len(filtered) == 1
         assert filtered[0].confidence >= 0.7
 
-    def test_by_severity(self, critical_issue, medium_issue, low_issue) -> None:
+    def test_by_severity(self, critical_issue: Any, medium_issue: Any, low_issue: Any) -> None:
         """Test filtering by severity."""
         issues = [critical_issue, medium_issue, low_issue]
         filtered = SuggestionFilter.by_severity(issues, ["critical", "high"])
@@ -334,7 +335,7 @@ class TestSuggestionFilter:
         assert len(filtered) == 1  # Only critical issue
         assert filtered[0].severity in ["critical", "high"]
 
-    def test_by_issue_type(self, critical_issue, high_issue) -> None:
+    def test_by_issue_type(self, critical_issue: Any, high_issue: Any) -> None:
         """Test filtering by issue type."""
         issues = [critical_issue, high_issue]
         filtered = SuggestionFilter.by_issue_type(issues, ["parameter_name_mismatch"])
@@ -342,7 +343,7 @@ class TestSuggestionFilter:
         assert len(filtered) == 1
         assert filtered[0].issue_type == "parameter_name_mismatch"
 
-    def test_exclude_issue_types(self, critical_issue, high_issue) -> None:
+    def test_exclude_issue_types(self, critical_issue: Any, high_issue: Any) -> None:
         """Test excluding issue types."""
         issues = [critical_issue, high_issue]
         filtered = SuggestionFilter.exclude_issue_types(
@@ -352,7 +353,7 @@ class TestSuggestionFilter:
         assert len(filtered) == 1
         assert filtered[0].issue_type != "parameter_name_mismatch"
 
-    def test_copy_paste_ready_only(self, high_quality_suggestion) -> None:
+    def test_copy_paste_ready_only(self, high_quality_suggestion: Any) -> None:
         """Test filtering for copy-paste ready only."""
         issue1 = EnhancedIssue(
             issue_type="test1",
@@ -378,7 +379,7 @@ class TestSuggestionFilter:
         assert len(filtered) == 1
         assert filtered[0].rich_suggestion.copy_paste_ready
 
-    def test_top_n(self, critical_issue, high_issue, medium_issue) -> None:
+    def test_top_n(self, critical_issue: Any, high_issue: Any, medium_issue: Any) -> None:
         """Test getting top N suggestions."""
         # Set ranking scores
         critical_issue.ranking_score = 10.0
@@ -402,7 +403,7 @@ class TestPriorityBooster:
 
         assert len(booster.boost_rules) > 0
 
-    def test_calculate_boost(self, critical_issue) -> None:
+    def test_calculate_boost(self, critical_issue: Any) -> None:
         """Test boost calculation."""
         booster = PriorityBooster()
         boost = booster.calculate_boost(critical_issue)
@@ -410,7 +411,7 @@ class TestPriorityBooster:
         # Should get boost for critical parameter issue
         assert boost >= 0
 
-    def test_add_custom_rule(self, critical_issue) -> None:
+    def test_add_custom_rule(self, critical_issue: Any) -> None:
         """Test adding custom boost rule."""
         booster = PriorityBooster()
 
@@ -423,7 +424,7 @@ class TestPriorityBooster:
         # Should include boost from custom rule
         assert boost >= 5.0
 
-    def test_rule_failure_handling(self, critical_issue) -> None:
+    def test_rule_failure_handling(self, critical_issue: Any) -> None:
         """Test handling when boost rule fails."""
         booster = PriorityBooster()
 
@@ -440,7 +441,7 @@ class TestPriorityBooster:
 class TestRankingStrategies:
     """Test different ranking strategies."""
 
-    def test_severity_first_strategy(self, critical_issue, medium_issue) -> None:
+    def test_severity_first_strategy(self, critical_issue: Any, medium_issue: Any) -> None:
         """Test severity-first ranking strategy."""
         config = RankingConfig(strategy=RankingStrategy.SEVERITY_FIRST)
         ranker = SuggestionRanker(config)
@@ -455,7 +456,7 @@ class TestRankingStrategies:
         # Critical should rank higher due to severity boost
         assert ranked[0].severity == "critical"
 
-    def test_confidence_first_strategy(self, critical_issue, medium_issue) -> None:
+    def test_confidence_first_strategy(self, critical_issue: Any, medium_issue: Any) -> None:
         """Test confidence-first ranking strategy."""
         config = RankingConfig(strategy=RankingStrategy.CONFIDENCE_FIRST)
         ranker = SuggestionRanker(config)
@@ -470,7 +471,7 @@ class TestRankingStrategies:
         # Medium issue should rank higher due to confidence boost
         assert ranked[0].confidence > ranked[1].confidence
 
-    def test_balanced_strategy(self, critical_issue, medium_issue) -> None:
+    def test_balanced_strategy(self, critical_issue: Any, medium_issue: Any) -> None:
         """Test balanced ranking strategy."""
         config = RankingConfig(strategy=RankingStrategy.BALANCED)
         ranker = SuggestionRanker(config)
@@ -525,7 +526,7 @@ class TestActionabilityScoring:
             score > 3.0
         )  # 2.0 for copy-paste + 1.5 for high confidence + 1.0 for short
 
-    def test_low_actionability_suggestion(self, low_quality_suggestion) -> None:
+    def test_low_actionability_suggestion(self, low_quality_suggestion: Any) -> None:
         """Test scoring low actionability suggestion."""
         ranker = SuggestionRanker()
         score = ranker._calculate_actionability_score(low_quality_suggestion)
@@ -537,7 +538,7 @@ class TestActionabilityScoring:
 class TestComplexityPenalty:
     """Test complexity penalty calculations."""
 
-    def test_low_confidence_penalty(self, low_confidence_issue) -> None:
+    def test_low_confidence_penalty(self, low_confidence_issue: Any) -> None:
         """Test penalty for low confidence issues."""
         config = RankingConfig(penalize_low_confidence=True)
         ranker = SuggestionRanker(config)

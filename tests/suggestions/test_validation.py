@@ -8,6 +8,7 @@ import ast
 
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.ast_parser import (
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
@@ -72,7 +73,7 @@ def test_func() -> None:
                 "params": [
                     {
                         "name": "data",
-                        "type": "dict[str, list[int]]",
+                        "type": "Dict[str, List[int]]",
                         "description": "Complex data structure",
                     },
                     {
@@ -156,7 +157,7 @@ def test_func() -> None:
                 "params": [
                     {
                         "name": "value",
-                        "type": "int | float",
+                        "type": "Union[int, float]",
                         "description": "Numeric value",
                     },
                 ]
@@ -172,8 +173,8 @@ def test_func() -> None:
         generator = ReturnSuggestionGenerator()
         test_returns = [
             {"type": "int", "description": "Count of items"},
-            {"type": "list[str]", "description": "List of names"},
-            {"type": "dict[str, Any] | None", "description": "Data or None"},
+            {"type": "List[str]", "description": "List of names"},
+            {"type": "Optional[Dict[str, Any]]", "description": "Data or None"},
             {"type": "Generator[int, None, None]", "description": "Number generator"},
         ]
         for style in ["google", "numpy", "sphinx"]:
@@ -241,7 +242,7 @@ def test_func() -> None:
                 parameters=[
                     FunctionParameter(
                         name="data",
-                        type_annotation="list[dict[str, Any]]",
+                        type_annotation="List[Dict[str, Any]]",
                         is_required=True,
                     ),
                     FunctionParameter(
@@ -317,11 +318,11 @@ def test_func() -> None:
                 "params": [
                     {
                         "name": "complex_param",
-                        "type": "dict[str, list[tuple[int, str, dict[str, Any]]]]",
+                        "type": "Dict[str, List[Tuple[int, str, Dict[str, Any]]]]",
                         "description": "Very complex nested type",
                     }
                 ],
-                "returns": "tuple[bool, dict[str, list[int]], str | None]",
+                "returns": "Tuple[bool, Dict[str, List[int]], Optional[str]]",
                 "raises": ["Exception"],
             },
             # Special characters in descriptions
@@ -365,7 +366,7 @@ def test_func() -> None:
                 parameters=[
                     FunctionParameter(
                         name="config",
-                        type_annotation="dict[str, Any]",
+                        type_annotation="Dict[str, Any]",
                         is_required=True,
                     ),
                 ],

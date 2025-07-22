@@ -14,7 +14,10 @@ import time
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Union
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 if TYPE_CHECKING:
     from .docstring_models import ParsedDocstring
@@ -620,7 +623,7 @@ def _get_annotation_string(annotation: ast.expr | None) -> str | None:
     except AttributeError:
         # Fallback for older Python versions
         try:
-            import astor  # type: ignore[import-not-found]
+            import astor
 
             return str(astor.to_source(annotation).strip())
         except ImportError:

@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import cast
+from typing import List, Optional, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -21,7 +21,7 @@ from codedocsync.parser import (
 from codedocsync.storage.embedding_cache import EmbeddingCache
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def sample_function() -> ParsedFunction:
     return ParsedFunction(
         signature=FunctionSignature(
@@ -52,7 +52,7 @@ def sample_function() -> ParsedFunction:
     )
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def renamed_function() -> ParsedFunction:
     return ParsedFunction(
         signature=FunctionSignature(
@@ -85,7 +85,7 @@ def renamed_function() -> ParsedFunction:
     )
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
     config = EmbeddingConfig(
         primary_model=EmbeddingModel.OPENAI_SMALL,
@@ -336,7 +336,7 @@ class TestSemanticMatcherFallback:
 
         async def mock_generate_embedding(
             text: str, model: EmbeddingModel
-        ) -> list[float]:
+        ) -> List[float]:
             nonlocal call_count
             call_count += 1
 
@@ -465,7 +465,7 @@ class TestSemanticMatcherAdvanced:
 
         async def mock_generate_embedding(
             text: str, model: EmbeddingModel
-        ) -> list[float]:
+        ) -> List[float]:
             return [0.1] * 1536
 
         # Mock the embedding generator to track batch processing
@@ -547,7 +547,7 @@ class TestSemanticMatcherAdvanced:
 
         async def mock_generate_embedding(
             text: str, model: EmbeddingModel
-        ) -> list[float]:
+        ) -> List[float]:
             models_tried.append(model)
 
             if model == EmbeddingModel.OPENAI_SMALL:

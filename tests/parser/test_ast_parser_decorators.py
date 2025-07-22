@@ -135,7 +135,7 @@ def multi_decorated_property(self):
             f.write(
                 '''
 import functools
-from typing import Optional
+from typing import Any, List, Optional
 
 @decorator_with_args("string_arg", 42, keyword=True)
 def func1():
@@ -431,7 +431,7 @@ class OuterClass:
             f.write(
                 '''
 import asyncio
-from typing import Optional, List
+from typing import Any, List, Optional, List
 
 @async_decorator
 async def simple_async():
@@ -579,7 +579,7 @@ def chained_decorator_func(id: int):
 
 # Decorator with generator expression
 @parametrize("test_input,expected", [(i, i*2) for i in range(5)])
-def test_parametrized(test_input, expected) -> None:
+def test_parametrized(test_input: Any, expected: Any) -> None:
     """Parametrized test function."""
     assert test_input * 2 == expected
 

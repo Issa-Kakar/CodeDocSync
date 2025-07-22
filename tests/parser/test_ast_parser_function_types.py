@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 from codedocsync.parser.ast_parser import parse_python_file
+from typing import Any, Callable, Dict, List, Optional
 
 
 class TestASTParserFunctionTypes:
@@ -35,9 +36,9 @@ def function_with_annotations(x: int, y: int) -> int:
     return x + y
 
 def function_with_complex_annotations(
-    data: list[dict[str, Any]],
+    data: List[Dict[str, Any]],
     callback: Callable[[int], str] | None = None
-) -> dict[str, list[int]]:
+) -> Dict[str, List[int]]:
     """Function with complex type annotations."""
     return {}
 
@@ -100,12 +101,12 @@ def function_with_all_param_types(
         assert complex_func.signature.name == "function_with_complex_annotations"
         assert complex_func.signature.parameters[0].type_annotation is not None
         assert (
-            "list[dict[str, Any]]"
+            "List[Dict[str, Any]]"
             in complex_func.signature.parameters[0].type_annotation
         )
         assert complex_func.signature.parameters[1].default_value == "None"
         assert complex_func.signature.return_type is not None
-        assert "dict[str, list[int]]" in complex_func.signature.return_type
+        assert "Dict[str, List[int]]" in complex_func.signature.return_type
 
         # Test function with all parameter types
         all_params_func = functions[5]
@@ -145,7 +146,7 @@ async def async_generator():
 async def async_with_annotations(
     url: str,
     timeout: float = 30.0
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Async function with type annotations."""
     async with aiohttp.ClientSession() as session:
         async with session.get(url, timeout=timeout) as response:
@@ -190,7 +191,7 @@ async def async_with_annotations(
         assert async_annotated.signature.parameters[1].type_annotation == "float"
         assert async_annotated.signature.parameters[1].default_value == "30.0"
         assert async_annotated.signature.return_type is not None
-        assert "dict[str, Any]" in async_annotated.signature.return_type
+        assert "Dict[str, Any]" in async_annotated.signature.return_type
 
     def test_parse_generator_functions(self) -> None:
         """Test parsing of functions with yield statements."""
@@ -217,7 +218,7 @@ def generator_expression_factory(n: int) -> Generator[int, None, None]:
     """Function returning a generator expression."""
     return (i ** 2 for i in range(n))
 
-def yield_from_generator(iterables: list[list[int]]):
+def yield_from_generator(iterables: List[List[int]]):
     """Generator using yield from."""
     for iterable in iterables:
         yield from iterable
@@ -453,7 +454,7 @@ class MyClass:
         return f"MyClass(name={self.name!r})"
 
     @classmethod
-    async def async_class_method(cls) -> list["MyClass"]:
+    async def async_class_method(cls) -> List["MyClass"]:
         """Async class method."""
         data = await fetch_data()
         return [cls(item["name"]) for item in data]

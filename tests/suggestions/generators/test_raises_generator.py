@@ -6,6 +6,7 @@ creation for various exception scenarios.
 """
 
 from unittest.mock import Mock
+from typing import Any
 
 import pytest
 
@@ -13,6 +14,7 @@ from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.docstring_models import DocstringRaises
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.raises_generator import (
+from pytest_mock import MockerFixture
     ExceptionAnalyzer,
     ExceptionInfo,
     RaisesSuggestionGenerator,
@@ -44,7 +46,7 @@ def test_func() -> None:
     def test_analyze_multiple_exceptions(self) -> None:
         """Test analyzing multiple exception types."""
         source_code = """
-def test_func(value) -> None:
+def test_func(value: Any) -> None:
     if not isinstance(value, str):
         raise TypeError("Expected string")
     if not value:
@@ -61,7 +63,7 @@ def test_func(value) -> None:
     def test_analyze_function_calls(self) -> None:
         """Test analyzing exceptions from function calls."""
         source_code = """
-def test_func(filename) -> None:
+def test_func(filename: Any) -> None:
     with open(filename, 'r') as f:
         content = f.read()
     return int(content)
@@ -77,7 +79,7 @@ def test_func(filename) -> None:
     def test_analyze_subscript_operations(self) -> None:
         """Test analyzing exceptions from subscript operations."""
         source_code = """
-def test_func(data, key) -> None:
+def test_func(data: Any, key: Any) -> None:
     return data[key]
 """
         analyzer = ExceptionAnalyzer()
@@ -143,7 +145,7 @@ class TestRaisesSuggestionGenerator:
     """Test the raises suggestion generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(
             default_style="google",
@@ -151,19 +153,19 @@ class TestRaisesSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create raises suggestion generator."""
         return RaisesSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self):
+    def mock_function(self) -> MockerFixture:
         """Create mock function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "test_function"
         function.line_number = 10
         function.source_code = """
-def test_function(value) -> None:
+def test_function(value: Any) -> None:
     if not isinstance(value, str):
         raise TypeError("Expected string")
     if not value:
@@ -173,9 +175,9 @@ def test_function(value) -> None:
         return function
 
     @pytest.fixture
-    def mock_docstring(self):
+    def mock_docstring(self) -> MockerFixture:
         """Create mock docstring."""
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Test function"
         docstring.description = None
@@ -187,7 +189,7 @@ def test_function(value) -> None:
         return docstring
 
     @pytest.fixture
-    def mock_issue(self):
+    def mock_issue(self) -> MockerFixture:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="missing_raises",
@@ -269,7 +271,7 @@ def test_function(value) -> None:
         assert "TypeError" in suggested_text
         # Descriptions should be more detailed than original "error" and "failure"
 
-    def test_is_vague_description(self, generator) -> None:
+    def test_is_vague_description(self, generator: Any) -> None:
         """Test detection of vague exception descriptions."""
         # Test vague descriptions
         assert generator._is_vague_description("error")
@@ -285,7 +287,7 @@ def test_function(value) -> None:
         )
         assert not generator._is_vague_description("If the file cannot be found")
 
-    def test_generate_improved_exception_description(self, generator) -> None:
+    def test_generate_improved_exception_description(self, generator: Any) -> None:
         """Test generation of improved exception descriptions."""
         analyzer = ExceptionAnalyzer()
 
@@ -343,7 +345,7 @@ def simple_func():
         # Should be a fallback suggestion since no significant exceptions
         assert suggestion.confidence <= 0.3
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
+    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_raises_issue",
@@ -368,18 +370,18 @@ class TestRaisesGeneratorIntegration:
     """Integration tests for raises generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create raises suggestion generator."""
         return RaisesSuggestionGenerator(config)
 
-    def test_complete_workflow_file_operations(self, generator) -> None:
+    def test_complete_workflow_file_operations(self, generator: Any) -> None:
         """Test complete workflow for file operations function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "read_config_file"
         function.line_number = 5
@@ -403,7 +405,7 @@ def read_config_file(filename):
         raise ValueError(f"Invalid JSON in {filename}")
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Read configuration from file"
         docstring.description = None
@@ -438,9 +440,9 @@ def read_config_file(filename):
         assert "FileNotFoundError" in suggested_text
         assert "PermissionError" in suggested_text
 
-    def test_complete_workflow_mismatch_correction(self, generator) -> None:
+    def test_complete_workflow_mismatch_correction(self, generator: Any) -> None:
         """Test complete workflow for correcting exception mismatches."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "validate_input"
         function.line_number = 8
@@ -453,7 +455,7 @@ def validate_input(data):
     return True
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Validate input data"
         docstring.raises = [
@@ -495,9 +497,9 @@ def validate_input(data):
         # (This is harder to test without parsing the docstring, but at minimum
         # the correct exceptions should be present)
 
-    def test_edge_case_no_exceptions_detected(self, generator) -> None:
+    def test_edge_case_no_exceptions_detected(self, generator: Any) -> None:
         """Test edge case where no exceptions are detected."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "simple_getter"
         function.line_number = 3
@@ -506,7 +508,7 @@ def simple_getter(self):
     return self._value
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Get the value"
         docstring.raises = []

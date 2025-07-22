@@ -15,6 +15,7 @@ import tracemalloc
 import pytest
 
 from codedocsync.parser.ast_parser import parse_python_file, parse_python_file_lazy
+from typing import Any, Dict, Optional, Union
 
 
 def generate_test_file(num_functions: int, lines_per_function: int = 10) -> str:

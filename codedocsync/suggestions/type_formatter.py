@@ -222,7 +222,7 @@ class TypeAnnotationFormatter:
             formatted_inner = self.format_for_docstring(inner_type)
             return f"{formatted_inner}, optional"
 
-        # Handle Union[T, None] -> T, optional
+        # Handle Optional[T] -> T, optional
         union_none_match = re.match(r"Union\[(.+), None\]", type_str)
         if union_none_match:
             inner_type = union_none_match.group(1)
@@ -236,7 +236,7 @@ class TypeAnnotationFormatter:
             formatted_types = [self.format_for_docstring(t.strip()) for t in types]
             return " or ".join(formatted_types)
 
-        # Handle new-style unions (Python 3.10+): A | B
+        # Handle new-style unions (Python 3.10+): Union[A, B]
         if " | " in type_str:
             types = type_str.split(" | ")
             formatted_types = [self.format_for_docstring(t.strip()) for t in types]

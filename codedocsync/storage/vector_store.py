@@ -10,8 +10,8 @@ try:
 
     CHROMADB_AVAILABLE = True
 except ImportError:
-    chromadb = None
-    Settings = None
+    chromadb = None  # type: ignore[assignment]
+    Settings = None  # type: ignore[assignment, misc]
     CHROMADB_AVAILABLE = False
 
 logger = logging.getLogger(__name__)

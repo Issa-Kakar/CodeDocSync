@@ -71,8 +71,8 @@ class TestBaseSuggestionGenerator:
 
     def test_generate_with_timing(self) -> None:
         """Test generate_with_timing method."""
-        mock_issue = Mock()
-        mock_function = Mock()
+        mock_issue: Mock = Mock()
+        mock_function: Mock = Mock()
         context = SuggestionContext(issue=mock_issue, function=mock_function)
 
         suggestion = self.generator.generate_with_timing(context)
@@ -89,8 +89,8 @@ class TestBaseSuggestionGenerator:
                 raise ValueError("Test error")
 
         generator = FailingGenerator()
-        mock_issue = Mock()
-        mock_function = Mock()
+        mock_issue: Mock = Mock()
+        mock_function: Mock = Mock()
         context = SuggestionContext(issue=mock_issue, function=mock_function)
 
         with pytest.raises(SuggestionError) as exc_info:
@@ -675,8 +675,8 @@ class TestBaseSuggestionGeneratorIntegration:
                 )
 
         generator = TestGenerator()
-        mock_issue = Mock()
-        mock_function = Mock()
+        mock_issue: Mock = Mock()
+        mock_function: Mock = Mock()
         context = SuggestionContext(issue=mock_issue, function=mock_function)
 
         # Generate with timing

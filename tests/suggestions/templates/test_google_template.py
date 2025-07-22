@@ -3,6 +3,8 @@
 import pytest
 
 from codedocsync.parser.docstring_models import (
+from typing import Any, Dict, List, Optional
+from pathlib import Path
     DocstringParameter,
     DocstringRaises,
     DocstringReturns,
@@ -14,11 +16,11 @@ class TestGoogleStyleTemplate:
     """Test Google-style template functionality."""
 
     @pytest.fixture
-    def template(self):
+    def template(self) -> Path:
         """Create Google template instance."""
         return GoogleStyleTemplate()
 
-    def test_render_parameters_simple(self, template) -> None:
+    def test_render_parameters_simple(self, template: Any) -> None:
         """Test rendering simple parameters."""
         parameters = [
             DocstringParameter(
@@ -38,12 +40,12 @@ class TestGoogleStyleTemplate:
         assert "    param1 (str): First parameter" in result
         assert "    param2 (int, optional): Second parameter" in result
 
-    def test_render_parameters_empty(self, template) -> None:
+    def test_render_parameters_empty(self, template: Any) -> None:
         """Test rendering empty parameters list."""
         result = template.render_parameters([])
         assert result == []
 
-    def test_render_parameters_no_type(self, template) -> None:
+    def test_render_parameters_no_type(self, template: Any) -> None:
         """Test rendering parameters without type annotations."""
         parameters = [
             DocstringParameter(name="param", description="Parameter without type")
@@ -54,7 +56,7 @@ class TestGoogleStyleTemplate:
         assert result[0] == "Args:"
         assert "    param: Parameter without type" in result
 
-    def test_render_parameters_long_description(self, template) -> None:
+    def test_render_parameters_long_description(self, template: Any) -> None:
         """Test parameter with long description that needs wrapping."""
         parameters = [
             DocstringParameter(
@@ -71,7 +73,7 @@ class TestGoogleStyleTemplate:
         # Should have continuation lines with proper indentation
         assert any(line.startswith("        ") for line in result[2:])
 
-    def test_render_returns_simple(self, template) -> None:
+    def test_render_returns_simple(self, template: Any) -> None:
         """Test rendering simple return documentation."""
         returns = DocstringReturns(type_str="bool", description="Success status")
 
@@ -80,7 +82,7 @@ class TestGoogleStyleTemplate:
         assert result[0] == "Returns:"
         assert "    bool: Success status" in result
 
-    def test_render_returns_no_type(self, template) -> None:
+    def test_render_returns_no_type(self, template: Any) -> None:
         """Test rendering return without type."""
         returns = DocstringReturns(description="Something useful")
 
@@ -89,13 +91,13 @@ class TestGoogleStyleTemplate:
         assert result[0] == "Returns:"
         assert "    Something useful" in result
 
-    def test_render_returns_empty(self, template) -> None:
+    def test_render_returns_empty(self, template: Any) -> None:
         """Test rendering empty returns."""
         returns = DocstringReturns()
         result = template.render_returns(returns)
         assert result == []
 
-    def test_render_raises_simple(self, template) -> None:
+    def test_render_raises_simple(self, template: Any) -> None:
         """Test rendering simple exception documentation."""
         raises = [
             DocstringRaises(
@@ -112,12 +114,12 @@ class TestGoogleStyleTemplate:
         assert "    ValueError: When value is invalid" in result
         assert "    TypeError: When type is wrong" in result
 
-    def test_render_raises_empty(self, template) -> None:
+    def test_render_raises_empty(self, template: Any) -> None:
         """Test rendering empty raises list."""
         result = template.render_raises([])
         assert result == []
 
-    def test_render_complete_docstring(self, template) -> None:
+    def test_render_complete_docstring(self, template: Any) -> None:
         """Test rendering complete docstring with all sections."""
         parameters = [
             DocstringParameter(name="param1", type_str="str", description="First param")
@@ -149,7 +151,7 @@ class TestGoogleStyleTemplate:
         assert "Raises:" in result
         assert "Examples:" in result
 
-    def test_format_parameter_line_with_type(self, template) -> None:
+    def test_format_parameter_line_with_type(self, template: Any) -> None:
         """Test formatting parameter line with type."""
         param = DocstringParameter(
             name="test_param", type_str="str", description="Test description"
@@ -158,21 +160,21 @@ class TestGoogleStyleTemplate:
         result = template._format_parameter_line(param)
         assert result == "test_param (str): Test description"
 
-    def test_format_parameter_line_without_type(self, template) -> None:
+    def test_format_parameter_line_without_type(self, template: Any) -> None:
         """Test formatting parameter line without type."""
         param = DocstringParameter(name="test_param", description="Test description")
 
         result = template._format_parameter_line(param)
         assert result == "test_param: Test description"
 
-    def test_format_parameter_line_no_description(self, template) -> None:
+    def test_format_parameter_line_no_description(self, template: Any) -> None:
         """Test formatting parameter line without description."""
         param = DocstringParameter(name="test_param", type_str="str")
 
         result = template._format_parameter_line(param)
         assert result == "test_param (str):"
 
-    def test_match_parameter_line(self, template) -> None:
+    def test_match_parameter_line(self, template: Any) -> None:
         """Test matching parameter lines to extract names."""
         test_cases = [
             ("    param_name (str): Description", "param_name"),
@@ -186,7 +188,7 @@ class TestGoogleStyleTemplate:
             result = template._match_parameter_line(line)
             assert result == expected
 
-    def test_extract_section_boundaries(self, template) -> None:
+    def test_extract_section_boundaries(self, template: Any) -> None:
         """Test extracting section boundaries from docstring."""
         docstring_lines = [
             '"""Function docstring.',
@@ -214,7 +216,7 @@ class TestGoogleStyleTemplate:
         assert params_start == 2  # "Args:" line
         assert params_end == 4  # Last parameter line
 
-    def test_replace_section(self, template) -> None:
+    def test_replace_section(self, template: Any) -> None:
         """Test replacing a section in docstring."""
         original_lines = [
             '"""Function docstring.',

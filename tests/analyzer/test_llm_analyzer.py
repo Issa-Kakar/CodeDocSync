@@ -14,6 +14,8 @@ import pytest
 
 from codedocsync.analyzer import LLMAnalyzer
 from codedocsync.analyzer.llm_config import LLMConfig
+
+# from pytest_mock import MockerFixture
 from codedocsync.analyzer.llm_errors import (
     LLMAPIKeyError,
     LLMError,
@@ -35,7 +37,7 @@ class TestLLMAnalyzer:
     """Test suite for the LLMAnalyzer class."""
 
     @pytest.fixture
-    def mock_env(self, monkeypatch):
+    def mock_env(self, monkeypatch) -> None:
         """Mock environment variables for testing."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-api-key")
 

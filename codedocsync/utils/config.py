@@ -69,7 +69,7 @@ class CodeDocSyncConfig(BaseModel):
     @classmethod
     def from_yaml(cls, file_path: str) -> "CodeDocSyncConfig":
         """Load configuration from YAML file."""
-        import yaml  # type: ignore[import-untyped]
+        import yaml
 
         with open(file_path) as f:
             data = yaml.safe_load(f)

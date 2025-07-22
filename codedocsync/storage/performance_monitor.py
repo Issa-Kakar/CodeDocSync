@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import psutil  # type: ignore
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ class PerformanceMonitor:
     def _get_disk_usage(self) -> dict[str, float]:
         """Get disk usage for current working directory."""
         try:
-            disk = psutil.disk_usage(Path.cwd())
+            disk = psutil.disk_usage(str(Path.cwd()))
             return {
                 "total_gb": disk.total / (1024**3),
                 "used_gb": disk.used / (1024**3),

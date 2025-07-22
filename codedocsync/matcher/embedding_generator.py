@@ -36,7 +36,9 @@ class EmbeddingGenerator:
 
     def _init_providers(self) -> None:
         """Initialize embedding providers based on available models."""
-        self.providers = {}
+        from typing import Any
+
+        self.providers: dict[str, Any] = {}
 
         # Initialize OpenAI if available
         if self.config_manager.get_api_key("openai"):
@@ -51,7 +53,9 @@ class EmbeddingGenerator:
 
         # Initialize local model as fallback
         try:
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import (
+                SentenceTransformer,
+            )
 
             self.providers["local"] = SentenceTransformer("all-MiniLM-L6-v2")
             logger.info("Initialized local embedding model")
@@ -110,7 +114,7 @@ class EmbeddingGenerator:
         signature_str = function.signature.to_string()
         return hashlib.sha256(signature_str.encode()).hexdigest()[:16]
 
-    @retry(  # type: ignore[misc]
+    @retry(
         stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10)
     )
     async def generate_embedding(

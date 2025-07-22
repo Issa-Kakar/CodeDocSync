@@ -6,6 +6,7 @@ for various return scenarios including generators, async functions, and complex 
 """
 
 from unittest.mock import Mock
+from typing import Any, Union
 
 import pytest
 
@@ -13,6 +14,7 @@ from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.docstring_models import DocstringReturns
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.return_generator import (
+from pytest_mock import MockerFixture
     ReturnAnalysisResult,
     ReturnStatementAnalyzer,
     ReturnSuggestionGenerator,
@@ -45,7 +47,7 @@ def test_func() -> None:
     def test_analyze_multiple_returns(self) -> None:
         """Test analyzing function with multiple return types."""
         source_code = """
-def test_func(flag) -> None:
+def test_func(flag: Any) -> None:
     if flag:
         return 42
     else:
@@ -115,7 +117,7 @@ class TestReturnSuggestionGenerator:
     """Test the return suggestion generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(
             default_style="google",
@@ -123,14 +125,14 @@ class TestReturnSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create return suggestion generator."""
         return ReturnSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self):
+    def mock_function(self) -> MockerFixture:
         """Create mock function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "test_function"
         function.signature.return_annotation = "str"
@@ -142,9 +144,9 @@ def test_function() -> None:
         return function
 
     @pytest.fixture
-    def mock_docstring(self):
+    def mock_docstring(self) -> MockerFixture:
         """Create mock docstring."""
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Test function"
         docstring.description = None
@@ -156,7 +158,7 @@ def test_function() -> None:
         return docstring
 
     @pytest.fixture
-    def mock_issue(self):
+    def mock_issue(self) -> MockerFixture:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="return_type_mismatch",
@@ -236,43 +238,43 @@ def test_function() -> None:
         assert suggestion.suggestion_type == SuggestionType.RETURN_UPDATE
         assert "Generator" in suggestion.suggested_text
 
-    def test_determine_best_return_type_single(self, generator) -> None:
+    def test_determine_best_return_type_single(self, generator: Any) -> None:
         """Test determining best return type with single type."""
         analysis = ReturnAnalysisResult()
         analysis.return_types = {"str"}
         analysis.is_generator = False
         analysis.has_implicit_none = False
 
-        mock_function = Mock()
+        mock_function: Mock = Mock()
         mock_function.signature.return_annotation = None
 
         result = generator._determine_best_return_type(analysis, mock_function)
         assert result == "str"
 
-    def test_determine_best_return_type_multiple(self, generator) -> None:
+    def test_determine_best_return_type_multiple(self, generator: Any) -> None:
         """Test determining best return type with multiple types."""
         analysis = ReturnAnalysisResult()
         analysis.return_types = {"str", "int"}
         analysis.is_generator = False
         analysis.has_implicit_none = False
 
-        mock_function = Mock()
+        mock_function: Mock = Mock()
         mock_function.signature.return_annotation = None
 
         result = generator._determine_best_return_type(analysis, mock_function)
         assert "Union" in result
 
-    def test_determine_best_return_type_generator(self, generator) -> None:
+    def test_determine_best_return_type_generator(self, generator: Any) -> None:
         """Test determining best return type for generator."""
         analysis = ReturnAnalysisResult()
         analysis.is_generator = True
 
-        mock_function = Mock()
+        mock_function: Mock = Mock()
 
         result = generator._determine_best_return_type(analysis, mock_function)
         assert result == "Generator"
 
-    def test_generate_return_description_basic_types(self, generator) -> None:
+    def test_generate_return_description_basic_types(self, generator: Any) -> None:
         """Test generating return descriptions for basic types."""
         # Test various basic types
         test_cases = [
@@ -287,7 +289,7 @@ def test_function() -> None:
             result = generator._generate_return_description(return_type, None)
             assert expected_desc in result
 
-    def test_generate_return_description_special_cases(self, generator) -> None:
+    def test_generate_return_description_special_cases(self, generator: Any) -> None:
         """Test generating return descriptions for special cases."""
         # Test None
         result = generator._generate_return_description("None", None)
@@ -316,7 +318,7 @@ def test_function() -> None:
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
+    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_return_issue",
@@ -341,19 +343,19 @@ class TestReturnGeneratorIntegration:
     """Integration tests for return generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create return suggestion generator."""
         return ReturnSuggestionGenerator(config)
 
-    def test_complete_workflow_missing_returns(self, generator) -> None:
+    def test_complete_workflow_missing_returns(self, generator: Any) -> None:
         """Test complete workflow for missing returns."""
         # Create realistic function and docstring
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "calculate_sum"
         function.signature.return_annotation = "int"
@@ -363,7 +365,7 @@ def calculate_sum(a, b):
     return a + b
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Calculate sum of two numbers"
         docstring.description = None
@@ -397,9 +399,9 @@ def calculate_sum(a, b):
         assert "Returns:" in suggested_text or "returns" in suggested_text.lower()
         assert "int" in suggested_text or "integer" in suggested_text
 
-    def test_complete_workflow_generator_function(self, generator) -> None:
+    def test_complete_workflow_generator_function(self, generator: Any) -> None:
         """Test complete workflow for generator function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "number_generator"
         function.signature.return_annotation = None
@@ -410,7 +412,7 @@ def number_generator(n):
         yield i * 2
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Generate numbers"
         docstring.returns = DocstringReturns(

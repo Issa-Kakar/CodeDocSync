@@ -28,6 +28,9 @@ codedocsync = "codedocsync.cli.main:app"
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry.dependencies]
+python = "^3.10"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 pytest-asyncio = "^0.23.0"

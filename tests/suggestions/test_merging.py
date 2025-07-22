@@ -1,6 +1,7 @@
 """Tests for smart docstring merging functionality."""
 
 import pytest
+from typing import Any, Optional
 
 from codedocsync.parser.docstring_models import DocstringParameter
 from codedocsync.suggestions.merging import (
@@ -15,11 +16,11 @@ class TestDocstringMerger:
     """Test docstring merging functionality."""
 
     @pytest.fixture
-    def merger(self):
+    def merger(self) -> Any:
         """Create DocstringMerger instance."""
         return DocstringMerger(DocstringStyle.GOOGLE)
 
-    def test_merge_partial_update_parameters(self, merger) -> None:
+    def test_merge_partial_update_parameters(self, merger: Any) -> None:
         """Test merging parameter section update."""
         existing_docstring = '''"""
         Function summary.
@@ -45,7 +46,7 @@ class TestDocstringMerger:
         assert "Returns:" in result  # Should preserve returns section
         assert "Something useful" in result
 
-    def test_merge_partial_update_new_section(self, merger) -> None:
+    def test_merge_partial_update_new_section(self, merger: Any) -> None:
         """Test adding new section that doesn't exist."""
         existing_docstring = '''"""
         Function summary.
@@ -68,7 +69,7 @@ class TestDocstringMerger:
         assert "Returns:" in result
         assert "Something useful" in result
 
-    def test_merge_multiple_sections(self, merger) -> None:
+    def test_merge_multiple_sections(self, merger: Any) -> None:
         """Test merging multiple section updates."""
         existing_docstring = '''"""
         Function summary.
@@ -96,7 +97,7 @@ class TestDocstringMerger:
         assert "old_param: Old description" not in result
         assert "Old return description" not in result
 
-    def test_preserve_custom_content(self, merger) -> None:
+    def test_preserve_custom_content(self, merger: Any) -> None:
         """Test preserving custom sections during merge."""
         original_docstring = '''"""
         Function summary.
@@ -132,7 +133,7 @@ class TestDocstringMerger:
         assert "This is a custom note that should be preserved" in result
         assert "This is a warning that should be preserved" in result
 
-    def test_smart_parameter_merge_preserve_descriptions(self, merger) -> None:
+    def test_smart_parameter_merge_preserve_descriptions(self, merger: Any) -> None:
         """Test intelligent parameter merging with description preservation."""
         original_params = [
             DocstringParameter(
@@ -175,7 +176,7 @@ class TestDocstringMerger:
         param3 = next(p for p in merged if p.name == "param3")
         assert param3.description == "New parameter description"
 
-    def test_smart_parameter_merge_no_preservation(self, merger) -> None:
+    def test_smart_parameter_merge_no_preservation(self, merger: Any) -> None:
         """Test parameter merging without description preservation."""
         original_params = [
             DocstringParameter(name="param1", description="Original description")
@@ -190,7 +191,7 @@ class TestDocstringMerger:
         assert len(merged) == 1
         assert merged[0].description == "New description"
 
-    def test_parse_section_boundaries_google_style(self, merger) -> None:
+    def test_parse_section_boundaries_google_style(self, merger: Any) -> None:
         """Test parsing section boundaries for Google style."""
         lines = [
             '"""Function summary.',
@@ -226,7 +227,7 @@ class TestDocstringMerger:
         assert params_boundary.start_line == 4  # "Args:" line
         assert params_boundary.end_line == 6  # Last parameter line
 
-    def test_identify_section_type_google(self, merger) -> None:
+    def test_identify_section_type_google(self, merger: Any) -> None:
         """Test identifying section types for Google style."""
         test_cases = [
             ("Args:", SectionType.PARAMETERS),
@@ -247,7 +248,7 @@ class TestDocstringMerger:
             result = merger._identify_section_type(line)
             assert result == expected
 
-    def test_extract_section_content(self, merger) -> None:
+    def test_extract_section_content(self, merger: Any) -> None:
         """Test extracting specific section content."""
         docstring = '''"""
         Function summary.
@@ -268,7 +269,7 @@ class TestDocstringMerger:
         assert "param2: Second parameter" in params_content
         assert "Returns:" not in params_content
 
-    def test_merge_with_confidence_weighting(self, merger) -> None:
+    def test_merge_with_confidence_weighting(self, merger: Any) -> None:
         """Test confidence-based merging."""
         original = "Original content"
         new_content = "New content"
@@ -285,7 +286,7 @@ class TestDocstringMerger:
         result = merger.merge_with_confidence_weighting(original, new_content, 0.3)
         assert result == original
 
-    def test_validate_merge_result(self, merger) -> None:
+    def test_validate_merge_result(self, merger: Any) -> None:
         """Test validation of merge results."""
         # Valid docstring
         valid_docstring = '''"""
@@ -314,7 +315,7 @@ class TestDocstringMerger:
         assert not is_valid
         assert "Unbalanced docstring quotes" in errors[0]
 
-    def test_merge_empty_existing_docstring(self, merger) -> None:
+    def test_merge_empty_existing_docstring(self, merger: Any) -> None:
         """Test merging with empty existing docstring."""
         new_section = """Args:
     param: Parameter description"""
@@ -322,7 +323,7 @@ class TestDocstringMerger:
         result = merger.merge_partial_update("", new_section, "parameters")
         assert result == new_section
 
-    def test_merge_preserve_spacing(self, merger) -> None:
+    def test_merge_preserve_spacing(self, merger: Any) -> None:
         """Test that merging preserves proper spacing."""
         existing_docstring = '''"""
         Function summary.
@@ -390,11 +391,11 @@ class TestMergerEdgeCases:
     """Test edge cases for merger."""
 
     @pytest.fixture
-    def merger(self):
+    def merger(self) -> Any:
         """Create DocstringMerger instance."""
         return DocstringMerger(DocstringStyle.GOOGLE)
 
-    def test_is_generic_description(self, merger) -> None:
+    def test_is_generic_description(self, merger: Any) -> None:
         """Test detection of generic descriptions."""
         generic_descriptions = [
             "Description for param",
@@ -417,7 +418,7 @@ class TestMergerEdgeCases:
         for desc in specific_descriptions:
             assert not merger._is_generic_description(desc)
 
-    def test_merge_with_malformed_docstring(self, merger) -> None:
+    def test_merge_with_malformed_docstring(self, merger: Any) -> None:
         """Test merging with malformed docstring."""
         malformed_docstring = '''"""
         Malformed docstring

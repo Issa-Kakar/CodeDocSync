@@ -5,7 +5,7 @@ This package contains comprehensive tests for all components of the
 suggestion generation system implemented in Chunk 1.
 """
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 # Test module information
 __version__ = "1.0.0"
@@ -37,7 +37,7 @@ TEST_CATEGORIES = {
 }
 
 
-def get_test_info() -> dict[str, Any]:
+def get_test_info() -> Dict[str, Any]:
     """Get information about the test suite."""
     return {
         "version": __version__,

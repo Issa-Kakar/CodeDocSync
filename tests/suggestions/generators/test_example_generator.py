@@ -12,6 +12,8 @@ import pytest
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.example_generator import (
+from typing import Any, Dict, List, Optional, Union
+from pytest_mock import MockerFixture
     ExampleGenerator,
     ExamplePatternAnalyzer,
     ExampleSuggestionGenerator,
@@ -29,11 +31,11 @@ class TestParameterValueGenerator:
     """Test the parameter value generator."""
 
     @pytest.fixture
-    def generator(self):
+    def generator(self) -> Any:
         """Create parameter value generator."""
         return ParameterValueGenerator()
 
-    def test_generate_value_by_name(self, generator) -> None:
+    def test_generate_value_by_name(self, generator: Any) -> None:
         """Test value generation based on parameter names."""
         test_cases = [
             ("name", '"John Doe"'),
@@ -46,7 +48,7 @@ class TestParameterValueGenerator:
         ]
 
         for param_name, expected_value in test_cases:
-            param = Mock()
+            param: Mock = Mock()
             param.name = param_name
             param.type_annotation = None
             param.is_required = True
@@ -55,7 +57,7 @@ class TestParameterValueGenerator:
             result = generator.generate_value(param)
             assert result == expected_value
 
-    def test_generate_value_by_type(self, generator) -> None:
+    def test_generate_value_by_type(self, generator: Any) -> None:
         """Test value generation based on type annotations."""
         test_cases = [
             ("str", '"example"'),
@@ -67,7 +69,7 @@ class TestParameterValueGenerator:
         ]
 
         for type_annotation, expected_value in test_cases:
-            param = Mock()
+            param: Mock = Mock()
             param.name = "param"
             param.type_annotation = type_annotation
             param.is_required = True
@@ -76,9 +78,9 @@ class TestParameterValueGenerator:
             result = generator.generate_value(param)
             assert result == expected_value
 
-    def test_generate_value_optional_with_default(self, generator) -> None:
+    def test_generate_value_optional_with_default(self, generator: Any) -> None:
         """Test value generation for optional parameters with defaults."""
-        param = Mock()
+        param: Mock = Mock()
         param.name = "timeout"
         param.type_annotation = "int"
         param.is_required = False
@@ -87,11 +89,11 @@ class TestParameterValueGenerator:
         result = generator.generate_value(param)
         assert result == "30"
 
-    def test_normalize_type(self, generator) -> None:
+    def test_normalize_type(self, generator: Any) -> None:
         """Test type normalization for complex types."""
         test_cases = [
             ("Optional[str]", "str"),
-            ("Union[str, None]", "str"),
+            ("Optional[str]", "str"),
             ("List[Dict[str, Any]]", "List"),
             ("Dict[str, List[int]]", "Dict"),
         ]
@@ -100,9 +102,9 @@ class TestParameterValueGenerator:
             result = generator._normalize_type(input_type)
             assert expected_normalized in result
 
-    def test_fallback_value(self, generator) -> None:
+    def test_fallback_value(self, generator: Any) -> None:
         """Test fallback value generation."""
-        param = Mock()
+        param: Mock = Mock()
         param.name = "unknown_param"
         param.type_annotation = "UnknownType"
         param.is_required = True
@@ -116,13 +118,13 @@ class TestExamplePatternAnalyzer:
     """Test the example pattern analyzer."""
 
     @pytest.fixture
-    def analyzer(self):
+    def analyzer(self) -> Any:
         """Create example pattern analyzer."""
         return ExamplePatternAnalyzer()
 
-    def test_analyze_function_decorators(self, analyzer) -> None:
+    def test_analyze_function_decorators(self, analyzer: Any) -> None:
         """Test analyzing function decorators."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.decorators = ["property"]
 
@@ -132,7 +134,7 @@ class TestExamplePatternAnalyzer:
         assert analysis["is_classmethod"] is False
         assert analysis["is_staticmethod"] is False
 
-    def test_analyze_async_function(self, analyzer) -> None:
+    def test_analyze_async_function(self, analyzer: Any) -> None:
         """Test analyzing async functions."""
         source_code = """
 async def fetch_data():
@@ -143,7 +145,7 @@ async def fetch_data():
 
         assert analysis["is_async"] is True
 
-    def test_analyze_generator_function(self, analyzer) -> None:
+    def test_analyze_generator_function(self, analyzer: Any) -> None:
         """Test analyzing generator functions."""
         source_code = """
 def number_generator():
@@ -155,7 +157,7 @@ def number_generator():
 
         assert analysis["is_generator"] is True
 
-    def test_analyze_side_effects(self, analyzer) -> None:
+    def test_analyze_side_effects(self, analyzer: Any) -> None:
         """Test analyzing functions with side effects."""
         source_code = """
 def process_file(filename):
@@ -168,7 +170,7 @@ def process_file(filename):
 
         assert analysis["has_side_effects"] is True
 
-    def test_analyze_domain_detection(self, analyzer) -> None:
+    def test_analyze_domain_detection(self, analyzer: Any) -> None:
         """Test domain detection from function calls."""
         math_source = """
 def calculate():
@@ -192,25 +194,25 @@ class TestExampleGenerator:
     """Test the example generator."""
 
     @pytest.fixture
-    def generator(self):
+    def generator(self) -> Any:
         """Create example generator."""
         return ExampleGenerator()
 
     @pytest.fixture
-    def mock_function(self):
+    def mock_function(self) -> MockerFixture:
         """Create mock function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "calculate_sum"
 
         # Mock parameters
-        param1 = Mock()
+        param1: Mock = Mock()
         param1.name = "a"
         param1.type_annotation = "int"
         param1.is_required = True
         param1.default_value = None
 
-        param2 = Mock()
+        param2: Mock = Mock()
         param2.name = "b"
         param2.type_annotation = "int"
         param2.is_required = True
@@ -219,7 +221,7 @@ class TestExampleGenerator:
         function.signature.parameters = [param1, param2]
         return function
 
-    def test_generate_basic_example(self, generator, mock_function) -> None:
+    def test_generate_basic_example(self, generator: Any, mock_function: MockerFixture) -> None:
         """Test generating basic usage example."""
         analysis = {
             "is_property": False,
@@ -238,7 +240,7 @@ class TestExampleGenerator:
         assert "a=" in example.function_call
         assert "b=" in example.function_call
 
-    def test_generate_edge_case_example(self, generator, mock_function) -> None:
+    def test_generate_edge_case_example(self, generator: Any, mock_function: MockerFixture) -> None:
         """Test generating edge case example."""
         analysis = {
             "is_async": False,
@@ -251,7 +253,7 @@ class TestExampleGenerator:
         assert example.complexity == "intermediate"
         assert "Edge case" in example.description
 
-    def test_generate_advanced_example(self, generator, mock_function) -> None:
+    def test_generate_advanced_example(self, generator: Any, mock_function: MockerFixture) -> None:
         """Test generating advanced example."""
         analysis = {
             "is_async": False,
@@ -265,9 +267,9 @@ class TestExampleGenerator:
         assert "Advanced" in example.description
         assert len(example.setup_code) > 0
 
-    def test_generate_async_example(self, generator) -> None:
+    def test_generate_async_example(self, generator: Any) -> None:
         """Test generating example for async function."""
-        async_function = Mock()
+        async_function: Mock = Mock()
         async_function.signature = Mock()
         async_function.signature.name = "fetch_data"
         async_function.signature.parameters = []
@@ -282,9 +284,9 @@ class TestExampleGenerator:
         assert "await " in example.function_call
         assert "async context" in " ".join(example.setup_code).lower()
 
-    def test_generate_property_example(self, generator) -> None:
+    def test_generate_property_example(self, generator: Any) -> None:
         """Test generating example for property."""
-        property_function = Mock()
+        property_function: Mock = Mock()
         property_function.signature = Mock()
         property_function.signature.name = "name"
         property_function.signature.parameters = []
@@ -300,7 +302,7 @@ class TestExampleGenerator:
         assert "name(" not in example.function_call
         assert "instance.name" in example.function_call
 
-    def test_generate_edge_case_values(self, generator) -> None:
+    def test_generate_edge_case_values(self, generator: Any) -> None:
         """Test generation of edge case parameter values."""
         test_cases = [
             ("count", "0"),
@@ -310,16 +312,16 @@ class TestExampleGenerator:
         ]
 
         for param_name, expected_value in test_cases:
-            param = Mock()
+            param: Mock = Mock()
             param.name = param_name
             param.type_annotation = None
 
             result = generator._generate_edge_case_value(param)
             assert result == expected_value
 
-    def test_generate_advanced_values(self, generator) -> None:
+    def test_generate_advanced_values(self, generator: Any) -> None:
         """Test generation of advanced parameter values."""
-        param = Mock()
+        param: Mock = Mock()
         param.name = "config"
         param.type_annotation = "dict"
 
@@ -328,7 +330,7 @@ class TestExampleGenerator:
         # Should be a complex dictionary
         assert "{" in result and "}" in result
 
-    def test_generate_expected_output(self, generator) -> None:
+    def test_generate_expected_output(self, generator: Any) -> None:
         """Test generation of expected output."""
         test_cases = [
             ({"return_type": "str"}, '"result"'),
@@ -342,7 +344,7 @@ class TestExampleGenerator:
             result = generator._generate_expected_output(analysis)
             assert result == expected_output
 
-    def test_generate_multiple_examples(self, generator, mock_function) -> None:
+    def test_generate_multiple_examples(self, generator: Any, mock_function: MockerFixture) -> None:
         """Test generating multiple examples."""
         examples = generator.generate_examples(mock_function, count=3)
 
@@ -359,7 +361,7 @@ class TestExampleSuggestionGenerator:
     """Test the example suggestion generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(
             default_style="google",
@@ -367,25 +369,25 @@ class TestExampleSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create example suggestion generator."""
         return ExampleSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self):
+    def mock_function(self) -> MockerFixture:
         """Create mock function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "calculate_area"
         function.line_number = 10
 
         # Mock parameters
-        param1 = Mock()
+        param1: Mock = Mock()
         param1.name = "width"
         param1.type_annotation = "float"
         param1.is_required = True
 
-        param2 = Mock()
+        param2: Mock = Mock()
         param2.name = "height"
         param2.type_annotation = "float"
         param2.is_required = True
@@ -398,9 +400,9 @@ def calculate_area(width, height):
         return function
 
     @pytest.fixture
-    def mock_docstring(self):
+    def mock_docstring(self) -> MockerFixture:
         """Create mock docstring."""
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Calculate area"
         docstring.description = None
@@ -412,7 +414,7 @@ def calculate_area(width, height):
         return docstring
 
     @pytest.fixture
-    def mock_issue(self):
+    def mock_issue(self) -> MockerFixture:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="missing_examples",
@@ -487,7 +489,7 @@ def calculate_area(width, height):
         assert isinstance(suggestion, Suggestion)
         assert suggestion.suggestion_type == SuggestionType.EXAMPLE_UPDATE
 
-    def test_format_example_code(self, generator) -> None:
+    def test_format_example_code(self, generator: Any) -> None:
         """Test formatting example code."""
         example = ExampleTemplate(
             setup_code=["data = [1, 2, 3]"],
@@ -521,7 +523,7 @@ def calculate_area(width, height):
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
+    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_example_issue",
@@ -546,42 +548,42 @@ class TestExampleGeneratorIntegration:
     """Integration tests for example generator."""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """Create test configuration."""
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config):
+    def generator(self, config) -> Any:
         """Create example suggestion generator."""
         return ExampleSuggestionGenerator(config)
 
-    def test_complete_workflow_mathematical_function(self, generator) -> None:
+    def test_complete_workflow_mathematical_function(self, generator: Any) -> None:
         """Test complete workflow for mathematical function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "calculate_distance"
         function.line_number = 5
 
         # Parameters
-        x1_param = Mock()
+        x1_param: Mock = Mock()
         x1_param.name = "x1"
         x1_param.type_annotation = "float"
         x1_param.is_required = True
         x1_param.default_value = None
 
-        y1_param = Mock()
+        y1_param: Mock = Mock()
         y1_param.name = "y1"
         y1_param.type_annotation = "float"
         y1_param.is_required = True
         y1_param.default_value = None
 
-        x2_param = Mock()
+        x2_param: Mock = Mock()
         x2_param.name = "x2"
         x2_param.type_annotation = "float"
         x2_param.is_required = True
         x2_param.default_value = None
 
-        y2_param = Mock()
+        y2_param: Mock = Mock()
         y2_param.name = "y2"
         y2_param.type_annotation = "float"
         y2_param.is_required = True
@@ -594,7 +596,7 @@ def calculate_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Calculate distance between two points"
         docstring.description = None
@@ -633,21 +635,21 @@ def calculate_distance(x1, y1, x2, y2):
         # Should be properly formatted for docstring
         assert "Examples:" in suggested_text or "Example:" in suggested_text
 
-    def test_complete_workflow_file_processing_function(self, generator) -> None:
+    def test_complete_workflow_file_processing_function(self, generator: Any) -> None:
         """Test complete workflow for file processing function."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "process_csv_file"
         function.line_number = 8
 
         # Parameters with meaningful names
-        filepath_param = Mock()
+        filepath_param: Mock = Mock()
         filepath_param.name = "filepath"
         filepath_param.type_annotation = "str"
         filepath_param.is_required = True
         filepath_param.default_value = None
 
-        encoding_param = Mock()
+        encoding_param: Mock = Mock()
         encoding_param.name = "encoding"
         encoding_param.type_annotation = "str"
         encoding_param.is_required = False
@@ -661,7 +663,7 @@ def process_csv_file(filepath, encoding='utf-8'):
         return list(csv.reader(f))
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Process CSV file and return rows"
         docstring.examples = []  # Missing examples
@@ -694,14 +696,14 @@ def process_csv_file(filepath, encoding='utf-8'):
             for path_indicator in [".csv", ".txt", "/path/", "file"]
         )
 
-    def test_async_function_example_generation(self, generator) -> None:
+    def test_async_function_example_generation(self, generator: Any) -> None:
         """Test example generation for async functions."""
-        function = Mock()
+        function: Mock = Mock()
         function.signature = Mock()
         function.signature.name = "fetch_user_data"
         function.line_number = 3
 
-        user_id_param = Mock()
+        user_id_param: Mock = Mock()
         user_id_param.name = "user_id"
         user_id_param.type_annotation = "int"
         user_id_param.is_required = True
@@ -715,7 +717,7 @@ async def fetch_user_data(user_id):
             return await response.json()
 """
 
-        docstring = Mock()
+        docstring: Mock = Mock()
         docstring.format = "google"
         docstring.summary = "Fetch user data asynchronously"
         docstring.examples = []

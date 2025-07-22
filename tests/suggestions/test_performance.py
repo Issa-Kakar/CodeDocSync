@@ -12,6 +12,7 @@ import pytest
 from codedocsync.analyzer.models import AnalysisResult, InconsistencyIssue
 from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
 from codedocsync.parser.ast_parser import (
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
@@ -174,17 +175,17 @@ class TestSuggestionPerformance:
         params = [
             FunctionParameter(
                 name="data",
-                type_annotation="dict[str, list[tuple[int, str]]]",
+                type_annotation="Dict[str, List[Tuple[int, str]]]",
                 is_required=True,
             ),
             FunctionParameter(
                 name="processor",
-                type_annotation="Callable[[Any], tuple[bool, dict[str, Any]]]",
+                type_annotation="Callable[[Any], Tuple[bool, Dict[str, Any]]]",
                 is_required=True,
             ),
             FunctionParameter(
                 name="options",
-                type_annotation="dict[str, Union[str, int, float, list[str]]]",
+                type_annotation="Dict[str, Union[str, int, float, List[str]]]",
                 default_value="None",
                 is_required=False,
             ),
@@ -197,7 +198,7 @@ class TestSuggestionPerformance:
             signature=FunctionSignature(
                 name="complex_processor",
                 parameters=params,
-                return_type="Generator[dict[str, Any], None, None]",
+                return_type="Generator[Dict[str, Any], None, None]",
                 is_async=True,
             ),
             docstring=RawDocstring(raw_text='""""""'),
@@ -235,7 +236,7 @@ class TestSuggestionPerformance:
                 suggestion="Add return documentation",
                 line_number=2,
                 details={
-                    "return_type": "Generator[dict[str, Any], None, None]",
+                    "return_type": "Generator[Dict[str, Any], None, None]",
                 },
             ),
             InconsistencyIssue(
@@ -263,7 +264,7 @@ class TestSuggestionPerformance:
         assert all(issue.rich_suggestion is not None for issue in enhanced.issues)
 
     @pytest.mark.parametrize("style", ["google", "numpy", "sphinx"])
-    def test_style_generation_performance(self, style) -> None:
+    def test_style_generation_performance(self, style: Any) -> None:
         """Test performance across different docstring styles."""
         func = self.create_test_function(num_params=8)
         issue = InconsistencyIssue(

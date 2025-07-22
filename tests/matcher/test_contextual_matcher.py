@@ -73,7 +73,7 @@ class TestPerformance:
                 content += f'    """{class_name} implementation."""\n\n'
 
                 for func_name in functions:
-                    content += f"    def {func_name}(self, data: dict[str, Any]) -> dict[str, Any]:\n"
+                    content += f"    def {func_name}(self, data: Dict[str, Any]) -> Dict[str, Any]:\n"
                     content += f'        """{func_name.replace("_", " ").title()}."""\n'
                     content += "        return data\n\n"
                     total_functions += 1
@@ -111,12 +111,12 @@ class TestPerformance:
                                     ),
                                     FunctionParameter(
                                         name="data",
-                                        type_annotation="dict[str, Any]",
+                                        type_annotation="Dict[str, Any]",
                                         default_value=None,
                                         is_required=True,
                                     ),
                                 ],
-                                return_type="dict[str, Any]",
+                                return_type="Dict[str, Any]",
                                 is_async=False,
                                 is_method=True,
                                 decorators=[],
@@ -591,7 +591,7 @@ from abc import ABC, abstractmethod
 class BaseProcessor(ABC):
     '''Base class for all processors.'''
 
-    def process(self, data: dict[str, Any]) -> dict[str, Any]:
+    def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Process data through the pipeline.
 
         Args:
@@ -605,16 +605,16 @@ class BaseProcessor(ABC):
         return self.finalize(data)
 
     @abstractmethod
-    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Validate input data.'''
         pass
 
     @abstractmethod
-    def transform(self, data: dict[str, Any]) -> dict[str, Any]:
+    def transform(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Transform the data.'''
         pass
 
-    def finalize(self, data: dict[str, Any]) -> dict[str, Any]:
+    def finalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Finalize processing.'''
         data['processed'] = True
         return data
@@ -627,13 +627,13 @@ class BaseProcessor(ABC):
             child_file.write_text(
                 """
 import json
-from typing import Any
+from typing import Any, Dict, Optional
 from base import BaseProcessor
 
 class JsonProcessor(BaseProcessor):
     '''Processor for JSON data.'''
 
-    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Validate JSON data structure.
 
         Ensures all required fields are present and valid.
@@ -652,7 +652,7 @@ class JsonProcessor(BaseProcessor):
             raise ValueError("Missing required field: content")
         return data
 
-    def transform(self, data: dict[str, Any]) -> dict[str, Any]:
+    def transform(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Transform JSON data to internal format.
 
         Implements BaseProcessor.transform() for JSON.
@@ -671,7 +671,7 @@ class JsonProcessor(BaseProcessor):
                 pass
         return data
 
-    def to_json(self, data: dict[str, Any]) -> str:
+    def to_json(self, data: Dict[str, Any]) -> str:
         '''Convert processed data back to JSON string.
 
         Args:
@@ -702,12 +702,12 @@ class JsonProcessor(BaseProcessor):
                             ),
                             FunctionParameter(
                                 name="data",
-                                type_annotation="dict[str, Any]",
+                                type_annotation="Dict[str, Any]",
                                 default_value=None,
                                 is_required=True,
                             ),
                         ],
-                        return_type="dict[str, Any]",
+                        return_type="Dict[str, Any]",
                         is_async=False,
                         is_method=True,
                         decorators=[],
@@ -745,12 +745,12 @@ class JsonProcessor(BaseProcessor):
                             ),
                             FunctionParameter(
                                 name="data",
-                                type_annotation="dict[str, Any]",
+                                type_annotation="Dict[str, Any]",
                                 default_value=None,
                                 is_required=True,
                             ),
                         ],
-                        return_type="dict[str, Any]",
+                        return_type="Dict[str, Any]",
                         is_async=False,
                         is_method=True,
                         decorators=[],
@@ -805,7 +805,7 @@ class TestAdvancedScenarios:
             api_v1.parent.mkdir(parents=True, exist_ok=True)
             api_v1.write_text(
                 """
-def get_user(user_id: int) -> dict[str, Any]:
+def get_user(user_id: int) -> Dict[str, Any]:
     '''Get user by ID (API v1).
 
     Legacy API endpoint.
@@ -824,7 +824,7 @@ def get_user(user_id: int) -> dict[str, Any]:
             api_v2.parent.mkdir(parents=True, exist_ok=True)
             api_v2.write_text(
                 """
-def get_user(user_id: int, include_metadata: bool = False) -> dict[str, Any]:
+def get_user(user_id: int, include_metadata: bool = False) -> Dict[str, Any]:
     '''Get user by ID (API v2).
 
     Enhanced API endpoint with metadata support.
@@ -847,7 +847,7 @@ def get_user(user_id: int, include_metadata: bool = False) -> dict[str, Any]:
             internal_users.parent.mkdir(parents=True, exist_ok=True)
             internal_users.write_text(
                 """
-def get_user(username: str) -> dict[str, Any]:
+def get_user(username: str) -> Dict[str, Any]:
     '''Get user by username (internal).
 
     Internal user lookup by username.
@@ -884,7 +884,7 @@ def get_user(username: str) -> dict[str, Any]:
                             is_required=False,
                         ),
                     ],
-                    return_type="dict[str, Any]",
+                    return_type="Dict[str, Any]",
                     is_async=False,
                     is_method=False,
                     decorators=[],
@@ -931,7 +931,7 @@ def get_user(username: str) -> dict[str, Any]:
                 """
 from module_b import process_b_data
 
-def process_a_data(data: dict[str, Any]) -> dict[str, Any]:
+def process_a_data(data: Dict[str, Any]) -> Dict[str, Any]:
     '''Process data in module A.
 
     May delegate to module B for certain operations.
@@ -957,7 +957,7 @@ def helper_a(value: int) -> int:
                 """
 from module_a import helper_a
 
-def process_b_data(data: dict[str, Any]) -> dict[str, Any]:
+def process_b_data(data: Dict[str, Any]) -> Dict[str, Any]:
     '''Process data in module B.
 
     Uses helper from module A.
@@ -990,12 +990,12 @@ def helper_b(value: int) -> int:
                         parameters=[
                             FunctionParameter(
                                 name="data",
-                                type_annotation="dict[str, Any]",
+                                type_annotation="Dict[str, Any]",
                                 default_value=None,
                                 is_required=True,
                             ),
                         ],
-                        return_type="dict[str, Any]",
+                        return_type="Dict[str, Any]",
                         is_async=False,
                         is_method=False,
                         decorators=[],
@@ -1050,11 +1050,11 @@ def helper_b(value: int) -> int:
             plugins_init.write_text(
                 """
 import importlib
-from typing import Any, Protocol
+from typing import Any, Dict, Optional, Protocol
 
 class Plugin(Protocol):
     '''Plugin protocol.'''
-    def execute(self, data: dict[str, Any]) -> dict[str, Any]: ...
+    def execute(self, data: Dict[str, Any]) -> Dict[str, Any]: ...
 
 def load_plugin(name: str) -> Plugin:
     '''Dynamically load a plugin by name.
@@ -1080,12 +1080,12 @@ AVAILABLE_PLUGINS = {
             formatter_plugin = tmppath / "plugins" / "formatter.py"
             formatter_plugin.write_text(
                 """
-from typing import Any
+from typing import Any, Dict, Optional
 
 class PluginImpl:
     '''Formatter plugin implementation.'''
 
-    def execute(self, data: dict[str, Any]) -> dict[str, Any]:
+    def execute(self, data: Dict[str, Any]) -> Dict[str, Any]:
         '''Format data according to rules.
 
         This plugin formats data based on type-specific rules.
@@ -1103,7 +1103,7 @@ class PluginImpl:
                 data[key] = value.strip().title()
         return data
 
-    def format_json(self, data: dict[str, Any]) -> str:
+    def format_json(self, data: Dict[str, Any]) -> str:
         '''Format as JSON string.'''
         import json
         return json.dumps(data, indent=2)
@@ -1127,12 +1127,12 @@ class PluginImpl:
                         ),
                         FunctionParameter(
                             name="data",
-                            type_annotation="dict[str, Any]",
+                            type_annotation="Dict[str, Any]",
                             default_value=None,
                             is_required=True,
                         ),
                     ],
-                    return_type="dict[str, Any]",
+                    return_type="Dict[str, Any]",
                     is_async=False,
                     is_method=True,
                     decorators=[],
@@ -1213,7 +1213,7 @@ __all__ = ['process_data', 'validate_input', 'transform_output']
             core_module = tmppath / "mypackage" / "core.py"
             core_module.write_text(
                 """
-def process_data(data: dict[str, Any]) -> dict[str, Any]:
+def process_data(data: Dict[str, Any]) -> Dict[str, Any]:
     # Implementation without docstring
     data['processed'] = True
     return data
@@ -1231,12 +1231,12 @@ def process_data(data: dict[str, Any]) -> dict[str, Any]:
                     parameters=[
                         FunctionParameter(
                             name="data",
-                            type_annotation="dict[str, Any]",
+                            type_annotation="Dict[str, Any]",
                             default_value=None,
                             is_required=True,
                         ),
                     ],
-                    return_type="dict[str, Any]",
+                    return_type="Dict[str, Any]",
                     is_async=False,
                     is_method=False,
                     decorators=[],

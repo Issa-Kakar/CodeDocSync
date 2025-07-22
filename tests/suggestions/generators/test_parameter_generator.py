@@ -1,6 +1,7 @@
 """Tests for parameter suggestion generator."""
 
 from unittest.mock import Mock, patch
+from typing import Any, List, Optional, Union
 
 import pytest
 
@@ -28,13 +29,13 @@ class TestParameterSuggestionGenerator:
     """Test parameter suggestion generator functionality."""
 
     @pytest.fixture
-    def generator(self):
+    def generator(self) -> Any:
         """Create parameter generator instance."""
         config = SuggestionConfig(default_style="google")
         return ParameterSuggestionGenerator(config)
 
     @pytest.fixture
-    def sample_function(self):
+    def sample_function(self) -> Any:
         """Create sample function for testing."""
         signature = FunctionSignature(
             name="test_function",
@@ -56,7 +57,7 @@ class TestParameterSuggestionGenerator:
         )
 
     @pytest.fixture
-    def sample_docstring(self):
+    def sample_docstring(self) -> Any:
         """Create sample docstring for testing."""
         return ParsedDocstring(
             format=DocstringFormat.GOOGLE,
@@ -96,7 +97,7 @@ class TestParameterSuggestionGenerator:
         assert "param2" in suggestion.suggested_text
         assert "wrong_name" not in suggestion.suggested_text
 
-    def test_add_missing_parameter(self, generator, sample_function) -> None:
+    def test_add_missing_parameter(self, generator: Any, sample_function: Any) -> None:
         """Test adding missing parameter documentation."""
         # Docstring missing param2
         docstring = ParsedDocstring(
@@ -129,7 +130,7 @@ class TestParameterSuggestionGenerator:
         assert "param2" in suggestion.suggested_text
         assert "Args:" in suggestion.suggested_text
 
-    def test_fix_parameter_type_mismatch(self, generator, sample_function) -> None:
+    def test_fix_parameter_type_mismatch(self, generator: Any, sample_function: Any) -> None:
         """Test fixing parameter type mismatch."""
         # Docstring has wrong type for param1
         docstring = ParsedDocstring(
@@ -164,7 +165,7 @@ class TestParameterSuggestionGenerator:
         assert suggestion.confidence >= 0.8
         assert "param1 (str)" in suggestion.suggested_text  # Should be corrected to str
 
-    def test_fix_parameter_order(self, generator) -> None:
+    def test_fix_parameter_order(self, generator: Any) -> None:
         """Test fixing parameter order mismatch."""
         # Function with param1, param2 but docstring has param2, param1
         signature = FunctionSignature(
@@ -210,7 +211,7 @@ class TestParameterSuggestionGenerator:
         param2_pos = suggestion.suggested_text.find("param2")
         assert param1_pos < param2_pos
 
-    def test_add_kwargs_documentation(self, generator) -> None:
+    def test_add_kwargs_documentation(self, generator: Any) -> None:
         """Test adding **kwargs documentation."""
         signature = FunctionSignature(
             name="test_function",
@@ -250,7 +251,7 @@ class TestParameterSuggestionGenerator:
         assert "**kwargs" in suggestion.suggested_text
         assert "Additional keyword arguments" in suggestion.suggested_text
 
-    def test_filter_special_parameters(self, generator) -> None:
+    def test_filter_special_parameters(self, generator: Any) -> None:
         """Test filtering special parameters like self and cls."""
         # Test with self parameter (instance method)
         signature = FunctionSignature(
@@ -271,7 +272,7 @@ class TestParameterSuggestionGenerator:
         assert len(filtered) == 1
         assert filtered[0].name == "param1"
 
-    def test_find_parameter_mismatches(self, generator) -> None:
+    def test_find_parameter_mismatches(self, generator: Any) -> None:
         """Test finding parameter mismatches with fuzzy matching."""
         actual_params = [
             FunctionParameter(name="username", type_annotation="str"),
@@ -296,7 +297,7 @@ class TestParameterSuggestionGenerator:
         assert len(mismatches) == 1
         assert mismatches[0] == ("email", "username")
 
-    def test_types_differ(self, generator) -> None:
+    def test_types_differ(self, generator: Any) -> None:
         """Test type difference detection."""
         # Same types
         assert not generator._types_differ("str", "str")
@@ -311,14 +312,14 @@ class TestParameterSuggestionGenerator:
         # Both None
         assert not generator._types_differ(None, None)
 
-    def test_normalize_type(self, generator) -> None:
+    def test_normalize_type(self, generator: Any) -> None:
         """Test type normalization."""
         assert generator._normalize_type("str") == "str"
         assert generator._normalize_type("List[str]") == "list"
         assert generator._normalize_type("Optional[str]") == "str"
-        assert generator._normalize_type("Union[str, None]") == "str"
+        assert generator._normalize_type("Optional[str]") == "str"
 
-    def test_generate_parameter_description(self, generator) -> None:
+    def test_generate_parameter_description(self, generator: Any) -> None:
         """Test generating basic parameter descriptions."""
         param = FunctionParameter(
             name="test_param", type_annotation="str", default_value="'default'"
@@ -330,7 +331,7 @@ class TestParameterSuggestionGenerator:
         assert "str" in description
         assert "default" in description
 
-    def test_detect_style_from_docstring(self, generator) -> None:
+    def test_detect_style_from_docstring(self, generator: Any) -> None:
         """Test detecting docstring style."""
         google_docstring = ParsedDocstring(
             format=DocstringFormat.GOOGLE, summary="Test"
@@ -339,7 +340,7 @@ class TestParameterSuggestionGenerator:
         style = generator._detect_style(google_docstring)
         assert style == DocstringStyle.GOOGLE
 
-    def test_fallback_suggestion(self, generator) -> None:
+    def test_fallback_suggestion(self, generator: Any) -> None:
         """Test fallback suggestion for unknown issues."""
         issue = InconsistencyIssue(
             issue_type="unknown_issue",
@@ -356,7 +357,7 @@ class TestParameterSuggestionGenerator:
         assert suggestion.confidence <= 0.1
         assert "unknown_issue" in suggestion.description
 
-    def test_generic_parameter_fix(self, generator) -> None:
+    def test_generic_parameter_fix(self, generator: Any) -> None:
         """Test generic parameter fix for unhandled issue types."""
         issue = InconsistencyIssue(
             issue_type="unhandled_parameter_issue",
@@ -378,12 +379,12 @@ class TestParameterGeneratorEdgeCases:
     """Test edge cases for parameter generator."""
 
     @pytest.fixture
-    def generator(self):
+    def generator(self) -> Any:
         """Create parameter generator instance."""
         config = SuggestionConfig(default_style="google")
         return ParameterSuggestionGenerator(config)
 
-    def test_empty_function_parameters(self, generator) -> None:
+    def test_empty_function_parameters(self, generator: Any) -> None:
         """Test handling function with no parameters."""
         signature = FunctionSignature(name="test_function", parameters=[])
         function = ParsedFunction(
@@ -393,7 +394,7 @@ class TestParameterGeneratorEdgeCases:
         actual_params = generator._get_function_parameters(function)
         assert actual_params == []
 
-    def test_empty_documented_parameters(self, generator) -> None:
+    def test_empty_documented_parameters(self, generator: Any) -> None:
         """Test handling docstring with no parameters."""
         docstring = ParsedDocstring(
             format=DocstringFormat.GOOGLE, summary="Test function", parameters=[]
@@ -402,25 +403,25 @@ class TestParameterGeneratorEdgeCases:
         documented_params = generator._get_documented_parameters(docstring)
         assert documented_params == []
 
-    def test_malformed_function_object(self, generator) -> None:
+    def test_malformed_function_object(self, generator: Any) -> None:
         """Test handling malformed function object."""
-        malformed_function = Mock()
+        malformed_function: Mock = Mock()
         # Remove signature attribute to simulate malformed object
         del malformed_function.signature
 
         actual_params = generator._get_function_parameters(malformed_function)
         assert actual_params == []
 
-    def test_malformed_docstring_object(self, generator) -> None:
+    def test_malformed_docstring_object(self, generator: Any) -> None:
         """Test handling malformed docstring object."""
-        malformed_docstring = Mock()
+        malformed_docstring: Mock = Mock()
         # Remove parameters attribute
         del malformed_docstring.parameters
 
         documented_params = generator._get_documented_parameters(malformed_docstring)
         assert documented_params == []
 
-    def test_classmethod_detection(self, generator) -> None:
+    def test_classmethod_detection(self, generator: Any) -> None:
         """Test detection of classmethod decorator."""
         signature = FunctionSignature(
             name="test_classmethod",

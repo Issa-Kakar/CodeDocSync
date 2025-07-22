@@ -15,6 +15,7 @@ from codedocsync.analyzer.models import AnalysisResult, InconsistencyIssue
 from codedocsync.matcher.models import MatchConfidence, MatchedPair, MatchType
 from codedocsync.parser import ParsedDocstring
 from codedocsync.parser.docstring_models import (
+from typing import Any, Callable, Dict, List, Optional, Tuple
     DocstringFormat,
     DocstringParameter,
     DocstringRaises,
@@ -54,14 +55,14 @@ class TestDocstringStyleGeneration:
                 parameters=[
                     FunctionParameter(
                         name="numbers",
-                        type_annotation="list[float]",
+                        type_annotation="List[float]",
                         default_value=None,
                         is_required=True,
                         kind=ParameterKind.POSITIONAL_OR_KEYWORD,
                     ),
                     FunctionParameter(
                         name="weights",
-                        type_annotation="list[float] | None",
+                        type_annotation="Optional[List[float]]",
                         default_value="None",
                         is_required=False,
                         kind=ParameterKind.POSITIONAL_OR_KEYWORD,
@@ -87,13 +88,13 @@ class TestDocstringStyleGeneration:
         parameters = [
             DocstringParameter(
                 name="numbers",
-                type_str="list[float]",
+                type_str="List[float]",
                 description="List of numbers to average",
                 is_optional=False,
             ),
             DocstringParameter(
                 name="weights",
-                type_str="list[float] | None",
+                type_str="Optional[List[float]]",
                 description="Optional weights for each number",
                 is_optional=True,
             ),
@@ -122,9 +123,9 @@ class TestDocstringStyleGeneration:
         # Verify structure
         assert "Calculate weighted average of numbers." in docstring
         assert "Args:" in docstring
-        assert "numbers (list[float]): List of numbers to average" in docstring
+        assert "numbers (List[float]): List of numbers to average" in docstring
         assert (
-            "weights (list[float] | None): Optional weights for each number"
+            "weights (Optional[List[float]]): Optional weights for each number"
             in docstring
         )
         assert "Returns:" in docstring
@@ -147,13 +148,13 @@ class TestDocstringStyleGeneration:
         parameters = [
             DocstringParameter(
                 name="numbers",
-                type_str="list[float]",
+                type_str="List[float]",
                 description="List of numbers to average",
                 is_optional=False,
             ),
             DocstringParameter(
                 name="weights",
-                type_str="list[float] | None",
+                type_str="Optional[List[float]]",
                 description="Optional weights for each number",
                 is_optional=True,
             ),
@@ -183,9 +184,9 @@ class TestDocstringStyleGeneration:
         assert "Calculate weighted average of numbers." in docstring
         assert "Parameters" in docstring
         assert "----------" in docstring
-        assert "numbers : list[float]" in docstring
+        assert "numbers : List[float]" in docstring
         assert "List of numbers to average" in docstring
-        assert "weights : list[float] | None, optional" in docstring
+        assert "weights : Optional[List[float]], optional" in docstring
         assert "Returns" in docstring
         assert "-------" in docstring
         assert "float" in docstring
@@ -208,13 +209,13 @@ class TestDocstringStyleGeneration:
         parameters = [
             DocstringParameter(
                 name="numbers",
-                type_str="list[float]",
+                type_str="List[float]",
                 description="List of numbers to average",
                 is_optional=False,
             ),
             DocstringParameter(
                 name="weights",
-                type_str="list[float] | None",
+                type_str="Optional[List[float]]",
                 description="Optional weights for each number",
                 is_optional=True,
             ),
@@ -244,9 +245,9 @@ class TestDocstringStyleGeneration:
         assert "Calculate weighted average of numbers." in docstring
         assert ":param numbers:" in docstring
         assert "List of numbers to average" in docstring
-        assert ":type numbers: list[float]" in docstring
+        assert ":type numbers: List[float]" in docstring
         assert ":param weights:" in docstring
-        assert ":type weights: list[float] | None" in docstring
+        assert ":type weights: Optional[List[float]]" in docstring
         assert ":returns:" in docstring
         assert "The weighted average" in docstring
         assert ":rtype: float" in docstring
@@ -271,13 +272,13 @@ class TestSmartUpdates:
                 parameters=[
                     FunctionParameter(
                         name="data",
-                        type_annotation="dict[str, Any]",
+                        type_annotation="Dict[str, Any]",
                         default_value=None,
                         is_required=True,
                         kind=ParameterKind.POSITIONAL_OR_KEYWORD,
                     ),
                 ],
-                return_type="dict[str, Any]",
+                return_type="Dict[str, Any]",
                 decorators=[],
                 is_async=False,
                 is_method=False,
@@ -352,7 +353,7 @@ class TestSmartUpdates:
         )
 
         # Verify new content is added
-        assert "dict[str, Any]" in suggestion.suggested_text
+        assert "Dict[str, Any]" in suggestion.suggested_text
 
     def test_merge_partial_updates(self) -> None:
         """Test merging partial docstring updates."""
@@ -670,7 +671,7 @@ class TestPerformanceBenchmarks:
                         kind=ParameterKind.POSITIONAL_OR_KEYWORD,
                     ),
                 ],
-                return_type="tuple[str, int]",
+                return_type="Tuple[str, int]",
                 decorators=[],
                 is_async=False,
                 is_method=False,
@@ -700,7 +701,7 @@ class TestPerformanceBenchmarks:
             ]
 
             returns = DocstringReturns(
-                type_str="tuple[str, int]",
+                type_str="Tuple[str, int]",
                 description="A tuple containing the processed string and count",
             )
 
@@ -799,7 +800,7 @@ class TestEdgeCasesAndRobustness:
                 parameters=[
                     FunctionParameter(
                         name="data",
-                        type_annotation="dict[str, list[tuple[int, str]]]",
+                        type_annotation="Dict[str, List[Tuple[int, str]]]",
                         default_value=None,
                         is_required=True,
                         kind=ParameterKind.POSITIONAL_OR_KEYWORD,
@@ -812,7 +813,7 @@ class TestEdgeCasesAndRobustness:
                         kind=ParameterKind.POSITIONAL_OR_KEYWORD,
                     ),
                 ],
-                return_type="AsyncIterator[dict[str, Any]]",
+                return_type="AsyncIterator[Dict[str, Any]]",
                 decorators=[],
                 is_async=True,
                 is_method=False,
@@ -828,7 +829,7 @@ class TestEdgeCasesAndRobustness:
         parameters = [
             DocstringParameter(
                 name="data",
-                type_str="dict[str, list[tuple[int, str]]]",
+                type_str="Dict[str, List[Tuple[int, str]]]",
                 description="Nested dictionary with tuple lists",
                 is_optional=False,
             ),
@@ -841,7 +842,7 @@ class TestEdgeCasesAndRobustness:
         ]
 
         returns = DocstringReturns(
-            type_str="AsyncIterator[dict[str, Any]]",
+            type_str="AsyncIterator[Dict[str, Any]]",
             description="Async iterator of processed dictionaries",
         )
 
@@ -853,9 +854,9 @@ class TestEdgeCasesAndRobustness:
         )
 
         # Verify complex types are preserved correctly
-        assert "dict[str, list[tuple[int, str]]]" in docstring
+        assert "Dict[str, List[Tuple[int, str]]]" in docstring
         assert "Callable[[str], Awaitable[None]]" in docstring
-        assert "AsyncIterator[dict[str, Any]]" in docstring
+        assert "AsyncIterator[Dict[str, Any]]" in docstring
 
     def test_multiline_descriptions(self) -> None:
         """Test handling of multiline descriptions."""

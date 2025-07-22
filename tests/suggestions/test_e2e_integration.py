@@ -13,6 +13,8 @@ from typer.testing import CliRunner
 from codedocsync.analyzer.models import AnalysisResult
 from codedocsync.main import app
 from codedocsync.matcher.models import (
+from pathlib import Path
+from typing import Any, Dict, Optional
     MatchConfidence,
     MatchedPair,
     MatchResult,
@@ -193,7 +195,7 @@ class TestCLIIntegration:
         assert "--apply" in result.stdout
         assert "--interactive" in result.stdout
 
-    def test_suggest_command_with_file(self, tmp_path) -> None:
+    def test_suggest_command_with_file(self, tmp_path: Path) -> None:
         """Test suggest command with a Python file."""
         # Create test file
         test_file = tmp_path / "test.py"
@@ -231,7 +233,7 @@ def process_data(items, threshold=0.5):
                 )
             ]
 
-            mock_facade.return_value.match_file.return_value = mock_match_result
+            mock_facade.return_value.match_file.return_value = mock_match_result  # type: ignore[attr-defined]
 
             with patch("codedocsync.main.analyze_multiple_pairs") as mock_analyze:
                 mock_analyze.return_value = [
@@ -258,7 +260,7 @@ def process_data(items, threshold=0.5):
                 assert "summary" in output
                 assert "suggestions" in output
 
-    def test_suggest_command_dry_run(self, tmp_path) -> None:
+    def test_suggest_command_dry_run(self, tmp_path: Path) -> None:
         """Test suggest command with dry-run option."""
         test_file = tmp_path / "test.py"
         test_file.write_text("def test(): pass")
@@ -281,7 +283,7 @@ class TestPerformanceMonitoring:
         # Generate suggestions with monitoring
         function = create_test_function()
         issue = create_test_issue()
-        context = Mock()
+        context: Mock = Mock()
         context.issue = issue
         context.function = function
         context.docstring = create_parsed_docstring()
@@ -326,7 +328,7 @@ class TestErrorHandling:
         handler = get_error_handler()
 
         # Create context
-        context = Mock()
+        context: Mock = Mock()
         context.issue = create_test_issue()
         context.function = create_test_function()
         context.docstring = create_parsed_docstring()
@@ -351,7 +353,7 @@ class TestErrorHandling:
 
         # Good result
         good_result = AnalysisResult(
-            matched_pair=Mock(),
+            matched_pair: Mock = Mock()
             issues=[create_test_issue()],
             used_llm=False,
             analysis_time_ms=10.0,
@@ -465,7 +467,7 @@ class TestProductionScenarios:
             )
             issue = create_test_issue()
 
-            context = Mock()
+            context: Mock = Mock()
             context.issue = issue
             context.function = function
             context.docstring = create_parsed_docstring(
@@ -496,7 +498,7 @@ class TestProductionScenarios:
             function = create_test_function(name=f"func_{index}")
             issue = create_test_issue()
 
-            context = Mock()
+            context: Mock = Mock()
             context.issue = issue
             context.function = function
             context.docstring = create_parsed_docstring()
@@ -528,7 +530,7 @@ class TestProductionScenarios:
 class TestConfigurationIntegration:
     """Test configuration system integration."""
 
-    def test_config_precedence(self, tmp_path) -> None:
+    def test_config_precedence(self, tmp_path: Path) -> None:
         """Test configuration precedence (CLI > project > user > default)."""
         # Create project config
         project_config = tmp_path / ".codedocsync.yml"

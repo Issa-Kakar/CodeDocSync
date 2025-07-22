@@ -7,6 +7,7 @@ Tests all data models including validation, serialization, and business logic.
 import pytest
 
 from codedocsync.suggestions.models import (
+from unittest.mock import Mock, MagicMock
     DocstringStyle,
     StyleDetectionError,
     Suggestion,

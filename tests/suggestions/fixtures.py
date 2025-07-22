@@ -9,6 +9,7 @@ from inspect import Parameter as ParameterKind
 
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.ast_parser import (
+from typing import Any, Dict, List, Optional, Tuple
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
@@ -24,9 +25,9 @@ from codedocsync.parser.docstring_models import (
 
 def create_test_function(
     name: str = "test_func",
-    params: list[str] | None = None,
-    return_type: str | None = None,
-    docstring: str | None = None,
+    params: Optional[List[str]] = None,
+    return_type: Optional[str] = None,
+    docstring: Optional[str] = None,
     line_number: int = 10,
     file_path: str = "test.py",
 ) -> ParsedFunction:
@@ -74,10 +75,10 @@ def create_test_function(
 
 def create_parsed_docstring(
     summary: str = "Test function.",
-    params: dict[str, str] | None = None,
-    returns: str | None = None,
-    raises: dict[str, str] | None = None,
-    examples: list[str] | None = None,
+    params: Optional[Dict[str, str]] = None,
+    returns: Optional[str] = None,
+    raises: Optional[Dict[str, str]] = None,
+    examples: Optional[List[str]] = None,
     format_style: str = "google",
 ) -> ParsedDocstring:
     """Create a parsed docstring with specified components."""
@@ -147,7 +148,7 @@ def create_parsed_docstring(
 def create_test_issue(
     issue_type: str = "parameter_name_mismatch",
     severity: str = "critical",
-    description: str | None = None,
+    description: Optional[str] = None,
     line_number: int = 10,
     confidence: float = 0.95,
 ) -> InconsistencyIssue:

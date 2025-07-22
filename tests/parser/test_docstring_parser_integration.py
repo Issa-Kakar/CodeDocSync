@@ -10,6 +10,8 @@ import time
 
 from codedocsync.parser.docstring_models import DocstringFormat
 from codedocsync.parser.docstring_parser import DocstringParser
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 
 class TestFormatDetection:
@@ -133,7 +135,7 @@ class TestFormatDetection:
             :param params: Query parameters
             :type params: dict
             :returns: Query results
-            :rtype: list[dict]
+            :rtype: List[dict]
             :raises DatabaseError: If query execution fails
             """,
             """Process configuration file.
@@ -180,7 +182,7 @@ class TestFormatDetection:
             :param source: Source directory
             :param output: Output directory
             :returns: Generated file paths
-            :rtype: list[str]
+            :rtype: List[str]
 
             .. note::
                This uses Sphinx internally
@@ -209,7 +211,7 @@ class TestExtractionAccuracy:
 
         Args:
             user_id (int): Unique identifier for the user
-            settings (dict[str, Any]): User configuration settings
+            settings (Dict[str, Any]): User configuration settings
             notify (bool, optional): Whether to send notifications. Defaults to True.
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
@@ -229,7 +231,7 @@ class TestExtractionAccuracy:
         # Check complex type
         settings_param = result.get_parameter("settings")
         assert settings_param is not None
-        assert settings_param.type_str == "dict[str, Any]"
+        assert settings_param.type_str == "Dict[str, Any]"
 
         # Check optional parameter
         notify_param = result.get_parameter("notify")
@@ -256,7 +258,7 @@ class TestExtractionAccuracy:
             """Calculate result.
 
             Returns:
-                tuple[int, str]: A tuple containing (status_code, message)
+                Tuple[int, str]: A tuple containing (status_code, message)
             """,
             # NumPy style
             """Process data.
@@ -270,7 +272,7 @@ class TestExtractionAccuracy:
             """Get user info.
 
             :returns: User information dictionary
-            :rtype: dict[str, Any]
+            :rtype: Dict[str, Any]
             """,
         ]
 
@@ -564,7 +566,7 @@ class TestPerformance:
         parser = DocstringParser()
 
         # Generate 100 varied docstrings
-        docstrings: list[str | None] = []
+        docstrings: List[Optional[str]] = []
         for i in range(100):
             doc = f"""Function {i} with parameters.
 

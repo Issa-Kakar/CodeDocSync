@@ -319,8 +319,8 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
 
         # Handle common equivalencies
         equivalencies = {
-            "list[str]": "list",
-            "dict[str,any]": "dict",
+            "List[str]": "list",
+            "Dict[str,any]": "dict",
             "optional[str]": "str",
             "union[str,none]": "str",
         }

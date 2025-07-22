@@ -7,6 +7,9 @@ to ensure each generator handles its specific issues correctly.
 from textwrap import dedent
 
 from codedocsync.analyzer.models import InconsistencyIssue
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
 from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
@@ -62,8 +65,7 @@ class TestSpecificIssueFixes:
                     """
                 '''
                 ).strip(),
-                indentation="    ",
-                lines=9,
+                line_number=1,
             ),
             file_path="test.py",
             line_number=1,
@@ -85,17 +87,17 @@ class TestSpecificIssueFixes:
         generator = ParameterSuggestionGenerator()
         suggestion = generator.generate(context)
         assert suggestion is not None
-        assert "width (float):" in suggestion.content
-        assert "height (float):" in suggestion.content
-        assert "w (float)" not in suggestion.content
-        assert "h (float)" not in suggestion.content
+        assert "width (float):" in suggestion.suggested_text
+        assert "height (float):" in suggestion.suggested_text
+        assert "w (float)" not in suggestion.suggested_text
+        assert "h (float)" not in suggestion.suggested_text
 
     def test_fix_return_type_mismatch(self) -> None:
         """Test fixing return type documentation mismatches."""
         func = ParsedFunction(
             signature=FunctionSignature(
                 name="get_config",
-                return_type="dict[str, Any] | None",
+                return_type="Optional[Dict[str, Any]]",
             ),
             docstring=RawDocstring(
                 raw_text=dedent(
@@ -107,8 +109,7 @@ class TestSpecificIssueFixes:
                     """
                 '''
                 ).strip(),
-                indentation="    ",
-                lines=5,
+                line_number=1,
             ),
             file_path="test.py",
             line_number=1,
@@ -120,7 +121,7 @@ class TestSpecificIssueFixes:
             suggestion="Update return type",
             line_number=4,
             details={
-                "expected": "dict[str, Any] | None",
+                "expected": "Optional[Dict[str, Any]]",
                 "documented": "dict",
             },
         )
@@ -128,11 +129,11 @@ class TestSpecificIssueFixes:
         generator = ReturnSuggestionGenerator()
         suggestion = generator.generate(context)
         assert suggestion is not None
-        assert "dict[str, Any] | None:" in suggestion.content
-        assert "Configuration dictionary" in suggestion.content
+        assert "Optional[Dict[str, Any]]:" in suggestion.suggested_text
+        assert "Configuration dictionary" in suggestion.suggested_text
         assert (
-            "None if" in suggestion.content.lower()
-            or "not found" in suggestion.content.lower()
+            "None if" in suggestion.suggested_text.lower()
+            or "not found" in suggestion.suggested_text.lower()
         )
 
     def test_fix_missing_raises_complex(self) -> None:
@@ -145,7 +146,7 @@ class TestSpecificIssueFixes:
                         name="filepath", type_annotation="str", is_required=True
                     ),
                 ],
-                return_type="dict[str, Any]",
+                return_type="Dict[str, Any]",
             ),
             docstring=RawDocstring(
                 raw_text=dedent(
@@ -155,12 +156,11 @@ class TestSpecificIssueFixes:
                     Args:
                         filepath (str): Path to JSON file.
                     Returns:
-                        dict[str, Any]: Parsed JSON data.
+                        Dict[str, Any]: Parsed JSON data.
                     """
                 '''
                 ).strip(),
-                indentation="    ",
-                lines=8,
+                line_number=1,
             ),
             file_path="test.py",
             line_number=1,
@@ -183,13 +183,13 @@ class TestSpecificIssueFixes:
         generator = RaisesSuggestionGenerator()
         suggestion = generator.generate(context)
         assert suggestion is not None
-        assert "Raises:" in suggestion.content
-        assert "FileNotFoundError:" in suggestion.content
-        assert "JSONDecodeError:" in suggestion.content
-        assert "PermissionError:" in suggestion.content
-        assert "file" in suggestion.content.lower()
-        assert "json" in suggestion.content.lower()
-        assert "permission" in suggestion.content.lower()
+        assert "Raises:" in suggestion.suggested_text
+        assert "FileNotFoundError:" in suggestion.suggested_text
+        assert "JSONDecodeError:" in suggestion.suggested_text
+        assert "PermissionError:" in suggestion.suggested_text
+        assert "file" in suggestion.suggested_text.lower()
+        assert "json" in suggestion.suggested_text.lower()
+        assert "permission" in suggestion.suggested_text.lower()
 
     def test_fix_parameter_order_different(self) -> None:
         """Test fixing when parameter order in docs doesn't match code."""
@@ -226,8 +226,7 @@ class TestSpecificIssueFixes:
                     """
                 '''
                 ).strip(),
-                indentation="    ",
-                lines=10,
+                line_number=1,
             ),
             file_path="test.py",
             line_number=1,
@@ -248,9 +247,9 @@ class TestSpecificIssueFixes:
         suggestion = generator.generate(context)
         assert suggestion is not None
         # Check parameters are in correct order
-        host_pos = suggestion.content.find("host (str):")
-        port_pos = suggestion.content.find("port (int):")
-        timeout_pos = suggestion.content.find("timeout (float")
+        host_pos = suggestion.suggested_text.find("host (str):")
+        port_pos = suggestion.suggested_text.find("port (int):")
+        timeout_pos = suggestion.suggested_text.find("timeout (float")
         assert host_pos < port_pos < timeout_pos
 
     def test_fix_missing_params_with_complex_types(self) -> None:
@@ -264,7 +263,7 @@ class TestSpecificIssueFixes:
                     ),
                     FunctionParameter(
                         name="columns",
-                        type_annotation="list[str] | None",
+                        type_annotation="Optional[List[str]]",
                         default_value="None",
                         is_required=False,
                     ),
@@ -295,9 +294,9 @@ class TestSpecificIssueFixes:
         generator = ParameterSuggestionGenerator()
         suggestion = generator.generate(context)
         assert suggestion is not None
-        assert "data (pd.DataFrame):" in suggestion.content
-        assert "columns (list[str] | None, optional):" in suggestion.content
-        assert "callback (Callable[[int], None], optional):" in suggestion.content
+        assert "data (pd.DataFrame):" in suggestion.suggested_text
+        assert "columns (Optional[List[str]], optional):" in suggestion.suggested_text
+        assert "callback (Callable[[int], None], optional):" in suggestion.suggested_text
 
     def test_fix_example_invalid(self) -> None:
         """Test fixing invalid examples in docstring."""
@@ -328,8 +327,7 @@ class TestSpecificIssueFixes:
                     """
                 '''
                 ).strip(),
-                indentation="    ",
-                lines=14,
+                line_number=1,
             ),
             file_path="test.py",
             line_number=1,
@@ -351,12 +349,12 @@ class TestSpecificIssueFixes:
         generator = ExampleSuggestionGenerator()
         suggestion = generator.generate(context)
         assert suggestion is not None
-        assert ">>> square(2)" in suggestion.content
-        assert "4" in suggestion.content
-        assert ">>> square(-3)" in suggestion.content
-        assert "9" in suggestion.content
-        assert "5" not in suggestion.content
-        assert "-9" not in suggestion.content
+        assert ">>> square(2)" in suggestion.suggested_text
+        assert "4" in suggestion.suggested_text
+        assert ">>> square(-3)" in suggestion.suggested_text
+        assert "9" in suggestion.suggested_text
+        assert "5" not in suggestion.suggested_text
+        assert "-9" not in suggestion.suggested_text
 
     def test_fix_description_outdated(self) -> None:
         """Test fixing outdated function descriptions."""
@@ -365,7 +363,7 @@ class TestSpecificIssueFixes:
                 name="save_data",
                 parameters=[
                     FunctionParameter(
-                        name="data", type_annotation="dict[str, Any]", is_required=True
+                        name="data", type_annotation="Dict[str, Any]", is_required=True
                     ),
                     FunctionParameter(
                         name="filepath", type_annotation="Path", is_required=True
@@ -393,8 +391,7 @@ class TestSpecificIssueFixes:
                     """
                 '''
                 ).strip(),
-                indentation="    ",
-                lines=9,
+                line_number=1,
             ),
             file_path="test.py",
             line_number=1,
@@ -419,8 +416,8 @@ class TestSpecificIssueFixes:
         generator = BehaviorSuggestionGenerator()
         suggestion = generator.generate(context)
         assert suggestion is not None
-        assert "async" in suggestion.content.lower()
-        assert "compress" in suggestion.content
-        assert "Path" in suggestion.content
-        assert "None" in suggestion.content or "nothing" in suggestion.content.lower()
-        assert "CSV" not in suggestion.content or "JSON" in suggestion.content
+        assert "async" in suggestion.suggested_text.lower()
+        assert "compress" in suggestion.suggested_text
+        assert "Path" in suggestion.suggested_text
+        assert "None" in suggestion.suggested_text or "nothing" in suggestion.suggested_text.lower()
+        assert "CSV" not in suggestion.suggested_text or "JSON" in suggestion.suggested_text

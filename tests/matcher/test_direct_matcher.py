@@ -6,6 +6,7 @@ Tests focus on:
 - Edge cases and special scenarios
 """
 
+from typing import Any, Dict, List, Optional
 import time
 
 from rapidfuzz import fuzz
@@ -42,7 +43,7 @@ class TestPerformance:
                 parameters=[
                     FunctionParameter(
                         name="data",
-                        type_annotation="dict[str, Any]",
+                        type_annotation="Dict[str, Any]",
                         default_value=None,
                         is_required=True,
                     ),
@@ -53,7 +54,7 @@ class TestPerformance:
                         is_required=False,
                     ),
                 ],
-                return_type="dict[str, Any]",
+                return_type="Dict[str, Any]",
                 is_async=i % 10 == 0,  # Every 10th function is async
                 is_method=i % 3 == 0,  # Every 3rd is a method
                 decorators=decorators,
@@ -106,7 +107,7 @@ class TestPerformance:
                 parameters=[
                     FunctionParameter(
                         name="items",
-                        type_annotation="list[float]",
+                        type_annotation="List[float]",
                         default_value=None,
                         is_required=True,
                     )
@@ -256,7 +257,7 @@ class TestMatchingAccuracy:
                     parameters=[
                         FunctionParameter(
                             name="items",
-                            type_annotation="list[float]",
+                            type_annotation="List[float]",
                             default_value=None,
                             is_required=True,
                         )

@@ -7,6 +7,9 @@ ensuring proper formatting, parameter rendering, and style-specific features.
 
 import pytest
 
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from pathlib import Path
+
 from codedocsync.parser.docstring_models import (
     DocstringParameter,
     DocstringRaises,
@@ -20,30 +23,30 @@ class TestNumpyStyleTemplate:
     """Test cases for NumPy style template."""
 
     @pytest.fixture
-    def template(self):
+    def template(self) -> Any:
         """Create a NumPy template instance."""
         return NumpyStyleTemplate()
 
     @pytest.fixture
-    def sample_parameters(self):
+    def sample_parameters(self) -> Any:
         """Create sample parameters for testing."""
         return [
             DocstringParameter(
                 name="data",
-                type_annotation="np.ndarray",
+                type_str="np.ndarray",
                 description="Input data array with shape (n, m)",
                 is_optional=False,
             ),
             DocstringParameter(
                 name="axis",
-                type_annotation="int",
+                type_str="int",
                 description="Axis along which to operate",
                 is_optional=True,
                 default_value="0",
             ),
             DocstringParameter(
                 name="method",
-                type_annotation="str",
+                type_str="str",
                 description="Method to use for processing",
                 is_optional=True,
                 default_value="'mean'",
@@ -51,15 +54,15 @@ class TestNumpyStyleTemplate:
         ]
 
     @pytest.fixture
-    def sample_returns(self):
+    def sample_returns(self) -> Any:
         """Create sample returns for testing."""
         return DocstringReturns(
-            type_annotation="np.ndarray",
+            type_str="np.ndarray",
             description="Processed array with same shape as input",
         )
 
     @pytest.fixture
-    def sample_raises(self):
+    def sample_raises(self) -> Any:
         """Create sample raises for testing."""
         return [
             DocstringRaises(
@@ -85,17 +88,17 @@ class TestNumpyStyleTemplate:
         assert template.max_line_length == 100
         assert template.style == DocstringStyle.NUMPY
 
-    def test_render_parameters_empty(self, template) -> None:
+    def test_render_parameters_empty(self, template: Any) -> None:
         """Test rendering empty parameters list."""
         result = template.render_parameters([])
         assert result == []
 
-    def test_render_parameters_single(self, template) -> None:
+    def test_render_parameters_single(self, template: Any) -> None:
         """Test rendering single parameter."""
         params = [
             DocstringParameter(
                 name="x",
-                type_annotation="int",
+                type_str="int",
                 description="Input value",
                 is_optional=False,
             )
@@ -111,7 +114,7 @@ class TestNumpyStyleTemplate:
 
         assert result == expected
 
-    def test_render_parameters_multiple(self, template, sample_parameters) -> None:
+    def test_render_parameters_multiple(self, template: Any, sample_parameters: Any) -> None:
         """Test rendering multiple parameters."""
         result = template.render_parameters(sample_parameters)
 
@@ -128,18 +131,18 @@ class TestNumpyStyleTemplate:
         # Should have 3 parameters with blank lines between them
         assert len(parameter_starts) == 3
 
-    def test_render_parameters_without_types(self, template) -> None:
+    def test_render_parameters_without_types(self, template: Any) -> None:
         """Test rendering parameters without type annotations."""
         params = [
             DocstringParameter(
                 name="param1",
-                type_annotation=None,
+                type_str=None,
                 description="First parameter",
                 is_optional=False,
             ),
             DocstringParameter(
                 name="param2",
-                type_annotation=None,
+                type_str=None,
                 description="Second parameter",
                 is_optional=False,
             ),
@@ -153,12 +156,12 @@ class TestNumpyStyleTemplate:
         assert "param1" in result
         assert "param2" in result
 
-    def test_render_parameters_long_description(self, template) -> None:
+    def test_render_parameters_long_description(self, template: Any) -> None:
         """Test rendering parameters with long descriptions."""
         params = [
             DocstringParameter(
                 name="very_long_parameter_name",
-                type_annotation="Dict[str, Any]",
+                type_str="Dict[str, Any]",
                 description="This is a very long description that should be wrapped across multiple lines to test the wrapping functionality of the NumPy template",
                 is_optional=False,
             )
@@ -170,11 +173,11 @@ class TestNumpyStyleTemplate:
         description_lines = [line for line in result if line.startswith("    ")]
         assert len(description_lines) > 1  # Should be wrapped across multiple lines
 
-    def test_render_returns_empty(self, template) -> None:
+    def test_render_returns_empty(self, template: Any) -> None:
         """Test rendering empty returns."""
         assert template.render_returns(None) == []
 
-    def test_render_returns_with_type(self, template, sample_returns) -> None:
+    def test_render_returns_with_type(self, template: Any, sample_returns: Any) -> None:
         """Test rendering returns with type annotation."""
         result = template.render_returns(sample_returns)
 
@@ -187,10 +190,10 @@ class TestNumpyStyleTemplate:
 
         assert result == expected
 
-    def test_render_returns_without_type(self, template) -> None:
+    def test_render_returns_without_type(self, template: Any) -> None:
         """Test rendering returns without type annotation."""
         returns = DocstringReturns(
-            type_annotation=None,
+            type_str=None,
             description="Some return value",
         )
 
@@ -200,11 +203,11 @@ class TestNumpyStyleTemplate:
         assert "-" * 7 in result
         assert "result" in result  # Should use default name
 
-    def test_render_raises_empty(self, template) -> None:
+    def test_render_raises_empty(self, template: Any) -> None:
         """Test rendering empty raises list."""
         assert template.render_raises([]) == []
 
-    def test_render_raises_single(self, template) -> None:
+    def test_render_raises_single(self, template: Any) -> None:
         """Test rendering single exception."""
         raises = [
             DocstringRaises(
@@ -223,7 +226,7 @@ class TestNumpyStyleTemplate:
 
         assert result == expected
 
-    def test_render_raises_multiple(self, template, sample_raises) -> None:
+    def test_render_raises_multiple(self, template: Any, sample_raises: Any) -> None:
         """Test rendering multiple exceptions."""
         result = template.render_raises(sample_raises)
 
@@ -239,11 +242,11 @@ class TestNumpyStyleTemplate:
         blank_lines = [i for i, line in enumerate(result) if line == ""]
         assert len(blank_lines) >= 1  # At least one blank line between exceptions
 
-    def test_render_raises_without_type(self, template) -> None:
+    def test_render_raises_without_type(self, template: Any) -> None:
         """Test rendering raises without exception type."""
         raises = [
             DocstringRaises(
-                exception_type=None,
+                exception_type="Exception",
                 description="If something goes wrong",
             )
         ]
@@ -254,11 +257,11 @@ class TestNumpyStyleTemplate:
         assert "Exception" in result
         assert "If something goes wrong" in result
 
-    def test_format_parameter_line_with_type(self, template) -> None:
+    def test_format_parameter_line_with_type(self, template: Any) -> None:
         """Test formatting parameter line with type."""
         param = DocstringParameter(
             name="test_param",
-            type_annotation="List[str]",
+            type_str="List[str]",
             description="Test parameter",
             is_optional=False,
         )
@@ -268,11 +271,11 @@ class TestNumpyStyleTemplate:
             result == "test_param : list of str"
         )  # Should format List[str] appropriately
 
-    def test_format_parameter_line_without_type(self, template) -> None:
+    def test_format_parameter_line_without_type(self, template: Any) -> None:
         """Test formatting parameter line without type."""
         param = DocstringParameter(
             name="test_param",
-            type_annotation=None,
+            type_str=None,
             description="Test parameter",
             is_optional=False,
         )
@@ -280,27 +283,27 @@ class TestNumpyStyleTemplate:
         result = template._format_parameter_line(param)
         assert result == "test_param"
 
-    def test_format_return_line_with_type(self, template) -> None:
+    def test_format_return_line_with_type(self, template: Any) -> None:
         """Test formatting return line with type."""
         returns = DocstringReturns(
-            type_annotation="int",
+            type_str="int",
             description="Return value",
         )
 
         result = template._format_return_line(returns)
         assert result == "result : int"
 
-    def test_format_return_line_without_type(self, template) -> None:
+    def test_format_return_line_without_type(self, template: Any) -> None:
         """Test formatting return line without type."""
         returns = DocstringReturns(
-            type_annotation=None,
+            type_str=None,
             description="Return value",
         )
 
         result = template._format_return_line(returns)
         assert result == "result"
 
-    def test_match_parameter_line(self, template) -> None:
+    def test_match_parameter_line(self, template: Any) -> None:
         """Test parameter line matching."""
         # Valid parameter lines
         assert template._match_parameter_line("param_name : str") == "param_name"
@@ -312,7 +315,7 @@ class TestNumpyStyleTemplate:
         assert template._match_parameter_line("Parameters") is None
         assert template._match_parameter_line("") is None
 
-    def test_merge_descriptions(self, template) -> None:
+    def test_merge_descriptions(self, template: Any) -> None:
         """Test merging preserved descriptions."""
         new_lines = [
             "Parameters",
@@ -335,7 +338,7 @@ class TestNumpyStyleTemplate:
         # param2 should keep new description
         assert "New description for param2" in " ".join(result)
 
-    def test_render_examples(self, template) -> None:
+    def test_render_examples(self, template: Any) -> None:
         """Test rendering examples."""
         examples = [
             ">>> import numpy as np\n>>> data = np.array([1, 2, 3])\n>>> process(data)",
@@ -348,7 +351,7 @@ class TestNumpyStyleTemplate:
         assert "-" * 8 in result
         assert ">>> import numpy as np" in result
 
-    def test_format_type_annotation_array_types(self, template) -> None:
+    def test_format_type_annotation_array_types(self, template: Any) -> None:
         """Test formatting array types for NumPy style."""
         # NumPy arrays should become array_like
         assert template._format_type_annotation("np.ndarray") == "array_like"
@@ -362,7 +365,7 @@ class TestNumpyStyleTemplate:
         assert template._format_type_annotation("Dict[str, Any]") == "dict of Any"
 
     def test_complete_docstring_rendering(
-        self, template, sample_parameters, sample_returns, sample_raises
+        self, template: Any, sample_parameters: Any, sample_returns: Any, sample_raises: Any
     ) -> None:
         """Test rendering a complete docstring."""
         docstring = template.render_complete_docstring(
@@ -385,14 +388,14 @@ class TestNumpyStyleTemplate:
         assert "-" * 7 in docstring  # Returns underline
         assert "-" * 6 in docstring  # Raises underline
 
-    def test_long_line_wrapping(self, template) -> None:
+    def test_long_line_wrapping(self, template: Any) -> None:
         """Test that long lines are properly wrapped."""
         template.max_line_length = 50  # Short line for testing
 
         params = [
             DocstringParameter(
                 name="very_long_parameter_name_that_exceeds_limit",
-                type_annotation="Dict[str, List[Tuple[int, str]]]",
+                type_str="Dict[str, List[Tuple[int, str]]]",
                 description="This is an extremely long description that definitely exceeds the maximum line length and should be wrapped properly across multiple lines",
                 is_optional=False,
             )
@@ -409,16 +412,16 @@ class TestNumpyTemplateEdgeCases:
     """Test edge cases and error conditions."""
 
     @pytest.fixture
-    def template(self):
+    def template(self) -> Any:
         """Create template for edge case testing."""
         return NumpyStyleTemplate()
 
-    def test_empty_descriptions(self, template) -> None:
+    def test_empty_descriptions(self, template: Any) -> None:
         """Test handling of empty descriptions."""
         params = [
             DocstringParameter(
                 name="param",
-                type_annotation="str",
+                type_str="str",
                 description="",  # Empty description
                 is_optional=False,
             )
@@ -429,12 +432,12 @@ class TestNumpyTemplateEdgeCases:
         # Should still render parameter name and type
         assert "param : str" in result
 
-    def test_special_characters_in_descriptions(self, template) -> None:
+    def test_special_characters_in_descriptions(self, template: Any) -> None:
         """Test handling of special characters."""
         params = [
             DocstringParameter(
                 name="param",
-                type_annotation="str",
+                type_str="str",
                 description="Description with \"quotes\" and 'apostrophes' and <brackets>",
                 is_optional=False,
             )
@@ -448,12 +451,12 @@ class TestNumpyTemplateEdgeCases:
         assert "'apostrophes'" in rendered_text
         assert "<brackets>" in rendered_text
 
-    def test_unicode_descriptions(self, template) -> None:
+    def test_unicode_descriptions(self, template: Any) -> None:
         """Test handling of Unicode characters."""
         params = [
             DocstringParameter(
                 name="param",
-                type_annotation="str",
+                type_str="str",
                 description="Parameter with émoji 🚀 and unicode characters α β γ",
                 is_optional=False,
             )
@@ -466,12 +469,12 @@ class TestNumpyTemplateEdgeCases:
         assert "émoji 🚀" in rendered_text
         assert "α β γ" in rendered_text
 
-    def test_very_long_parameter_names(self, template) -> None:
+    def test_very_long_parameter_names(self, template: Any) -> None:
         """Test handling of very long parameter names."""
         params = [
             DocstringParameter(
                 name="extremely_long_parameter_name_that_might_cause_formatting_issues",
-                type_annotation="str",
+                type_str="str",
                 description="Description",
                 is_optional=False,
             )
@@ -485,12 +488,12 @@ class TestNumpyTemplateEdgeCases:
             in " ".join(result)
         )
 
-    def test_complex_type_annotations(self, template) -> None:
+    def test_complex_type_annotations(self, template: Any) -> None:
         """Test handling of complex type annotations."""
         params = [
             DocstringParameter(
                 name="callback",
-                type_annotation="Callable[[int, str], Union[bool, None]]",
+                type_str="Callable[[int, str], Optional[bool]]",
                 description="Complex callback function",
                 is_optional=False,
             )

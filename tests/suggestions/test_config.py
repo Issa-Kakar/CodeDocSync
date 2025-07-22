@@ -4,6 +4,7 @@ Comprehensive tests for suggestion configuration system.
 Tests configuration classes, validation, loading/saving, and merging logic.
 """
 
+from typing import Optional, List, Dict
 import tempfile
 from pathlib import Path
 from unittest.mock import mock_open, patch
