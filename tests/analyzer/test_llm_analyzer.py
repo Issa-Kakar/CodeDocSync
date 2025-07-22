@@ -1,522 +1,1181 @@
 """
-Test suite for LLM analyzer implementation.
+High-quality test suite for LLMAnalyzer.
 
-Tests LLM integration, caching, retry logic, and fallback behavior.
+Tests all 6 LLM analysis types with comprehensive scenarios,
+reliability features, and performance benchmarks.
 """
 
 import asyncio
-import json
-from unittest.mock import Mock, patch
+import os
+import time
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
-from codedocsync.analyzer.llm_cache import LLMCache
-from codedocsync.analyzer.llm_errors import LLMError as LLMAnalysisError
-from codedocsync.analyzer.llm_models import LLMAnalysisResponse as LLMAnalysisResult
-from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
-from codedocsync.parser.ast_parser import FunctionSignature, ParsedFunction
-from codedocsync.parser.docstring_models import ParsedDocstring
-
-
-class TestLLMCache:
-    """Test LLM caching functionality."""
-
-    def test_cache_initialization(self, tmp_path):
-        """Test cache initialization."""
-        cache = LLMCache(cache_dir=tmp_path, ttl_hours=12)
-
-        assert cache.db_path == tmp_path / "llm_analysis_cache.db"
-        assert cache.ttl_seconds == 12 * 3600
-        assert cache.db_path.exists()
-
-    def test_cache_key_generation(self, tmp_path):
-        """Test cache key generation."""
-        cache = LLMCache(cache_dir=tmp_path)
-
-        # Create test data
-        function_sig = "def test_func(param: str) -> int"
-        docstring = "Test docstring"
-        model = "gpt-3.5-turbo"
-
-        key1 = cache._generate_cache_key(function_sig, docstring, model)
-        key2 = cache._generate_cache_key(function_sig, docstring, model)
-        key3 = cache._generate_cache_key(function_sig, "Different docstring", model)
-
-        # Same inputs should generate same key
-        assert key1 == key2
-        # Different inputs should generate different keys
-        assert key1 != key3
-
-    def test_cache_put_and_get(self, tmp_path):
-        """Test storing and retrieving from cache."""
-        cache = LLMCache(cache_dir=tmp_path)
-
-        # Test data
-        function_sig = "def test_func(param: str) -> int"
-        docstring = "Test docstring"
-        model = "gpt-3.5-turbo"
-        result = {"issues": [], "confidence": 0.9}
-
-        # Store in cache
-        cache.put(function_sig, docstring, model, result)
-
-        # Retrieve from cache
-        cached_result = cache.get(function_sig, docstring, model)
-
-        assert cached_result == result
-
-    def test_cache_expiration(self, tmp_path):
-        """Test cache TTL expiration."""
-        # Create cache with very short TTL
-        cache = LLMCache(
-            cache_dir=tmp_path, ttl_hours=0
-        )  # 0 hours = immediate expiration
-
-        function_sig = "def test_func(param: str) -> int"
-        docstring = "Test docstring"
-        model = "gpt-3.5-turbo"
-        result = {"issues": [], "confidence": 0.9}
-
-        # Store in cache
-        cache.put(function_sig, docstring, model, result)
-
-        # Should not retrieve expired entry
-        cached_result = cache.get(function_sig, docstring, model)
-        assert cached_result is None
-
-    def test_cache_stats(self, tmp_path):
-        """Test cache statistics."""
-        cache = LLMCache(cache_dir=tmp_path)
-
-        # Initially empty
-        stats = cache.get_stats()
-        assert stats["total_entries"] == 0
-        assert stats["cache_hits"] == 0
-        assert stats["cache_misses"] == 0
-
-        # Add entry and test hit
-        function_sig = "def test_func(param: str) -> int"
-        docstring = "Test docstring"
-        model = "gpt-3.5-turbo"
-        result = {"issues": [], "confidence": 0.9}
-
-        cache.put(function_sig, docstring, model, result)
-        cache.get(function_sig, docstring, model)  # Hit
-        cache.get("different", "sig", "model")  # Miss
-
-        stats = cache.get_stats()
-        assert stats["total_entries"] == 1
-        assert stats["cache_hits"] == 1
-        assert stats["cache_misses"] == 1
-
-    def test_cache_clear(self, tmp_path):
-        """Test cache clearing functionality."""
-        cache = LLMCache(cache_dir=tmp_path)
-
-        # Add some entries
-        for i in range(3):
-            cache.put(f"func_{i}", f"docstring_{i}", "model", {"data": i})
-
-        stats = cache.get_stats()
-        assert stats["total_entries"] == 3
-
-        # Clear cache
-        cleared_count = cache.clear()
-        assert cleared_count == 3
-
-        stats = cache.get_stats()
-        assert stats["total_entries"] == 0
+from codedocsync.analyzer import LLMAnalyzer
+from codedocsync.analyzer.llm_config import LLMConfig
+from codedocsync.analyzer.llm_errors import (
+    LLMAPIKeyError,
+    LLMError,
+    LLMNetworkError,
+)
+from codedocsync.analyzer.llm_models import LLMAnalysisRequest, LLMAnalysisResponse
+from codedocsync.parser import (
+    DocstringFormat,
+    DocstringParameter,
+    DocstringReturns,
+    FunctionParameter,
+    FunctionSignature,
+    ParsedDocstring,
+    ParsedFunction,
+)
 
 
 class TestLLMAnalyzer:
-    """Test LLMAnalyzer functionality."""
+    """Test suite for the LLMAnalyzer class."""
 
-    def create_mock_matched_pair(self):
-        """Create a mock matched pair for testing."""
-        function = ParsedFunction(
+    @pytest.fixture
+    def mock_env(self, monkeypatch):
+        """Mock environment variables for testing."""
+        monkeypatch.setenv("OPENAI_API_KEY", "test-api-key")
+
+    @pytest.fixture
+    def llm_config(self) -> LLMConfig:
+        """Create a test LLM configuration."""
+        return LLMConfig(
+            model="gpt-4o-mini",
+            temperature=0.1,
+            max_tokens=1000,
+            timeout_seconds=30,
+            max_retries=3,
+            cache_ttl_days=7,
+            requests_per_second=10,
+            burst_size=20,
+        )
+
+    @pytest.fixture
+    async def llm_analyzer(self, mock_env, llm_config) -> LLMAnalyzer:
+        """Create an LLMAnalyzer instance for testing."""
+        with patch("openai.AsyncOpenAI"):
+            analyzer = LLMAnalyzer(llm_config)
+            yield analyzer
+            # Cleanup cache database
+            if analyzer.cache_db_path.exists():
+                analyzer.cache_db_path.unlink()
+
+    @pytest.fixture
+    def basic_function(self) -> ParsedFunction:
+        """Create a basic function for testing."""
+        return ParsedFunction(
             signature=FunctionSignature(
-                name="test_function",
-                parameters=[],
-                return_annotation=None,
-                is_async=False,
-                decorators=[],
+                name="calculate_discount",
+                parameters=[
+                    FunctionParameter(
+                        name="price",
+                        type_annotation="float",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                    FunctionParameter(
+                        name="discount_percent",
+                        type_annotation="float",
+                        default_value="10.0",
+                        is_required=False,
+                    ),
+                ],
+                return_type="float",
             ),
             docstring=None,
-            file_path="/test/file.py",
+            file_path="test.py",
             line_number=10,
+            end_line_number=15,
         )
 
-        docstring = ParsedDocstring(
-            format="google",
-            summary="Test function",
-            parameters=[],
-            returns=None,
-            raises=[],
-            raw_text="Test function docstring",
+    @pytest.fixture
+    def basic_docstring(self) -> ParsedDocstring:
+        """Create a basic docstring for testing."""
+        return ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Calculate the discounted price",
+            parameters=[
+                DocstringParameter(
+                    name="price",
+                    type_str="float",
+                    description="Original price",
+                    default_value=None,
+                ),
+                DocstringParameter(
+                    name="discount_percent",
+                    type_str="float",
+                    description="Discount percentage",
+                    default_value="10.0",
+                ),
+            ],
+            returns=DocstringReturns(
+                type_str="float",
+                description="Discounted price",
+            ),
+            raw_text="""Calculate the discounted price.
+
+            Args:
+                price: Original price
+                discount_percent: Discount percentage (default: 10.0)
+
+            Returns:
+                Discounted price
+            """,
         )
 
-        return MatchedPair(
-            function=function,
-            documentation=docstring,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
-            match_reason="Test match",
-        )
-
-    def test_llm_analyzer_initialization(self, tmp_path):
-        """Test LLMAnalyzer initialization."""
-        analyzer = LLMAnalyzer(
-            provider="openai",
-            model="gpt-3.5-turbo",
-            temperature=0.1,
-            cache_dir=tmp_path,
-        )
-
-        assert analyzer.provider == "openai"
-        assert analyzer.model == "gpt-3.5-turbo"
-        assert analyzer.temperature == 0.1
-        assert analyzer.cache is not None
-
-    def test_llm_analyzer_no_cache(self):
-        """Test LLMAnalyzer without caching."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", enable_cache=False
-        )
-
-        assert analyzer.cache is None
+    # ==== LLM ANALYSIS TYPE TESTS (6 types) ====
 
     @pytest.mark.asyncio
-    async def test_analyze_consistency_cached(self, tmp_path):
-        """Test analyze_consistency with cache hit."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path
+    async def test_behavioral_consistency_check(
+        self, llm_analyzer: LLMAnalyzer, basic_function: ParsedFunction
+    ):
+        """Test behavioral consistency analysis between code and documentation."""
+        # Create a function with behavior mismatch
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="process_data",
+                parameters=[
+                    FunctionParameter(
+                        name="data",
+                        type_annotation="List[int]",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                ],
+                return_type="List[int]",
+            ),
+            docstring=None,
+            file_path="test.py",
+            line_number=20,
+            end_line_number=25,
         )
 
-        pair = self.create_mock_matched_pair()
+        # Docstring describes different behavior
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Sort the input data in ascending order",  # But code might filter instead
+            parameters=[
+                DocstringParameter(
+                    name="data",
+                    type_str="List[int]",
+                    description="List of integers to sort",
+                    default_value=None,
+                ),
+            ],
+            returns=DocstringReturns(
+                type_str="List[int]",
+                description="Sorted list",
+            ),
+            raw_text="Sort the input data in ascending order.",
+        )
 
-        # Mock cache to return a result
-        mock_result = {
+        request = LLMAnalysisRequest(
+            function=function,
+            docstring=docstring,
+            analysis_types=["behavior"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        # Mock the OpenAI response
+        mock_response = {
             "issues": [
                 {
-                    "type": "description_outdated",
-                    "description": "Function behavior has changed",
-                    "suggestion": "Update the docstring",
-                    "confidence": 0.8,
+                    "type": "behavior_mismatch",
+                    "description": "Function filters positive values but docstring says it sorts",
+                    "suggestion": "Update docstring to: 'Filter and return only positive values from the input data'",
+                    "confidence": 0.85,
+                    "line_number": 20,
+                    "details": {"expected": "sorting", "actual": "filtering"},
                 }
             ],
-            "analysis_notes": "Test analysis",
-            "confidence": 0.8,
+            "analysis_notes": "Behavioral analysis complete",
+            "confidence": 0.90,
         }
 
-        with patch.object(analyzer.cache, "get", return_value=mock_result):
-            result = await analyzer.analyze_consistency(pair)
+        with patch.object(
+            llm_analyzer, "_call_openai", new_callable=AsyncMock
+        ) as mock_call:
+            mock_call.return_value = (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 150, "completion_tokens": 50},
+            )
 
-            assert result.cache_hit
-            assert len(result.issues) == 1
-            assert result.issues[0].issue_type == "description_outdated"
-            assert result.confidence == 0.8
+            response = await llm_analyzer.analyze_function(request)
+
+            assert len(response.issues) == 1
+            assert response.issues[0].issue_type == "description_outdated"
+            assert response.issues[0].confidence == 0.85
+            assert "filters" in response.issues[0].description.lower()
+            assert response.model_used == "gpt-4o-mini"
+            assert response.total_tokens == 200
 
     @pytest.mark.asyncio
-    async def test_analyze_consistency_mock_llm(self, tmp_path):
-        """Test analyze_consistency with mocked LLM call."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path
-        )
-
-        pair = self.create_mock_matched_pair()
-
-        # Mock the LLM response
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = Mock()
-        mock_response.choices[0].message.content = json.dumps(
-            {
-                "issues": [
-                    {
-                        "type": "behavior_mismatch",
-                        "description": "Function behavior doesn't match description",
-                        "suggestion": "Update docstring to reflect actual behavior",
-                        "confidence": 0.85,
-                    }
+    async def test_semantic_parameter_analysis(
+        self, llm_analyzer: LLMAnalyzer, basic_function: ParsedFunction
+    ):
+        """Test semantic analysis of parameter descriptions and usage."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="create_user",
+                parameters=[
+                    FunctionParameter(
+                        name="username",
+                        type_annotation="str",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                    FunctionParameter(
+                        name="email",
+                        type_annotation="str",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                    FunctionParameter(
+                        name="age",
+                        type_annotation="int",
+                        default_value=None,
+                        is_required=True,
+                    ),
                 ],
-                "analysis_notes": "Detected behavioral inconsistency",
-                "confidence": 0.85,
-            }
+                return_type="Dict[str, Any]",
+            ),
+            docstring=None,
+            file_path="test.py",
+            line_number=30,
+            end_line_number=35,
         )
 
-        # Mock the cache to return None (cache miss)
-        with (
-            patch.object(analyzer.cache, "get", return_value=None),
-            patch.object(analyzer.cache, "put"),
-            patch(
-                "codedocsync.analyzer.llm_analyzer.acompletion",
-                return_value=mock_response,
-            ) as mock_completion,
-        ):
-            result = await analyzer.analyze_consistency(pair)
+        # Docstring with semantic issues
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Create a new user account",
+            parameters=[
+                DocstringParameter(
+                    name="username",
+                    type_str="str",
+                    description="Unique identifier for the user",  # Vague - doesn't mention validation
+                    default_value=None,
+                ),
+                DocstringParameter(
+                    name="email",
+                    type_str="str",
+                    description="User's email",  # Doesn't mention format validation
+                    default_value=None,
+                ),
+                DocstringParameter(
+                    name="age",
+                    type_str="int",
+                    description="User's age",  # Doesn't mention minimum age requirement
+                    default_value=None,
+                ),
+            ],
+            raw_text="Create a new user account.",
+        )
 
-            assert not result.cache_hit
-            assert len(result.issues) == 1
-            assert result.issues[0].issue_type == "behavior_mismatch"
-            assert result.confidence == 0.85
-            assert "behavioral inconsistency" in result.analysis_notes
+        request = LLMAnalysisRequest(
+            function=function,
+            docstring=docstring,
+            analysis_types=["edge_cases", "type_consistency"],
+            rule_results=[],
+            related_functions=[],
+        )
 
-            # Verify LLM was called
-            mock_completion.assert_called_once()
+        mock_response = {
+            "issues": [
+                {
+                    "type": "missing_edge_case",
+                    "description": "Username validation rules not documented",
+                    "suggestion": "Add: 'Must be 3-20 characters, alphanumeric with underscores only'",
+                    "confidence": 0.80,
+                    "line_number": 30,
+                    "details": {"parameter": "username", "missing": "validation rules"},
+                },
+                {
+                    "type": "missing_edge_case",
+                    "description": "Email format requirements not documented",
+                    "suggestion": "Add: 'Must be a valid email address format'",
+                    "confidence": 0.85,
+                    "line_number": 30,
+                    "details": {"parameter": "email", "missing": "format validation"},
+                },
+            ],
+            "analysis_notes": "Parameter edge cases analyzed",
+            "confidence": 0.82,
+        }
+
+        with patch.object(
+            llm_analyzer, "_call_openai", new_callable=AsyncMock
+        ) as mock_call:
+            mock_call.return_value = (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 200, "completion_tokens": 80},
+            )
+
+            response = await llm_analyzer.analyze_function(request)
+
+            assert len(response.issues) == 2
+            assert all(i.issue_type == "description_outdated" for i in response.issues)
+            assert any("validation" in i.description for i in response.issues)
+            assert response.response_time_ms > 0
 
     @pytest.mark.asyncio
-    async def test_analyze_with_retry_success(self, tmp_path):
-        """Test retry logic with eventual success."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path, max_retries=3
+    async def test_return_value_semantic_check(self, llm_analyzer: LLMAnalyzer):
+        """Test semantic analysis of return value descriptions."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="fetch_user_data",
+                parameters=[
+                    FunctionParameter(
+                        name="user_id",
+                        type_annotation="int",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                ],
+                return_type="Optional[Dict[str, Any]]",
+            ),
+            docstring=None,
+            file_path="test.py",
+            line_number=40,
+            end_line_number=45,
         )
 
-        pair = self.create_mock_matched_pair()
-
-        # Mock first call to fail, second to succeed
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = Mock()
-        mock_response.choices[0].message.content = json.dumps(
-            {"issues": [], "analysis_notes": "No issues found", "confidence": 0.9}
+        # Docstring with incomplete return description
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Fetch user data from database",
+            parameters=[
+                DocstringParameter(
+                    name="user_id",
+                    type_str="int",
+                    description="User ID to fetch",
+                    default_value=None,
+                ),
+            ],
+            returns=DocstringReturns(
+                type_str="dict",  # Doesn't mention Optional
+                description="User data",  # Doesn't explain None case
+            ),
+            raw_text="Fetch user data from database.",
         )
+
+        request = LLMAnalysisRequest(
+            function=function,
+            docstring=docstring,
+            analysis_types=["behavior", "type_consistency"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        mock_response = {
+            "issues": [
+                {
+                    "type": "type_documentation_mismatch",
+                    "description": "Return type is Optional[Dict] but docs don't mention None case",
+                    "suggestion": "Update return description to: 'User data dictionary if found, None if user doesn't exist'",
+                    "confidence": 0.90,
+                    "line_number": 40,
+                    "details": {
+                        "documented": "dict",
+                        "actual": "Optional[Dict[str, Any]]",
+                    },
+                }
+            ],
+            "analysis_notes": "Return value semantics analyzed",
+            "confidence": 0.88,
+        }
+
+        with patch.object(
+            llm_analyzer, "_call_openai", new_callable=AsyncMock
+        ) as mock_call:
+            mock_call.return_value = (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 180, "completion_tokens": 60},
+            )
+
+            response = await llm_analyzer.analyze_function(request)
+
+            assert len(response.issues) == 1
+            assert response.issues[0].issue_type == "parameter_type_mismatch"
+            assert "Optional" in response.issues[0].description
+            assert response.issues[0].confidence == 0.90
+
+    @pytest.mark.asyncio
+    async def test_exception_flow_analysis(self, llm_analyzer: LLMAnalyzer):
+        """Test analysis of exception handling and documentation."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="divide_numbers",
+                parameters=[
+                    FunctionParameter(
+                        name="numerator",
+                        type_annotation="float",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                    FunctionParameter(
+                        name="denominator",
+                        type_annotation="float",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                ],
+                return_type="float",
+            ),
+            docstring=None,
+            file_path="test.py",
+            line_number=50,
+            end_line_number=55,
+        )
+
+        # Docstring missing exception documentation
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Divide two numbers",
+            parameters=[
+                DocstringParameter(
+                    name="numerator",
+                    type_str="float",
+                    description="The numerator",
+                    default_value=None,
+                ),
+                DocstringParameter(
+                    name="denominator",
+                    type_str="float",
+                    description="The denominator",
+                    default_value=None,
+                ),
+            ],
+            returns=DocstringReturns(
+                type_str="float",
+                description="The division result",
+            ),
+            raises=[],  # No exceptions documented
+            raw_text="Divide two numbers.",
+        )
+
+        request = LLMAnalysisRequest(
+            function=function,
+            docstring=docstring,
+            analysis_types=["edge_cases"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        mock_response = {
+            "issues": [
+                {
+                    "type": "missing_edge_case",
+                    "description": "Division by zero exception not documented",
+                    "suggestion": "Add Raises section: 'ZeroDivisionError: If denominator is 0'",
+                    "confidence": 0.95,
+                    "line_number": 50,
+                    "details": {
+                        "exception": "ZeroDivisionError",
+                        "condition": "denominator == 0",
+                    },
+                }
+            ],
+            "analysis_notes": "Exception flow analyzed",
+            "confidence": 0.92,
+        }
+
+        with patch.object(
+            llm_analyzer, "_call_openai", new_callable=AsyncMock
+        ) as mock_call:
+            mock_call.return_value = (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 160, "completion_tokens": 55},
+            )
+
+            response = await llm_analyzer.analyze_function(request)
+
+            assert len(response.issues) == 1
+            assert "zero" in response.issues[0].description.lower()
+            assert response.issues[0].confidence == 0.95
+
+    @pytest.mark.asyncio
+    async def test_example_correctness_check(self, llm_analyzer: LLMAnalyzer):
+        """Test validation of code examples in docstrings."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="format_currency",
+                parameters=[
+                    FunctionParameter(
+                        name="amount",
+                        type_annotation="float",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                    FunctionParameter(
+                        name="currency",
+                        type_annotation="str",
+                        default_value="'USD'",
+                        is_required=False,
+                    ),
+                ],
+                return_type="str",
+            ),
+            docstring=None,
+            file_path="test.py",
+            line_number=60,
+            end_line_number=65,
+        )
+
+        # Docstring with incorrect examples
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Format amount as currency string",
+            parameters=[
+                DocstringParameter(
+                    name="amount",
+                    type_str="float",
+                    description="Amount to format",
+                    default_value=None,
+                ),
+                DocstringParameter(
+                    name="currency",
+                    type_str="str",
+                    description="Currency code",
+                    default_value="'USD'",
+                ),
+            ],
+            raw_text="""Format amount as currency string.
+
+            Examples:
+                >>> format_currency(100)
+                '$100.00'
+                >>> format_currency(50.5, 'EUR')
+                '€50.50'
+                >>> format_currency('invalid')  # Wrong type
+                '$0.00'
+            """,
+        )
+
+        request = LLMAnalysisRequest(
+            function=function,
+            docstring=docstring,
+            analysis_types=["examples"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        mock_response = {
+            "issues": [
+                {
+                    "type": "example_invalid",
+                    "description": "Example shows string input but function expects float",
+                    "suggestion": "Remove or fix example: format_currency('invalid') - function expects float",
+                    "confidence": 0.95,
+                    "line_number": 60,
+                    "details": {
+                        "example_line": "format_currency('invalid')",
+                        "error": "TypeError",
+                    },
+                }
+            ],
+            "analysis_notes": "Examples validated",
+            "confidence": 0.90,
+        }
+
+        with patch.object(
+            llm_analyzer, "_call_openai", new_callable=AsyncMock
+        ) as mock_call:
+            mock_call.return_value = (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 220, "completion_tokens": 70},
+            )
+
+            response = await llm_analyzer.analyze_function(request)
+
+            assert len(response.issues) == 1
+            assert response.issues[0].issue_type == "example_invalid"
+            assert "string input" in response.issues[0].description
+
+    @pytest.mark.asyncio
+    async def test_deprecation_consistency(self, llm_analyzer: LLMAnalyzer):
+        """Test consistency of deprecation and version information."""
+        function = ParsedFunction(
+            signature=FunctionSignature(
+                name="old_api_method",
+                parameters=[
+                    FunctionParameter(
+                        name="data",
+                        type_annotation="Any",
+                        default_value=None,
+                        is_required=True,
+                    ),
+                ],
+                return_type="Any",
+            ),
+            docstring=None,
+            file_path="test.py",
+            line_number=70,
+            end_line_number=75,
+        )
+
+        # Docstring with outdated version info
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Process data using old API",
+            parameters=[
+                DocstringParameter(
+                    name="data",
+                    type_str="Any",
+                    description="Data to process",
+                    default_value=None,
+                ),
+            ],
+            raw_text="""Process data using old API.
+
+            .. deprecated:: 1.0
+                Use new_api_method instead.
+
+            .. versionadded:: 0.5
+            """,
+        )
+
+        request = LLMAnalysisRequest(
+            function=function,
+            docstring=docstring,
+            analysis_types=["version_info"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        mock_response = {
+            "issues": [
+                {
+                    "type": "version_info_outdated",
+                    "description": "Deprecation notice references old version 1.0, current version is 2.5",
+                    "suggestion": "Update deprecation notice to reflect current version and migration path",
+                    "confidence": 0.75,
+                    "line_number": 70,
+                    "details": {"mentioned_version": "1.0", "current_version": "2.5"},
+                }
+            ],
+            "analysis_notes": "Version information checked",
+            "confidence": 0.80,
+        }
+
+        with patch.object(
+            llm_analyzer, "_call_openai", new_callable=AsyncMock
+        ) as mock_call:
+            mock_call.return_value = (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 190, "completion_tokens": 65},
+            )
+
+            response = await llm_analyzer.analyze_function(request)
+
+            assert len(response.issues) == 1
+            assert response.issues[0].issue_type == "description_outdated"
+            assert "version" in response.issues[0].description.lower()
+
+    # ==== RELIABILITY TESTS ====
+
+    @pytest.mark.asyncio
+    async def test_llm_retry_logic(
+        self,
+        llm_analyzer: LLMAnalyzer,
+        basic_function: ParsedFunction,
+        basic_docstring: ParsedDocstring,
+    ):
+        """Test exponential backoff retry logic for API failures."""
+        request = LLMAnalysisRequest(
+            function=basic_function,
+            docstring=basic_docstring,
+            analysis_types=["behavior"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        # Mock OpenAI to fail twice then succeed
+        call_count = 0
+
+        async def mock_call(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                import openai
+
+                raise openai.APIError("Temporary failure")
+            return (
+                '{"issues": [], "confidence": 0.9}',
+                {"prompt_tokens": 100, "completion_tokens": 20},
+            )
+
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+            start_time = time.time()
+            response = await llm_analyzer.analyze_function(request)
+            elapsed = time.time() - start_time
+
+            # Should succeed after retries
+            assert call_count == 3
+            assert len(response.issues) == 0
+            # Should have delays due to exponential backoff
+            assert elapsed > 2.0  # At least 1 + 2 seconds of backoff
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_handling(
+        self,
+        llm_analyzer: LLMAnalyzer,
+        basic_function: ParsedFunction,
+        basic_docstring: ParsedDocstring,
+    ):
+        """Test rate limit handling with token bucket algorithm."""
+        # Create multiple requests
+        requests = []
+        for _ in range(5):
+            request = LLMAnalysisRequest(
+                function=basic_function,
+                docstring=basic_docstring,
+                analysis_types=["behavior"],
+                rule_results=[],
+                related_functions=[],
+            )
+            requests.append(request)
+
+        # Mock fast responses
+        async def mock_call(*args, **kwargs):
+            return (
+                '{"issues": [], "confidence": 0.9}',
+                {"prompt_tokens": 100, "completion_tokens": 20},
+            )
+
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+            # Configure very low rate limit for testing
+            llm_analyzer.config.requests_per_second = 2
+            llm_analyzer.rate_limiter.rate = 2
+            llm_analyzer.rate_limiter.burst_size = 2
+            llm_analyzer.rate_limiter.tokens = 2
+
+            start_time = time.time()
+
+            # Process requests concurrently
+            tasks = [llm_analyzer.analyze_function(req) for req in requests]
+            responses = await asyncio.gather(*tasks)
+
+            elapsed = time.time() - start_time
+
+            # All should succeed
+            assert len(responses) == 5
+            # Should take time due to rate limiting (5 requests at 2/sec = ~2.5 sec)
+            assert elapsed > 2.0
+
+    @pytest.mark.asyncio
+    async def test_cache_identical_analyses(
+        self,
+        llm_analyzer: LLMAnalyzer,
+        basic_function: ParsedFunction,
+        basic_docstring: ParsedDocstring,
+    ):
+        """Test caching of identical analysis requests."""
+        request = LLMAnalysisRequest(
+            function=basic_function,
+            docstring=basic_docstring,
+            analysis_types=["behavior"],
+            rule_results=[],
+            related_functions=[],
+        )
+
+        # Mock OpenAI response
+        mock_response = {
+            "issues": [
+                {
+                    "type": "behavior_mismatch",
+                    "description": "Test issue",
+                    "suggestion": "Test suggestion",
+                    "confidence": 0.85,
+                    "line_number": 10,
+                    "details": {},
+                }
+            ],
+            "confidence": 0.90,
+        }
 
         call_count = 0
 
-        async def mock_completion(*args, **kwargs):
+        async def mock_call(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            if call_count == 1:
-                raise Exception("API error")
-            return mock_response
-
-        with (
-            patch.object(analyzer.cache, "get", return_value=None),
-            patch.object(analyzer.cache, "put"),
-            patch(
-                "codedocsync.analyzer.llm_analyzer.acompletion",
-                side_effect=mock_completion,
-            ),
-        ):
-            result = await analyzer.analyze_consistency(pair)
-
-            assert len(result.issues) == 0
-            assert result.confidence == 0.9
-            assert call_count == 2  # First failed, second succeeded
-
-    @pytest.mark.asyncio
-    async def test_analyze_with_retry_failure(self, tmp_path):
-        """Test retry logic with ultimate failure."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path, max_retries=2
-        )
-
-        pair = self.create_mock_matched_pair()
-
-        # Mock all calls to fail
-        async def mock_completion(*args, **kwargs):
-            raise Exception("Persistent API error")
-
-        with (
-            patch.object(analyzer.cache, "get", return_value=None),
-            patch(
-                "codedocsync.analyzer.llm_analyzer.acompletion",
-                side_effect=mock_completion,
-            ),
-        ):
-            with pytest.raises(LLMAnalysisError):
-                await analyzer.analyze_consistency(pair)
-
-    @pytest.mark.asyncio
-    async def test_specialized_analysis_methods(self, tmp_path):
-        """Test specialized analysis methods."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path
-        )
-
-        pair = self.create_mock_matched_pair()
-
-        # Mock the main analyze_consistency method
-        async def mock_analyze(pair, analysis_types=None):
-            return LLMAnalysisResult(
-                issues=[],
-                analysis_notes=f"Analysis type: {analysis_types[0] if analysis_types else 'default'}",
-                confidence=0.9,
-                llm_model="gpt-3.5-turbo",
-                execution_time_ms=100.0,
+            return (
+                str(mock_response).replace("'", '"'),
+                {"prompt_tokens": 150, "completion_tokens": 50},
             )
 
-        with patch.object(analyzer, "analyze_consistency", side_effect=mock_analyze):
-            # Test behavior analysis
-            result = await analyzer.analyze_behavior(pair)
-            assert "behavior_analysis" in result.analysis_notes
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+            # First call should hit API
+            response1 = await llm_analyzer.analyze_function(request)
+            assert not response1.cache_hit
+            assert call_count == 1
 
-            # Test example analysis
-            result = await analyzer.analyze_examples(pair)
-            assert "example_validation" in result.analysis_notes
+            # Second identical call should hit cache
+            response2 = await llm_analyzer.analyze_function(request)
+            assert response2.cache_hit
+            assert call_count == 1  # No additional API call
 
-            # Test edge case analysis
-            result = await analyzer.analyze_edge_cases(pair)
-            assert "edge_case_analysis" in result.analysis_notes
+            # Results should be identical
+            assert len(response1.issues) == len(response2.issues)
+            assert response1.issues[0].description == response2.issues[0].description
 
-            # Test version analysis
-            result = await analyzer.analyze_version_info(pair)
-            assert "version_analysis" in result.analysis_notes
+            # Cache stats should reflect hits
+            stats = llm_analyzer.get_cache_stats()
+            assert stats["cache_hits"] == 1
+            assert stats["cache_misses"] == 1
+            assert stats["cache_hit_rate"] == 0.5
 
-    def test_cache_stats_integration(self, tmp_path):
-        """Test cache statistics integration."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path
+    @pytest.mark.asyncio
+    async def test_fallback_to_rules_on_llm_failure(
+        self, llm_analyzer: LLMAnalyzer, basic_function: ParsedFunction
+    ):
+        """Test fallback to rule engine when LLM fails."""
+        # Create docstring with obvious structural issue
+        docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Calculate discount",
+            parameters=[
+                DocstringParameter(
+                    name="wrong_param",  # Wrong parameter name
+                    type_str="float",
+                    description="Wrong parameter",
+                    default_value=None,
+                ),
+            ],
+            raw_text="Calculate discount.",
         )
 
-        stats = analyzer.get_cache_stats()
-        assert "total_entries" in stats
-        assert "cache_hits" in stats
-        assert "cache_misses" in stats
-
-    def test_cache_clear_integration(self, tmp_path):
-        """Test cache clearing integration."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path
+        request = LLMAnalysisRequest(
+            function=basic_function,
+            docstring=docstring,
+            analysis_types=["behavior"],
+            rule_results=[],
+            related_functions=[],
         )
 
-        # Should work without errors
-        cleared_count = analyzer.clear_cache()
-        assert isinstance(cleared_count, int)
+        # Mock OpenAI to always fail
+        async def mock_fail(*args, **kwargs):
+            raise LLMError("LLM service unavailable")
 
-    def test_no_cache_stats(self):
-        """Test stats when cache is disabled."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", enable_cache=False
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_fail):
+            # Use analyze_with_fallback method
+            result = await llm_analyzer.analyze_with_fallback(request)
+
+            # Should fall back to rules and find structural issues
+            assert not result.used_llm
+            assert len(result.issues) > 0
+            # Should find parameter name mismatch
+            param_issues = [
+                i for i in result.issues if "parameter" in i.issue_type.lower()
+            ]
+            assert len(param_issues) > 0
+
+    # ==== PERFORMANCE BENCHMARK TESTS ====
+
+    @pytest.mark.asyncio
+    async def test_analysis_time_under_2s_per_function(
+        self,
+        llm_analyzer: LLMAnalyzer,
+        basic_function: ParsedFunction,
+        basic_docstring: ParsedDocstring,
+    ):
+        """Test that single function analysis completes in under 2 seconds."""
+        request = LLMAnalysisRequest(
+            function=basic_function,
+            docstring=basic_docstring,
+            analysis_types=["behavior", "examples", "edge_cases"],  # Multiple types
+            rule_results=[],
+            related_functions=[],
         )
 
-        stats = analyzer.get_cache_stats()
-        assert stats == {"cache_enabled": False}
+        # Mock reasonable API response time
+        async def mock_call(*args, **kwargs):
+            await asyncio.sleep(0.5)  # Simulate API latency
+            return (
+                '{"issues": [], "confidence": 0.9}',
+                {"prompt_tokens": 200, "completion_tokens": 50},
+            )
 
-    def test_no_cache_clear(self):
-        """Test clear when cache is disabled."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", enable_cache=False
-        )
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+            start_time = time.time()
+            response = await llm_analyzer.analyze_function(request)
+            elapsed = time.time() - start_time
 
-        cleared_count = analyzer.clear_cache()
-        assert cleared_count == 0
+            assert elapsed < 2.0, f"Analysis took {elapsed:.2f}s, expected < 2s"
+            assert response.response_time_ms < 2000
 
+    @pytest.mark.asyncio
+    async def test_cache_effectiveness_above_80_percent(
+        self, llm_analyzer: LLMAnalyzer
+    ):
+        """Test that cache hit rate exceeds 80% for repeated analyses."""
+        # Create a set of 10 unique functions
+        functions = []
+        docstrings = []
 
-class TestLLMResponseParsing:
-    """Test LLM response parsing and validation."""
+        for i in range(10):
+            func = ParsedFunction(
+                signature=FunctionSignature(
+                    name=f"test_func_{i}",
+                    parameters=[
+                        FunctionParameter(
+                            name="param",
+                            type_annotation="int",
+                            default_value=None,
+                            is_required=True,
+                        ),
+                    ],
+                    return_type="int",
+                ),
+                docstring=None,
+                file_path="test.py",
+                line_number=i * 10,
+                end_line_number=i * 10 + 5,
+            )
 
-    def test_valid_json_response(self):
-        """Test parsing of valid JSON response."""
-        from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
-
-        analyzer = LLMAnalyzer(provider="openai", model="gpt-3.5-turbo")
-
-        # Valid JSON response
-        response_text = json.dumps(
-            {
-                "issues": [
-                    {
-                        "type": "behavior_mismatch",
-                        "description": "Function behavior changed",
-                        "suggestion": "Update docstring",
-                        "confidence": 0.8,
-                    }
+            doc = ParsedDocstring(
+                format=DocstringFormat.GOOGLE,
+                summary=f"Test function {i}",
+                parameters=[
+                    DocstringParameter(
+                        name="param",
+                        type_str="int",
+                        description="Test parameter",
+                        default_value=None,
+                    ),
                 ],
-                "analysis_notes": "Found one issue",
-                "confidence": 0.8,
-            }
-        )
+                raw_text=f"Test function {i}",
+            )
 
-        result = analyzer._parse_llm_response(response_text, "gpt-3.5-turbo", 100.0)
+            functions.append(func)
+            docstrings.append(doc)
 
-        assert len(result.issues) == 1
-        assert result.issues[0].issue_type == "behavior_mismatch"
-        assert result.confidence == 0.8
-        assert result.analysis_notes == "Found one issue"
+        # Mock fast API responses
+        async def mock_call(*args, **kwargs):
+            return (
+                '{"issues": [], "confidence": 0.9}',
+                {"prompt_tokens": 100, "completion_tokens": 20},
+            )
 
-    def test_invalid_json_response(self):
-        """Test handling of invalid JSON response."""
-        from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+            # Analyze each function 5 times (50 total requests)
+            total_requests = 0
 
-        analyzer = LLMAnalyzer(provider="openai", model="gpt-3.5-turbo")
+            for _ in range(5):
+                for func, doc in zip(functions, docstrings, strict=False):
+                    request = LLMAnalysisRequest(
+                        function=func,
+                        docstring=doc,
+                        analysis_types=["behavior"],
+                        rule_results=[],
+                        related_functions=[],
+                    )
+                    await llm_analyzer.analyze_function(request)
+                    total_requests += 1
 
-        # Invalid JSON
-        response_text = "This is not valid JSON"
+            # Check cache effectiveness
+            stats = llm_analyzer.get_cache_stats()
+            cache_hit_rate = stats["cache_hit_rate"]
 
-        # Should raise an error or return a fallback result
-        with pytest.raises(LLMAnalysisError):
-            analyzer._parse_llm_response(response_text, "gpt-3.5-turbo", 100.0)
+            # First round (10 requests) will be misses, next 40 should be hits
+            # Expected hit rate: 40/50 = 0.8 (80%)
+            assert (
+                cache_hit_rate >= 0.8
+            ), f"Cache hit rate {cache_hit_rate:.2%}, expected >= 80%"
+            assert stats["cache_hits"] == 40
+            assert stats["cache_misses"] == 10
 
-    def test_missing_fields_response(self):
-        """Test handling of response with missing required fields."""
-        from codedocsync.analyzer.llm_analyzer import LLMAnalyzer
-
-        analyzer = LLMAnalyzer(provider="openai", model="gpt-3.5-turbo")
-
-        # JSON missing required fields
-        response_text = json.dumps(
-            {
-                "issues": [],
-                # Missing analysis_notes and confidence
-            }
-        )
-
-        # Should handle gracefully with defaults
-        result = analyzer._parse_llm_response(response_text, "gpt-3.5-turbo", 100.0)
-
-        assert len(result.issues) == 0
-        assert result.analysis_notes == ""  # Should have default
-        assert 0.0 <= result.confidence <= 1.0  # Should have valid default
-
-
-class TestErrorHandling:
-    """Test error handling scenarios."""
+    # ==== ADDITIONAL HIGH-VALUE TESTS ====
 
     @pytest.mark.asyncio
-    async def test_network_timeout(self, tmp_path):
-        """Test handling of network timeouts."""
-        analyzer = LLMAnalyzer(
-            provider="openai",
-            model="gpt-3.5-turbo",
-            cache_dir=tmp_path,
-            timeout_seconds=1.0,
-        )
+    async def test_batch_analysis_with_concurrency(self, llm_analyzer: LLMAnalyzer):
+        """Test batch analysis with concurrent processing."""
+        # Create 20 analysis requests
+        requests = []
+        for i in range(20):
+            func = ParsedFunction(
+                signature=FunctionSignature(
+                    name=f"batch_func_{i}",
+                    parameters=[
+                        FunctionParameter(
+                            name="value",
+                            type_annotation="int",
+                            default_value=None,
+                            is_required=True,
+                        ),
+                    ],
+                    return_type="int",
+                ),
+                docstring=None,
+                file_path=f"batch_{i}.py",
+                line_number=10,
+                end_line_number=15,
+            )
 
-        pair = TestLLMAnalyzer().create_mock_matched_pair()
+            doc = ParsedDocstring(
+                format=DocstringFormat.GOOGLE,
+                summary=f"Batch function {i}",
+                parameters=[
+                    DocstringParameter(
+                        name="value",
+                        type_str="int",
+                        description="Input value",
+                        default_value=None,
+                    ),
+                ],
+                raw_text=f"Batch function {i}",
+            )
 
-        # Mock a timeout
-        async def mock_completion(*args, **kwargs):
-            await asyncio.sleep(2.0)  # Longer than timeout
-            return Mock()
+            request = LLMAnalysisRequest(
+                function=func,
+                docstring=doc,
+                analysis_types=["behavior"],
+                rule_results=[],
+                related_functions=[],
+            )
+            requests.append(request)
 
-        with (
-            patch.object(analyzer.cache, "get", return_value=None),
-            patch(
-                "codedocsync.analyzer.llm_analyzer.acompletion",
-                side_effect=mock_completion,
-            ),
-        ):
-            with pytest.raises(LLMAnalysisError):
-                await analyzer.analyze_consistency(pair)
+        # Mock API responses with varying delays
+        async def mock_call(*args, **kwargs):
+            import random
+
+            await asyncio.sleep(random.uniform(0.1, 0.3))
+            return (
+                '{"issues": [], "confidence": 0.9}',
+                {"prompt_tokens": 100, "completion_tokens": 20},
+            )
+
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+            # Test with different concurrency limits
+            start_time = time.time()
+            results = await llm_analyzer.analyze_batch(
+                requests, max_concurrent=5, progress_callback=None
+            )
+            elapsed = time.time() - start_time
+
+            assert len(results) == 20
+            # With max_concurrent=5 and delays 0.1-0.3s, should complete in ~1-2s
+            assert elapsed < 3.0
+
+            # Verify results are in correct order
+            for _, result in enumerate(results):
+                assert isinstance(result, LLMAnalysisResponse)
 
     @pytest.mark.asyncio
-    async def test_malformed_function_data(self, tmp_path):
-        """Test handling of malformed function data."""
-        analyzer = LLMAnalyzer(
-            provider="openai", model="gpt-3.5-turbo", cache_dir=tmp_path
+    async def test_circuit_breaker_protection(
+        self,
+        llm_analyzer: LLMAnalyzer,
+        basic_function: ParsedFunction,
+        basic_docstring: ParsedDocstring,
+    ):
+        """Test circuit breaker prevents cascading failures."""
+        request = LLMAnalysisRequest(
+            function=basic_function,
+            docstring=basic_docstring,
+            analysis_types=["behavior"],
+            rule_results=[],
+            related_functions=[],
         )
 
-        # Create malformed matched pair
-        pair = MatchedPair(
-            function=None,  # Invalid: None function
-            documentation=None,
-            confidence=MatchConfidence.HIGH,
-            match_type=MatchType.DIRECT,
-            match_reason="Test match",
-        )
+        # Mock to always fail
+        async def mock_fail(*args, **kwargs):
+            raise LLMNetworkError("Network error")
 
-        # Should handle gracefully
-        with pytest.raises((ValueError, LLMAnalysisError)):
-            await analyzer.analyze_consistency(pair)
+        with patch.object(llm_analyzer, "_call_openai", side_effect=mock_fail):
+            # Make multiple failing requests
+            for _ in range(6):  # Threshold is 5
+                try:
+                    await llm_analyzer.analyze_with_fallback(request)
+                except Exception:
+                    pass
+
+            # Circuit breaker should be open
+            breaker_stats = llm_analyzer.get_circuit_breaker_stats()
+            assert breaker_stats["state"] == "open"
+            assert breaker_stats["failure_count"] >= 5
+
+            # Next request should fail fast without calling API
+            with pytest.raises(LLMError) as exc_info:
+                await llm_analyzer._analyze_with_llm(request)
+
+            assert "Circuit breaker" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_configuration_validation(self, mock_env):
+        """Test configuration validation and error handling."""
+        # Test with invalid configuration
+        with pytest.raises(ValueError):
+            config = LLMConfig(
+                model="invalid-model", temperature=2.0
+            )  # Invalid temperature
+
+        # Test without API key
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(LLMAPIKeyError):
+                config = LLMConfig()
+
+        # Test with valid configuration
+        config = LLMConfig.create_fast_config()
+        assert config.timeout_seconds == 15
+        assert config.max_tokens == 500
+
+        config = LLMConfig.create_thorough_config()
+        assert config.timeout_seconds == 60
+        assert config.max_tokens == 2000
+
+    @pytest.mark.asyncio
+    async def test_performance_monitoring(
+        self,
+        llm_analyzer: LLMAnalyzer,
+        basic_function: ParsedFunction,
+        basic_docstring: ParsedDocstring,
+    ):
+        """Test performance monitoring and statistics collection."""
+        # Perform several analyses
+        mock_responses = []
+        for i in range(5):
+            mock_responses.append(
+                {"prompt_tokens": 100 + i * 10, "completion_tokens": 20 + i * 5}
+            )
+
+        response_idx = 0
+
+        async def mock_call(*args, **kwargs):
+            nonlocal response_idx
+            tokens = mock_responses[response_idx]
+            response_idx += 1
+            return (
+                '{"issues": [], "confidence": 0.9}',
+                tokens,
+            )
+
+        for _ in range(5):
+            request = LLMAnalysisRequest(
+                function=basic_function,
+                docstring=basic_docstring,
+                analysis_types=["behavior"],
+                rule_results=[],
+                related_functions=[],
+            )
+
+            with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
+                await llm_analyzer.analyze_function(request)
+
+        # Check performance stats
+        stats = llm_analyzer.performance_stats
+        assert stats["requests_made"] == 5
+        assert stats["total_tokens_used"] > 0
+        assert stats["total_response_time_ms"] > 0
+
+        # Get comprehensive stats
+        cache_stats = llm_analyzer.get_cache_stats()
+        assert "total_entries" in cache_stats
+        assert "database_size_mb" in cache_stats
+
+        init_summary = llm_analyzer.get_initialization_summary()
+        assert "model_id" in init_summary
+        assert "rate_limit_config" in init_summary
