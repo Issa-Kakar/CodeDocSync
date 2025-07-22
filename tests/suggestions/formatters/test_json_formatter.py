@@ -173,7 +173,7 @@ def suggestion_batch(basic_suggestion):
 class TestJSONSuggestionFormatterInit:
     """Test JSONSuggestionFormatter initialization."""
 
-    def test_default_initialization(self):
+    def test_default_initialization(self) -> None:
         """Test default initialization."""
         formatter = JSONSuggestionFormatter()
 
@@ -181,7 +181,7 @@ class TestJSONSuggestionFormatterInit:
         assert formatter.include_metadata
         assert formatter.include_timestamps
 
-    def test_custom_initialization(self):
+    def test_custom_initialization(self) -> None:
         """Test initialization with custom parameters."""
         formatter = JSONSuggestionFormatter(
             indent=4,
@@ -197,7 +197,7 @@ class TestJSONSuggestionFormatterInit:
 class TestSuggestionFormatting:
     """Test individual suggestion formatting."""
 
-    def test_format_basic_suggestion(self, basic_suggestion):
+    def test_format_basic_suggestion(self, basic_suggestion) -> None:
         """Test formatting basic suggestion."""
         formatter = JSONSuggestionFormatter()
         result = formatter.format_suggestion(basic_suggestion)
@@ -210,14 +210,14 @@ class TestSuggestionFormatting:
         assert result["copy_paste_ready"]
         assert "generated_at" in result  # Timestamp should be included
 
-    def test_format_suggestion_without_timestamps(self, basic_suggestion):
+    def test_format_suggestion_without_timestamps(self, basic_suggestion) -> None:
         """Test formatting without timestamps."""
         formatter = JSONSuggestionFormatter(include_timestamps=False)
         result = formatter.format_suggestion(basic_suggestion)
 
         assert "generated_at" not in result
 
-    def test_format_suggestion_with_diff(self, suggestion_with_diff):
+    def test_format_suggestion_with_diff(self, suggestion_with_diff) -> None:
         """Test formatting suggestion with diff information."""
         formatter = JSONSuggestionFormatter()
         result = formatter.format_suggestion(suggestion_with_diff)
@@ -236,7 +236,7 @@ class TestSuggestionFormatting:
         assert diff_data["start_line"] == 1
         assert diff_data["end_line"] == 2
 
-    def test_format_suggestion_with_metadata(self, suggestion_with_metadata):
+    def test_format_suggestion_with_metadata(self, suggestion_with_metadata) -> None:
         """Test formatting suggestion with metadata."""
         formatter = JSONSuggestionFormatter(include_metadata=True)
         result = formatter.format_suggestion(suggestion_with_metadata)
@@ -250,14 +250,14 @@ class TestSuggestionFormatting:
         assert metadata["validation_passed"]
         assert metadata["quality_score"] == 0.88
 
-    def test_format_suggestion_without_metadata(self, suggestion_with_metadata):
+    def test_format_suggestion_without_metadata(self, suggestion_with_metadata) -> None:
         """Test formatting suggestion without metadata."""
         formatter = JSONSuggestionFormatter(include_metadata=False)
         result = formatter.format_suggestion(suggestion_with_metadata)
 
         assert "metadata" not in result
 
-    def test_format_suggestion_without_diff(self, basic_suggestion):
+    def test_format_suggestion_without_diff(self, basic_suggestion) -> None:
         """Test formatting suggestion without diff."""
         # Ensure no diff
         basic_suggestion.diff = None
@@ -271,7 +271,7 @@ class TestSuggestionFormatting:
 class TestEnhancedIssueFormatting:
     """Test enhanced issue formatting."""
 
-    def test_format_enhanced_issue(self, enhanced_issue):
+    def test_format_enhanced_issue(self, enhanced_issue) -> None:
         """Test formatting enhanced issue."""
         formatter = JSONSuggestionFormatter()
         result = formatter.format_enhanced_issue(enhanced_issue)
@@ -286,7 +286,7 @@ class TestEnhancedIssueFormatting:
         assert result["ranking_score"] == 8.5
         assert "rich_suggestion" in result
 
-    def test_format_issue_without_rich_suggestion(self):
+    def test_format_issue_without_rich_suggestion(self) -> None:
         """Test formatting issue without rich suggestion."""
         issue = EnhancedIssue(
             issue_type="parameter_missing",
@@ -303,7 +303,7 @@ class TestEnhancedIssueFormatting:
         assert "rich_suggestion" not in result
         assert result["issue_type"] == "parameter_missing"
 
-    def test_format_issue_without_ranking_score(self):
+    def test_format_issue_without_ranking_score(self) -> None:
         """Test formatting issue without ranking score."""
         issue = EnhancedIssue(
             issue_type="test",
@@ -324,7 +324,7 @@ class TestEnhancedIssueFormatting:
 class TestAnalysisResultFormatting:
     """Test analysis result formatting."""
 
-    def test_format_analysis_result(self, enhanced_result):
+    def test_format_analysis_result(self, enhanced_result) -> None:
         """Test formatting complete analysis result."""
         formatter = JSONSuggestionFormatter()
         result = formatter.format_analysis_result(enhanced_result)
@@ -365,7 +365,7 @@ class TestAnalysisResultFormatting:
         assert doc["format"] == "google"
         assert doc["summary"] == "Authenticate user credentials"
 
-    def test_format_result_without_documentation(self, enhanced_result):
+    def test_format_result_without_documentation(self, enhanced_result) -> None:
         """Test formatting result without documentation."""
         enhanced_result.matched_pair.documentation = None
 
@@ -374,7 +374,7 @@ class TestAnalysisResultFormatting:
 
         assert "documentation" not in result
 
-    def test_format_result_with_metadata(self, enhanced_result):
+    def test_format_result_with_metadata(self, enhanced_result) -> None:
         """Test formatting result with metadata."""
         formatter = JSONSuggestionFormatter(include_metadata=True)
         result = formatter.format_analysis_result(enhanced_result)
@@ -385,7 +385,7 @@ class TestAnalysisResultFormatting:
         assert metadata["processor"] == "CodeDocSync SuggestionFormatter"
         assert "generated_at" in metadata
 
-    def test_format_result_without_metadata(self, enhanced_result):
+    def test_format_result_without_metadata(self, enhanced_result) -> None:
         """Test formatting result without metadata."""
         formatter = JSONSuggestionFormatter(include_metadata=False)
         result = formatter.format_analysis_result(enhanced_result)
@@ -396,7 +396,7 @@ class TestAnalysisResultFormatting:
 class TestBatchFormatting:
     """Test batch formatting functionality."""
 
-    def test_format_batch_results(self, enhanced_result):
+    def test_format_batch_results(self, enhanced_result) -> None:
         """Test formatting batch of analysis results."""
         results = [enhanced_result]
 
@@ -421,7 +421,7 @@ class TestBatchFormatting:
         assert severity_breakdown["critical"] == 1
         assert severity_breakdown["high"] == 0
 
-    def test_format_empty_batch(self):
+    def test_format_empty_batch(self) -> None:
         """Test formatting empty batch."""
         formatter = JSONSuggestionFormatter()
         result = formatter.format_batch_results([])
@@ -432,7 +432,7 @@ class TestBatchFormatting:
         assert summary["total_issues"] == 0
         assert summary["average_analysis_time_ms"] == 0
 
-    def test_format_suggestion_batch(self, suggestion_batch):
+    def test_format_suggestion_batch(self, suggestion_batch) -> None:
         """Test formatting suggestion batch."""
         formatter = JSONSuggestionFormatter()
         result = formatter.format_suggestion_batch(suggestion_batch)
@@ -460,7 +460,7 @@ class TestBatchFormatting:
 class TestJSONSerialization:
     """Test JSON string serialization."""
 
-    def test_to_json_string(self, basic_suggestion):
+    def test_to_json_string(self, basic_suggestion) -> None:
         """Test converting to JSON string."""
         formatter = JSONSuggestionFormatter(indent=2)
         data = formatter.format_suggestion(basic_suggestion)
@@ -473,7 +473,7 @@ class TestJSONSerialization:
         # Should be properly indented
         assert "  " in json_string  # 2-space indentation
 
-    def test_to_json_string_no_indent(self, basic_suggestion):
+    def test_to_json_string_no_indent(self, basic_suggestion) -> None:
         """Test converting to JSON string without indentation."""
         formatter = JSONSuggestionFormatter(indent=None)
         data = formatter.format_suggestion(basic_suggestion)
@@ -490,7 +490,7 @@ class TestJSONSerialization:
 class TestFunctionInformationExtraction:
     """Test function information extraction."""
 
-    def test_format_function_info_complete(self, mock_function):
+    def test_format_function_info_complete(self, mock_function) -> None:
         """Test extracting complete function information."""
         # Add parameter to function
         param = Mock()
@@ -511,7 +511,7 @@ class TestFunctionInformationExtraction:
         assert info["parameters"][0]["type_annotation"] == "str"
         assert info["return_annotation"] == "bool"
 
-    def test_format_function_info_minimal(self):
+    def test_format_function_info_minimal(self) -> None:
         """Test extracting minimal function information."""
         minimal_function = Mock()
         # No signature attribute
@@ -527,7 +527,7 @@ class TestFunctionInformationExtraction:
 class TestBatchSummaryStatistics:
     """Test batch summary statistics calculation."""
 
-    def test_create_batch_summary_multiple_results(self, enhanced_result):
+    def test_create_batch_summary_multiple_results(self, enhanced_result) -> None:
         """Test batch summary with multiple results."""
         # Create second result
         mock_function2 = Mock()
@@ -562,7 +562,7 @@ class TestBatchSummaryStatistics:
 class TestConvenienceFunctions:
     """Test convenience functions."""
 
-    def test_suggestion_to_json(self, basic_suggestion):
+    def test_suggestion_to_json(self, basic_suggestion) -> None:
         """Test suggestion_to_json convenience function."""
         json_string = suggestion_to_json(basic_suggestion, indent=4)
 
@@ -572,14 +572,14 @@ class TestConvenienceFunctions:
         # Should use custom indent
         assert "    " in json_string  # 4-space indentation
 
-    def test_analysis_result_to_json(self, enhanced_result):
+    def test_analysis_result_to_json(self, enhanced_result) -> None:
         """Test analysis_result_to_json convenience function."""
         json_string = analysis_result_to_json(enhanced_result)
 
         parsed = json.loads(json_string)
         assert parsed["function"]["name"] == "authenticate_user"
 
-    def test_batch_results_to_json(self, enhanced_result):
+    def test_batch_results_to_json(self, enhanced_result) -> None:
         """Test batch_results_to_json convenience function."""
         json_string = batch_results_to_json([enhanced_result])
 
@@ -587,7 +587,7 @@ class TestConvenienceFunctions:
         assert len(parsed["results"]) == 1
         assert "summary" in parsed
 
-    def test_suggestion_batch_to_json(self, suggestion_batch):
+    def test_suggestion_batch_to_json(self, suggestion_batch) -> None:
         """Test suggestion_batch_to_json convenience function."""
         json_string = suggestion_batch_to_json(suggestion_batch)
 
@@ -599,7 +599,7 @@ class TestConvenienceFunctions:
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_format_suggestion_with_none_values(self):
+    def test_format_suggestion_with_none_values(self) -> None:
         """Test formatting suggestion with None values."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -619,7 +619,7 @@ class TestEdgeCases:
         assert "diff" not in result
         assert isinstance(result, dict)
 
-    def test_format_issue_with_empty_details(self):
+    def test_format_issue_with_empty_details(self) -> None:
         """Test formatting issue with empty details."""
         issue = EnhancedIssue(
             issue_type="test",
@@ -635,7 +635,7 @@ class TestEdgeCases:
 
         assert result["details"] == {}
 
-    def test_batch_summary_with_no_suggestions(self):
+    def test_batch_summary_with_no_suggestions(self) -> None:
         """Test batch summary when no suggestions have confidence stats."""
         batch = SuggestionBatch(
             suggestions=[],  # No suggestions
@@ -655,7 +655,7 @@ class TestEdgeCases:
 class TestTimestampHandling:
     """Test timestamp handling."""
 
-    def test_timestamp_format(self, basic_suggestion):
+    def test_timestamp_format(self, basic_suggestion) -> None:
         """Test timestamp format."""
         formatter = JSONSuggestionFormatter(include_timestamps=True)
         result = formatter.format_suggestion(basic_suggestion)

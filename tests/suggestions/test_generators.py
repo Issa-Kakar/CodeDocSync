@@ -35,7 +35,7 @@ class TestParameterSuggestionGenerator:
         config = SuggestionConfig(default_style="google")
         return ParameterSuggestionGenerator(config)
 
-    def test_parameter_name_mismatch_simple(self, generator):
+    def test_parameter_name_mismatch_simple(self, generator) -> None:
         """Test fixing simple parameter name mismatch."""
         # Create function with mismatched parameter
         function = create_test_function(
@@ -72,7 +72,7 @@ class TestParameterSuggestionGenerator:
         assert suggestion.confidence >= 0.9
         assert suggestion.copy_paste_ready
 
-    def test_parameter_missing(self, generator):
+    def test_parameter_missing(self, generator) -> None:
         """Test adding missing parameter documentation."""
         function = create_test_function(params=["username", "password", "remember_me"])
 
@@ -97,7 +97,7 @@ class TestParameterSuggestionGenerator:
         assert "bool" in suggestion.suggested_text
         assert suggestion.confidence >= 0.8
 
-    def test_parameter_type_mismatch(self, generator):
+    def test_parameter_type_mismatch(self, generator) -> None:
         """Test fixing parameter type mismatch."""
         function = create_test_function(params=["count", "name"])
 
@@ -125,7 +125,7 @@ class TestParameterSuggestionGenerator:
         assert "count (int)" in suggestion.suggested_text
         assert "Number of items" in suggestion.suggested_text  # Preserves description
 
-    def test_preserves_descriptions(self, generator):
+    def test_preserves_descriptions(self, generator) -> None:
         """Test that existing descriptions are preserved."""
         function = create_test_function(params=["data", "config"])
 
@@ -168,7 +168,7 @@ class TestReturnSuggestionGenerator:
         config = SuggestionConfig(default_style="google")
         return ReturnSuggestionGenerator(config)
 
-    def test_return_type_mismatch(self, generator):
+    def test_return_type_mismatch(self, generator) -> None:
         """Test fixing return type mismatch."""
         function = create_test_function(
             name="calculate_total",
@@ -194,7 +194,7 @@ class TestReturnSuggestionGenerator:
         assert "float" in suggestion.suggested_text
         assert "The total" in suggestion.suggested_text
 
-    def test_missing_return_documentation(self, generator):
+    def test_missing_return_documentation(self, generator) -> None:
         """Test adding missing return documentation."""
         function = create_test_function(
             name="process_data", return_type="Dict[str, Any]"
@@ -218,7 +218,7 @@ class TestReturnSuggestionGenerator:
         assert "Returns:" in suggestion.suggested_text
         assert "Dict[str, Any]" in suggestion.suggested_text
 
-    def test_generator_function_return(self, generator):
+    def test_generator_function_return(self, generator) -> None:
         """Test documenting generator functions."""
         function = create_test_function(
             name="iterate_items", return_type="Generator[int, None, None]"
@@ -254,7 +254,7 @@ class TestRaisesSuggestionGenerator:
         config = SuggestionConfig(default_style="google")
         return RaisesSuggestionGenerator(config)
 
-    def test_missing_raises_documentation(self, generator):
+    def test_missing_raises_documentation(self, generator) -> None:
         """Test adding missing exception documentation."""
         function = create_test_function(
             name="validate_input",
@@ -290,7 +290,7 @@ class TestRaisesSuggestionGenerator:
         assert "ValueError" in suggestion.suggested_text
         assert "TypeError" in suggestion.suggested_text
 
-    def test_updates_existing_raises_section(self, generator):
+    def test_updates_existing_raises_section(self, generator) -> None:
         """Test updating existing raises section."""
         function = create_test_function(name="process")
 
@@ -324,7 +324,7 @@ class TestBehaviorSuggestionGenerator:
         config = SuggestionConfig(default_style="google")
         return BehaviorSuggestionGenerator(config)
 
-    def test_enhance_vague_description(self, generator):
+    def test_enhance_vague_description(self, generator) -> None:
         """Test enhancing vague descriptions."""
         function = create_test_function(
             name="process_data",
@@ -356,7 +356,7 @@ class TestBehaviorSuggestionGenerator:
         assert suggestion.confidence >= 0.7
         assert len(suggestion.suggested_text) > len("Process data.")
 
-    def test_identify_side_effects(self, generator):
+    def test_identify_side_effects(self, generator) -> None:
         """Test identifying and documenting side effects."""
         function = create_test_function(
             name="save_to_file",
@@ -393,7 +393,7 @@ class TestExampleSuggestionGenerator:
         config = SuggestionConfig(default_style="google", include_examples=True)
         return ExampleSuggestionGenerator(config)
 
-    def test_generate_basic_example(self, generator):
+    def test_generate_basic_example(self, generator) -> None:
         """Test generating basic usage example."""
         function = create_test_function(
             name="add_numbers", params=["a", "b"], return_type="int"
@@ -422,7 +422,7 @@ class TestExampleSuggestionGenerator:
         assert "add_numbers" in suggestion.suggested_text
         assert ">>>" in suggestion.suggested_text
 
-    def test_update_invalid_example(self, generator):
+    def test_update_invalid_example(self, generator) -> None:
         """Test updating invalid examples."""
         function = create_test_function(name="multiply", params=["x", "y"])
 
@@ -456,7 +456,7 @@ class TestEdgeCaseSuggestionGenerator:
         config = SuggestionConfig(default_style="google")
         return EdgeCaseSuggestionGenerator(config)
 
-    def test_property_method_documentation(self, generator):
+    def test_property_method_documentation(self, generator) -> None:
         """Test documenting property methods."""
         function = create_test_function(name="temperature")
         function.signature.decorators = ["property"]
@@ -481,7 +481,7 @@ class TestEdgeCaseSuggestionGenerator:
             or "attribute" in suggestion.suggested_text.lower()
         )
 
-    def test_classmethod_documentation(self, generator):
+    def test_classmethod_documentation(self, generator) -> None:
         """Test documenting class methods."""
         function = create_test_function(
             name="from_dict", params=["cls", "data"], return_type="MyClass"
@@ -508,7 +508,7 @@ class TestEdgeCaseSuggestionGenerator:
         assert "cls:" not in suggestion.suggested_text
         assert "data:" in suggestion.suggested_text
 
-    def test_magic_method_documentation(self, generator):
+    def test_magic_method_documentation(self, generator) -> None:
         """Test documenting magic methods."""
         function = create_test_function(
             name="__init__", params=["self", "name", "value"]
@@ -538,7 +538,7 @@ class TestEdgeCaseSuggestionGenerator:
 class TestGeneratorIntegration:
     """Test integration between multiple generators."""
 
-    def test_multiple_issues_same_function(self):
+    def test_multiple_issues_same_function(self) -> None:
         """Test handling multiple issues for the same function."""
         config = SuggestionConfig(default_style="google")
 
@@ -577,7 +577,7 @@ class TestGeneratorIntegration:
         assert "options" in param_suggestion.suggested_text
         assert "Returns:" in return_suggestion.suggested_text
 
-    def test_generator_selection_by_issue_type(self):
+    def test_generator_selection_by_issue_type(self) -> None:
         """Test that correct generator is selected for each issue type."""
         config = SuggestionConfig(default_style="google")
 
@@ -599,7 +599,7 @@ class TestGeneratorIntegration:
 class TestPerformanceAndScale:
     """Test generator performance with large inputs."""
 
-    def test_large_parameter_list(self):
+    def test_large_parameter_list(self) -> None:
         """Test handling functions with many parameters."""
         config = SuggestionConfig(default_style="google")
         generator = ParameterSuggestionGenerator(config)
@@ -624,7 +624,7 @@ class TestPerformanceAndScale:
         assert suggestion is not None
         assert "param_25" in suggestion.suggested_text
 
-    def test_complex_nested_docstring(self):
+    def test_complex_nested_docstring(self) -> None:
         """Test handling complex nested docstrings."""
         config = SuggestionConfig(default_style="numpy")
         generator = ParameterSuggestionGenerator(config)

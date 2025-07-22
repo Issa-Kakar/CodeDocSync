@@ -28,7 +28,7 @@ class MatcherConfig(BaseModel):
         description="Custom regex patterns for name transformation",
     )
 
-    @field_validator("custom_patterns")  # type: ignore[misc]
+    @field_validator("custom_patterns")
     @classmethod
     def validate_patterns(cls, patterns: list[dict[str, str]]) -> list[dict[str, str]]:
         """Validate regex patterns are valid."""

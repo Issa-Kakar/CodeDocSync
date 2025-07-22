@@ -27,10 +27,10 @@ from codedocsync.suggestions.models import (
 class TestExceptionAnalyzer:
     """Test the exception analyzer."""
 
-    def test_analyze_direct_raise(self):
+    def test_analyze_direct_raise(self) -> None:
         """Test analyzing direct raise statements."""
         source_code = """
-def test_func():
+def test_func() -> None:
     if not condition:
         raise ValueError("Invalid value")
 """
@@ -41,10 +41,10 @@ def test_func():
         exc_types = [e.exception_type for e in exceptions]
         assert "ValueError" in exc_types
 
-    def test_analyze_multiple_exceptions(self):
+    def test_analyze_multiple_exceptions(self) -> None:
         """Test analyzing multiple exception types."""
         source_code = """
-def test_func(value):
+def test_func(value) -> None:
     if not isinstance(value, str):
         raise TypeError("Expected string")
     if not value:
@@ -58,10 +58,10 @@ def test_func(value):
         assert "TypeError" in exc_types
         assert "ValueError" in exc_types
 
-    def test_analyze_function_calls(self):
+    def test_analyze_function_calls(self) -> None:
         """Test analyzing exceptions from function calls."""
         source_code = """
-def test_func(filename):
+def test_func(filename) -> None:
     with open(filename, 'r') as f:
         content = f.read()
     return int(content)
@@ -74,10 +74,10 @@ def test_func(filename):
         assert any("FileNotFoundError" in exc_types or "IOError" in exc_types)
         assert "ValueError" in exc_types
 
-    def test_analyze_subscript_operations(self):
+    def test_analyze_subscript_operations(self) -> None:
         """Test analyzing exceptions from subscript operations."""
         source_code = """
-def test_func(data, key):
+def test_func(data, key) -> None:
     return data[key]
 """
         analyzer = ExceptionAnalyzer()
@@ -87,10 +87,10 @@ def test_func(data, key):
         # Should detect potential KeyError and IndexError
         assert "KeyError" in exc_types or "IndexError" in exc_types
 
-    def test_analyze_bare_raise(self):
+    def test_analyze_bare_raise(self) -> None:
         """Test analyzing bare raise statements."""
         source_code = """
-def test_func():
+def test_func() -> None:
     try:
         risky_operation()
     except Exception:
@@ -104,7 +104,7 @@ def test_func():
         reraised = [e for e in exceptions if e.is_re_raised]
         assert len(reraised) >= 1
 
-    def test_deduplicate_exceptions(self):
+    def test_deduplicate_exceptions(self) -> None:
         """Test deduplication of similar exceptions."""
         analyzer = ExceptionAnalyzer()
 
@@ -124,7 +124,7 @@ def test_func():
         )
         assert valueerror_exc.confidence == 0.9
 
-    def test_syntax_error_handling(self):
+    def test_syntax_error_handling(self) -> None:
         """Test handling syntax errors gracefully."""
         source_code = """
 def test_func(
@@ -163,7 +163,7 @@ class TestRaisesSuggestionGenerator:
         function.signature.name = "test_function"
         function.line_number = 10
         function.source_code = """
-def test_function(value):
+def test_function(value) -> None:
     if not isinstance(value, str):
         raise TypeError("Expected string")
     if not value:
@@ -199,7 +199,7 @@ def test_function(value):
 
     def test_add_missing_raises_documentation(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test adding missing raises documentation."""
         context = SuggestionContext(
             function=mock_function, docstring=mock_docstring, issue=mock_issue
@@ -219,7 +219,7 @@ def test_function(value):
 
     def test_fix_raises_type_mismatch(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fixing raises type mismatch."""
         # Add existing (incorrect) raises documentation
         mock_docstring.raises = [
@@ -247,7 +247,7 @@ def test_function(value):
 
     def test_improve_raises_description(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test improving vague raises descriptions."""
         mock_docstring.raises = [
             DocstringRaises(exception_type="ValueError", description="error"),
@@ -269,7 +269,7 @@ def test_function(value):
         assert "TypeError" in suggested_text
         # Descriptions should be more detailed than original "error" and "failure"
 
-    def test_is_vague_description(self, generator):
+    def test_is_vague_description(self, generator) -> None:
         """Test detection of vague exception descriptions."""
         # Test vague descriptions
         assert generator._is_vague_description("error")
@@ -285,13 +285,13 @@ def test_function(value):
         )
         assert not generator._is_vague_description("If the file cannot be found")
 
-    def test_generate_improved_exception_description(self, generator):
+    def test_generate_improved_exception_description(self, generator) -> None:
         """Test generation of improved exception descriptions."""
         analyzer = ExceptionAnalyzer()
 
         # Test with source code
         source_code = """
-def test_func():
+def test_func() -> None:
     raise ValueError("Custom message")
 """
 
@@ -311,7 +311,7 @@ def test_func():
 
     def test_no_source_code_fallback(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fallback when source code is not available."""
         mock_function.source_code = ""
 
@@ -326,7 +326,7 @@ def test_func():
 
     def test_no_significant_exceptions(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test handling when no significant exceptions are detected."""
         # Function with only very low-confidence exceptions
         mock_function.source_code = """
@@ -343,7 +343,7 @@ def simple_func():
         # Should be a fallback suggestion since no significant exceptions
         assert suggestion.confidence <= 0.3
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring):
+    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_raises_issue",
@@ -377,7 +377,7 @@ class TestRaisesGeneratorIntegration:
         """Create raises suggestion generator."""
         return RaisesSuggestionGenerator(config)
 
-    def test_complete_workflow_file_operations(self, generator):
+    def test_complete_workflow_file_operations(self, generator) -> None:
         """Test complete workflow for file operations function."""
         function = Mock()
         function.signature = Mock()
@@ -438,7 +438,7 @@ def read_config_file(filename):
         assert "FileNotFoundError" in suggested_text
         assert "PermissionError" in suggested_text
 
-    def test_complete_workflow_mismatch_correction(self, generator):
+    def test_complete_workflow_mismatch_correction(self, generator) -> None:
         """Test complete workflow for correcting exception mismatches."""
         function = Mock()
         function.signature = Mock()
@@ -495,7 +495,7 @@ def validate_input(data):
         # (This is harder to test without parsing the docstring, but at minimum
         # the correct exceptions should be present)
 
-    def test_edge_case_no_exceptions_detected(self, generator):
+    def test_edge_case_no_exceptions_detected(self, generator) -> None:
         """Test edge case where no exceptions are detected."""
         function = Mock()
         function.signature = Mock()

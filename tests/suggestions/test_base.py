@@ -54,14 +54,14 @@ class TestBaseSuggestionGenerator:
 
         self.generator = ConcreteGenerator()
 
-    def test_generator_initialization_default_config(self):
+    def test_generator_initialization_default_config(self) -> None:
         """Test generator initialization with default config."""
         generator = type(self.generator)()
         assert generator.config is not None
         assert isinstance(generator.config, SuggestionConfig)
         assert generator._validation_cache == {}
 
-    def test_generator_initialization_custom_config(self):
+    def test_generator_initialization_custom_config(self) -> None:
         """Test generator initialization with custom config."""
         config = SuggestionConfig(default_style="numpy", max_line_length=100)
         generator = type(self.generator)(config)
@@ -69,7 +69,7 @@ class TestBaseSuggestionGenerator:
         assert generator.config.default_style == "numpy"
         assert generator.config.max_line_length == 100
 
-    def test_generate_with_timing(self):
+    def test_generate_with_timing(self) -> None:
         """Test generate_with_timing method."""
         mock_issue = Mock()
         mock_function = Mock()
@@ -80,7 +80,7 @@ class TestBaseSuggestionGenerator:
         assert isinstance(suggestion, Suggestion)
         assert suggestion.metadata.generation_time_ms > 0
 
-    def test_generate_with_timing_exception_handling(self):
+    def test_generate_with_timing_exception_handling(self) -> None:
         """Test generate_with_timing handles exceptions."""
 
         # Create a generator that raises an exception
@@ -99,7 +99,7 @@ class TestBaseSuggestionGenerator:
         assert "Failed to generate suggestion" in str(exc_info.value)
         assert "Test error" in str(exc_info.value)
 
-    def test_validate_suggestion_valid(self):
+    def test_validate_suggestion_valid(self) -> None:
         """Test validating a valid suggestion."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -124,7 +124,7 @@ class TestBaseSuggestionGenerator:
         assert is_valid
         assert suggestion.validation_passed
 
-    def test_validate_suggestion_invalid_python_string(self):
+    def test_validate_suggestion_invalid_python_string(self) -> None:
         """Test validation fails for invalid Python string."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -145,7 +145,7 @@ class TestBaseSuggestionGenerator:
         assert not is_valid
         assert not suggestion.validation_passed
 
-    def test_validate_suggestion_inconsistent_indentation(self):
+    def test_validate_suggestion_inconsistent_indentation(self) -> None:
         """Test validation fails for inconsistent indentation."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -166,7 +166,7 @@ class TestBaseSuggestionGenerator:
         assert not is_valid
         assert not suggestion.validation_passed
 
-    def test_validate_suggestion_vague_content(self):
+    def test_validate_suggestion_vague_content(self) -> None:
         """Test validation detects vague suggestions."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -188,7 +188,7 @@ class TestBaseSuggestionGenerator:
         assert suggestion.validation_passed  # Syntactically valid
         assert not suggestion.is_actionable  # But not actionable
 
-    def test_is_valid_python_string_caching(self):
+    def test_is_valid_python_string_caching(self) -> None:
         """Test that Python string validation uses caching."""
         text = '"""Valid docstring."""'
 
@@ -203,7 +203,7 @@ class TestBaseSuggestionGenerator:
         assert result1 == result2
         assert cache_size_after_first == cache_size_after_second
 
-    def test_has_consistent_indentation_valid(self):
+    def test_has_consistent_indentation_valid(self) -> None:
         """Test consistent indentation validation."""
         valid_text = '''def func():
     """Docstring."""
@@ -213,7 +213,7 @@ class TestBaseSuggestionGenerator:
 
         assert self.generator._has_consistent_indentation(valid_text)
 
-    def test_has_consistent_indentation_mixed_tabs_spaces(self):
+    def test_has_consistent_indentation_mixed_tabs_spaces(self) -> None:
         """Test mixed tabs and spaces detection."""
         mixed_text = '''def func():
     """Docstring."""
@@ -222,7 +222,7 @@ class TestBaseSuggestionGenerator:
 
         assert not self.generator._has_consistent_indentation(mixed_text)
 
-    def test_has_consistent_indentation_too_deep(self):
+    def test_has_consistent_indentation_too_deep(self) -> None:
         """Test overly deep indentation detection."""
         deep_text = '''def func():
                         """Very deep indentation."""
@@ -230,17 +230,17 @@ class TestBaseSuggestionGenerator:
 
         assert not self.generator._has_consistent_indentation(deep_text)
 
-    def test_has_proper_quote_escaping_valid(self):
+    def test_has_proper_quote_escaping_valid(self) -> None:
         """Test proper quote escaping validation."""
         valid_text = '"""Valid docstring with "quotes" inside."""'
         assert self.generator._has_proper_quote_escaping(valid_text)
 
-    def test_has_proper_quote_escaping_unmatched(self):
+    def test_has_proper_quote_escaping_unmatched(self) -> None:
         """Test detection of unmatched quotes."""
         invalid_text = '"""Unmatched triple quotes'
         assert not self.generator._has_proper_quote_escaping(invalid_text)
 
-    def test_matches_expected_style_google(self):
+    def test_matches_expected_style_google(self) -> None:
         """Test Google style validation."""
         google_text = """
         Function description.
@@ -254,7 +254,7 @@ class TestBaseSuggestionGenerator:
 
         assert self.generator._matches_expected_style(google_text, "google")
 
-    def test_matches_expected_style_numpy(self):
+    def test_matches_expected_style_numpy(self) -> None:
         """Test NumPy style validation."""
         numpy_text = """
         Function description.
@@ -267,7 +267,7 @@ class TestBaseSuggestionGenerator:
 
         assert self.generator._matches_expected_style(numpy_text, "numpy")
 
-    def test_matches_expected_style_sphinx(self):
+    def test_matches_expected_style_sphinx(self) -> None:
         """Test Sphinx style validation."""
         sphinx_text = """
         Function description.
@@ -278,12 +278,12 @@ class TestBaseSuggestionGenerator:
 
         assert self.generator._matches_expected_style(sphinx_text, "sphinx")
 
-    def test_matches_expected_style_unknown(self):
+    def test_matches_expected_style_unknown(self) -> None:
         """Test unknown style defaults to basic validation."""
         text = "Simple description."
         assert self.generator._matches_expected_style(text, "unknown_style")
 
-    def test_validate_google_style_valid(self):
+    def test_validate_google_style_valid(self) -> None:
         """Test Google style specific validation."""
         valid_google = """
         Args:
@@ -296,7 +296,7 @@ class TestBaseSuggestionGenerator:
         issues = self.generator._validate_google_style(valid_google)
         assert len(issues) == 0
 
-    def test_validate_google_style_missing_colon(self):
+    def test_validate_google_style_missing_colon(self) -> None:
         """Test Google style validation catches missing colons."""
         # Note: Current implementation only checks sections with colons
         # This test is for a potential future enhancement
@@ -309,7 +309,7 @@ class TestBaseSuggestionGenerator:
         # Current implementation doesn't detect missing colons, it looks for sections with colons
         assert len(issues) == 0  # No issues expected with current implementation
 
-    def test_validate_google_style_bad_indentation(self):
+    def test_validate_google_style_bad_indentation(self) -> None:
         """Test Google style validation catches bad indentation."""
         invalid_google = """Args:
 param: Not indented properly.
@@ -319,7 +319,7 @@ param: Not indented properly.
         assert len(issues) > 0
         assert any("indented" in issue.lower() for issue in issues)
 
-    def test_validate_numpy_style_valid(self):
+    def test_validate_numpy_style_valid(self) -> None:
         """Test NumPy style specific validation."""
         valid_numpy = """
         Parameters
@@ -331,7 +331,7 @@ param: Not indented properly.
         issues = self.generator._validate_numpy_style(valid_numpy)
         assert len(issues) == 0
 
-    def test_validate_numpy_style_missing_underline(self):
+    def test_validate_numpy_style_missing_underline(self) -> None:
         """Test NumPy style validation catches missing underlines."""
         invalid_numpy = """
         Parameters
@@ -343,7 +343,7 @@ param: Not indented properly.
         assert len(issues) > 0
         assert any("dashes" in issue.lower() for issue in issues)
 
-    def test_validate_numpy_style_wrong_underline_length(self):
+    def test_validate_numpy_style_wrong_underline_length(self) -> None:
         """Test NumPy style validation catches wrong underline length."""
         invalid_numpy = """
         Parameters
@@ -356,7 +356,7 @@ param: Not indented properly.
         assert len(issues) > 0
         assert any("length" in issue.lower() for issue in issues)
 
-    def test_validate_sphinx_style_valid(self):
+    def test_validate_sphinx_style_valid(self) -> None:
         """Test Sphinx style specific validation."""
         valid_sphinx = """
         :param param: Description.
@@ -367,7 +367,7 @@ param: Not indented properly.
         issues = self.generator._validate_sphinx_style(valid_sphinx)
         assert len(issues) == 0
 
-    def test_validate_rest_style_valid(self):
+    def test_validate_rest_style_valid(self) -> None:
         """Test reStructuredText style validation."""
         valid_rest = """
         .. note::
@@ -382,7 +382,7 @@ param: Not indented properly.
         issues = self.generator._validate_rest_style(valid_rest)
         assert len(issues) == 0
 
-    def test_validate_rest_style_bad_indentation(self):
+    def test_validate_rest_style_bad_indentation(self) -> None:
         """Test rST style validation catches bad directive indentation."""
         invalid_rest = """.. note::
 Not properly indented.
@@ -392,7 +392,7 @@ Not properly indented.
         assert len(issues) > 0
         assert any("indented" in issue.lower() for issue in issues)
 
-    def test_is_actionable_valid(self):
+    def test_is_actionable_valid(self) -> None:
         """Test actionability validation for valid suggestions."""
         actionable_text = """
         Function authenticates a user with given credentials.
@@ -407,7 +407,7 @@ Not properly indented.
 
         assert self.generator._is_actionable(actionable_text)
 
-    def test_is_actionable_vague_phrases(self):
+    def test_is_actionable_vague_phrases(self) -> None:
         """Test actionability validation catches vague phrases."""
         vague_texts = [
             "Fix this function.",
@@ -420,17 +420,17 @@ Not properly indented.
         for text in vague_texts:
             assert not self.generator._is_actionable(text)
 
-    def test_is_actionable_too_short(self):
+    def test_is_actionable_too_short(self) -> None:
         """Test actionability validation catches too short suggestions."""
         short_text = "Fix."
         assert not self.generator._is_actionable(short_text)
 
-    def test_is_actionable_no_identifiers(self):
+    def test_is_actionable_no_identifiers(self) -> None:
         """Test actionability validation catches text with no identifiers."""
         no_identifiers = "!@#$%^&*()"
         assert not self.generator._is_actionable(no_identifiers)
 
-    def test_create_metadata(self):
+    def test_create_metadata(self) -> None:
         """Test metadata creation."""
         metadata = self.generator.create_metadata(
             generator_type="test_generator",
@@ -445,7 +445,7 @@ Not properly indented.
         assert metadata.rule_triggers == ["parameter_missing", "return_missing"]
         assert not metadata.llm_used  # Default value
 
-    def test_format_docstring_lines(self):
+    def test_format_docstring_lines(self) -> None:
         """Test docstring line formatting."""
         content = "First line\nSecond line\n\nFourth line"
         formatted = self.generator.format_docstring_lines(content, indent=4)
@@ -459,7 +459,7 @@ Not properly indented.
 
         assert formatted == expected
 
-    def test_format_docstring_lines_custom_indent(self):
+    def test_format_docstring_lines_custom_indent(self) -> None:
         """Test docstring line formatting with custom indent."""
         content = "Line one\nLine two"
         formatted = self.generator.format_docstring_lines(content, indent=8)
@@ -471,14 +471,14 @@ Not properly indented.
 
         assert formatted == expected
 
-    def test_wrap_long_lines_no_wrapping_needed(self):
+    def test_wrap_long_lines_no_wrapping_needed(self) -> None:
         """Test line wrapping when no wrapping is needed."""
         short_text = "This is a short line."
         wrapped = self.generator.wrap_long_lines(short_text, max_length=100)
 
         assert wrapped == short_text
 
-    def test_wrap_long_lines_wrapping_needed(self):
+    def test_wrap_long_lines_wrapping_needed(self) -> None:
         """Test line wrapping when wrapping is needed."""
         long_text = "This is a very long line that exceeds the maximum length and should be wrapped."
         wrapped = self.generator.wrap_long_lines(long_text, max_length=40)
@@ -489,7 +489,7 @@ Not properly indented.
         for line in lines[:-1]:
             assert len(line) <= 40
 
-    def test_wrap_long_lines_preserve_indentation(self):
+    def test_wrap_long_lines_preserve_indentation(self) -> None:
         """Test line wrapping preserves indentation."""
         indented_text = (
             "    This is an indented line that is too long and needs wrapping."
@@ -505,7 +505,7 @@ Not properly indented.
             if line.strip():  # Non-empty line
                 assert lines[1].startswith("        ")  # 4 + 4 spaces
 
-    def test_preserve_existing_content_empty_original(self):
+    def test_preserve_existing_content_empty_original(self) -> None:
         """Test content preservation with empty original."""
         result = self.generator.preserve_existing_content(
             original="",
@@ -515,7 +515,7 @@ Not properly indented.
 
         assert result == "New section content"
 
-    def test_preserve_existing_content_with_original(self):
+    def test_preserve_existing_content_with_original(self) -> None:
         """Test content preservation with existing content."""
         result = self.generator.preserve_existing_content(
             original="Original content",
@@ -526,7 +526,7 @@ Not properly indented.
         # Currently returns updated section (simple implementation)
         assert result == "Updated section"
 
-    def test_validation_exception_handling(self):
+    def test_validation_exception_handling(self) -> None:
         """Test validation handles exceptions gracefully."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -559,7 +559,7 @@ Not properly indented.
 class TestWithSuggestionFallback:
     """Test with_suggestion_fallback decorator."""
 
-    def test_decorator_normal_execution(self):
+    def test_decorator_normal_execution(self) -> None:
         """Test decorator allows normal execution."""
 
         @with_suggestion_fallback
@@ -569,7 +569,7 @@ class TestWithSuggestionFallback:
         result = normal_function("A", "B")
         assert result == "Result: A + B"
 
-    def test_decorator_handles_suggestion_error_with_partial(self):
+    def test_decorator_handles_suggestion_error_with_partial(self) -> None:
         """Test decorator handles SuggestionError with partial result."""
         from codedocsync.suggestions.models import SuggestionGenerationError
 
@@ -583,7 +583,7 @@ class TestWithSuggestionFallback:
         result = failing_function()
         assert result == "Partial content"
 
-    def test_decorator_handles_suggestion_error_without_partial(self):
+    def test_decorator_handles_suggestion_error_without_partial(self) -> None:
         """Test decorator handles SuggestionError without partial result."""
         from codedocsync.suggestions.models import SuggestionError
 
@@ -595,7 +595,7 @@ class TestWithSuggestionFallback:
         with pytest.raises(SuggestionError):
             failing_function()
 
-    def test_decorator_handles_unexpected_exception(self):
+    def test_decorator_handles_unexpected_exception(self) -> None:
         """Test decorator converts unexpected exceptions."""
 
         @with_suggestion_fallback
@@ -608,7 +608,7 @@ class TestWithSuggestionFallback:
         assert "Unexpected error in suggestion generation" in str(exc_info.value)
         assert "Unexpected error" in str(exc_info.value)
 
-    def test_decorator_with_fallback_method(self):
+    def test_decorator_with_fallback_method(self) -> None:
         """Test decorator can use fallback method."""
 
         class MockGenerator:
@@ -629,7 +629,7 @@ class TestWithSuggestionFallback:
 class TestBaseSuggestionGeneratorIntegration:
     """Test integration scenarios for BaseSuggestionGenerator."""
 
-    def test_full_validation_pipeline(self):
+    def test_full_validation_pipeline(self) -> None:
         """Test complete validation pipeline."""
 
         class TestGenerator(BaseSuggestionGenerator):
@@ -691,7 +691,7 @@ class TestBaseSuggestionGeneratorIntegration:
         assert suggestion.is_high_confidence
         assert suggestion.metadata.generation_time_ms > 0
 
-    def test_style_specific_validation_integration(self):
+    def test_style_specific_validation_integration(self) -> None:
         """Test integration of style-specific validation."""
 
         class StyleTestGenerator(BaseSuggestionGenerator):

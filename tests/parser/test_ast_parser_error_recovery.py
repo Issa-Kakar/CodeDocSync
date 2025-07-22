@@ -26,7 +26,7 @@ from codedocsync.utils.errors import (
 class TestASTParserErrorRecovery:
     """Test suite for AST parser error recovery and edge cases."""
 
-    def test_parse_file_with_syntax_errors(self):
+    def test_parse_file_with_syntax_errors(self) -> None:
         """Test that syntax errors don't crash the parser."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -61,7 +61,7 @@ def another_valid_function():
         finally:
             os.unlink(temp_path)
 
-    def test_parse_partial_file(self):
+    def test_parse_partial_file(self) -> None:
         """Test that parser can extract functions before syntax error."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -99,7 +99,7 @@ def unreachable_function():
         finally:
             os.unlink(temp_path)
 
-    def test_parse_unicode_content(self):
+    def test_parse_unicode_content(self) -> None:
         """Test parsing files with unicode characters."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -127,6 +127,7 @@ def calculate_π():
 
             # Check first function
             assert functions[0].signature.name == "unicode_function"
+            assert functions[0].docstring is not None
             assert "你好世界" in functions[0].docstring.raw_text
             assert "🌍" in functions[0].docstring.raw_text
 
@@ -137,7 +138,7 @@ def calculate_π():
         finally:
             os.unlink(temp_path)
 
-    def test_parse_empty_file(self):
+    def test_parse_empty_file(self) -> None:
         """Test parsing an empty file returns empty list."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -153,7 +154,7 @@ def calculate_π():
         finally:
             os.unlink(temp_path)
 
-    def test_parse_imports_only_file(self):
+    def test_parse_imports_only_file(self) -> None:
         """Test that file with only imports returns empty list."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -183,7 +184,7 @@ DEBUG = True
         finally:
             os.unlink(temp_path)
 
-    def test_parse_file_not_found(self):
+    def test_parse_file_not_found(self) -> None:
         """Test proper error handling for non-existent files."""
         non_existent_path = "/path/that/does/not/exist/file.py"
 
@@ -196,7 +197,7 @@ DEBUG = True
             == "Check the file path and ensure the file exists"
         )
 
-    def test_parse_permission_denied(self):
+    def test_parse_permission_denied(self) -> None:
         """Test handling permission errors gracefully."""
         # Create a mock that raises PermissionError
         with patch("builtins.open", side_effect=PermissionError("Permission denied")):
@@ -209,7 +210,7 @@ DEBUG = True
                 == "Check file permissions and ensure read access"
             )
 
-    def test_parse_invalid_encoding(self):
+    def test_parse_invalid_encoding(self) -> None:
         """Test handling encoding errors."""
         # Create a file with invalid UTF-8 encoding
         with tempfile.NamedTemporaryFile(mode="wb", suffix=".py", delete=False) as f:
@@ -226,12 +227,13 @@ DEBUG = True
         except ParsingError as e:
             # If fallback also fails, should get ParsingError
             assert "Encoding error" in str(e)
+            assert e.recovery_hint is not None
             assert "UTF-8 encoding" in e.recovery_hint
 
         finally:
             os.unlink(temp_path)
 
-    def test_parse_file_with_only_comments(self):
+    def test_parse_file_with_only_comments(self) -> None:
         """Test parsing file with only comments and docstrings."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -263,7 +265,7 @@ This is a standalone docstring, not attached to any function.
         finally:
             os.unlink(temp_path)
 
-    def test_parse_file_with_mixed_content(self):
+    def test_parse_file_with_mixed_content(self) -> None:
         """Test parsing file with mix of valid functions and errors."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -329,7 +331,7 @@ def function_with_complex_signature(
         finally:
             os.unlink(temp_path)
 
-    def test_lazy_parser_with_errors(self):
+    def test_lazy_parser_with_errors(self) -> None:
         """Test that lazy parser also handles errors gracefully."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -357,7 +359,7 @@ def broken(]:
         finally:
             os.unlink(temp_path)
 
-    def test_parse_file_with_nested_functions(self):
+    def test_parse_file_with_nested_functions(self) -> None:
         """Test parsing files with nested function definitions."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
@@ -399,7 +401,7 @@ def outer_function():
         finally:
             os.unlink(temp_path)
 
-    def test_parse_file_with_lambda_in_defaults(self):
+    def test_parse_file_with_lambda_in_defaults(self) -> None:
         """Test parsing functions with lambda expressions in default values."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"

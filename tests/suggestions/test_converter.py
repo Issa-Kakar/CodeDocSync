@@ -77,14 +77,14 @@ class TestDocstringStyleConverter:
             format="google",
         )
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test converter initialization."""
         converter = DocstringStyleConverter()
         assert isinstance(converter._type_formatters, dict)
         assert isinstance(converter._conversion_stats, dict)
         assert converter._conversion_stats["conversions_performed"] == 0
 
-    def test_convert_same_style(self, converter, sample_parsed_docstring):
+    def test_convert_same_style(self, converter, sample_parsed_docstring) -> None:
         """Test conversion when source and target styles are the same."""
         result = converter.convert(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.GOOGLE
@@ -97,7 +97,7 @@ class TestDocstringStyleConverter:
         assert "Returns:" in result
         assert "Raises:" in result
 
-    def test_convert_google_to_numpy(self, converter, sample_parsed_docstring):
+    def test_convert_google_to_numpy(self, converter, sample_parsed_docstring) -> None:
         """Test conversion from Google to NumPy style."""
         result = converter.convert(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.NUMPY
@@ -114,7 +114,7 @@ class TestDocstringStyleConverter:
         # Check type conversion (np.ndarray should become array_like)
         assert "array_like" in result
 
-    def test_convert_google_to_sphinx(self, converter, sample_parsed_docstring):
+    def test_convert_google_to_sphinx(self, converter, sample_parsed_docstring) -> None:
         """Test conversion from Google to Sphinx style."""
         result = converter.convert(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.SPHINX
@@ -127,7 +127,7 @@ class TestDocstringStyleConverter:
         assert ":rtype:" in result
         assert ":raises ValueError:" in result
 
-    def test_convert_numpy_to_google(self, converter):
+    def test_convert_numpy_to_google(self, converter) -> None:
         """Test conversion from NumPy to Google style."""
         numpy_docstring = ParsedDocstring(
             summary="Calculate statistics.",
@@ -158,7 +158,7 @@ class TestDocstringStyleConverter:
         assert "Returns:" in result
         assert "arr (array_like):" in result or "arr: " in result
 
-    def test_convert_sphinx_to_google(self, converter):
+    def test_convert_sphinx_to_google(self, converter) -> None:
         """Test conversion from Sphinx to Google style."""
         sphinx_docstring = ParsedDocstring(
             summary="Parse configuration file.",
@@ -203,7 +203,9 @@ class TestDocstringStyleConverter:
         assert "filename" in result
         assert "validate" in result
 
-    def test_convert_with_custom_options(self, converter, sample_parsed_docstring):
+    def test_convert_with_custom_options(
+        self, converter, sample_parsed_docstring
+    ) -> None:
         """Test conversion with custom options."""
         result = converter.convert(
             sample_parsed_docstring,
@@ -221,7 +223,7 @@ class TestDocstringStyleConverter:
             len(long_lines) < len(lines) * 0.3
         )  # Less than 30% of lines should be long
 
-    def test_convert_empty_sections(self, converter):
+    def test_convert_empty_sections(self, converter) -> None:
         """Test conversion with empty sections."""
         minimal_docstring = ParsedDocstring(
             summary="Simple function.",
@@ -245,7 +247,7 @@ class TestDocstringStyleConverter:
         assert "Returns" not in result
         assert "Raises" not in result
 
-    def test_convert_batch_success(self, converter):
+    def test_convert_batch_success(self, converter) -> None:
         """Test successful batch conversion."""
         docstrings = [
             ParsedDocstring(
@@ -290,7 +292,7 @@ class TestDocstringStyleConverter:
         assert all(result is not None for result in results)
         assert all("Parameters" in result for result in results)
 
-    def test_convert_batch_with_failures(self, converter):
+    def test_convert_batch_with_failures(self, converter) -> None:
         """Test batch conversion with some failures."""
         # Create a mock docstring that will cause conversion failure
         problematic_docstring = ParsedDocstring(
@@ -324,7 +326,9 @@ class TestDocstringStyleConverter:
         # One might be None due to failure, one should succeed
         assert any(result is not None for result in results)
 
-    def test_estimate_conversion_quality(self, converter, sample_parsed_docstring):
+    def test_estimate_conversion_quality(
+        self, converter, sample_parsed_docstring
+    ) -> None:
         """Test conversion quality estimation."""
         quality = converter.estimate_conversion_quality(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.NUMPY
@@ -338,7 +342,7 @@ class TestDocstringStyleConverter:
         assert isinstance(quality["confidence"], float)
         assert 0.0 <= quality["confidence"] <= 1.0
 
-    def test_estimate_quality_complex_types(self, converter):
+    def test_estimate_quality_complex_types(self, converter) -> None:
         """Test quality estimation with complex types."""
         complex_docstring = ParsedDocstring(
             summary="Complex function.",
@@ -365,7 +369,9 @@ class TestDocstringStyleConverter:
         assert quality["confidence"] < 1.0
         assert len(quality["warnings"]) > 0
 
-    def test_get_conversion_statistics(self, converter, sample_parsed_docstring):
+    def test_get_conversion_statistics(
+        self, converter, sample_parsed_docstring
+    ) -> None:
         """Test getting conversion statistics."""
         # Perform some conversions
         converter.convert(
@@ -381,7 +387,7 @@ class TestDocstringStyleConverter:
         assert "conversions_performed" in stats
         assert stats["conversions_performed"] == 2
 
-    def test_type_formatter_caching(self, converter):
+    def test_type_formatter_caching(self, converter) -> None:
         """Test that type formatters are cached."""
         # Access formatter multiple times
         formatter1 = converter._get_type_formatter(DocstringStyle.NUMPY)
@@ -390,21 +396,21 @@ class TestDocstringStyleConverter:
         # Should be the same instance
         assert formatter1 is formatter2
 
-    def test_convert_parameters_with_none(self, converter):
+    def test_convert_parameters_with_none(self, converter) -> None:
         """Test parameter conversion with None input."""
         result = converter._convert_parameters(
             None, converter._get_type_formatter(DocstringStyle.GOOGLE)
         )
         assert result is None
 
-    def test_convert_returns_with_none(self, converter):
+    def test_convert_returns_with_none(self, converter) -> None:
         """Test returns conversion with None input."""
         result = converter._convert_returns(
             None, converter._get_type_formatter(DocstringStyle.GOOGLE)
         )
         assert result is None
 
-    def test_convert_raises_with_none(self, converter):
+    def test_convert_raises_with_none(self, converter) -> None:
         """Test raises conversion with None input."""
         result = converter._convert_raises(
             None, converter._get_type_formatter(DocstringStyle.GOOGLE)
@@ -435,7 +441,7 @@ class TestConvenienceFunctions:
             format="google",
         )
 
-    def test_convert_docstring_function(self, sample_docstring):
+    def test_convert_docstring_function(self, sample_docstring) -> None:
         """Test the convert_docstring convenience function."""
         result = convert_docstring(
             sample_docstring, DocstringStyle.GOOGLE, DocstringStyle.NUMPY
@@ -445,7 +451,7 @@ class TestConvenienceFunctions:
         assert "Parameters" in result
         assert "param : str" in result
 
-    def test_batch_convert_docstrings_function(self, sample_docstring):
+    def test_batch_convert_docstrings_function(self, sample_docstring) -> None:
         """Test the batch_convert_docstrings convenience function."""
         docstrings = [sample_docstring, sample_docstring]
 
@@ -463,7 +469,7 @@ class TestConvenienceFunctions:
 class TestConversionPresets:
     """Test conversion preset configurations."""
 
-    def test_scientific_to_api_preset(self):
+    def test_scientific_to_api_preset(self) -> None:
         """Test scientific to API conversion preset."""
         preset = ConversionPreset.scientific_to_api()
 
@@ -472,7 +478,7 @@ class TestConversionPresets:
         assert "max_line_length" in preset
         assert preset["max_line_length"] == 88
 
-    def test_api_to_sphinx_preset(self):
+    def test_api_to_sphinx_preset(self) -> None:
         """Test API to Sphinx conversion preset."""
         preset = ConversionPreset.api_to_sphinx()
 
@@ -480,7 +486,7 @@ class TestConversionPresets:
         assert "max_line_length" in preset
         assert preset["max_line_length"] == 100  # Sphinx uses longer lines
 
-    def test_legacy_cleanup_preset(self):
+    def test_legacy_cleanup_preset(self) -> None:
         """Test legacy cleanup preset."""
         preset = ConversionPreset.legacy_cleanup()
 
@@ -497,7 +503,7 @@ class TestErrorHandling:
         """Create converter for error testing."""
         return DocstringStyleConverter()
 
-    def test_conversion_with_invalid_style(self, converter):
+    def test_conversion_with_invalid_style(self, converter) -> None:
         """Test conversion with unsupported style combination."""
         docstring = ParsedDocstring(
             summary="Test",
@@ -520,7 +526,7 @@ class TestErrorHandling:
             assert isinstance(e, ValueError)
             assert "conversion" in str(e).lower()
 
-    def test_conversion_with_malformed_docstring(self, converter):
+    def test_conversion_with_malformed_docstring(self, converter) -> None:
         """Test conversion with malformed docstring data."""
         # Create docstring with inconsistent data
         malformed_docstring = ParsedDocstring(
@@ -550,7 +556,7 @@ class TestSpecialCases:
         """Create converter for special case testing."""
         return DocstringStyleConverter()
 
-    def test_convert_with_unicode_content(self, converter):
+    def test_convert_with_unicode_content(self, converter) -> None:
         """Test conversion with Unicode content."""
         unicode_docstring = ParsedDocstring(
             summary="Función con caracteres especiales 🚀.",
@@ -579,7 +585,7 @@ class TestSpecialCases:
         assert "données" in result
         assert "📊" in result
 
-    def test_convert_with_very_long_descriptions(self, converter):
+    def test_convert_with_very_long_descriptions(self, converter) -> None:
         """Test conversion with very long descriptions."""
         long_description = "This is a very long description that goes on and on " * 20
 
@@ -617,7 +623,7 @@ class TestSpecialCases:
         very_long_lines = [line for line in lines if len(line) > 100]
         assert len(very_long_lines) < len(lines) * 0.2  # Less than 20% very long
 
-    def test_convert_with_special_parameter_types(self, converter):
+    def test_convert_with_special_parameter_types(self, converter) -> None:
         """Test conversion with special parameter types (*args, **kwargs)."""
         special_docstring = ParsedDocstring(
             summary="Function with special parameters.",

@@ -10,6 +10,9 @@ Key Requirements (Chunk 1):
 - Cache must use SQLite (create table if not exists)
 - Must validate API key exists in environment
 - Performance target: Foundation setup in <100ms
+
+Note: Using OpenAI directly for MVP.
+TODO: Consider litellm for multi-provider support in v2
 """
 
 import asyncio
@@ -189,6 +192,12 @@ class LLMAnalyzer:
         """Initialize OpenAI client with proper configuration."""
         # Get API key from environment (already validated in config)
         api_key = os.getenv("OPENAI_API_KEY")
+
+        # Double-check API key exists (config validation should have caught this)
+        if not api_key:
+            raise LLMAPIKeyError(
+                f"API key not found for provider: {self.config.provider}"
+            )
 
         # Initialize OpenAI client
         self.openai_client = openai.AsyncOpenAI(

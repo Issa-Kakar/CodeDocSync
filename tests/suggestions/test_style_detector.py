@@ -25,7 +25,7 @@ class TestDocstringStyleDetector:
         """Set up test fixtures."""
         self.detector = DocstringStyleDetector()
 
-    def test_detector_initialization(self):
+    def test_detector_initialization(self) -> None:
         """Test detector initialization."""
         assert self.detector.config is not None
         assert self.detector._detection_cache == {}
@@ -34,14 +34,14 @@ class TestDocstringStyleDetector:
         assert "sphinx" in self.detector._style_indicators
         assert "rest" in self.detector._style_indicators
 
-    def test_detector_with_custom_config(self):
+    def test_detector_with_custom_config(self) -> None:
         """Test detector with custom configuration."""
         config = SuggestionConfig(default_style="numpy")
         detector = DocstringStyleDetector(config)
 
         assert detector.config.default_style == "numpy"
 
-    def test_detect_google_style_docstring(self):
+    def test_detect_google_style_docstring(self) -> None:
         """Test detecting Google-style docstring."""
         google_docstring = """
         Function description.
@@ -60,7 +60,7 @@ class TestDocstringStyleDetector:
         detected_style = self.detector.detect_from_docstring(google_docstring)
         assert detected_style == "google"
 
-    def test_detect_numpy_style_docstring(self):
+    def test_detect_numpy_style_docstring(self) -> None:
         """Test detecting NumPy-style docstring."""
         numpy_docstring = """
         Function description.
@@ -86,7 +86,7 @@ class TestDocstringStyleDetector:
         detected_style = self.detector.detect_from_docstring(numpy_docstring)
         assert detected_style == "numpy"
 
-    def test_detect_sphinx_style_docstring(self):
+    def test_detect_sphinx_style_docstring(self) -> None:
         """Test detecting Sphinx-style docstring."""
         sphinx_docstring = """
         Function description.
@@ -103,7 +103,7 @@ class TestDocstringStyleDetector:
         detected_style = self.detector.detect_from_docstring(sphinx_docstring)
         assert detected_style == "sphinx"
 
-    def test_detect_rest_style_docstring(self):
+    def test_detect_rest_style_docstring(self) -> None:
         """Test detecting reStructuredText-style docstring."""
         rest_docstring = """
         Function description.
@@ -121,19 +121,19 @@ class TestDocstringStyleDetector:
         detected_style = self.detector.detect_from_docstring(rest_docstring)
         assert detected_style == "rest"
 
-    def test_detect_empty_docstring(self):
+    def test_detect_empty_docstring(self) -> None:
         """Test detecting style from empty docstring."""
         detected_style = self.detector.detect_from_docstring("")
         assert detected_style == self.detector.config.default_style
 
-    def test_detect_plain_docstring(self):
+    def test_detect_plain_docstring(self) -> None:
         """Test detecting style from plain docstring without markers."""
         plain_docstring = "Simple function description without any style markers."
 
         detected_style = self.detector.detect_from_docstring(plain_docstring)
         assert detected_style == self.detector.config.default_style
 
-    def test_detect_ambiguous_docstring(self):
+    def test_detect_ambiguous_docstring(self) -> None:
         """Test detecting style from ambiguous docstring."""
         # Mix of styles that should result in low confidence
         ambiguous_docstring = """
@@ -147,7 +147,7 @@ class TestDocstringStyleDetector:
         # Should fall back to default due to low confidence
         assert detected_style == self.detector.config.default_style
 
-    def test_detect_from_file_with_python_code(self):
+    def test_detect_from_file_with_python_code(self) -> None:
         """Test detecting style from Python file."""
         python_code = '''
 def function1(param1, param2):
@@ -187,14 +187,14 @@ def function2(x, y):
         finally:
             Path(temp_path).unlink()
 
-    def test_detect_from_file_missing_file(self):
+    def test_detect_from_file_missing_file(self) -> None:
         """Test detecting style from missing file."""
         with pytest.raises(StyleDetectionError) as exc_info:
             self.detector.detect_from_file("/non/existent/file.py")
 
         assert exc_info.value.fallback_style == self.detector.config.default_style
 
-    def test_detect_from_file_no_docstrings(self):
+    def test_detect_from_file_no_docstrings(self) -> None:
         """Test detecting style from file with no docstrings."""
         python_code = """
 def function1():
@@ -214,7 +214,7 @@ def function2():
         finally:
             Path(temp_path).unlink()
 
-    def test_extract_docstrings_from_code(self):
+    def test_extract_docstrings_from_code(self) -> None:
         """Test extracting docstrings from Python code."""
         python_code = '''
 """Module docstring."""
@@ -244,14 +244,14 @@ async def async_function():
         assert "Method docstring." in docstrings
         assert "Async function docstring." in docstrings
 
-    def test_extract_docstrings_invalid_syntax(self):
+    def test_extract_docstrings_invalid_syntax(self) -> None:
         """Test extracting docstrings from invalid Python syntax."""
         invalid_code = "def invalid_function( unclosed_paren:"
 
         docstrings = self.detector._extract_docstrings_from_code(invalid_code)
         assert docstrings == []
 
-    def test_analyze_multiple_docstrings_consistent(self):
+    def test_analyze_multiple_docstrings_consistent(self) -> None:
         """Test analyzing multiple consistent docstrings."""
         google_docstrings = [
             """
@@ -278,7 +278,7 @@ async def async_function():
         detected_style = self.detector._analyze_multiple_docstrings(google_docstrings)
         assert detected_style == "google"
 
-    def test_analyze_multiple_docstrings_mixed(self):
+    def test_analyze_multiple_docstrings_mixed(self) -> None:
         """Test analyzing multiple mixed-style docstrings."""
         mixed_docstrings = [
             """
@@ -304,12 +304,12 @@ async def async_function():
             self.detector.config.default_style,
         ]
 
-    def test_analyze_multiple_docstrings_empty(self):
+    def test_analyze_multiple_docstrings_empty(self) -> None:
         """Test analyzing empty list of docstrings."""
         detected_style = self.detector._analyze_multiple_docstrings([])
         assert detected_style == self.detector.config.default_style
 
-    def test_calculate_style_score_google(self):
+    def test_calculate_style_score_google(self) -> None:
         """Test calculating style score for Google-style docstring."""
         google_docstring = """
         Function description.
@@ -328,7 +328,7 @@ async def async_function():
         assert score > 0.0
         assert score <= 1.0
 
-    def test_calculate_style_score_with_forbidden_patterns(self):
+    def test_calculate_style_score_with_forbidden_patterns(self) -> None:
         """Test style score calculation with forbidden patterns."""
         # Google docstring with NumPy-style forbidden pattern
         mixed_docstring = """
@@ -349,7 +349,7 @@ async def async_function():
         # Score should be reduced due to forbidden pattern
         assert score >= 0.0  # Should not be negative
 
-    def test_validate_style_consistency_google(self):
+    def test_validate_style_consistency_google(self) -> None:
         """Test validating Google-style consistency."""
         valid_google = """
         Function description.
@@ -368,7 +368,7 @@ async def async_function():
         assert is_valid
         assert len(issues) == 0
 
-    def test_validate_style_consistency_google_issues(self):
+    def test_validate_style_consistency_google_issues(self) -> None:
         """Test validating Google-style with issues."""
         invalid_google = """
         Function description.
@@ -384,7 +384,7 @@ async def async_function():
         assert len(issues) > 0
         assert any("colon" in issue.lower() for issue in issues)
 
-    def test_validate_style_consistency_numpy(self):
+    def test_validate_style_consistency_numpy(self) -> None:
         """Test validating NumPy-style consistency."""
         valid_numpy = """
         Function description.
@@ -406,7 +406,7 @@ async def async_function():
         assert is_valid
         assert len(issues) == 0
 
-    def test_validate_style_consistency_numpy_issues(self):
+    def test_validate_style_consistency_numpy_issues(self) -> None:
         """Test validating NumPy-style with issues."""
         invalid_numpy = """
         Function description.
@@ -426,7 +426,7 @@ async def async_function():
             for issue in issues
         )
 
-    def test_validate_style_consistency_sphinx(self):
+    def test_validate_style_consistency_sphinx(self) -> None:
         """Test validating Sphinx-style consistency."""
         valid_sphinx = """
         Function description.
@@ -443,7 +443,7 @@ async def async_function():
         assert is_valid
         assert len(issues) == 0
 
-    def test_validate_style_consistency_unknown_style(self):
+    def test_validate_style_consistency_unknown_style(self) -> None:
         """Test validating unknown style."""
         text = "Some docstring text."
 
@@ -453,7 +453,7 @@ async def async_function():
         assert not is_valid
         assert any("Unknown style" in issue for issue in issues)
 
-    def test_get_style_confidence(self):
+    def test_get_style_confidence(self) -> None:
         """Test getting confidence score for specific style."""
         google_docstring = """
         Function description.
@@ -474,7 +474,7 @@ async def async_function():
         assert 0.0 <= google_confidence <= 1.0
         assert 0.0 <= numpy_confidence <= 1.0
 
-    def test_get_all_style_scores(self):
+    def test_get_all_style_scores(self) -> None:
         """Test getting confidence scores for all styles."""
         docstring = """
         Function description.
@@ -493,7 +493,7 @@ async def async_function():
         for _style, score in scores.items():
             assert 0.0 <= score <= 1.0
 
-    def test_caching_behavior(self):
+    def test_caching_behavior(self) -> None:
         """Test that detection results are cached."""
         docstring = "Simple docstring for caching test."
 
@@ -508,7 +508,7 @@ async def async_function():
         assert result1 == result2
         assert cache_size_after_first == cache_size_after_second  # No new cache entry
 
-    def test_clear_cache(self):
+    def test_clear_cache(self) -> None:
         """Test clearing detection cache."""
         # Populate cache
         self.detector.detect_from_docstring("Test docstring")
@@ -518,7 +518,7 @@ async def async_function():
         self.detector.clear_cache()
         assert len(self.detector._detection_cache) == 0
 
-    def test_get_style_template_google(self):
+    def test_get_style_template_google(self) -> None:
         """Test getting Google-style templates."""
         templates = self.detector.get_style_template("google")
 
@@ -531,7 +531,7 @@ async def async_function():
         assert "{name}" in templates["parameter"]
         assert "{type}" in templates["parameter"]
 
-    def test_get_style_template_numpy(self):
+    def test_get_style_template_numpy(self) -> None:
         """Test getting NumPy-style templates."""
         templates = self.detector.get_style_template("numpy")
 
@@ -539,7 +539,7 @@ async def async_function():
         assert "{underline}" in templates["section_header"]
         assert ":" in templates["parameter"]
 
-    def test_get_style_template_sphinx(self):
+    def test_get_style_template_sphinx(self) -> None:
         """Test getting Sphinx-style templates."""
         templates = self.detector.get_style_template("sphinx")
 
@@ -547,7 +547,7 @@ async def async_function():
         assert ":returns" in templates["return"]
         assert ":raises" in templates["raises"]
 
-    def test_get_style_template_unknown(self):
+    def test_get_style_template_unknown(self) -> None:
         """Test getting templates for unknown style defaults to Google."""
         templates = self.detector.get_style_template("unknown_style")
         google_templates = self.detector.get_style_template("google")
@@ -555,7 +555,7 @@ async def async_function():
         assert templates == google_templates
 
     @patch("random.sample")
-    def test_detect_from_project_sampling(self, mock_sample):
+    def test_detect_from_project_sampling(self, mock_sample) -> None:
         """Test project detection with file sampling."""
         # Create temporary project structure
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -592,14 +592,14 @@ def function_{i}():
             mock_sample.assert_called_once()
             assert detected_style == "google"
 
-    def test_detect_from_project_no_python_files(self):
+    def test_detect_from_project_no_python_files(self) -> None:
         """Test project detection with no Python files."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Empty directory
             detected_style = self.detector.detect_from_project(temp_dir)
             assert detected_style == self.detector.config.default_style
 
-    def test_detect_from_project_with_errors(self):
+    def test_detect_from_project_with_errors(self) -> None:
         """Test project detection handles file errors gracefully."""
         with tempfile.TemporaryDirectory() as temp_dir:
             project_path = Path(temp_dir)
@@ -629,12 +629,12 @@ def valid_function():
 class TestGlobalStyleDetector:
     """Test global style detector instance."""
 
-    def test_global_style_detector_exists(self):
+    def test_global_style_detector_exists(self) -> None:
         """Test that global style detector exists."""
         assert style_detector is not None
         assert isinstance(style_detector, DocstringStyleDetector)
 
-    def test_global_style_detector_usage(self):
+    def test_global_style_detector_usage(self) -> None:
         """Test using global style detector."""
         result = style_detector.detect_from_docstring("Simple docstring.")
         assert isinstance(result, str)
@@ -643,7 +643,7 @@ class TestGlobalStyleDetector:
 class TestStyleDetectionIntegration:
     """Test style detection integration scenarios."""
 
-    def test_real_world_google_examples(self):
+    def test_real_world_google_examples(self) -> None:
         """Test detection with real-world Google-style examples."""
         examples = [
             """
@@ -686,7 +686,7 @@ class TestStyleDetectionIntegration:
                 detected == "google"
             ), f"Failed to detect Google style in: {example[:50]}..."
 
-    def test_real_world_numpy_examples(self):
+    def test_real_world_numpy_examples(self) -> None:
         """Test detection with real-world NumPy-style examples."""
         examples = [
             """
@@ -726,7 +726,7 @@ class TestStyleDetectionIntegration:
                 detected == "numpy"
             ), f"Failed to detect NumPy style in: {example[:50]}..."
 
-    def test_style_detection_edge_cases(self):
+    def test_style_detection_edge_cases(self) -> None:
         """Test style detection edge cases."""
         detector = DocstringStyleDetector()
 

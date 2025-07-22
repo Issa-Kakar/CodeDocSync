@@ -27,10 +27,10 @@ from codedocsync.suggestions.models import (
 class TestReturnStatementAnalyzer:
     """Test the return statement analyzer."""
 
-    def test_analyze_simple_return(self):
+    def test_analyze_simple_return(self) -> None:
         """Test analyzing function with simple return."""
         source_code = """
-def test_func():
+def test_func() -> None:
     return "hello"
 """
         analyzer = ReturnStatementAnalyzer()
@@ -42,10 +42,10 @@ def test_func():
         assert not result.is_async
         assert "str" in result.return_types
 
-    def test_analyze_multiple_returns(self):
+    def test_analyze_multiple_returns(self) -> None:
         """Test analyzing function with multiple return types."""
         source_code = """
-def test_func(flag):
+def test_func(flag) -> None:
     if flag:
         return 42
     else:
@@ -59,10 +59,10 @@ def test_func(flag):
         assert "int" in result.return_types
         assert "str" in result.return_types
 
-    def test_analyze_generator_function(self):
+    def test_analyze_generator_function(self) -> None:
         """Test analyzing generator function."""
         source_code = """
-def test_func():
+def test_func() -> None:
     for i in range(10):
         yield i
 """
@@ -72,10 +72,10 @@ def test_func():
         assert result.is_generator
         assert "Generator[int]" in result.return_types
 
-    def test_analyze_async_function(self):
+    def test_analyze_async_function(self) -> None:
         """Test analyzing async function."""
         source_code = """
-async def test_func():
+async def test_func() -> None:
     return "hello"
 """
         analyzer = ReturnStatementAnalyzer()
@@ -85,10 +85,10 @@ async def test_func():
         assert result.has_explicit_return
         assert "str" in result.return_types
 
-    def test_analyze_no_return(self):
+    def test_analyze_no_return(self) -> None:
         """Test analyzing function with no explicit return."""
         source_code = """
-def test_func():
+def test_func() -> None:
     print("hello")
 """
         analyzer = ReturnStatementAnalyzer()
@@ -98,7 +98,7 @@ def test_func():
         assert result.has_implicit_none
         assert "None" in result.return_types
 
-    def test_analyze_syntax_error(self):
+    def test_analyze_syntax_error(self) -> None:
         """Test handling syntax errors gracefully."""
         source_code = """
 def test_func(
@@ -136,7 +136,7 @@ class TestReturnSuggestionGenerator:
         function.signature.return_annotation = "str"
         function.line_number = 10
         function.source_code = """
-def test_function():
+def test_function() -> None:
     return "hello"
 """
         return function
@@ -168,7 +168,7 @@ def test_function():
 
     def test_fix_return_type_mismatch(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fixing return type mismatch."""
         context = SuggestionContext(
             function=mock_function, docstring=mock_docstring, issue=mock_issue
@@ -183,7 +183,7 @@ def test_function():
 
     def test_add_missing_return_documentation(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test adding missing return documentation."""
         mock_issue.issue_type = "missing_returns"
         context = SuggestionContext(
@@ -201,7 +201,7 @@ def test_function():
 
     def test_improve_return_description(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test improving vague return description."""
         mock_docstring.returns = DocstringReturns(type_str="str", description="result")
         mock_issue.issue_type = "return_description_vague"
@@ -217,10 +217,10 @@ def test_function():
 
     def test_fix_generator_return(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fixing generator return documentation."""
         mock_function.source_code = """
-def test_function():
+def test_function() -> None:
     for i in range(10):
         yield i
 """
@@ -236,7 +236,7 @@ def test_function():
         assert suggestion.suggestion_type == SuggestionType.RETURN_UPDATE
         assert "Generator" in suggestion.suggested_text
 
-    def test_determine_best_return_type_single(self, generator):
+    def test_determine_best_return_type_single(self, generator) -> None:
         """Test determining best return type with single type."""
         analysis = ReturnAnalysisResult()
         analysis.return_types = {"str"}
@@ -249,7 +249,7 @@ def test_function():
         result = generator._determine_best_return_type(analysis, mock_function)
         assert result == "str"
 
-    def test_determine_best_return_type_multiple(self, generator):
+    def test_determine_best_return_type_multiple(self, generator) -> None:
         """Test determining best return type with multiple types."""
         analysis = ReturnAnalysisResult()
         analysis.return_types = {"str", "int"}
@@ -262,7 +262,7 @@ def test_function():
         result = generator._determine_best_return_type(analysis, mock_function)
         assert "Union" in result
 
-    def test_determine_best_return_type_generator(self, generator):
+    def test_determine_best_return_type_generator(self, generator) -> None:
         """Test determining best return type for generator."""
         analysis = ReturnAnalysisResult()
         analysis.is_generator = True
@@ -272,7 +272,7 @@ def test_function():
         result = generator._determine_best_return_type(analysis, mock_function)
         assert result == "Generator"
 
-    def test_generate_return_description_basic_types(self, generator):
+    def test_generate_return_description_basic_types(self, generator) -> None:
         """Test generating return descriptions for basic types."""
         # Test various basic types
         test_cases = [
@@ -287,7 +287,7 @@ def test_function():
             result = generator._generate_return_description(return_type, None)
             assert expected_desc in result
 
-    def test_generate_return_description_special_cases(self, generator):
+    def test_generate_return_description_special_cases(self, generator) -> None:
         """Test generating return descriptions for special cases."""
         # Test None
         result = generator._generate_return_description("None", None)
@@ -303,7 +303,7 @@ def test_function():
 
     def test_no_source_code_fallback(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fallback when source code is not available."""
         mock_function.source_code = ""
 
@@ -316,7 +316,7 @@ def test_function():
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring):
+    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_return_issue",
@@ -350,7 +350,7 @@ class TestReturnGeneratorIntegration:
         """Create return suggestion generator."""
         return ReturnSuggestionGenerator(config)
 
-    def test_complete_workflow_missing_returns(self, generator):
+    def test_complete_workflow_missing_returns(self, generator) -> None:
         """Test complete workflow for missing returns."""
         # Create realistic function and docstring
         function = Mock()
@@ -397,7 +397,7 @@ def calculate_sum(a, b):
         assert "Returns:" in suggested_text or "returns" in suggested_text.lower()
         assert "int" in suggested_text or "integer" in suggested_text
 
-    def test_complete_workflow_generator_function(self, generator):
+    def test_complete_workflow_generator_function(self, generator) -> None:
         """Test complete workflow for generator function."""
         function = Mock()
         function.signature = Mock()

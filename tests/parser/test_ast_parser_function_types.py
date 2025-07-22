@@ -15,7 +15,7 @@ from codedocsync.parser.ast_parser import parse_python_file
 class TestASTParserFunctionTypes:
     """Test suite for AST parser function type handling."""
 
-    def test_parse_regular_functions(self):
+    def test_parse_regular_functions(self) -> None:
         """Test parsing of regular def functions with various signatures."""
         test_code = '''
 def simple_function():
@@ -69,6 +69,7 @@ def function_with_all_param_types(
         assert not simple_func.signature.is_async
         assert not simple_func.signature.is_method
         assert simple_func.docstring is not None
+        assert simple_func.docstring is not None
         assert "simple function" in simple_func.docstring.raw_text
 
         # Test function with params
@@ -97,11 +98,13 @@ def function_with_all_param_types(
         # Test function with complex annotations
         complex_func = functions[4]
         assert complex_func.signature.name == "function_with_complex_annotations"
+        assert complex_func.signature.parameters[0].type_annotation is not None
         assert (
             "list[dict[str, Any]]"
             in complex_func.signature.parameters[0].type_annotation
         )
         assert complex_func.signature.parameters[1].default_value == "None"
+        assert complex_func.signature.return_type is not None
         assert "dict[str, list[int]]" in complex_func.signature.return_type
 
         # Test function with all parameter types
@@ -121,7 +124,7 @@ def function_with_all_param_types(
         # Check **kwargs
         assert any(p.name == "**kwargs" for p in all_params_func.signature.parameters)
 
-    def test_parse_async_functions(self):
+    def test_parse_async_functions(self) -> None:
         """Test parsing of async def functions."""
         test_code = '''
 async def async_simple():
@@ -171,11 +174,13 @@ async def async_with_annotations(
         # Test async with await
         async_await = functions[1]
         assert async_await.signature.name == "async_with_await"
+        assert async_await.docstring is not None
         assert "await" in async_await.docstring.raw_text
 
         # Test async generator
         async_gen = functions[2]
         assert async_gen.signature.name == "async_generator"
+        assert async_gen.docstring is not None
         assert "generator" in async_gen.docstring.raw_text
 
         # Test async with annotations
@@ -184,9 +189,10 @@ async def async_with_annotations(
         assert async_annotated.signature.parameters[0].type_annotation == "str"
         assert async_annotated.signature.parameters[1].type_annotation == "float"
         assert async_annotated.signature.parameters[1].default_value == "30.0"
+        assert async_annotated.signature.return_type is not None
         assert "dict[str, Any]" in async_annotated.signature.return_type
 
-    def test_parse_generator_functions(self):
+    def test_parse_generator_functions(self) -> None:
         """Test parsing of functions with yield statements."""
         test_code = '''
 def simple_generator():
@@ -230,6 +236,7 @@ def yield_from_generator(iterables: list[list[int]]):
         # Test simple generator
         simple_gen = functions[0]
         assert simple_gen.signature.name == "simple_generator"
+        assert simple_gen.docstring is not None
         assert "generator" in simple_gen.docstring.raw_text
 
         # Test generator with params
@@ -245,14 +252,16 @@ def yield_from_generator(iterables: list[list[int]]):
         # Test generator expression factory
         expr_factory = functions[3]
         assert expr_factory.signature.name == "generator_expression_factory"
+        assert expr_factory.signature.return_type is not None
         assert "Generator[int, None, None]" in expr_factory.signature.return_type
 
         # Test yield from generator
         yield_from = functions[4]
         assert yield_from.signature.name == "yield_from_generator"
+        assert yield_from.docstring is not None
         assert "yield from" in yield_from.docstring.raw_text
 
-    def test_parse_lambda_functions(self):
+    def test_parse_lambda_functions(self) -> None:
         """Test parsing of lambda expressions within functions."""
         test_code = '''
 def function_with_lambdas():
@@ -298,6 +307,7 @@ def sort_with_key(items: list, key: Callable = lambda x: x) -> list:
         # Test function containing lambdas
         lambda_container = functions[0]
         assert lambda_container.signature.name == "function_with_lambdas"
+        assert lambda_container.docstring is not None
         assert "lambda" in lambda_container.docstring.raw_text
 
         # Test nested function with lambda default
@@ -310,7 +320,7 @@ def sort_with_key(items: list, key: Callable = lambda x: x) -> list:
         assert sort_func.signature.name == "sort_with_key"
         assert sort_func.signature.parameters[1].default_value == "<lambda>"
 
-    def test_parse_nested_functions(self):
+    def test_parse_nested_functions(self) -> None:
         """Test parsing of functions defined inside other functions."""
         test_code = '''
 def outer_function(x: int):
@@ -394,7 +404,7 @@ def decorator_factory(prefix: str):
         assert inner_func.signature.return_type == "int"
         assert inner_func.signature.parameters[0].name == "y"
 
-    def test_parse_class_methods(self):
+    def test_parse_class_methods(self) -> None:
         """Test parsing of methods inside classes (regular, static, class methods)."""
         test_code = '''
 class MyClass:

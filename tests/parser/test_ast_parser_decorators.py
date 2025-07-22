@@ -19,7 +19,7 @@ from codedocsync.parser.ast_parser import parse_python_file
 class TestASTParserDecorators:
     """Test AST parser handling of decorators and complex structures."""
 
-    def test_parse_single_decorator(self):
+    def test_parse_single_decorator(self) -> None:
         """Test parsing functions with one decorator."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -53,6 +53,7 @@ def old_function():
                 assert len(fib_func.signature.decorators) == 1
                 assert fib_func.signature.decorators[0] == "functools.cache"
                 assert fib_func.line_number == 4
+                assert fib_func.docstring is not None
                 assert fib_func.docstring.raw_text == "Calculate fibonacci number."
 
                 # Check old_function
@@ -61,12 +62,13 @@ def old_function():
                 assert len(old_func.signature.decorators) == 1
                 assert old_func.signature.decorators[0] == "deprecated"
                 assert old_func.line_number == 11
+                assert old_func.docstring is not None
                 assert old_func.docstring.raw_text == "This function is deprecated."
 
             finally:
                 os.unlink(f.name)
 
-    def test_parse_multiple_decorators(self):
+    def test_parse_multiple_decorators(self) -> None:
         """Test parsing functions with multiple decorators."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -127,7 +129,7 @@ def multi_decorated_property(self):
             finally:
                 os.unlink(f.name)
 
-    def test_parse_decorator_with_arguments(self):
+    def test_parse_decorator_with_arguments(self) -> None:
         """Test parsing decorators with arguments."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -213,7 +215,7 @@ def func4(user_data: dict) -> dict:
             finally:
                 os.unlink(f.name)
 
-    def test_parse_class_decorators(self):
+    def test_parse_class_decorators(self) -> None:
         """Test parsing @property, @staticmethod, @classmethod decorators."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -279,6 +281,7 @@ class MyClass:
                 value_getter = func_dict["value"]
                 assert value_getter.signature.decorators == ["property"]
                 assert value_getter.signature.is_method is True
+                assert value_getter.docstring is not None
                 assert value_getter.docstring.raw_text == "Get the value."
 
                 # Check static method
@@ -308,7 +311,7 @@ class MyClass:
             finally:
                 os.unlink(f.name)
 
-    def test_parse_nested_classes_and_functions(self):
+    def test_parse_nested_classes_and_functions(self) -> None:
         """Test parsing deeply nested structures."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -422,7 +425,7 @@ class OuterClass:
             finally:
                 os.unlink(f.name)
 
-    def test_parse_decorated_async_functions(self):
+    def test_parse_decorated_async_functions(self) -> None:
         """Test parsing async functions with decorators."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -495,6 +498,7 @@ class AsyncClass:
                 )
                 assert simple_async.signature.is_async is True
                 assert simple_async.signature.decorators == ["async_decorator"]
+                assert simple_async.docstring is not None
                 assert (
                     simple_async.docstring.raw_text
                     == "Simple async function with decorator."
@@ -555,7 +559,7 @@ class AsyncClass:
             finally:
                 os.unlink(f.name)
 
-    def test_edge_cases(self):
+    def test_edge_cases(self) -> None:
         """Test edge cases for decorator parsing."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(
@@ -575,7 +579,7 @@ def chained_decorator_func(id: int):
 
 # Decorator with generator expression
 @parametrize("test_input,expected", [(i, i*2) for i in range(5)])
-def test_parametrized(test_input, expected):
+def test_parametrized(test_input, expected) -> None:
     """Parametrized test function."""
     assert test_input * 2 == expected
 
@@ -635,6 +639,7 @@ def undecorated_function():
                 # Check undecorated function
                 undec_func = func_dict["undecorated_function"]
                 assert len(undec_func.signature.decorators) == 0
+                assert undec_func.docstring is not None
                 assert (
                     undec_func.docstring.raw_text
                     == "Simple function without decorators."

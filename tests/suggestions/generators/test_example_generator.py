@@ -33,7 +33,7 @@ class TestParameterValueGenerator:
         """Create parameter value generator."""
         return ParameterValueGenerator()
 
-    def test_generate_value_by_name(self, generator):
+    def test_generate_value_by_name(self, generator) -> None:
         """Test value generation based on parameter names."""
         test_cases = [
             ("name", '"John Doe"'),
@@ -55,7 +55,7 @@ class TestParameterValueGenerator:
             result = generator.generate_value(param)
             assert result == expected_value
 
-    def test_generate_value_by_type(self, generator):
+    def test_generate_value_by_type(self, generator) -> None:
         """Test value generation based on type annotations."""
         test_cases = [
             ("str", '"example"'),
@@ -76,7 +76,7 @@ class TestParameterValueGenerator:
             result = generator.generate_value(param)
             assert result == expected_value
 
-    def test_generate_value_optional_with_default(self, generator):
+    def test_generate_value_optional_with_default(self, generator) -> None:
         """Test value generation for optional parameters with defaults."""
         param = Mock()
         param.name = "timeout"
@@ -87,7 +87,7 @@ class TestParameterValueGenerator:
         result = generator.generate_value(param)
         assert result == "30"
 
-    def test_normalize_type(self, generator):
+    def test_normalize_type(self, generator) -> None:
         """Test type normalization for complex types."""
         test_cases = [
             ("Optional[str]", "str"),
@@ -100,7 +100,7 @@ class TestParameterValueGenerator:
             result = generator._normalize_type(input_type)
             assert expected_normalized in result
 
-    def test_fallback_value(self, generator):
+    def test_fallback_value(self, generator) -> None:
         """Test fallback value generation."""
         param = Mock()
         param.name = "unknown_param"
@@ -120,7 +120,7 @@ class TestExamplePatternAnalyzer:
         """Create example pattern analyzer."""
         return ExamplePatternAnalyzer()
 
-    def test_analyze_function_decorators(self, analyzer):
+    def test_analyze_function_decorators(self, analyzer) -> None:
         """Test analyzing function decorators."""
         function = Mock()
         function.signature = Mock()
@@ -132,7 +132,7 @@ class TestExamplePatternAnalyzer:
         assert analysis["is_classmethod"] is False
         assert analysis["is_staticmethod"] is False
 
-    def test_analyze_async_function(self, analyzer):
+    def test_analyze_async_function(self, analyzer) -> None:
         """Test analyzing async functions."""
         source_code = """
 async def fetch_data():
@@ -143,7 +143,7 @@ async def fetch_data():
 
         assert analysis["is_async"] is True
 
-    def test_analyze_generator_function(self, analyzer):
+    def test_analyze_generator_function(self, analyzer) -> None:
         """Test analyzing generator functions."""
         source_code = """
 def number_generator():
@@ -155,7 +155,7 @@ def number_generator():
 
         assert analysis["is_generator"] is True
 
-    def test_analyze_side_effects(self, analyzer):
+    def test_analyze_side_effects(self, analyzer) -> None:
         """Test analyzing functions with side effects."""
         source_code = """
 def process_file(filename):
@@ -168,7 +168,7 @@ def process_file(filename):
 
         assert analysis["has_side_effects"] is True
 
-    def test_analyze_domain_detection(self, analyzer):
+    def test_analyze_domain_detection(self, analyzer) -> None:
         """Test domain detection from function calls."""
         math_source = """
 def calculate():
@@ -219,7 +219,7 @@ class TestExampleGenerator:
         function.signature.parameters = [param1, param2]
         return function
 
-    def test_generate_basic_example(self, generator, mock_function):
+    def test_generate_basic_example(self, generator, mock_function) -> None:
         """Test generating basic usage example."""
         analysis = {
             "is_property": False,
@@ -238,7 +238,7 @@ class TestExampleGenerator:
         assert "a=" in example.function_call
         assert "b=" in example.function_call
 
-    def test_generate_edge_case_example(self, generator, mock_function):
+    def test_generate_edge_case_example(self, generator, mock_function) -> None:
         """Test generating edge case example."""
         analysis = {
             "is_async": False,
@@ -251,7 +251,7 @@ class TestExampleGenerator:
         assert example.complexity == "intermediate"
         assert "Edge case" in example.description
 
-    def test_generate_advanced_example(self, generator, mock_function):
+    def test_generate_advanced_example(self, generator, mock_function) -> None:
         """Test generating advanced example."""
         analysis = {
             "is_async": False,
@@ -265,7 +265,7 @@ class TestExampleGenerator:
         assert "Advanced" in example.description
         assert len(example.setup_code) > 0
 
-    def test_generate_async_example(self, generator):
+    def test_generate_async_example(self, generator) -> None:
         """Test generating example for async function."""
         async_function = Mock()
         async_function.signature = Mock()
@@ -282,7 +282,7 @@ class TestExampleGenerator:
         assert "await " in example.function_call
         assert "async context" in " ".join(example.setup_code).lower()
 
-    def test_generate_property_example(self, generator):
+    def test_generate_property_example(self, generator) -> None:
         """Test generating example for property."""
         property_function = Mock()
         property_function.signature = Mock()
@@ -300,7 +300,7 @@ class TestExampleGenerator:
         assert "name(" not in example.function_call
         assert "instance.name" in example.function_call
 
-    def test_generate_edge_case_values(self, generator):
+    def test_generate_edge_case_values(self, generator) -> None:
         """Test generation of edge case parameter values."""
         test_cases = [
             ("count", "0"),
@@ -317,7 +317,7 @@ class TestExampleGenerator:
             result = generator._generate_edge_case_value(param)
             assert result == expected_value
 
-    def test_generate_advanced_values(self, generator):
+    def test_generate_advanced_values(self, generator) -> None:
         """Test generation of advanced parameter values."""
         param = Mock()
         param.name = "config"
@@ -328,7 +328,7 @@ class TestExampleGenerator:
         # Should be a complex dictionary
         assert "{" in result and "}" in result
 
-    def test_generate_expected_output(self, generator):
+    def test_generate_expected_output(self, generator) -> None:
         """Test generation of expected output."""
         test_cases = [
             ({"return_type": "str"}, '"result"'),
@@ -342,7 +342,7 @@ class TestExampleGenerator:
             result = generator._generate_expected_output(analysis)
             assert result == expected_output
 
-    def test_generate_multiple_examples(self, generator, mock_function):
+    def test_generate_multiple_examples(self, generator, mock_function) -> None:
         """Test generating multiple examples."""
         examples = generator.generate_examples(mock_function, count=3)
 
@@ -424,7 +424,7 @@ def calculate_area(width, height):
 
     def test_add_missing_examples(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test adding missing examples."""
         context = SuggestionContext(
             function=mock_function, docstring=mock_docstring, issue=mock_issue
@@ -444,7 +444,7 @@ def calculate_area(width, height):
 
     def test_fix_invalid_example(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fixing invalid examples."""
         mock_issue.issue_type = "example_invalid"
 
@@ -459,7 +459,7 @@ def calculate_area(width, height):
 
     def test_update_outdated_example(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test updating outdated examples."""
         mock_issue.issue_type = "example_outdated"
 
@@ -474,7 +474,7 @@ def calculate_area(width, height):
 
     def test_complete_example(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test completing incomplete examples."""
         mock_issue.issue_type = "example_incomplete"
 
@@ -487,7 +487,7 @@ def calculate_area(width, height):
         assert isinstance(suggestion, Suggestion)
         assert suggestion.suggestion_type == SuggestionType.EXAMPLE_UPDATE
 
-    def test_format_example_code(self, generator):
+    def test_format_example_code(self, generator) -> None:
         """Test formatting example code."""
         example = ExampleTemplate(
             setup_code=["data = [1, 2, 3]"],
@@ -507,7 +507,7 @@ def calculate_area(width, height):
 
     def test_no_examples_generated_fallback(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fallback when no examples can be generated."""
         # Function without signature
         mock_function.signature = None
@@ -521,7 +521,7 @@ def calculate_area(width, height):
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring):
+    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_example_issue",
@@ -555,7 +555,7 @@ class TestExampleGeneratorIntegration:
         """Create example suggestion generator."""
         return ExampleSuggestionGenerator(config)
 
-    def test_complete_workflow_mathematical_function(self, generator):
+    def test_complete_workflow_mathematical_function(self, generator) -> None:
         """Test complete workflow for mathematical function."""
         function = Mock()
         function.signature = Mock()
@@ -633,7 +633,7 @@ def calculate_distance(x1, y1, x2, y2):
         # Should be properly formatted for docstring
         assert "Examples:" in suggested_text or "Example:" in suggested_text
 
-    def test_complete_workflow_file_processing_function(self, generator):
+    def test_complete_workflow_file_processing_function(self, generator) -> None:
         """Test complete workflow for file processing function."""
         function = Mock()
         function.signature = Mock()
@@ -694,7 +694,7 @@ def process_csv_file(filepath, encoding='utf-8'):
             for path_indicator in [".csv", ".txt", "/path/", "file"]
         )
 
-    def test_async_function_example_generation(self, generator):
+    def test_async_function_example_generation(self, generator) -> None:
         """Test example generation for async functions."""
         function = Mock()
         function.signature = Mock()

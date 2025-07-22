@@ -13,13 +13,13 @@ from docstring_parser.numpydoc import NumpydocParser
 
 from codedocsync.analyzer.models import AnalysisResult, InconsistencyIssue
 from codedocsync.matcher.models import MatchConfidence, MatchedPair, MatchType
+from codedocsync.parser import ParsedDocstring
 from codedocsync.parser.docstring_models import (
+    DocstringFormat,
     DocstringParameter,
     DocstringRaises,
     DocstringReturns,
 )
-from codedocsync.parser import ParsedDocstring
-from codedocsync.parser.docstring_models import DocstringFormat
 from codedocsync.parser.models import (
     FunctionParameter,
     FunctionSignature,

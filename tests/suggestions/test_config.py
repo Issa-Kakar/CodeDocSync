@@ -26,7 +26,7 @@ from codedocsync.suggestions.config import (
 class TestSuggestionConfig:
     """Test SuggestionConfig class."""
 
-    def test_default_config_creation(self):
+    def test_default_config_creation(self) -> None:
         """Test creating config with default values."""
         config = SuggestionConfig()
 
@@ -37,7 +37,7 @@ class TestSuggestionConfig:
         assert config.confidence_threshold == 0.7
         assert config.max_suggestions_per_issue == 3
 
-    def test_custom_config_creation(self):
+    def test_custom_config_creation(self) -> None:
         """Test creating config with custom values."""
         config = SuggestionConfig(
             default_style="numpy",
@@ -51,12 +51,12 @@ class TestSuggestionConfig:
         assert config.confidence_threshold == 0.8
         assert config.include_examples is True
 
-    def test_config_validation_invalid_style(self):
+    def test_config_validation_invalid_style(self) -> None:
         """Test validation fails for invalid default style."""
         with pytest.raises(ValueError, match="default_style must be one of"):
             SuggestionConfig(default_style="invalid_style")
 
-    def test_config_validation_invalid_confidence(self):
+    def test_config_validation_invalid_confidence(self) -> None:
         """Test validation fails for invalid confidence threshold."""
         with pytest.raises(ValueError, match="confidence_threshold must be between"):
             SuggestionConfig(confidence_threshold=1.5)
@@ -64,12 +64,12 @@ class TestSuggestionConfig:
         with pytest.raises(ValueError, match="confidence_threshold must be between"):
             SuggestionConfig(confidence_threshold=-0.1)
 
-    def test_config_validation_invalid_line_length(self):
+    def test_config_validation_invalid_line_length(self) -> None:
         """Test validation fails for too small line length."""
         with pytest.raises(ValueError, match="max_line_length too small"):
             SuggestionConfig(max_line_length=30)
 
-    def test_config_validation_invalid_indent_size(self):
+    def test_config_validation_invalid_indent_size(self) -> None:
         """Test validation fails for invalid indent size."""
         with pytest.raises(ValueError, match="indent_size must be between"):
             SuggestionConfig(indent_size=0)
@@ -77,14 +77,14 @@ class TestSuggestionConfig:
         with pytest.raises(ValueError, match="indent_size must be between"):
             SuggestionConfig(indent_size=10)
 
-    def test_config_validation_invalid_max_suggestions(self):
+    def test_config_validation_invalid_max_suggestions(self) -> None:
         """Test validation fails for invalid max suggestions."""
         with pytest.raises(
             ValueError, match="max_suggestions_per_issue must be positive"
         ):
             SuggestionConfig(max_suggestions_per_issue=0)
 
-    def test_config_from_dict(self):
+    def test_config_from_dict(self) -> None:
         """Test creating config from dictionary."""
         config_dict = {
             "default_style": "sphinx",
@@ -100,7 +100,7 @@ class TestSuggestionConfig:
         assert config.confidence_threshold == 0.9
         assert config.include_examples is True
 
-    def test_config_from_dict_ignores_unknown_keys(self):
+    def test_config_from_dict_ignores_unknown_keys(self) -> None:
         """Test from_dict ignores unknown keys."""
         config_dict = {
             "default_style": "numpy",
@@ -113,7 +113,7 @@ class TestSuggestionConfig:
         # Should not have unknown attributes
         assert not hasattr(config, "unknown_key")
 
-    def test_config_to_dict(self):
+    def test_config_to_dict(self) -> None:
         """Test converting config to dictionary."""
         config = SuggestionConfig(
             default_style="rest",
@@ -130,7 +130,7 @@ class TestSuggestionConfig:
         assert "confidence_threshold" in config_dict
         assert "preserve_descriptions" in config_dict
 
-    def test_config_from_yaml_file(self):
+    def test_config_from_yaml_file(self) -> None:
         """Test loading config from YAML file."""
         yaml_content = """
         suggestions:
@@ -154,7 +154,7 @@ class TestSuggestionConfig:
         finally:
             temp_path.unlink()
 
-    def test_config_from_yaml_file_missing_file(self):
+    def test_config_from_yaml_file_missing_file(self) -> None:
         """Test loading config from missing file returns default."""
         non_existent_path = Path("/non/existent/file.yml")
         config = SuggestionConfig.from_yaml_file(non_existent_path)
@@ -163,7 +163,7 @@ class TestSuggestionConfig:
         assert config.default_style == "google"
         assert config.max_line_length == 88
 
-    def test_config_from_yaml_file_invalid_yaml(self):
+    def test_config_from_yaml_file_invalid_yaml(self) -> None:
         """Test loading config from invalid YAML raises error."""
         invalid_yaml = "invalid: yaml: content: {"
 
@@ -177,7 +177,7 @@ class TestSuggestionConfig:
         finally:
             temp_path.unlink()
 
-    def test_config_save_to_yaml(self):
+    def test_config_save_to_yaml(self) -> None:
         """Test saving config to YAML file."""
         config = SuggestionConfig(
             default_style="sphinx",
@@ -200,7 +200,7 @@ class TestSuggestionConfig:
             assert saved_data["suggestions"]["max_line_length"] == 120
             assert saved_data["suggestions"]["include_examples"] is True
 
-    def test_config_get_style_config(self):
+    def test_config_get_style_config(self) -> None:
         """Test getting style-specific configuration."""
         config = SuggestionConfig()
 
@@ -224,7 +224,7 @@ class TestSuggestionConfig:
         unknown_config = config.get_style_config("unknown")
         assert unknown_config["section_marker"] == ":"
 
-    def test_config_is_feature_enabled(self):
+    def test_config_is_feature_enabled(self) -> None:
         """Test feature flag checking."""
         config = SuggestionConfig(
             include_types=True,
@@ -237,7 +237,7 @@ class TestSuggestionConfig:
         assert config.is_feature_enabled("validation") is True
         assert config.is_feature_enabled("unknown_feature") is False
 
-    def test_config_get_quality_thresholds(self):
+    def test_config_get_quality_thresholds(self) -> None:
         """Test getting quality control thresholds."""
         config = SuggestionConfig(
             confidence_threshold=0.8,
@@ -251,7 +251,7 @@ class TestSuggestionConfig:
         assert thresholds["actionable"] == 1.0
         assert thresholds["syntax_valid"] == 1.0
 
-    def test_config_abbreviation_map_defaults(self):
+    def test_config_abbreviation_map_defaults(self) -> None:
         """Test default abbreviation map."""
         config = SuggestionConfig()
 
@@ -260,7 +260,7 @@ class TestSuggestionConfig:
         assert config.abbreviation_map["str"] == "string"
         assert config.abbreviation_map["int"] == "integer"
 
-    def test_config_section_order_defaults(self):
+    def test_config_section_order_defaults(self) -> None:
         """Test default section ordering."""
         config = SuggestionConfig()
 
@@ -277,7 +277,7 @@ class TestSuggestionConfig:
 class TestRankingConfig:
     """Test RankingConfig class."""
 
-    def test_default_ranking_config(self):
+    def test_default_ranking_config(self) -> None:
         """Test creating ranking config with defaults."""
         config = RankingConfig()
 
@@ -288,7 +288,7 @@ class TestRankingConfig:
         assert config.min_confidence == 0.5
         assert config.max_suggestions == 10
 
-    def test_ranking_config_validation_invalid_weights(self):
+    def test_ranking_config_validation_invalid_weights(self) -> None:
         """Test validation fails for invalid weights."""
         with pytest.raises(ValueError, match="All weights must be between 0.0 and 1.0"):
             RankingConfig(severity_weight=1.5)
@@ -296,7 +296,7 @@ class TestRankingConfig:
         with pytest.raises(ValueError, match="All weights must be between 0.0 and 1.0"):
             RankingConfig(confidence_weight=-0.1)
 
-    def test_ranking_config_validation_weight_sum(self):
+    def test_ranking_config_validation_weight_sum(self) -> None:
         """Test validation of weight sum."""
         with pytest.raises(ValueError, match="Weights should sum to approximately 1.0"):
             RankingConfig(
@@ -306,17 +306,17 @@ class TestRankingConfig:
                 impact_weight=0.1,  # Sum = 0.4, too low
             )
 
-    def test_ranking_config_validation_invalid_confidence(self):
+    def test_ranking_config_validation_invalid_confidence(self) -> None:
         """Test validation fails for invalid confidence threshold."""
         with pytest.raises(ValueError, match="min_confidence must be between"):
             RankingConfig(min_confidence=1.5)
 
-    def test_ranking_config_validation_invalid_max_suggestions(self):
+    def test_ranking_config_validation_invalid_max_suggestions(self) -> None:
         """Test validation fails for invalid max suggestions."""
         with pytest.raises(ValueError, match="max_suggestions must be positive"):
             RankingConfig(max_suggestions=0)
 
-    def test_ranking_config_calculate_score(self):
+    def test_ranking_config_calculate_score(self) -> None:
         """Test score calculation for suggestions."""
         from codedocsync.suggestions.models import (
             Suggestion,
@@ -356,7 +356,7 @@ class TestRankingConfig:
         assert 0.0 <= score <= 1.0
         assert isinstance(score, float)
 
-    def test_ranking_config_get_severity_score(self):
+    def test_ranking_config_get_severity_score(self) -> None:
         """Test severity score calculation."""
         config = RankingConfig()
 
@@ -373,7 +373,7 @@ class TestRankingConfig:
 class TestPredefinedConfigs:
     """Test predefined configuration functions."""
 
-    def test_minimal_config(self):
+    def test_minimal_config(self) -> None:
         """Test minimal configuration."""
         config = get_minimal_config()
 
@@ -383,7 +383,7 @@ class TestPredefinedConfigs:
         assert config.max_suggestions_per_issue == 1
         assert config.require_actionable is True
 
-    def test_comprehensive_config(self):
+    def test_comprehensive_config(self) -> None:
         """Test comprehensive configuration."""
         config = get_comprehensive_config()
 
@@ -394,7 +394,7 @@ class TestPredefinedConfigs:
         assert config.expand_abbreviations is True
         assert config.max_suggestions_per_issue == 3
 
-    def test_development_config(self):
+    def test_development_config(self) -> None:
         """Test development configuration."""
         config = get_development_config()
 
@@ -404,7 +404,7 @@ class TestPredefinedConfigs:
         assert config.prefer_minimal_changes is True
         assert config.validate_syntax is True
 
-    def test_documentation_config(self):
+    def test_documentation_config(self) -> None:
         """Test documentation configuration."""
         config = get_documentation_config()
 
@@ -419,12 +419,12 @@ class TestPredefinedConfigs:
 class TestConfigManager:
     """Test ConfigManager class."""
 
-    def test_config_manager_creation(self):
+    def test_config_manager_creation(self) -> None:
         """Test creating config manager."""
         manager = ConfigManager()
         assert manager._config_cache == {}
 
-    def test_config_manager_load_config_default(self):
+    def test_config_manager_load_config_default(self) -> None:
         """Test loading default config when no files exist."""
         manager = ConfigManager()
         config = manager.load_config()
@@ -435,7 +435,9 @@ class TestConfigManager:
 
     @patch("pathlib.Path.exists")
     @patch("builtins.open", new_callable=mock_open)
-    def test_config_manager_load_config_with_user_config(self, mock_file, mock_exists):
+    def test_config_manager_load_config_with_user_config(
+        self, mock_file, mock_exists
+    ) -> None:
         """Test loading config with user configuration override."""
         manager = ConfigManager()
 
@@ -452,7 +454,7 @@ class TestConfigManager:
         assert config.default_style == "numpy"
         assert config.max_line_length == 100
 
-    def test_config_manager_merge_configs(self):
+    def test_config_manager_merge_configs(self) -> None:
         """Test configuration merging."""
         manager = ConfigManager()
 
@@ -474,7 +476,7 @@ class TestConfigManager:
         assert merged.confidence_threshold == 0.9  # Overridden
         assert merged.max_line_length == 88  # From base
 
-    def test_config_manager_merge_configs_dictionaries(self):
+    def test_config_manager_merge_configs_dictionaries(self) -> None:
         """Test merging configurations with dictionary fields."""
         manager = ConfigManager()
 
@@ -500,7 +502,7 @@ class TestConfigManager:
         assert merged.abbreviation_map["new"] == "new_value"
         assert merged.abbreviation_map["shared"] == "override_value"
 
-    def test_config_manager_caching(self):
+    def test_config_manager_caching(self) -> None:
         """Test configuration caching."""
         manager = ConfigManager()
 
@@ -512,7 +514,7 @@ class TestConfigManager:
 
         assert config1 is config2  # Should be the same object
 
-    def test_config_manager_clear_cache(self):
+    def test_config_manager_clear_cache(self) -> None:
         """Test clearing configuration cache."""
         manager = ConfigManager()
 
@@ -528,12 +530,12 @@ class TestConfigManager:
 class TestGlobalConfigManager:
     """Test global config manager instance."""
 
-    def test_global_config_manager_exists(self):
+    def test_global_config_manager_exists(self) -> None:
         """Test that global config manager exists."""
         assert config_manager is not None
         assert isinstance(config_manager, ConfigManager)
 
-    def test_global_config_manager_usage(self):
+    def test_global_config_manager_usage(self) -> None:
         """Test using global config manager."""
         config = config_manager.load_config()
         assert isinstance(config, SuggestionConfig)
@@ -542,7 +544,7 @@ class TestGlobalConfigManager:
 class TestConfigIntegration:
     """Test configuration integration scenarios."""
 
-    def test_config_with_yaml_file_and_overrides(self):
+    def test_config_with_yaml_file_and_overrides(self) -> None:
         """Test loading config from YAML with user overrides."""
         yaml_content = """
         suggestions:
@@ -579,7 +581,7 @@ class TestConfigIntegration:
         finally:
             temp_path.unlink()
 
-    def test_config_error_handling(self):
+    def test_config_error_handling(self) -> None:
         """Test configuration error handling."""
         # Test invalid config values still work with fallbacks
         manager = ConfigManager()

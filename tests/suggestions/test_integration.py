@@ -109,7 +109,7 @@ def config():
 class TestEnhancedIssue:
     """Test EnhancedIssue data model."""
 
-    def test_creation(self):
+    def test_creation(self) -> None:
         """Test creating an enhanced issue."""
         issue = EnhancedIssue(
             issue_type="parameter_missing",
@@ -126,7 +126,7 @@ class TestEnhancedIssue:
         assert issue.rich_suggestion is None
         assert issue.ranking_score is None
 
-    def test_validation(self):
+    def test_validation(self) -> None:
         """Test enhanced issue validation."""
         # Invalid confidence
         with pytest.raises(ValueError):
@@ -154,7 +154,7 @@ class TestEnhancedIssue:
 class TestEnhancedAnalysisResult:
     """Test EnhancedAnalysisResult data model."""
 
-    def test_creation(self, mock_matched_pair):
+    def test_creation(self, mock_matched_pair) -> None:
         """Test creating an enhanced analysis result."""
         result = EnhancedAnalysisResult(
             matched_pair=mock_matched_pair,
@@ -169,7 +169,7 @@ class TestEnhancedAnalysisResult:
         assert result.suggestions_skipped == 1
         assert not result.has_suggestions  # No issues with suggestions yet
 
-    def test_has_suggestions(self, mock_matched_pair, mock_suggestion):
+    def test_has_suggestions(self, mock_matched_pair, mock_suggestion) -> None:
         """Test has_suggestions property."""
         issue = EnhancedIssue(
             issue_type="test",
@@ -192,7 +192,7 @@ class TestEnhancedAnalysisResult:
 class TestSuggestionIntegration:
     """Test SuggestionIntegration class."""
 
-    def test_initialization(self, config):
+    def test_initialization(self, config) -> None:
         """Test integration initialization."""
         integration = SuggestionIntegration(config)
 
@@ -201,7 +201,7 @@ class TestSuggestionIntegration:
         assert "parameter_name_mismatch" in integration._generators
         assert "return_type_mismatch" in integration._generators
 
-    def test_create_enhanced_issue(self, config, mock_issue):
+    def test_create_enhanced_issue(self, config, mock_issue) -> None:
         """Test creating enhanced issue from original."""
         integration = SuggestionIntegration(config)
         enhanced = integration._create_enhanced_issue(mock_issue)
@@ -212,7 +212,7 @@ class TestSuggestionIntegration:
         assert enhanced.confidence == mock_issue.confidence
         assert enhanced.rich_suggestion is None
 
-    def test_create_context(self, config, mock_issue, mock_matched_pair):
+    def test_create_context(self, config, mock_issue, mock_matched_pair) -> None:
         """Test creating suggestion context."""
         integration = SuggestionIntegration(config)
         context = integration._create_context(mock_issue, mock_matched_pair)
@@ -221,7 +221,7 @@ class TestSuggestionIntegration:
         assert context.function == mock_matched_pair.function
         assert context.project_style == config.default_style
 
-    def test_enhance_analysis_result(self, config, mock_analysis_result):
+    def test_enhance_analysis_result(self, config, mock_analysis_result) -> None:
         """Test enhancing analysis result with suggestions."""
         # Mock the generator to return a suggestion
         integration = SuggestionIntegration(config)
@@ -240,7 +240,7 @@ class TestSuggestionIntegration:
         assert len(result.issues) == 1
         assert result.suggestions_generated >= 0
 
-    def test_enhance_with_low_confidence(self, config, mock_analysis_result):
+    def test_enhance_with_low_confidence(self, config, mock_analysis_result) -> None:
         """Test enhancement skips low confidence issues."""
         # Set high confidence threshold
         config.confidence_threshold = 0.9
@@ -256,7 +256,7 @@ class TestSuggestionIntegration:
         if result.issues:
             assert result.issues[0].rich_suggestion is None
 
-    def test_generator_failure_handling(self, config, mock_analysis_result):
+    def test_generator_failure_handling(self, config, mock_analysis_result) -> None:
         """Test handling when generator fails."""
         integration = SuggestionIntegration(config)
 
@@ -275,14 +275,14 @@ class TestSuggestionIntegration:
 class TestSuggestionBatchProcessor:
     """Test SuggestionBatchProcessor class."""
 
-    def test_initialization(self, config):
+    def test_initialization(self, config) -> None:
         """Test batch processor initialization."""
         processor = SuggestionBatchProcessor(config)
 
         assert processor.config == config
         assert isinstance(processor.integration, SuggestionIntegration)
 
-    def test_process_batch(self, config, mock_analysis_result):
+    def test_process_batch(self, config, mock_analysis_result) -> None:
         """Test processing batch of analysis results."""
         processor = SuggestionBatchProcessor(config)
         results = [mock_analysis_result]
@@ -292,7 +292,7 @@ class TestSuggestionBatchProcessor:
         assert len(enhanced_results) == 1
         assert isinstance(enhanced_results[0], EnhancedAnalysisResult)
 
-    def test_process_batch_with_failures(self, config):
+    def test_process_batch_with_failures(self, config) -> None:
         """Test batch processing handles individual failures."""
         processor = SuggestionBatchProcessor(config)
 
@@ -308,7 +308,7 @@ class TestSuggestionBatchProcessor:
 
     def test_create_suggestion_batch(
         self, config, mock_analysis_result, mock_suggestion
-    ):
+    ) -> None:
         """Test creating suggestion batch from results."""
         processor = SuggestionBatchProcessor(config)
 
@@ -344,14 +344,16 @@ class TestSuggestionBatchProcessor:
 class TestFactoryFunctions:
     """Test factory functions for integration."""
 
-    def test_enhance_with_suggestions(self, mock_analysis_result, config):
+    def test_enhance_with_suggestions(self, mock_analysis_result, config) -> None:
         """Test enhance_with_suggestions factory function."""
         result = enhance_with_suggestions(mock_analysis_result, config)
 
         assert isinstance(result, EnhancedAnalysisResult)
         assert result.matched_pair == mock_analysis_result.matched_pair
 
-    def test_enhance_multiple_with_suggestions(self, mock_analysis_result, config):
+    def test_enhance_multiple_with_suggestions(
+        self, mock_analysis_result, config
+    ) -> None:
         """Test enhance_multiple_with_suggestions factory function."""
         results = [mock_analysis_result]
         enhanced_results = enhance_multiple_with_suggestions(results, config)
@@ -359,7 +361,7 @@ class TestFactoryFunctions:
         assert len(enhanced_results) == 1
         assert isinstance(enhanced_results[0], EnhancedAnalysisResult)
 
-    def test_enhance_with_default_config(self, mock_analysis_result):
+    def test_enhance_with_default_config(self, mock_analysis_result) -> None:
         """Test enhancement with default configuration."""
         result = enhance_with_suggestions(mock_analysis_result)
 
@@ -370,7 +372,7 @@ class TestFactoryFunctions:
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_empty_analysis_result(self, config, mock_matched_pair):
+    def test_empty_analysis_result(self, config, mock_matched_pair) -> None:
         """Test enhancing analysis result with no issues."""
         empty_result = AnalysisResult(
             matched_pair=mock_matched_pair,
@@ -386,7 +388,7 @@ class TestEdgeCases:
         assert enhanced.suggestions_generated == 0
         assert enhanced.suggestions_skipped == 0
 
-    def test_unknown_issue_type(self, config, mock_analysis_result):
+    def test_unknown_issue_type(self, config, mock_analysis_result) -> None:
         """Test handling unknown issue type."""
         # Change to unknown issue type
         mock_analysis_result.issues[0].issue_type = "unknown_issue_type"
@@ -399,7 +401,7 @@ class TestEdgeCases:
         # Likely skipped due to no generator
         assert result.suggestions_skipped >= 0
 
-    def test_is_edge_case_detection(self, config):
+    def test_is_edge_case_detection(self, config) -> None:
         """Test edge case detection for special functions."""
         integration = SuggestionIntegration(config)
 
@@ -421,7 +423,7 @@ class TestEdgeCases:
 class TestPerformanceMetrics:
     """Test performance tracking in integration."""
 
-    def test_timing_metrics(self, config, mock_analysis_result):
+    def test_timing_metrics(self, config, mock_analysis_result) -> None:
         """Test that timing metrics are tracked."""
         integration = SuggestionIntegration(config)
         result = integration.enhance_analysis_result(mock_analysis_result)
@@ -429,7 +431,7 @@ class TestPerformanceMetrics:
         assert result.suggestion_generation_time_ms >= 0
         assert result.total_time_ms >= result.analysis_time_ms
 
-    def test_generation_counts(self, config, mock_analysis_result):
+    def test_generation_counts(self, config, mock_analysis_result) -> None:
         """Test that generation counts are accurate."""
         integration = SuggestionIntegration(config)
         result = integration.enhance_analysis_result(mock_analysis_result)

@@ -24,7 +24,7 @@ from codedocsync.suggestions.models import (
 class TestSuggestionDiff:
     """Test SuggestionDiff model."""
 
-    def test_valid_diff_creation(self):
+    def test_valid_diff_creation(self) -> None:
         """Test creating a valid diff."""
         diff = SuggestionDiff(
             original_lines=["line 1", "line 2"],
@@ -39,7 +39,7 @@ class TestSuggestionDiff:
         assert diff.additions == 1
         assert diff.deletions == 0
 
-    def test_diff_validation_negative_start_line(self):
+    def test_diff_validation_negative_start_line(self) -> None:
         """Test validation fails for negative start line."""
         with pytest.raises(ValueError, match="start_line must be positive"):
             SuggestionDiff(
@@ -49,7 +49,7 @@ class TestSuggestionDiff:
                 end_line=1,
             )
 
-    def test_diff_validation_end_before_start(self):
+    def test_diff_validation_end_before_start(self) -> None:
         """Test validation fails when end_line < start_line."""
         with pytest.raises(ValueError, match="end_line.*must be >= start_line"):
             SuggestionDiff(
@@ -59,7 +59,7 @@ class TestSuggestionDiff:
                 end_line=2,
             )
 
-    def test_unified_diff_generation(self):
+    def test_unified_diff_generation(self) -> None:
         """Test unified diff generation."""
         diff = SuggestionDiff(
             original_lines=["def func():", "    pass"],
@@ -73,7 +73,7 @@ class TestSuggestionDiff:
         assert "+++ b/test.py" in unified
         assert '+    """Docstring."""' in unified
 
-    def test_diff_statistics(self):
+    def test_diff_statistics(self) -> None:
         """Test diff statistics calculation."""
         # Test additions
         diff = SuggestionDiff(
@@ -101,7 +101,7 @@ class TestSuggestionDiff:
 class TestSuggestionMetadata:
     """Test SuggestionMetadata model."""
 
-    def test_valid_metadata_creation(self):
+    def test_valid_metadata_creation(self) -> None:
         """Test creating valid metadata."""
         metadata = SuggestionMetadata(
             generator_type="parameter_generator",
@@ -119,7 +119,7 @@ class TestSuggestionMetadata:
         assert not metadata.llm_used
         assert metadata.rule_triggers == ["parameter_missing"]
 
-    def test_metadata_validation_negative_time(self):
+    def test_metadata_validation_negative_time(self) -> None:
         """Test validation fails for negative generation time."""
         with pytest.raises(ValueError, match="generation_time_ms must be non-negative"):
             SuggestionMetadata(
@@ -127,12 +127,12 @@ class TestSuggestionMetadata:
                 generation_time_ms=-10.0,
             )
 
-    def test_metadata_validation_empty_generator_type(self):
+    def test_metadata_validation_empty_generator_type(self) -> None:
         """Test validation fails for empty generator type."""
         with pytest.raises(ValueError, match="generator_type cannot be empty"):
             SuggestionMetadata(generator_type="")
 
-    def test_metadata_defaults(self):
+    def test_metadata_defaults(self) -> None:
         """Test metadata default values."""
         metadata = SuggestionMetadata(generator_type="test")
 
@@ -148,7 +148,7 @@ class TestSuggestionMetadata:
 class TestSuggestionContext:
     """Test SuggestionContext model."""
 
-    def test_valid_context_creation(self):
+    def test_valid_context_creation(self) -> None:
         """Test creating valid context."""
         # Mock objects for testing
         mock_issue = type("MockIssue", (), {"issue_type": "parameter_missing"})()
@@ -168,7 +168,7 @@ class TestSuggestionContext:
         assert context.issue == mock_issue
         assert context.function == mock_function
 
-    def test_context_validation_line_length_too_small(self):
+    def test_context_validation_line_length_too_small(self) -> None:
         """Test validation fails for too small line length."""
         mock_issue = type("MockIssue", (), {})()
         mock_function = type("MockFunction", (), {})()
@@ -180,7 +180,7 @@ class TestSuggestionContext:
                 max_line_length=30,
             )
 
-    def test_context_validation_invalid_style(self):
+    def test_context_validation_invalid_style(self) -> None:
         """Test validation fails for invalid project style."""
         mock_issue = type("MockIssue", (), {})()
         mock_function = type("MockFunction", (), {})()
@@ -192,7 +192,7 @@ class TestSuggestionContext:
                 project_style="invalid_style",
             )
 
-    def test_context_defaults(self):
+    def test_context_defaults(self) -> None:
         """Test context default values."""
         mock_issue = type("MockIssue", (), {})()
         mock_function = type("MockFunction", (), {})()
@@ -224,7 +224,7 @@ class TestSuggestion:
 
         self.valid_metadata = SuggestionMetadata(generator_type="test_generator")
 
-    def test_valid_suggestion_creation(self):
+    def test_valid_suggestion_creation(self) -> None:
         """Test creating a valid suggestion."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -243,7 +243,7 @@ class TestSuggestion:
         assert suggestion.is_high_confidence
         assert suggestion.is_ready_to_apply
 
-    def test_suggestion_validation_invalid_confidence(self):
+    def test_suggestion_validation_invalid_confidence(self) -> None:
         """Test validation fails for invalid confidence."""
         with pytest.raises(ValueError, match="confidence must be between 0.0 and 1.0"):
             Suggestion(
@@ -256,7 +256,7 @@ class TestSuggestion:
                 metadata=self.valid_metadata,
             )
 
-    def test_suggestion_validation_empty_text(self):
+    def test_suggestion_validation_empty_text(self) -> None:
         """Test validation fails for empty text fields."""
         with pytest.raises(ValueError, match="original_text cannot be empty"):
             Suggestion(
@@ -269,7 +269,7 @@ class TestSuggestion:
                 metadata=self.valid_metadata,
             )
 
-    def test_suggestion_validation_invalid_line_range(self):
+    def test_suggestion_validation_invalid_line_range(self) -> None:
         """Test validation fails for invalid line range."""
         with pytest.raises(ValueError, match="Invalid line_range"):
             Suggestion(
@@ -283,7 +283,7 @@ class TestSuggestion:
                 line_range=(0, 1),  # Invalid start line
             )
 
-    def test_suggestion_validation_invalid_style(self):
+    def test_suggestion_validation_invalid_style(self) -> None:
         """Test validation fails for invalid style."""
         with pytest.raises(ValueError, match="style must be one of"):
             Suggestion(
@@ -296,7 +296,7 @@ class TestSuggestion:
                 metadata=self.valid_metadata,
             )
 
-    def test_suggestion_quality_score(self):
+    def test_suggestion_quality_score(self) -> None:
         """Test quality score calculation."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -317,7 +317,7 @@ class TestSuggestion:
             quality_score == 0.95
         )  # All factors are positive (0.8 + 1.0 + 1.0 + 1.0) / 4
 
-    def test_suggestion_quality_score_with_issues(self):
+    def test_suggestion_quality_score_with_issues(self) -> None:
         """Test quality score with some issues."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -335,7 +335,7 @@ class TestSuggestion:
         quality_score = suggestion.get_quality_score()
         assert quality_score < 0.8  # Should be lower due to issues
 
-    def test_suggestion_to_dict(self):
+    def test_suggestion_to_dict(self) -> None:
         """Test suggestion serialization to dictionary."""
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
@@ -360,7 +360,7 @@ class TestSuggestion:
         assert "metadata" in result
         assert result["quality_score"] == suggestion.get_quality_score()
 
-    def test_suggestion_properties(self):
+    def test_suggestion_properties(self) -> None:
         """Test suggestion boolean properties."""
         # High confidence suggestion
         high_conf = Suggestion(
@@ -446,7 +446,7 @@ class TestSuggestionBatch:
             ),
         ]
 
-    def test_valid_batch_creation(self):
+    def test_valid_batch_creation(self) -> None:
         """Test creating a valid suggestion batch."""
         batch = SuggestionBatch(
             suggestions=self.suggestions,
@@ -460,7 +460,7 @@ class TestSuggestionBatch:
         assert batch.file_path == "/path/to/file.py"
         assert batch.total_generation_time_ms == 250.0
 
-    def test_batch_validation_negative_time(self):
+    def test_batch_validation_negative_time(self) -> None:
         """Test validation fails for negative generation time."""
         with pytest.raises(
             ValueError, match="total_generation_time_ms must be non-negative"
@@ -470,7 +470,7 @@ class TestSuggestionBatch:
                 total_generation_time_ms=-10.0,
             )
 
-    def test_batch_high_confidence_suggestions(self):
+    def test_batch_high_confidence_suggestions(self) -> None:
         """Test filtering high confidence suggestions."""
         batch = SuggestionBatch(suggestions=self.suggestions)
         high_conf = batch.high_confidence_suggestions
@@ -478,7 +478,7 @@ class TestSuggestionBatch:
         assert len(high_conf) == 1  # Only the 0.9 confidence suggestion
         assert high_conf[0].confidence == 0.9
 
-    def test_batch_ready_to_apply_suggestions(self):
+    def test_batch_ready_to_apply_suggestions(self) -> None:
         """Test filtering ready-to-apply suggestions."""
         # Make one suggestion ready to apply
         self.suggestions[0].copy_paste_ready = True
@@ -492,7 +492,7 @@ class TestSuggestionBatch:
         assert ready[0].confidence == 0.9
         assert ready[1].confidence == 0.7
 
-    def test_batch_average_confidence(self):
+    def test_batch_average_confidence(self) -> None:
         """Test average confidence calculation."""
         batch = SuggestionBatch(suggestions=self.suggestions)
         avg_conf = batch.average_confidence
@@ -500,7 +500,7 @@ class TestSuggestionBatch:
         expected = (0.9 + 0.7 + 0.5) / 3
         assert abs(avg_conf - expected) < 0.001
 
-    def test_batch_empty_suggestions(self):
+    def test_batch_empty_suggestions(self) -> None:
         """Test batch with no suggestions."""
         batch = SuggestionBatch(suggestions=[])
 
@@ -509,7 +509,7 @@ class TestSuggestionBatch:
         assert len(batch.high_confidence_suggestions) == 0
         assert len(batch.ready_to_apply_suggestions) == 0
 
-    def test_batch_best_suggestion(self):
+    def test_batch_best_suggestion(self) -> None:
         """Test getting the best suggestion."""
         batch = SuggestionBatch(suggestions=self.suggestions)
         best = batch.get_best_suggestion()
@@ -517,7 +517,7 @@ class TestSuggestionBatch:
         # Should be the highest confidence one
         assert best.confidence == 0.9
 
-    def test_batch_sort_by_quality(self):
+    def test_batch_sort_by_quality(self) -> None:
         """Test sorting suggestions by quality."""
         batch = SuggestionBatch(suggestions=self.suggestions)
         sorted_suggestions = batch.sort_by_quality()
@@ -531,7 +531,7 @@ class TestSuggestionBatch:
                 >= sorted_suggestions[i + 1].get_quality_score()
             )
 
-    def test_batch_summary(self):
+    def test_batch_summary(self) -> None:
         """Test batch summary generation."""
         batch = SuggestionBatch(
             suggestions=self.suggestions,
@@ -555,24 +555,24 @@ class TestSuggestionBatch:
 class TestSuggestionExceptions:
     """Test suggestion exception classes."""
 
-    def test_suggestion_error(self):
+    def test_suggestion_error(self) -> None:
         """Test base SuggestionError."""
         error = SuggestionError("Test error message")
         assert str(error) == "Test error message"
         assert isinstance(error, Exception)
 
-    def test_style_detection_error(self):
+    def test_style_detection_error(self) -> None:
         """Test StyleDetectionError with fallback."""
         error = StyleDetectionError("Detection failed", fallback_style="numpy")
         assert str(error) == "Detection failed"
         assert error.fallback_style == "numpy"
 
-    def test_style_detection_error_default_fallback(self):
+    def test_style_detection_error_default_fallback(self) -> None:
         """Test StyleDetectionError with default fallback."""
         error = StyleDetectionError("Detection failed")
         assert error.fallback_style == "google"
 
-    def test_suggestion_generation_error(self):
+    def test_suggestion_generation_error(self) -> None:
         """Test SuggestionGenerationError with partial result."""
         error = SuggestionGenerationError(
             "Generation failed", partial_result="partial docstring"
@@ -580,12 +580,12 @@ class TestSuggestionExceptions:
         assert str(error) == "Generation failed"
         assert error.partial_result == "partial docstring"
 
-    def test_suggestion_generation_error_no_partial(self):
+    def test_suggestion_generation_error_no_partial(self) -> None:
         """Test SuggestionGenerationError without partial result."""
         error = SuggestionGenerationError("Generation failed")
         assert error.partial_result is None
 
-    def test_suggestion_validation_error(self):
+    def test_suggestion_validation_error(self) -> None:
         """Test SuggestionValidationError."""
         error = SuggestionValidationError(
             "Validation failed", suggestion_text="invalid suggestion"
@@ -597,7 +597,7 @@ class TestSuggestionExceptions:
 class TestEnums:
     """Test enum classes."""
 
-    def test_suggestion_type_enum(self):
+    def test_suggestion_type_enum(self) -> None:
         """Test SuggestionType enum values."""
         assert SuggestionType.FULL_DOCSTRING.value == "full_docstring"
         assert SuggestionType.PARAMETER_UPDATE.value == "parameter_update"
@@ -606,7 +606,7 @@ class TestEnums:
         assert SuggestionType.DESCRIPTION_UPDATE.value == "description"
         assert SuggestionType.EXAMPLE_UPDATE.value == "example"
 
-    def test_docstring_style_enum(self):
+    def test_docstring_style_enum(self) -> None:
         """Test DocstringStyle enum values."""
         assert DocstringStyle.GOOGLE.value == "google"
         assert DocstringStyle.NUMPY.value == "numpy"
@@ -614,7 +614,7 @@ class TestEnums:
         assert DocstringStyle.REST.value == "rest"
         assert DocstringStyle.AUTO_DETECT.value == "auto_detect"
 
-    def test_enum_iteration(self):
+    def test_enum_iteration(self) -> None:
         """Test that enums are iterable."""
         suggestion_types = list(SuggestionType)
         assert len(suggestion_types) == 6

@@ -34,7 +34,7 @@ runner = CliRunner()
 class TestFullPipeline:
     """Test complete suggestion pipeline."""
 
-    def test_parse_analyze_suggest_workflow(self):
+    def test_parse_analyze_suggest_workflow(self) -> None:
         """Test full workflow from parsing to suggestion generation."""
         # Step 1: Create test function
         function = create_test_function(
@@ -114,7 +114,7 @@ class TestFullPipeline:
         assert return_issue.suggestion_object is not None
         assert "float" in return_issue.suggestion_object.suggested_text
 
-    def test_batch_processing(self):
+    def test_batch_processing(self) -> None:
         """Test processing multiple functions in batch."""
         # Create multiple test scenarios
         test_cases = [
@@ -184,7 +184,7 @@ class TestFullPipeline:
 class TestCLIIntegration:
     """Test CLI command integration."""
 
-    def test_suggest_command_help(self):
+    def test_suggest_command_help(self) -> None:
         """Test suggest command help text."""
         result = runner.invoke(app, ["suggest", "--help"])
         assert result.exit_code == 0
@@ -193,7 +193,7 @@ class TestCLIIntegration:
         assert "--apply" in result.stdout
         assert "--interactive" in result.stdout
 
-    def test_suggest_command_with_file(self, tmp_path):
+    def test_suggest_command_with_file(self, tmp_path) -> None:
         """Test suggest command with a Python file."""
         # Create test file
         test_file = tmp_path / "test.py"
@@ -258,7 +258,7 @@ def process_data(items, threshold=0.5):
                 assert "summary" in output
                 assert "suggestions" in output
 
-    def test_suggest_command_dry_run(self, tmp_path):
+    def test_suggest_command_dry_run(self, tmp_path) -> None:
         """Test suggest command with dry-run option."""
         test_file = tmp_path / "test.py"
         test_file.write_text("def test(): pass")
@@ -273,7 +273,7 @@ def process_data(items, threshold=0.5):
 class TestPerformanceMonitoring:
     """Test performance monitoring integration."""
 
-    def test_performance_tracking(self):
+    def test_performance_tracking(self) -> None:
         """Test that performance is tracked during suggestion generation."""
         monitor = get_performance_monitor()
         monitor.reset()
@@ -301,7 +301,7 @@ class TestPerformanceMonitoring:
         assert stats["test_suggestion"].count == 1
         assert stats["test_suggestion"].avg_time > 0
 
-    def test_performance_recommendations(self):
+    def test_performance_recommendations(self) -> None:
         """Test performance optimization recommendations."""
         monitor = get_performance_monitor()
         monitor.reset()
@@ -321,7 +321,7 @@ class TestPerformanceMonitoring:
 class TestErrorHandling:
     """Test error handling and recovery."""
 
-    def test_graceful_degradation(self):
+    def test_graceful_degradation(self) -> None:
         """Test graceful degradation when suggestion generation fails."""
         handler = get_error_handler()
 
@@ -344,7 +344,7 @@ class TestErrorHandling:
             # Should return fallback or None
             assert result is None or hasattr(result, "confidence")
 
-    def test_error_recovery_in_batch(self):
+    def test_error_recovery_in_batch(self) -> None:
         """Test error recovery during batch processing."""
         # Create batch with one failing item
         results = []
@@ -382,7 +382,7 @@ class TestErrorHandling:
 class TestProductionScenarios:
     """Test production-ready scenarios."""
 
-    def test_large_codebase_simulation(self):
+    def test_large_codebase_simulation(self) -> None:
         """Test handling of large codebase with many functions."""
         # Simulate 100 functions with various issues
         num_functions = 100
@@ -449,7 +449,7 @@ class TestProductionScenarios:
             high_confidence_count > num_functions * 0.7
         )  # Most should be high quality
 
-    def test_memory_efficiency(self):
+    def test_memory_efficiency(self) -> None:
         """Test memory efficiency with large suggestions."""
         import gc
         import sys
@@ -486,7 +486,7 @@ class TestProductionScenarios:
         # Memory growth should be reasonable
         assert memory_growth < 100 * 1024 * 1024  # Less than 100MB growth
 
-    def test_concurrent_suggestion_generation(self):
+    def test_concurrent_suggestion_generation(self) -> None:
         """Test concurrent suggestion generation."""
         import asyncio
         from concurrent.futures import ThreadPoolExecutor
@@ -528,7 +528,7 @@ class TestProductionScenarios:
 class TestConfigurationIntegration:
     """Test configuration system integration."""
 
-    def test_config_precedence(self, tmp_path):
+    def test_config_precedence(self, tmp_path) -> None:
         """Test configuration precedence (CLI > project > user > default)."""
         # Create project config
         project_config = tmp_path / ".codedocsync.yml"
@@ -563,7 +563,7 @@ suggestion:
                 assert config.suggestion_config.default_style == "numpy"
                 assert config.suggestion_config.confidence_threshold == 0.8
 
-    def test_profile_selection(self):
+    def test_profile_selection(self) -> None:
         """Test configuration profile selection."""
         from codedocsync.suggestions.config_manager import (
             SUGGESTION_PROFILES,

@@ -15,6 +15,8 @@ Critical Requirements:
 import os
 from dataclasses import dataclass
 
+from .llm_errors import LLMAPIKeyError
+
 
 @dataclass
 class LLMConfig:
@@ -131,11 +133,11 @@ class LLMConfig:
         if self.provider == "openai":
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
-                raise ValueError(
+                raise LLMAPIKeyError(
                     "OPENAI_API_KEY environment variable is required for OpenAI provider"
                 )
             if not api_key.startswith("sk-"):
-                raise ValueError(
+                raise LLMAPIKeyError(
                     "OPENAI_API_KEY must start with 'sk-', invalid format detected"
                 )
 

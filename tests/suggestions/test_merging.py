@@ -19,7 +19,7 @@ class TestDocstringMerger:
         """Create DocstringMerger instance."""
         return DocstringMerger(DocstringStyle.GOOGLE)
 
-    def test_merge_partial_update_parameters(self, merger):
+    def test_merge_partial_update_parameters(self, merger) -> None:
         """Test merging parameter section update."""
         existing_docstring = '''"""
         Function summary.
@@ -45,7 +45,7 @@ class TestDocstringMerger:
         assert "Returns:" in result  # Should preserve returns section
         assert "Something useful" in result
 
-    def test_merge_partial_update_new_section(self, merger):
+    def test_merge_partial_update_new_section(self, merger) -> None:
         """Test adding new section that doesn't exist."""
         existing_docstring = '''"""
         Function summary.
@@ -68,7 +68,7 @@ class TestDocstringMerger:
         assert "Returns:" in result
         assert "Something useful" in result
 
-    def test_merge_multiple_sections(self, merger):
+    def test_merge_multiple_sections(self, merger) -> None:
         """Test merging multiple section updates."""
         existing_docstring = '''"""
         Function summary.
@@ -96,7 +96,7 @@ class TestDocstringMerger:
         assert "old_param: Old description" not in result
         assert "Old return description" not in result
 
-    def test_preserve_custom_content(self, merger):
+    def test_preserve_custom_content(self, merger) -> None:
         """Test preserving custom sections during merge."""
         original_docstring = '''"""
         Function summary.
@@ -132,7 +132,7 @@ class TestDocstringMerger:
         assert "This is a custom note that should be preserved" in result
         assert "This is a warning that should be preserved" in result
 
-    def test_smart_parameter_merge_preserve_descriptions(self, merger):
+    def test_smart_parameter_merge_preserve_descriptions(self, merger) -> None:
         """Test intelligent parameter merging with description preservation."""
         original_params = [
             DocstringParameter(
@@ -175,7 +175,7 @@ class TestDocstringMerger:
         param3 = next(p for p in merged if p.name == "param3")
         assert param3.description == "New parameter description"
 
-    def test_smart_parameter_merge_no_preservation(self, merger):
+    def test_smart_parameter_merge_no_preservation(self, merger) -> None:
         """Test parameter merging without description preservation."""
         original_params = [
             DocstringParameter(name="param1", description="Original description")
@@ -190,7 +190,7 @@ class TestDocstringMerger:
         assert len(merged) == 1
         assert merged[0].description == "New description"
 
-    def test_parse_section_boundaries_google_style(self, merger):
+    def test_parse_section_boundaries_google_style(self, merger) -> None:
         """Test parsing section boundaries for Google style."""
         lines = [
             '"""Function summary.',
@@ -226,7 +226,7 @@ class TestDocstringMerger:
         assert params_boundary.start_line == 4  # "Args:" line
         assert params_boundary.end_line == 6  # Last parameter line
 
-    def test_identify_section_type_google(self, merger):
+    def test_identify_section_type_google(self, merger) -> None:
         """Test identifying section types for Google style."""
         test_cases = [
             ("Args:", SectionType.PARAMETERS),
@@ -247,7 +247,7 @@ class TestDocstringMerger:
             result = merger._identify_section_type(line)
             assert result == expected
 
-    def test_extract_section_content(self, merger):
+    def test_extract_section_content(self, merger) -> None:
         """Test extracting specific section content."""
         docstring = '''"""
         Function summary.
@@ -268,7 +268,7 @@ class TestDocstringMerger:
         assert "param2: Second parameter" in params_content
         assert "Returns:" not in params_content
 
-    def test_merge_with_confidence_weighting(self, merger):
+    def test_merge_with_confidence_weighting(self, merger) -> None:
         """Test confidence-based merging."""
         original = "Original content"
         new_content = "New content"
@@ -285,7 +285,7 @@ class TestDocstringMerger:
         result = merger.merge_with_confidence_weighting(original, new_content, 0.3)
         assert result == original
 
-    def test_validate_merge_result(self, merger):
+    def test_validate_merge_result(self, merger) -> None:
         """Test validation of merge results."""
         # Valid docstring
         valid_docstring = '''"""
@@ -314,7 +314,7 @@ class TestDocstringMerger:
         assert not is_valid
         assert "Unbalanced docstring quotes" in errors[0]
 
-    def test_merge_empty_existing_docstring(self, merger):
+    def test_merge_empty_existing_docstring(self, merger) -> None:
         """Test merging with empty existing docstring."""
         new_section = """Args:
     param: Parameter description"""
@@ -322,7 +322,7 @@ class TestDocstringMerger:
         result = merger.merge_partial_update("", new_section, "parameters")
         assert result == new_section
 
-    def test_merge_preserve_spacing(self, merger):
+    def test_merge_preserve_spacing(self, merger) -> None:
         """Test that merging preserves proper spacing."""
         existing_docstring = '''"""
         Function summary.
@@ -363,7 +363,7 @@ class TestDocstringMerger:
 class TestSectionBoundary:
     """Test SectionBoundary functionality."""
 
-    def test_section_boundary_creation(self):
+    def test_section_boundary_creation(self) -> None:
         """Test creating section boundary."""
         boundary = SectionBoundary(
             section_type=SectionType.PARAMETERS, start_line=5, end_line=10
@@ -374,7 +374,7 @@ class TestSectionBoundary:
         assert boundary.end_line == 10
         assert boundary.content_lines == [5, 6, 7, 8, 9, 10]
 
-    def test_section_boundary_with_content_lines(self):
+    def test_section_boundary_with_content_lines(self) -> None:
         """Test creating section boundary with explicit content lines."""
         boundary = SectionBoundary(
             section_type=SectionType.RETURNS,
@@ -394,7 +394,7 @@ class TestMergerEdgeCases:
         """Create DocstringMerger instance."""
         return DocstringMerger(DocstringStyle.GOOGLE)
 
-    def test_is_generic_description(self, merger):
+    def test_is_generic_description(self, merger) -> None:
         """Test detection of generic descriptions."""
         generic_descriptions = [
             "Description for param",
@@ -417,7 +417,7 @@ class TestMergerEdgeCases:
         for desc in specific_descriptions:
             assert not merger._is_generic_description(desc)
 
-    def test_merge_with_malformed_docstring(self, merger):
+    def test_merge_with_malformed_docstring(self, merger) -> None:
         """Test merging with malformed docstring."""
         malformed_docstring = '''"""
         Malformed docstring
@@ -434,7 +434,7 @@ class TestMergerEdgeCases:
         )
         assert "new_param: New parameter" in result
 
-    def test_merge_numpy_style_sections(self):
+    def test_merge_numpy_style_sections(self) -> None:
         """Test merging with NumPy style."""
         numpy_merger = DocstringMerger(DocstringStyle.NUMPY)
 

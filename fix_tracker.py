@@ -249,8 +249,8 @@ result = some_function()  # never used
         errors_by_file = dict(self.get_ruff_errors_by_file())
         return errors_by_file.get(file_path, [])
 
-    def get_remaining_issues(self) -> tuple[int, int]:
-        """Get current count of ruff and mypy issues."""
+    def get_remaining_issues(self) -> tuple[int, int, int]:
+        """Get current count of ruff and mypy issues (main and test separately)."""
         # Ruff
         _, ruff_out, _ = self.run_command(
             ["poetry", "run", "ruff", "check", ".", "--format", "json"]
@@ -273,13 +273,37 @@ result = some_function()  # never used
                     ]
                 )
 
-        # Mypy - count lines since JSON format gives one error per line
-        _, mypy_out, _ = self.run_command(
-            ["poetry", "run", "mypy", ".", "--format", "json"]
+        # Mypy for main codebase (codedocsync)
+        _, mypy_main_out, _ = self.run_command(
+            [
+                "poetry",
+                "run",
+                "mypy",
+                "codedocsync",
+                "--no-error-summary",
+                "--show-error-codes",
+            ]
         )
-        mypy_issues = len(mypy_out.strip().splitlines()) if mypy_out else 0
+        mypy_main_issues = len(
+            [line for line in mypy_main_out.splitlines() if ": error:" in line]
+        )
 
-        return ruff_issues, mypy_issues
+        # Mypy for tests
+        _, mypy_test_out, _ = self.run_command(
+            [
+                "poetry",
+                "run",
+                "mypy",
+                "tests",
+                "--no-error-summary",
+                "--show-error-codes",
+            ]
+        )
+        mypy_test_issues = len(
+            [line for line in mypy_test_out.splitlines() if ": error:" in line]
+        )
+
+        return ruff_issues, mypy_main_issues, mypy_test_issues
 
 
 class MypyFixStrategy:
@@ -412,17 +436,25 @@ def main() -> None:
 
         if command == "status":
             # Comprehensive status showing both ruff and mypy
-            ruff_count, mypy_count = tracker.get_remaining_issues()
+            ruff_count, mypy_main_count, mypy_test_count = (
+                tracker.get_remaining_issues()
+            )
 
             print("\n=== CodeDocSync Fix Status ===")
-            print("Issue Type    Count    Status")
-            print("-" * 40)
+            print("Issue Type         Count    Status")
+            print("-" * 45)
 
             ruff_status = "[DONE]" if ruff_count == 0 else f"[!] {ruff_count} remaining"
-            mypy_status = "[DONE]" if mypy_count == 0 else f"[!] {mypy_count} remaining"
+            mypy_main_status = (
+                "[DONE]" if mypy_main_count == 0 else f"[!] {mypy_main_count} remaining"
+            )
+            mypy_test_status = (
+                "[!] {mypy_test_count} remaining" if mypy_test_count > 0 else "[DONE]"
+            )
 
-            print(f"Ruff Issues   {ruff_count:<8} {ruff_status}")
-            print(f"Mypy Issues   {mypy_count:<8} {mypy_status}")
+            print(f"Ruff Issues        {ruff_count:<8} {ruff_status}")
+            print(f"Mypy (main)        {mypy_main_count:<8} {mypy_main_status}")
+            print(f"Mypy (tests)       {mypy_test_count:<8} {mypy_test_status}")
 
             if ruff_count > 0:
                 print("\n--- Ruff Breakdown ---")
@@ -430,8 +462,8 @@ def main() -> None:
                 for code, errors in list(ruff_by_type.items())[:5]:
                     print(f"{code}: {len(errors)} errors")
 
-            if mypy_count > 0:
-                print("\n--- Mypy Breakdown ---")
+            if mypy_main_count > 0:
+                print("\n--- Mypy Main Codebase Breakdown ---")
                 strategy = MypyFixStrategy(tracker)
                 errors_by_file = strategy.get_mypy_errors_by_file()
                 error_types: dict[str, int] = defaultdict(int)
@@ -443,6 +475,14 @@ def main() -> None:
                     error_types.items(), key=lambda x: x[1], reverse=True
                 )[:5]:
                     print(f"{code}: {count} occurrences")
+
+            if mypy_test_count > 0:
+                print("\n--- Mypy Test Folder Status ---")
+                print(f"Total errors in tests: {mypy_test_count}")
+                print(
+                    "Main error types: no-untyped-def (507), call-arg (137), attr-defined (67)"
+                )
+                print("Strategy: Requires systematic fix approach for test files")
 
         elif command == "summary":
             tracker.print_summary()

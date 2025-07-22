@@ -26,10 +26,10 @@ from codedocsync.suggestions.models import (
 class TestBehaviorAnalyzer:
     """Test the behavior analyzer."""
 
-    def test_analyze_control_flow_loops(self):
+    def test_analyze_control_flow_loops(self) -> None:
         """Test analyzing control flow with loops."""
         source_code = """
-def test_func(items):
+def test_func(items) -> None:
     result = []
     for item in items:
         if item > 0:
@@ -43,10 +43,10 @@ def test_func(items):
         assert "iteration" in pattern_types
         assert "conditional" in pattern_types
 
-    def test_analyze_data_operations(self):
+    def test_analyze_data_operations(self) -> None:
         """Test analyzing data manipulation patterns."""
         source_code = """
-def test_func(data):
+def test_func(data) -> None:
     processed = [x * 2 for x in data]
     result = {}
     for item in processed:
@@ -60,10 +60,10 @@ def test_func(data):
         assert "data_transformation" in pattern_types
         assert "data_creation" in pattern_types
 
-    def test_analyze_side_effects(self):
+    def test_analyze_side_effects(self) -> None:
         """Test analyzing side effects."""
         source_code = """
-def test_func(filename, data):
+def test_func(filename, data) -> None:
     import logging
     logging.info("Processing file")
 
@@ -79,10 +79,10 @@ def test_func(filename, data):
         assert "file_io" in pattern_types
         assert "logging" in pattern_types
 
-    def test_analyze_error_handling(self):
+    def test_analyze_error_handling(self) -> None:
         """Test analyzing error handling patterns."""
         source_code = """
-def test_func(value):
+def test_func(value) -> None:
     assert isinstance(value, str), "Value must be string"
 
     if not value:
@@ -104,10 +104,10 @@ def test_func(value):
         assert "input_validation" in pattern_types
         assert "assertion_checks" in pattern_types
 
-    def test_analyze_performance_characteristics(self):
+    def test_analyze_performance_characteristics(self) -> None:
         """Test analyzing performance-related patterns."""
         source_code = """
-def test_func(matrix):
+def test_func(matrix) -> None:
     result = []
     for i in range(len(matrix)):
         row = []
@@ -128,7 +128,7 @@ def test_func(matrix):
         assert nested_patterns[0].details is not None
         assert "complexity_score" in nested_patterns[0].details
 
-    def test_analyze_recursive_function(self):
+    def test_analyze_recursive_function(self) -> None:
         """Test analyzing recursive functions."""
         source_code = """
 def fibonacci(n):
@@ -142,7 +142,7 @@ def fibonacci(n):
         pattern_types = [p.pattern_type for p in patterns]
         assert "recursive" in pattern_types
 
-    def test_analyze_function_purpose_by_name(self):
+    def test_analyze_function_purpose_by_name(self) -> None:
         """Test analyzing function purpose based on name."""
         test_cases = [
             ("get_user_data", "Retrieves and returns data"),
@@ -165,7 +165,7 @@ def {func_name}():
             assert len(purpose_patterns) >= 1
             assert expected_pattern in purpose_patterns[0].description
 
-    def test_looks_like_validation(self):
+    def test_looks_like_validation(self) -> None:
         """Test validation pattern detection."""
         analyzer = BehaviorAnalyzer()
 
@@ -173,7 +173,7 @@ def {func_name}():
         # expects an AST node, but we can test it indirectly through the
         # full analysis
         source_code = """
-def test_func(value):
+def test_func(value) -> None:
     if not isinstance(value, str):
         return False
     if len(value) == 0:
@@ -184,7 +184,7 @@ def test_func(value):
         pattern_types = [p.pattern_type for p in patterns]
         assert "input_validation" in pattern_types
 
-    def test_syntax_error_handling(self):
+    def test_syntax_error_handling(self) -> None:
         """Test handling syntax errors gracefully."""
         source_code = """
 def test_func(
@@ -261,7 +261,7 @@ def process_data(items):
 
     def test_improve_vague_description(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test improving vague description."""
         context = SuggestionContext(
             function=mock_function, docstring=mock_docstring, issue=mock_issue
@@ -279,7 +279,7 @@ def process_data(items):
 
     def test_improve_outdated_description(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test improving outdated description."""
         mock_issue.issue_type = "description_outdated"
 
@@ -294,7 +294,7 @@ def process_data(items):
 
     def test_add_behavior_description(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test adding missing behavior description."""
         mock_issue.issue_type = "missing_behavior_description"
 
@@ -309,7 +309,7 @@ def process_data(items):
 
     def test_add_side_effects_documentation(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test adding side effects documentation."""
         # Function with side effects
         mock_function.source_code = """
@@ -344,7 +344,7 @@ def process_data(items, log_file):
             or "log" in suggested_text
         )
 
-    def test_generate_enhanced_description(self, generator):
+    def test_generate_enhanced_description(self, generator) -> None:
         """Test generation of enhanced descriptions."""
         # Mock patterns for testing
         patterns = [
@@ -366,7 +366,9 @@ def process_data(items, log_file):
         assert len(result) > 20  # Should be substantial
         assert "processes input data" in result.lower()
 
-    def test_generate_enhanced_description_with_side_effects_focus(self, generator):
+    def test_generate_enhanced_description_with_side_effects_focus(
+        self, generator
+    ) -> None:
         """Test enhanced description with side effects focus."""
         patterns = [
             BehaviorPattern("purpose", "Processes input data", 0.9),
@@ -384,7 +386,7 @@ def process_data(items, log_file):
         assert "side effects" in result.lower()
         assert any(effect in result.lower() for effect in ["file", "log"])
 
-    def test_generate_basic_purpose(self, generator):
+    def test_generate_basic_purpose(self, generator) -> None:
         """Test generation of basic purpose from function names."""
         test_cases = [
             ("get_user_data", "user data"),
@@ -400,7 +402,7 @@ def process_data(items, log_file):
 
     def test_no_source_code_fallback(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fallback when source code is not available."""
         mock_function.source_code = ""
 
@@ -415,7 +417,7 @@ def process_data(items, log_file):
 
     def test_no_patterns_detected(
         self, generator, mock_function, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test handling when no behavioral patterns are detected."""
         # Very simple function that might not trigger pattern detection
         mock_function.source_code = """
@@ -432,7 +434,7 @@ def simple_func():
         # Should be a fallback suggestion
         assert suggestion.confidence == 0.1
 
-    def test_unknown_issue_type(self, generator, mock_function, mock_docstring):
+    def test_unknown_issue_type(self, generator, mock_function, mock_docstring) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_behavior_issue",
@@ -466,7 +468,7 @@ class TestBehaviorGeneratorIntegration:
         """Create behavior suggestion generator."""
         return BehaviorSuggestionGenerator(config)
 
-    def test_complete_workflow_data_processing(self, generator):
+    def test_complete_workflow_data_processing(self, generator) -> None:
         """Test complete workflow for data processing function."""
         function = Mock()
         function.signature = Mock()
@@ -537,7 +539,7 @@ def filter_and_transform_data(raw_data, threshold=0.5):
         # Should be more detailed than original
         assert len(suggested_text) > len(docstring.raw_text)
 
-    def test_complete_workflow_file_operations(self, generator):
+    def test_complete_workflow_file_operations(self, generator) -> None:
         """Test complete workflow for file operations with side effects."""
         function = Mock()
         function.signature = Mock()
@@ -604,7 +606,7 @@ def backup_and_process_file(filepath, backup_dir):
             effect in suggested_text for effect in ["file", "backup", "log", "modif"]
         )
 
-    def test_performance_pattern_detection(self, generator):
+    def test_performance_pattern_detection(self, generator) -> None:
         """Test detection of performance-related patterns."""
         function = Mock()
         function.signature = Mock()

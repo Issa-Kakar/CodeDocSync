@@ -128,7 +128,7 @@ def suggestion_batch(basic_suggestion):
 class TestTerminalFormatterConfig:
     """Test TerminalFormatterConfig data model."""
 
-    def test_default_config(self):
+    def test_default_config(self) -> None:
         """Test default configuration values."""
         config = TerminalFormatterConfig()
 
@@ -140,7 +140,7 @@ class TestTerminalFormatterConfig:
         assert config.use_unicode
         assert not config.compact_mode
 
-    def test_custom_config(self):
+    def test_custom_config(self) -> None:
         """Test custom configuration values."""
         config = TerminalFormatterConfig(
             max_width=120,
@@ -156,7 +156,7 @@ class TestTerminalFormatterConfig:
 class TestTerminalSuggestionFormatterInit:
     """Test TerminalSuggestionFormatter initialization."""
 
-    def test_default_initialization(self):
+    def test_default_initialization(self) -> None:
         """Test default initialization."""
         formatter = TerminalSuggestionFormatter()
 
@@ -165,7 +165,7 @@ class TestTerminalSuggestionFormatterInit:
             formatter.style == OutputStyle.RICH or formatter.style == OutputStyle.PLAIN
         )
 
-    def test_custom_config_initialization(self):
+    def test_custom_config_initialization(self) -> None:
         """Test initialization with custom config."""
         config = TerminalFormatterConfig(max_width=100)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -176,7 +176,7 @@ class TestTerminalSuggestionFormatterInit:
     @patch(
         "codedocsync.suggestions.formatters.terminal_formatter.RICH_AVAILABLE", False
     )
-    def test_no_rich_fallback(self):
+    def test_no_rich_fallback(self) -> None:
         """Test fallback when Rich is not available."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.RICH)
 
@@ -187,7 +187,7 @@ class TestTerminalSuggestionFormatterInit:
 class TestSuggestionFormatting:
     """Test individual suggestion formatting."""
 
-    def test_format_basic_suggestion_plain(self, basic_suggestion):
+    def test_format_basic_suggestion_plain(self, basic_suggestion) -> None:
         """Test formatting basic suggestion in plain text."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_suggestion(basic_suggestion)
@@ -196,7 +196,7 @@ class TestSuggestionFormatting:
         assert "Confidence: 90%" in result
         assert basic_suggestion.suggested_text in result
 
-    def test_format_suggestion_minimal(self, basic_suggestion):
+    def test_format_suggestion_minimal(self, basic_suggestion) -> None:
         """Test formatting suggestion in minimal mode."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.MINIMAL)
         result = formatter.format_suggestion(basic_suggestion)
@@ -204,7 +204,7 @@ class TestSuggestionFormatting:
         # Minimal should just return the suggested text
         assert result == basic_suggestion.suggested_text
 
-    def test_format_suggestion_with_line_numbers(self, basic_suggestion):
+    def test_format_suggestion_with_line_numbers(self, basic_suggestion) -> None:
         """Test formatting with line numbers enabled."""
         config = TerminalFormatterConfig(show_line_numbers=True)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -213,7 +213,7 @@ class TestSuggestionFormatting:
         # Should include line numbers
         assert "1:" in result or "  1:" in result
 
-    def test_format_suggestion_without_line_numbers(self, basic_suggestion):
+    def test_format_suggestion_without_line_numbers(self, basic_suggestion) -> None:
         """Test formatting without line numbers."""
         config = TerminalFormatterConfig(show_line_numbers=False)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -222,7 +222,7 @@ class TestSuggestionFormatting:
         # Should not include line number format
         assert "1:" not in result
 
-    def test_format_suggestion_without_confidence(self, basic_suggestion):
+    def test_format_suggestion_without_confidence(self, basic_suggestion) -> None:
         """Test formatting without confidence display."""
         config = TerminalFormatterConfig(show_confidence=False)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -232,7 +232,7 @@ class TestSuggestionFormatting:
         assert "Confidence:" not in result
 
     @patch("codedocsync.suggestions.formatters.terminal_formatter.RICH_AVAILABLE", True)
-    def test_format_suggestion_rich(self, basic_suggestion):
+    def test_format_suggestion_rich(self, basic_suggestion) -> None:
         """Test rich formatting (mocked)."""
         with patch(
             "codedocsync.suggestions.formatters.terminal_formatter.Console"
@@ -254,7 +254,7 @@ class TestSuggestionFormatting:
 class TestEnhancedIssueFormatting:
     """Test enhanced issue formatting."""
 
-    def test_format_issue_with_suggestion_plain(self, enhanced_issue):
+    def test_format_issue_with_suggestion_plain(self, enhanced_issue) -> None:
         """Test formatting issue with suggestion in plain text."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_enhanced_issue(enhanced_issue)
@@ -264,7 +264,9 @@ class TestEnhancedIssueFormatting:
         assert f"Line: {enhanced_issue.line_number}" in result
         assert enhanced_issue.rich_suggestion.suggested_text in result
 
-    def test_format_issue_without_suggestion_plain(self, enhanced_issue_no_suggestion):
+    def test_format_issue_without_suggestion_plain(
+        self, enhanced_issue_no_suggestion
+    ) -> None:
         """Test formatting issue without suggestion in plain text."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_enhanced_issue(enhanced_issue_no_suggestion)
@@ -274,7 +276,7 @@ class TestEnhancedIssueFormatting:
         # Should not contain suggestion text since there's no rich_suggestion
         assert "Parameter Update" not in result
 
-    def test_format_issue_minimal(self, enhanced_issue):
+    def test_format_issue_minimal(self, enhanced_issue) -> None:
         """Test formatting issue in minimal mode."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.MINIMAL)
         result = formatter.format_enhanced_issue(enhanced_issue)
@@ -283,7 +285,7 @@ class TestEnhancedIssueFormatting:
         assert enhanced_issue.description in result
         assert enhanced_issue.rich_suggestion.suggested_text in result
 
-    def test_severity_indicators(self):
+    def test_severity_indicators(self) -> None:
         """Test different severity indicators."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
 
@@ -306,7 +308,7 @@ class TestEnhancedIssueFormatting:
 class TestAnalysisResultFormatting:
     """Test analysis result formatting."""
 
-    def test_format_result_with_issues_plain(self, enhanced_result):
+    def test_format_result_with_issues_plain(self, enhanced_result) -> None:
         """Test formatting result with issues in plain text."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_analysis_result(enhanced_result)
@@ -317,7 +319,7 @@ class TestAnalysisResultFormatting:
         assert "Suggestions: 1" in result
         assert "Issue 1:" in result
 
-    def test_format_result_no_issues(self):
+    def test_format_result_no_issues(self) -> None:
         """Test formatting result with no issues."""
         mock_function = Mock()
         mock_function.signature = Mock()
@@ -337,7 +339,7 @@ class TestAnalysisResultFormatting:
         assert "No issues found" in result
         assert "clean_function" in result
 
-    def test_format_result_minimal(self, enhanced_result):
+    def test_format_result_minimal(self, enhanced_result) -> None:
         """Test formatting result in minimal mode."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.MINIMAL)
         result = formatter.format_analysis_result(enhanced_result)
@@ -349,7 +351,7 @@ class TestAnalysisResultFormatting:
 class TestBatchSummaryFormatting:
     """Test batch summary formatting."""
 
-    def test_format_batch_summary_plain(self, suggestion_batch):
+    def test_format_batch_summary_plain(self, suggestion_batch) -> None:
         """Test formatting batch summary in plain text."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_batch_summary(suggestion_batch)
@@ -361,7 +363,7 @@ class TestBatchSummaryFormatting:
         assert "Generation Time: 50.0ms" in result
         assert "Average Confidence:" in result
 
-    def test_format_batch_summary_minimal(self, suggestion_batch):
+    def test_format_batch_summary_minimal(self, suggestion_batch) -> None:
         """Test formatting batch summary in minimal mode."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.MINIMAL)
         result = formatter.format_batch_summary(suggestion_batch)
@@ -370,7 +372,7 @@ class TestBatchSummaryFormatting:
         assert "Issues: 2" in result
         assert "Suggestions: 1" in result
 
-    def test_format_empty_batch(self):
+    def test_format_empty_batch(self) -> None:
         """Test formatting empty batch summary."""
         empty_batch = SuggestionBatch(
             suggestions=[],
@@ -389,7 +391,7 @@ class TestBatchSummaryFormatting:
 class TestDiffFormatting:
     """Test diff formatting functionality."""
 
-    def test_diff_preview_creation(self, suggestion_with_diff):
+    def test_diff_preview_creation(self, suggestion_with_diff) -> None:
         """Test creating diff preview."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
 
@@ -403,7 +405,7 @@ class TestDiffFormatting:
             or "removed" in diff_content
         )
 
-    def test_diff_display_configuration(self, suggestion_with_diff):
+    def test_diff_display_configuration(self, suggestion_with_diff) -> None:
         """Test diff display with configuration."""
         config = TerminalFormatterConfig(show_diff=True)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -414,7 +416,7 @@ class TestDiffFormatting:
         # (Exact content depends on implementation)
         assert isinstance(result, str)
 
-    def test_no_diff_display(self, suggestion_with_diff):
+    def test_no_diff_display(self, suggestion_with_diff) -> None:
         """Test disabling diff display."""
         config = TerminalFormatterConfig(show_diff=False)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -428,7 +430,7 @@ class TestDiffFormatting:
 class TestUtilityMethods:
     """Test utility methods in formatter."""
 
-    def test_format_issue_only(self, enhanced_issue_no_suggestion):
+    def test_format_issue_only(self, enhanced_issue_no_suggestion) -> None:
         """Test formatting issue without suggestion."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter._format_issue_only(enhanced_issue_no_suggestion)
@@ -437,7 +439,7 @@ class TestUtilityMethods:
         assert enhanced_issue_no_suggestion.description in result
         assert f"(line {enhanced_issue_no_suggestion.line_number})" in result
 
-    def test_format_no_issues(self):
+    def test_format_no_issues(self) -> None:
         """Test formatting when no issues found."""
         mock_function = Mock()
         mock_function.signature = Mock()
@@ -461,7 +463,7 @@ class TestUtilityMethods:
 class TestConfigurationOptions:
     """Test various configuration options."""
 
-    def test_max_width_configuration(self, basic_suggestion):
+    def test_max_width_configuration(self, basic_suggestion) -> None:
         """Test max width configuration."""
         config = TerminalFormatterConfig(max_width=50)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -471,7 +473,7 @@ class TestConfigurationOptions:
         # Should respect width (though exact behavior depends on implementation)
         assert isinstance(result, str)
 
-    def test_unicode_configuration(self, enhanced_issue):
+    def test_unicode_configuration(self, enhanced_issue) -> None:
         """Test unicode configuration."""
         config = TerminalFormatterConfig(use_unicode=False)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -481,7 +483,7 @@ class TestConfigurationOptions:
         # Should work without unicode characters
         assert isinstance(result, str)
 
-    def test_compact_mode(self, enhanced_result):
+    def test_compact_mode(self, enhanced_result) -> None:
         """Test compact mode configuration."""
         config = TerminalFormatterConfig(compact_mode=True)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -495,7 +497,7 @@ class TestConfigurationOptions:
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_suggestion_without_diff(self, basic_suggestion):
+    def test_suggestion_without_diff(self, basic_suggestion) -> None:
         """Test suggestion without diff information."""
         # Ensure no diff
         basic_suggestion.diff = None
@@ -507,7 +509,7 @@ class TestEdgeCases:
         assert isinstance(result, str)
         assert basic_suggestion.suggested_text in result
 
-    def test_issue_with_zero_line_number(self):
+    def test_issue_with_zero_line_number(self) -> None:
         """Test issue with zero line number."""
         issue = EnhancedIssue(
             issue_type="test",
@@ -524,7 +526,7 @@ class TestEdgeCases:
         assert isinstance(result, str)
         assert issue.description in result
 
-    def test_function_without_signature(self):
+    def test_function_without_signature(self) -> None:
         """Test function without proper signature."""
         mock_function = Mock()
         # No signature attribute
@@ -543,7 +545,7 @@ class TestEdgeCases:
         # Should handle gracefully with "Unknown" function name
         assert "Unknown" in formatted
 
-    def test_very_long_suggestion_text(self):
+    def test_very_long_suggestion_text(self) -> None:
         """Test handling very long suggestion text."""
         long_text = "def function():\n    " + 'x = "very long string" * 100\n' * 50
 

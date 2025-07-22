@@ -72,25 +72,25 @@ class TestSphinxStyleTemplate:
             ),
         ]
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test template initialization."""
         template = SphinxStyleTemplate()
         assert template.style == DocstringStyle.SPHINX
         assert template.max_line_length == 88
         assert template.indent_size == 4
 
-    def test_initialization_with_custom_params(self):
+    def test_initialization_with_custom_params(self) -> None:
         """Test template initialization with custom parameters."""
         template = SphinxStyleTemplate(max_line_length=100)
         assert template.max_line_length == 100
         assert template.style == DocstringStyle.SPHINX
 
-    def test_render_parameters_empty(self, template):
+    def test_render_parameters_empty(self, template) -> None:
         """Test rendering empty parameters list."""
         result = template.render_parameters([])
         assert result == []
 
-    def test_render_parameters_single(self, template):
+    def test_render_parameters_single(self, template) -> None:
         """Test rendering single parameter."""
         params = [
             DocstringParameter(
@@ -109,7 +109,7 @@ class TestSphinxStyleTemplate:
 
         assert result == expected
 
-    def test_render_parameters_multiple(self, template, sample_parameters):
+    def test_render_parameters_multiple(self, template, sample_parameters) -> None:
         """Test rendering multiple parameters."""
         result = template.render_parameters(sample_parameters)
 
@@ -120,7 +120,7 @@ class TestSphinxStyleTemplate:
         assert len(param_lines) == 3  # Three parameters
         assert len(type_lines) == 3  # Three type annotations
 
-    def test_render_parameters_without_types(self, template):
+    def test_render_parameters_without_types(self, template) -> None:
         """Test rendering parameters without type annotations."""
         params = [
             DocstringParameter(
@@ -146,7 +146,7 @@ class TestSphinxStyleTemplate:
         assert len(param_lines) == 2
         assert len(type_lines) == 0
 
-    def test_render_parameters_without_descriptions(self, template):
+    def test_render_parameters_without_descriptions(self, template) -> None:
         """Test rendering parameters without descriptions."""
         params = [
             DocstringParameter(
@@ -164,11 +164,11 @@ class TestSphinxStyleTemplate:
         assert len(type_lines) == 1
         assert ":param param1:" in result
 
-    def test_render_returns_empty(self, template):
+    def test_render_returns_empty(self, template) -> None:
         """Test rendering empty returns."""
         assert template.render_returns(None) == []
 
-    def test_render_returns_with_type(self, template, sample_returns):
+    def test_render_returns_with_type(self, template, sample_returns) -> None:
         """Test rendering returns with type annotation."""
         result = template.render_returns(sample_returns)
 
@@ -179,7 +179,7 @@ class TestSphinxStyleTemplate:
 
         assert result == expected
 
-    def test_render_returns_without_type(self, template):
+    def test_render_returns_without_type(self, template) -> None:
         """Test rendering returns without type annotation."""
         returns = DocstringReturns(
             type_annotation=None,
@@ -192,7 +192,7 @@ class TestSphinxStyleTemplate:
         assert ":returns: Some return value" in result
         assert not any(line.startswith(":rtype:") for line in result)
 
-    def test_render_returns_without_description(self, template):
+    def test_render_returns_without_description(self, template) -> None:
         """Test rendering returns without description."""
         returns = DocstringReturns(
             type_annotation="int",
@@ -205,11 +205,11 @@ class TestSphinxStyleTemplate:
         assert ":rtype: int" in result
         assert not any(line.startswith(":returns:") for line in result)
 
-    def test_render_raises_empty(self, template):
+    def test_render_raises_empty(self, template) -> None:
         """Test rendering empty raises list."""
         assert template.render_raises([]) == []
 
-    def test_render_raises_single(self, template):
+    def test_render_raises_single(self, template) -> None:
         """Test rendering single exception."""
         raises = [
             DocstringRaises(
@@ -225,7 +225,7 @@ class TestSphinxStyleTemplate:
 
         assert result == expected
 
-    def test_render_raises_multiple(self, template, sample_raises):
+    def test_render_raises_multiple(self, template, sample_raises) -> None:
         """Test rendering multiple exceptions."""
         result = template.render_raises(sample_raises)
 
@@ -238,7 +238,7 @@ class TestSphinxStyleTemplate:
             in result
         )
 
-    def test_render_raises_without_type(self, template):
+    def test_render_raises_without_type(self, template) -> None:
         """Test rendering raises without exception type."""
         raises = [
             DocstringRaises(
@@ -252,7 +252,7 @@ class TestSphinxStyleTemplate:
         # Should use generic "Exception"
         assert ":raises Exception: If something goes wrong" in result
 
-    def test_render_raises_without_description(self, template):
+    def test_render_raises_without_description(self, template) -> None:
         """Test rendering raises without description."""
         raises = [
             DocstringRaises(
@@ -266,14 +266,14 @@ class TestSphinxStyleTemplate:
         # Should have empty description
         assert ":raises ValueError:" in result
 
-    def test_wrap_sphinx_field_short_line(self, template):
+    def test_wrap_sphinx_field_short_line(self, template) -> None:
         """Test wrapping of short Sphinx field lines."""
         field_line = ":param name: Short description"
         result = template._wrap_sphinx_field(field_line, ":param")
 
         assert result == [field_line]  # Should not be wrapped
 
-    def test_wrap_sphinx_field_long_line(self, template):
+    def test_wrap_sphinx_field_long_line(self, template) -> None:
         """Test wrapping of long Sphinx field lines."""
         template.max_line_length = 50  # Short line for testing
         field_line = ":param very_long_parameter_name: This is a very long description that definitely exceeds the maximum line length"
@@ -288,7 +288,7 @@ class TestSphinxStyleTemplate:
         for line in result[1:]:
             assert line.startswith(" " * len(":param very_long_parameter_name: "))
 
-    def test_match_parameter_line(self, template):
+    def test_match_parameter_line(self, template) -> None:
         """Test parameter line matching."""
         # Valid parameter lines
         assert template._match_parameter_line(":param name: description") == "name"
@@ -300,7 +300,7 @@ class TestSphinxStyleTemplate:
         assert template._match_parameter_line(":returns: value") is None
         assert template._match_parameter_line("regular text") is None
 
-    def test_merge_descriptions(self, template):
+    def test_merge_descriptions(self, template) -> None:
         """Test merging preserved descriptions."""
         new_lines = [
             ":param param1: New description for param1",
@@ -320,7 +320,7 @@ class TestSphinxStyleTemplate:
         # param2 should keep new description
         assert ":param param2: New description for param2" in result
 
-    def test_render_examples(self, template):
+    def test_render_examples(self, template) -> None:
         """Test rendering examples."""
         examples = [
             "from mymodule import process\nresult = process(data)",
@@ -334,14 +334,14 @@ class TestSphinxStyleTemplate:
         assert ".. code-block:: python" in result
         assert "from mymodule import process" in result
 
-    def test_format_type_annotation_simple_types(self, template):
+    def test_format_type_annotation_simple_types(self, template) -> None:
         """Test formatting simple types for Sphinx style."""
         # Simple types should be preserved
         assert template._format_type_annotation("str") == "str"
         assert template._format_type_annotation("int") == "int"
         assert template._format_type_annotation("bool") == "bool"
 
-    def test_format_type_annotation_complex_types(self, template):
+    def test_format_type_annotation_complex_types(self, template) -> None:
         """Test formatting complex types for Sphinx style."""
         # Lists should become "list of type"
         assert template._format_type_annotation("List[str]") == "list of str"
@@ -355,7 +355,7 @@ class TestSphinxStyleTemplate:
 
     def test_complete_docstring_rendering(
         self, template, sample_parameters, sample_returns, sample_raises
-    ):
+    ) -> None:
         """Test rendering a complete Sphinx docstring."""
         docstring = template.render_complete_docstring(
             summary="Process a file with the specified encoding.",
@@ -374,7 +374,7 @@ class TestSphinxStyleTemplate:
         assert ":rtype:" in docstring
         assert ":raises FileNotFoundError:" in docstring
 
-    def test_sphinx_specific_formatting(self, template):
+    def test_sphinx_specific_formatting(self, template) -> None:
         """Test Sphinx-specific formatting features."""
         # Test that field lists are properly formatted
         params = [
@@ -392,7 +392,7 @@ class TestSphinxStyleTemplate:
         assert any(line.startswith(":param config:") for line in result)
         assert any(line.startswith(":type config:") for line in result)
 
-    def test_long_parameter_names(self, template):
+    def test_long_parameter_names(self, template) -> None:
         """Test handling of very long parameter names."""
         params = [
             DocstringParameter(
@@ -420,7 +420,7 @@ class TestSphinxTemplateEdgeCases:
         """Create template for edge case testing."""
         return SphinxStyleTemplate()
 
-    def test_empty_field_descriptions(self, template):
+    def test_empty_field_descriptions(self, template) -> None:
         """Test handling of empty field descriptions."""
         params = [
             DocstringParameter(
@@ -437,7 +437,7 @@ class TestSphinxTemplateEdgeCases:
         assert ":param param:" in result
         assert ":type param: str" in result
 
-    def test_special_characters_in_sphinx_fields(self, template):
+    def test_special_characters_in_sphinx_fields(self, template) -> None:
         """Test handling of special characters in Sphinx fields."""
         params = [
             DocstringParameter(
@@ -455,7 +455,7 @@ class TestSphinxTemplateEdgeCases:
         assert ":ref:`cross-reference`" in rendered_text
         assert "**bold**" in rendered_text
 
-    def test_colon_in_descriptions(self, template):
+    def test_colon_in_descriptions(self, template) -> None:
         """Test handling of colons in descriptions (potential parsing issue)."""
         params = [
             DocstringParameter(
@@ -472,7 +472,7 @@ class TestSphinxTemplateEdgeCases:
         rendered_text = " ".join(result)
         assert "Description with: colons in various: places" in rendered_text
 
-    def test_multiline_descriptions_in_fields(self, template):
+    def test_multiline_descriptions_in_fields(self, template) -> None:
         """Test handling of multiline descriptions in Sphinx fields."""
         template.max_line_length = 40  # Force wrapping
 
@@ -496,7 +496,7 @@ class TestSphinxTemplateEdgeCases:
         ]
         assert len(param_lines) > 1  # Should be wrapped
 
-    def test_unicode_in_sphinx_fields(self, template):
+    def test_unicode_in_sphinx_fields(self, template) -> None:
         """Test handling of Unicode characters in Sphinx fields."""
         params = [
             DocstringParameter(
@@ -515,7 +515,7 @@ class TestSphinxTemplateEdgeCases:
         assert "émojis 🚀" in rendered_text
         assert "α β γ" in rendered_text
 
-    def test_very_long_field_names(self, template):
+    def test_very_long_field_names(self, template) -> None:
         """Test field names that might cause formatting issues."""
         template.max_line_length = 60
 

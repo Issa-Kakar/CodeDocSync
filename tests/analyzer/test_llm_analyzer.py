@@ -44,7 +44,7 @@ class TestLLMAnalyzer:
         """Create a test LLM configuration."""
         return LLMConfig(
             model="gpt-4o-mini",
-            temperature=0.1,
+            temperature=0.0,
             max_tokens=1000,
             timeout_seconds=30,
             max_retries=3,
@@ -131,7 +131,7 @@ class TestLLMAnalyzer:
     @pytest.mark.asyncio
     async def test_behavioral_consistency_check(
         self, llm_analyzer: LLMAnalyzer, basic_function: ParsedFunction
-    ):
+    ) -> None:
         """Test behavioral consistency analysis between code and documentation."""
         # Create a function with behavior mismatch
         function = ParsedFunction(
@@ -216,7 +216,7 @@ class TestLLMAnalyzer:
     @pytest.mark.asyncio
     async def test_semantic_parameter_analysis(
         self, llm_analyzer: LLMAnalyzer, basic_function: ParsedFunction
-    ):
+    ) -> None:
         """Test semantic analysis of parameter descriptions and usage."""
         function = ParsedFunction(
             signature=FunctionSignature(
@@ -323,7 +323,7 @@ class TestLLMAnalyzer:
             assert response.response_time_ms > 0
 
     @pytest.mark.asyncio
-    async def test_return_value_semantic_check(self, llm_analyzer: LLMAnalyzer):
+    async def test_return_value_semantic_check(self, llm_analyzer: LLMAnalyzer) -> None:
         """Test semantic analysis of return value descriptions."""
         function = ParsedFunction(
             signature=FunctionSignature(
@@ -405,7 +405,7 @@ class TestLLMAnalyzer:
             assert response.issues[0].confidence == 0.90
 
     @pytest.mark.asyncio
-    async def test_exception_flow_analysis(self, llm_analyzer: LLMAnalyzer):
+    async def test_exception_flow_analysis(self, llm_analyzer: LLMAnalyzer) -> None:
         """Test analysis of exception handling and documentation."""
         function = ParsedFunction(
             signature=FunctionSignature(
@@ -499,7 +499,7 @@ class TestLLMAnalyzer:
             assert response.issues[0].confidence == 0.95
 
     @pytest.mark.asyncio
-    async def test_example_correctness_check(self, llm_analyzer: LLMAnalyzer):
+    async def test_example_correctness_check(self, llm_analyzer: LLMAnalyzer) -> None:
         """Test validation of code examples in docstrings."""
         function = ParsedFunction(
             signature=FunctionSignature(
@@ -597,7 +597,7 @@ class TestLLMAnalyzer:
             assert "string input" in response.issues[0].description
 
     @pytest.mark.asyncio
-    async def test_deprecation_consistency(self, llm_analyzer: LLMAnalyzer):
+    async def test_deprecation_consistency(self, llm_analyzer: LLMAnalyzer) -> None:
         """Test consistency of deprecation and version information."""
         function = ParsedFunction(
             signature=FunctionSignature(
@@ -684,7 +684,7 @@ class TestLLMAnalyzer:
         llm_analyzer: LLMAnalyzer,
         basic_function: ParsedFunction,
         basic_docstring: ParsedDocstring,
-    ):
+    ) -> None:
         """Test exponential backoff retry logic for API failures."""
         request = LLMAnalysisRequest(
             function=basic_function,
@@ -726,7 +726,7 @@ class TestLLMAnalyzer:
         llm_analyzer: LLMAnalyzer,
         basic_function: ParsedFunction,
         basic_docstring: ParsedDocstring,
-    ):
+    ) -> None:
         """Test rate limit handling with token bucket algorithm."""
         # Create multiple requests
         requests = []
@@ -773,7 +773,7 @@ class TestLLMAnalyzer:
         llm_analyzer: LLMAnalyzer,
         basic_function: ParsedFunction,
         basic_docstring: ParsedDocstring,
-    ):
+    ) -> None:
         """Test caching of identical analysis requests."""
         request = LLMAnalysisRequest(
             function=basic_function,
@@ -832,7 +832,7 @@ class TestLLMAnalyzer:
     @pytest.mark.asyncio
     async def test_fallback_to_rules_on_llm_failure(
         self, llm_analyzer: LLMAnalyzer, basic_function: ParsedFunction
-    ):
+    ) -> None:
         """Test fallback to rule engine when LLM fails."""
         # Create docstring with obvious structural issue
         docstring = ParsedDocstring(
@@ -882,7 +882,7 @@ class TestLLMAnalyzer:
         llm_analyzer: LLMAnalyzer,
         basic_function: ParsedFunction,
         basic_docstring: ParsedDocstring,
-    ):
+    ) -> None:
         """Test that single function analysis completes in under 2 seconds."""
         request = LLMAnalysisRequest(
             function=basic_function,
@@ -911,7 +911,7 @@ class TestLLMAnalyzer:
     @pytest.mark.asyncio
     async def test_cache_effectiveness_above_80_percent(
         self, llm_analyzer: LLMAnalyzer
-    ):
+    ) -> None:
         """Test that cache hit rate exceeds 80% for repeated analyses."""
         # Create a set of 10 unique functions
         functions = []
@@ -992,7 +992,9 @@ class TestLLMAnalyzer:
     # ==== ADDITIONAL HIGH-VALUE TESTS ====
 
     @pytest.mark.asyncio
-    async def test_batch_analysis_with_concurrency(self, llm_analyzer: LLMAnalyzer):
+    async def test_batch_analysis_with_concurrency(
+        self, llm_analyzer: LLMAnalyzer
+    ) -> None:
         """Test batch analysis with concurrent processing."""
         # Create 20 analysis requests
         requests = []
@@ -1071,7 +1073,7 @@ class TestLLMAnalyzer:
         llm_analyzer: LLMAnalyzer,
         basic_function: ParsedFunction,
         basic_docstring: ParsedDocstring,
-    ):
+    ) -> None:
         """Test circuit breaker prevents cascading failures."""
         request = LLMAnalysisRequest(
             function=basic_function,
@@ -1105,7 +1107,7 @@ class TestLLMAnalyzer:
             assert "Circuit breaker" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_configuration_validation(self, mock_env):
+    async def test_configuration_validation(self, mock_env) -> None:
         """Test configuration validation and error handling."""
         # Test with invalid configuration
         with pytest.raises(ValueError):
@@ -1133,7 +1135,7 @@ class TestLLMAnalyzer:
         llm_analyzer: LLMAnalyzer,
         basic_function: ParsedFunction,
         basic_docstring: ParsedDocstring,
-    ):
+    ) -> None:
         """Test performance monitoring and statistics collection."""
         # Perform several analyses
         mock_responses = []

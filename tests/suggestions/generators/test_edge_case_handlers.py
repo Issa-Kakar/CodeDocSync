@@ -32,7 +32,7 @@ class TestSpecialConstructAnalyzer:
         """Create special construct analyzer."""
         return SpecialConstructAnalyzer()
 
-    def test_analyze_property_getter(self, analyzer):
+    def test_analyze_property_getter(self, analyzer) -> None:
         """Test analyzing property getter."""
         function = Mock()
         function.signature = Mock()
@@ -47,7 +47,7 @@ class TestSpecialConstructAnalyzer:
         assert property_construct.requires_special_handling is True
         assert property_construct.confidence == 1.0
 
-    def test_analyze_property_setter(self, analyzer):
+    def test_analyze_property_setter(self, analyzer) -> None:
         """Test analyzing property setter."""
         function = Mock()
         function.signature = Mock()
@@ -60,7 +60,7 @@ class TestSpecialConstructAnalyzer:
         ]
         assert len(setter_constructs) >= 1
 
-    def test_analyze_property_deleter(self, analyzer):
+    def test_analyze_property_deleter(self, analyzer) -> None:
         """Test analyzing property deleter."""
         function = Mock()
         function.signature = Mock()
@@ -73,7 +73,7 @@ class TestSpecialConstructAnalyzer:
         ]
         assert len(deleter_constructs) >= 1
 
-    def test_analyze_classmethod(self, analyzer):
+    def test_analyze_classmethod(self, analyzer) -> None:
         """Test analyzing classmethod."""
         function = Mock()
         function.signature = Mock()
@@ -87,7 +87,7 @@ class TestSpecialConstructAnalyzer:
         assert len(classmethod_constructs) >= 1
         assert classmethod_constructs[0].confidence == 1.0
 
-    def test_analyze_staticmethod(self, analyzer):
+    def test_analyze_staticmethod(self, analyzer) -> None:
         """Test analyzing staticmethod."""
         function = Mock()
         function.signature = Mock()
@@ -100,7 +100,7 @@ class TestSpecialConstructAnalyzer:
         ]
         assert len(staticmethod_constructs) >= 1
 
-    def test_analyze_overload(self, analyzer):
+    def test_analyze_overload(self, analyzer) -> None:
         """Test analyzing overloaded function."""
         function = Mock()
         function.signature = Mock()
@@ -111,7 +111,7 @@ class TestSpecialConstructAnalyzer:
         overload_constructs = [c for c in constructs if c.construct_type == "overload"]
         assert len(overload_constructs) >= 1
 
-    def test_analyze_async_function(self, analyzer):
+    def test_analyze_async_function(self, analyzer) -> None:
         """Test analyzing async function."""
         function = Mock()
         function.signature = Mock()
@@ -125,7 +125,7 @@ class TestSpecialConstructAnalyzer:
         ]
         assert len(async_constructs) >= 1
 
-    def test_analyze_generator_function(self, analyzer):
+    def test_analyze_generator_function(self, analyzer) -> None:
         """Test analyzing generator function."""
         function = Mock()
         function.signature = Mock()
@@ -144,7 +144,7 @@ def number_generator():
         assert len(generator_constructs) >= 1
         assert generator_constructs[0].confidence >= 0.8
 
-    def test_analyze_magic_method(self, analyzer):
+    def test_analyze_magic_method(self, analyzer) -> None:
         """Test analyzing magic methods."""
         magic_methods = ["__init__", "__str__", "__len__", "__eq__"]
 
@@ -161,7 +161,7 @@ def number_generator():
             ]
             assert len(magic_constructs) >= 1
 
-    def test_analyze_context_manager(self, analyzer):
+    def test_analyze_context_manager(self, analyzer) -> None:
         """Test analyzing context manager methods."""
         context_methods = ["__enter__", "__exit__", "__aenter__", "__aexit__"]
 
@@ -178,12 +178,12 @@ def number_generator():
             ]
             assert len(context_constructs) >= 1
 
-    def test_is_generator_function_syntax_error(self, analyzer):
+    def test_is_generator_function_syntax_error(self, analyzer) -> None:
         """Test generator detection with syntax error."""
         result = analyzer._is_generator_function("def incomplete(")
         assert result is False
 
-    def test_no_special_constructs(self, analyzer):
+    def test_no_special_constructs(self, analyzer) -> None:
         """Test analyzing regular function with no special constructs."""
         function = Mock()
         function.signature = Mock()
@@ -243,7 +243,7 @@ class TestPropertyMethodHandler:
             function=mock_function, docstring=mock_docstring, issue=issue
         )
 
-    def test_handle_property_getter(self, handler, mock_context):
+    def test_handle_property_getter(self, handler, mock_context) -> None:
         """Test handling property getter."""
         suggestion = handler.handle_property_getter(mock_context)
 
@@ -257,7 +257,7 @@ class TestPropertyMethodHandler:
         # Should not have Args/Parameters section for getter
         assert "Args:" not in suggested_text and "Parameters:" not in suggested_text
 
-    def test_handle_property_setter(self, handler, mock_context):
+    def test_handle_property_setter(self, handler, mock_context) -> None:
         """Test handling property setter."""
         # Add a parameter for the setter
         param = Mock()
@@ -277,7 +277,7 @@ class TestPropertyMethodHandler:
         assert "value" in suggested_text
         assert "Args:" in suggested_text or "Parameters:" in suggested_text
 
-    def test_handle_property_deleter(self, handler, mock_context):
+    def test_handle_property_deleter(self, handler, mock_context) -> None:
         """Test handling property deleter."""
         suggestion = handler.handle_property_deleter(mock_context)
 
@@ -289,7 +289,7 @@ class TestPropertyMethodHandler:
         suggested_text = suggestion.suggested_text
         assert "delete" in suggested_text.lower()
 
-    def test_infer_property_type(self, handler, mock_function):
+    def test_infer_property_type(self, handler, mock_function) -> None:
         """Test property type inference."""
         # Test with return annotation
         mock_function.signature.return_annotation = "int"
@@ -307,7 +307,7 @@ class TestPropertyMethodHandler:
         result = handler._infer_property_type(mock_function)
         assert result == "bool"
 
-    def test_generate_property_description(self, handler, mock_function):
+    def test_generate_property_description(self, handler, mock_function) -> None:
         """Test property description generation."""
         mock_function.signature.name = "user_name"
         result = handler._generate_property_description(mock_function)
@@ -318,7 +318,7 @@ class TestPropertyMethodHandler:
         result = handler._generate_property_description(mock_function)
         assert "user data" in result.lower()
 
-    def test_generate_setter_description(self, handler, mock_function):
+    def test_generate_setter_description(self, handler, mock_function) -> None:
         """Test setter description generation."""
         mock_function.signature.name = "user_name"
         result = handler._generate_setter_description(mock_function)
@@ -380,7 +380,7 @@ class TestClassMethodHandler:
             function=mock_function, docstring=mock_docstring, issue=issue
         )
 
-    def test_handle_classmethod(self, handler, mock_context):
+    def test_handle_classmethod(self, handler, mock_context) -> None:
         """Test handling classmethod."""
         suggestion = handler.handle_classmethod(mock_context)
 
@@ -396,7 +396,7 @@ class TestClassMethodHandler:
         cls_mentioned = any("cls" in line and "Args:" not in line for line in lines)
         assert not cls_mentioned
 
-    def test_handle_staticmethod(self, handler, mock_context):
+    def test_handle_staticmethod(self, handler, mock_context) -> None:
         """Test handling staticmethod."""
         # Remove cls parameter for staticmethod
         value_param = mock_context.function.signature.parameters[1]
@@ -454,7 +454,9 @@ class TestEdgeCaseSuggestionGenerator:
             line_number=10,
         )
 
-    def test_property_getter_delegation(self, generator, mock_docstring, mock_issue):
+    def test_property_getter_delegation(
+        self, generator, mock_docstring, mock_issue
+    ) -> None:
         """Test delegation to property getter handler."""
         function = Mock()
         function.signature = Mock()
@@ -472,7 +474,9 @@ class TestEdgeCaseSuggestionGenerator:
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence >= 0.9
 
-    def test_classmethod_delegation(self, generator, mock_docstring, mock_issue):
+    def test_classmethod_delegation(
+        self, generator, mock_docstring, mock_issue
+    ) -> None:
         """Test delegation to classmethod handler."""
         function = Mock()
         function.signature = Mock()
@@ -490,7 +494,9 @@ class TestEdgeCaseSuggestionGenerator:
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence >= 0.9
 
-    def test_async_function_handling(self, generator, mock_docstring, mock_issue):
+    def test_async_function_handling(
+        self, generator, mock_docstring, mock_issue
+    ) -> None:
         """Test async function handling."""
         function = Mock()
         function.signature = Mock()
@@ -510,7 +516,9 @@ class TestEdgeCaseSuggestionGenerator:
         assert "async" in suggestion.suggested_text.lower()
         assert "await" in suggestion.suggested_text.lower()
 
-    def test_generator_function_handling(self, generator, mock_docstring, mock_issue):
+    def test_generator_function_handling(
+        self, generator, mock_docstring, mock_issue
+    ) -> None:
         """Test generator function handling."""
         function = Mock()
         function.signature = Mock()
@@ -533,7 +541,7 @@ def number_generator():
         assert suggestion.suggestion_type == SuggestionType.RETURN_UPDATE
         assert "Generator" in suggestion.suggested_text
 
-    def test_magic_method_handling(self, generator, mock_docstring, mock_issue):
+    def test_magic_method_handling(self, generator, mock_docstring, mock_issue) -> None:
         """Test magic method handling."""
         function = Mock()
         function.signature = Mock()
@@ -551,7 +559,9 @@ def number_generator():
         assert suggestion.suggestion_type == SuggestionType.DESCRIPTION_UPDATE
         assert "Initialize" in suggestion.suggested_text
 
-    def test_overloaded_function_handling(self, generator, mock_docstring, mock_issue):
+    def test_overloaded_function_handling(
+        self, generator, mock_docstring, mock_issue
+    ) -> None:
         """Test overloaded function handling."""
         function = Mock()
         function.signature = Mock()
@@ -569,7 +579,7 @@ def number_generator():
         assert suggestion.suggestion_type == SuggestionType.DESCRIPTION_UPDATE
         assert "overload" in suggestion.suggested_text.lower()
 
-    def test_magic_method_descriptions(self, generator):
+    def test_magic_method_descriptions(self, generator) -> None:
         """Test magic method description generation."""
         magic_methods = {
             "__init__": "Initialize",
@@ -606,7 +616,7 @@ def number_generator():
 
     def test_no_special_constructs_fallback(
         self, generator, mock_docstring, mock_issue
-    ):
+    ) -> None:
         """Test fallback when no special constructs are found."""
         function = Mock()
         function.signature = Mock()
@@ -642,7 +652,7 @@ class TestEdgeCaseIntegration:
         """Create edge case suggestion generator."""
         return EdgeCaseSuggestionGenerator(config)
 
-    def test_complete_workflow_property_getter(self, generator):
+    def test_complete_workflow_property_getter(self, generator) -> None:
         """Test complete workflow for property getter."""
         function = Mock()
         function.signature = Mock()
@@ -688,7 +698,7 @@ class TestEdgeCaseIntegration:
         assert "Args:" not in suggested_text
         assert "Parameters:" not in suggested_text
 
-    def test_complete_workflow_classmethod_creation(self, generator):
+    def test_complete_workflow_classmethod_creation(self, generator) -> None:
         """Test complete workflow for classmethod creation."""
         function = Mock()
         function.signature = Mock()
@@ -760,7 +770,7 @@ class TestEdgeCaseIntegration:
 
         assert not cls_documented
 
-    def test_multiple_special_constructs(self, generator):
+    def test_multiple_special_constructs(self, generator) -> None:
         """Test handling function with multiple special constructs."""
         function = Mock()
         function.signature = Mock()
