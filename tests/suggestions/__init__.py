@@ -5,7 +5,7 @@ This package contains comprehensive tests for all components of the
 suggestion generation system implemented in Chunk 1.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 # Test module information
 __version__ = "1.0.0"

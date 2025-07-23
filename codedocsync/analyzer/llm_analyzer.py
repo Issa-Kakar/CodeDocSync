@@ -23,6 +23,7 @@ import os
 import sqlite3
 import time
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -896,6 +897,13 @@ class LLMAnalyzer:
 
                 response_json, model, created_at = row
 
+                # Convert created_at from SQLite timestamp to Unix timestamp
+                if isinstance(created_at, str):
+                    created_at_dt = datetime.fromisoformat(
+                        created_at.replace("Z", "+00:00")
+                    )
+                    created_at = created_at_dt.timestamp()
+
                 # Check if expired
                 ttl_seconds = self.config.cache_ttl_days * 24 * 3600
                 if time.time() - created_at > ttl_seconds:
@@ -918,6 +926,12 @@ class LLMAnalyzer:
                 # Deserialize response
                 response_data = json.loads(response_json)
                 response_data["cache_hit"] = True
+
+                # Convert issue dicts back to InconsistencyIssue objects
+                response_data["issues"] = [
+                    InconsistencyIssue(**issue_dict)
+                    for issue_dict in response_data["issues"]
+                ]
 
                 return LLMAnalysisResponse(**response_data)
 

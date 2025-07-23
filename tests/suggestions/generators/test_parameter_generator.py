@@ -53,7 +53,12 @@ class TestParameterSuggestionGenerator:
         )
 
         return ParsedFunction(
-            signature=signature, docstring=None, file_path="test.py", line_number=10
+            signature=signature,
+            docstring=None,
+            file_path="test.py",
+            line_number=10,
+            end_line_number=20,
+            source_code="def test_function(param1: str, param2: int = 0):\n    pass",
         )
 
     @pytest.fixture
