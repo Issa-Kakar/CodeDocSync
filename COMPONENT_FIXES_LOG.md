@@ -144,3 +144,28 @@ After fixes:
 - Most failures are test infrastructure issues, not bugs
 - Parser and base functionality work correctly
 - Focus on test fixes will likely resolve 150+ failures
+
+## Test Infrastructure Fixes Applied (Phase B.4)
+
+### ParsedFunction Test Helper
+- Created create_test_function() in conftest.py
+- Automatically calculates end_line_number
+- Generates source_code from signature
+- Fixed imports to use codedocsync.parser.ast_parser
+- Ready for use in test files
+
+### Method Name Compatibility
+- Confirmed all generators use `generate` method (not `generate_suggestion`)
+- Tests calling `generate_suggestion` need to be updated
+- Found in test_edge_case_handlers.py (5 occurrences)
+
+### Module Import Fixes
+- Fixed imports in conftest.py: ParsedFunction, FunctionSignature, FunctionParameter from ast_parser
+- Fixed MatchedPair, MatchConfidence, MatchType from matcher.models
+- Fixed InconsistencyIssue to use string severity and issue_type (not enums)
+
+### Performance Test Infrastructure
+- Created comprehensive performance validation suite
+- All performance targets met successfully
+- Parser, Analyzer, and full project analysis all pass requirements
+ENDOFFILE < /dev/null
