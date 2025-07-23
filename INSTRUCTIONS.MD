@@ -4,6 +4,24 @@ MANDATORY: Before ANY Python command, you MUST activate the virtual environment:
 bashsource .venv/Scripts/activate
 python --version  # MUST show Python 3.13.5
 If you see Python 3.9.12, STOP - the venv is not activated!
+
+CRITICAL NOTE: YOU STARTED THESE INSTRUCTIONS ALREADY AND MADE PROGRESS. NOW, Please read IMPLEMENTATION_STATE.MD and TEST_FIXES_LOG.md to see the current state.
+
+Continue from where the previous session left off:
+
+1. First, complete the remaining test fixes:
+   - Parser: Fix the 3 remaining test failures (decorator format, lambda default, performance)
+   - Matcher: Fix the 1 namespace conflicts test
+   - Analyzer: Fix test_performance_monitoring and any other failing tests
+
+2. After fixing these, delete the generator tests as investigated (they expect wrong attributes)
+
+3. Then proceed with the rest of the tasks in order, the tasks that are not completed
+
+Remember to activate venv first: source .venv/Scripts/activate
+
+Document all fixes in TEST_FIXES_LOG.md and commit when complete.
+
 IMPORTANT: CONTEXT AND PROGRESS MANAGEMENT
 When your context starts getting full (around 60-70% used):
 

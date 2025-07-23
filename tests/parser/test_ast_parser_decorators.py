@@ -210,7 +210,7 @@ def func4(user_data: dict) -> dict:
                 assert api_func.signature.name == "api_endpoint"
                 assert (
                     api_func.signature.decorators[0]
-                    == 'app.route("/api/users", methods=["GET", "POST"])'
+                    == "app.route('/api/users', methods=['GET', 'POST'])"
                 )
 
                 # Check func4

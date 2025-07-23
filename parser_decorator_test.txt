@@ -1,0 +1,33 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 77 items / 67 deselected / 10 selected
+
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_multiple_decorators PASSED [ 10%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_class_method_decorators PASSED [ 20%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_decorator_with_complex_args PASSED [ 30%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_single_decorator PASSED [ 40%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_multiple_decorators PASSED [ 50%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorator_with_arguments FAILED [ 60%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_class_decorators PASSED [ 70%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_nested_classes_and_functions PASSED [ 80%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorated_async_functions PASSED [ 90%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_edge_cases PASSED [100%]
+
+================================== FAILURES ===================================
+_________ TestASTParserDecorators.test_parse_decorator_with_arguments _________
+tests\parser\test_ast_parser_decorators.py:211: in test_parse_decorator_with_arguments
+    assert (
+E   assert "app.route('/...ET', 'POST'])" == 'app.route("/...ET", "POST"])'
+E
+E     - app.route("/api/users", methods=["GET", "POST"])
+E     ?           ^          ^           ^   ^  ^    ^
+E     + app.route('/api/users', methods=['GET', 'POST'])
+E     ?           ^          ^           ^   ^  ^    ^
+=========================== short test summary info ===========================
+FAILED tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorator_with_arguments
+================= 1 failed, 9 passed, 67 deselected in 0.22s ==================

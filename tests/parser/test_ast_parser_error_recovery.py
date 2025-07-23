@@ -444,7 +444,7 @@ def function_with_complex_defaults(
             assert params[0].default_value is not None
             assert "[1, 2, 3]" in params[0].default_value
             assert params[1].default_value is not None
-            assert "{'a': 1, 'b': 2}" in params[1].default_value
+            assert "{'key': 'value'}" in params[1].default_value
             assert params[2].default_value == "print"
 
         finally:

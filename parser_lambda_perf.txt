@@ -1,0 +1,35 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 77 items / 61 deselected / 16 selected
+
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_parse_medium_file_under_50ms PASSED [  6%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_parse_large_file_under_200ms PASSED [ 12%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_memory_usage_per_function_under_50kb PASSED [ 18%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_lambda_in_functions PASSED [ 25%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_lazy_parsing_performance PASSED [ 31%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_caching_improves_performance PASSED [ 37%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_lambda_in_defaults FAILED [ 43%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_lambda_functions PASSED [ 50%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_medium_file_under_50ms PASSED [ 56%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_large_file_performance PASSED [ 62%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_memory_usage_per_function PASSED [ 68%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_lazy_parsing_memory_efficiency PASSED [ 75%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_incremental_parsing_performance PASSED [ 81%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_caching_performance_improvement PASSED [ 87%]
+tests/parser/test_docstring_parser_integration.py::TestPerformance::test_parse_time_performance PASSED [ 93%]
+tests/parser/test_docstring_parser_integration.py::TestPerformance::test_batch_parsing_performance PASSED [100%]
+
+================================== FAILURES ===================================
+_____ TestASTParserErrorRecovery.test_parse_file_with_lambda_in_defaults ______
+tests\parser\test_ast_parser_error_recovery.py:447: in test_parse_file_with_lambda_in_defaults
+    assert "{'a': 1, 'b': 2}" in params[1].default_value
+E   assert "{'a': 1, 'b': 2}" in "{'key': 'value'}"
+E    +  where "{'key': 'value'}" = FunctionParameter(name='dict_default', type_annotation=None, default_value="{'key': 'value'}", is_required=False).default_value
+=========================== short test summary info ===========================
+FAILED tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_lambda_in_defaults
+================= 1 failed, 15 passed, 61 deselected in 7.09s =================
