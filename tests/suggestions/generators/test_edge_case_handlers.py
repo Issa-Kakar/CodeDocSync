@@ -110,7 +110,7 @@ class TestPropertyMethodHandler:
         function.signature.parameters = []
 
         issue = InconsistencyIssue(
-            issue_type="missing_docstring",
+            issue_type="missing_params",
             severity="high",
             description="Property getter has no docstring",
             suggestion="Add a docstring",
@@ -183,7 +183,7 @@ class TestClassMethodHandler:
         function.signature.parameters = [cls_param, config_param]
 
         issue = InconsistencyIssue(
-            issue_type="missing_docstring",
+            issue_type="missing_params",
             severity="high",
             description="Class method has no docstring",
             suggestion="Add a docstring",
@@ -237,6 +237,30 @@ class TestEdgeCaseSuggestionGenerator:
             "classmethod": Mock(),
         }
 
+    @pytest.fixture
+    def property_context(self) -> Any:
+        """Create a context for property methods."""
+        function: Mock = Mock()
+        function.signature = Mock()
+        function.signature.name = "username"
+        function.signature.decorators = ["property"]
+        function.signature.return_annotation = "str"
+        function.signature.parameters = []
+
+        issue = InconsistencyIssue(
+            issue_type="missing_params",
+            severity="high",
+            description="Property getter has no docstring",
+            suggestion="Add a docstring",
+            line_number=10,
+        )
+
+        return SuggestionContext(
+            issue=issue,
+            function=function,
+            project_style="google",
+        )
+
     def test_generate_delegates_to_handlers(
         self, generator: Any, property_context: Any, mock_handlers: dict[str, Any]
     ) -> None:
@@ -288,7 +312,7 @@ class TestEdgeCaseSuggestionGenerator:
         function.signature.parameters = []
 
         issue = InconsistencyIssue(
-            issue_type="missing_docstring",
+            issue_type="missing_params",
             severity="high",
             description="Async function has no docstring",
             suggestion="Add a docstring",
@@ -318,7 +342,7 @@ class TestEdgeCaseSuggestionGenerator:
         function.signature.parameters = []
 
         issue = InconsistencyIssue(
-            issue_type="missing_docstring",
+            issue_type="missing_params",
             severity="medium",
             description="Magic method has no docstring",
             suggestion="Add a docstring",

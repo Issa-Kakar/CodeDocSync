@@ -1,0 +1,47 @@
+Suggestions Module Test Results
+===============================
+
+Total: 640 tests
+Passed: 470 (73.4%)
+Failed: 152 (23.8%)
+Errors: 18 (2.8%)
+
+Key Issues Found:
+
+1. ParsedFunction Validation Errors
+   - Many tests create ParsedFunction without required fields (end_line_number, source_code)
+   - Causing ValidationError: "End line (0) before start line"
+
+2. Generator Method Issues
+   - Tests expecting different method signatures than implemented
+   - Missing or changed methods in generators
+
+3. Template Formatting Differences
+   - Google style: Expected "Optional[List[float]]" but got "List[float], optional"
+   - NumPy style: Expected "List[float]" but got "list of float"
+   - Template implementations differ from test expectations
+
+4. Low Confidence Issues
+   - Parameter name fixes returning very low confidence (0.1)
+   - Suggests implementation returning fallback responses
+
+5. Performance Test Failures
+   - Some style generation tests exceed time limits
+   - Likely due to template complexity
+
+6. Type Formatter Issues
+   - Complex type handling differences
+   - New union syntax (|) vs old (Union[])
+
+Root Causes:
+- Test infrastructure creates invalid objects
+- Template implementations evolved differently than tests
+- Missing mock implementations for some generators
+- Performance tests may be too strict
+
+Recommendations:
+1. Update tests to use create_test_function() helper
+2. Align template output with test expectations
+3. Mock complex generators in unit tests
+4. Adjust performance thresholds
+5. Update type formatting tests for modern Python

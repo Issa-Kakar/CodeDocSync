@@ -1,0 +1,985 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 34 items
+
+tests/matcher/test_contextual_matcher.py::TestPerformance::test_cross_file_matching_performance PASSED [  2%]
+tests/matcher/test_contextual_matcher.py::TestPerformance::test_performance_with_large_import_graph PASSED [  5%]
+tests/matcher/test_contextual_matcher.py::TestCrossFileMatching::test_match_moved_function PASSED [  8%]
+tests/matcher/test_contextual_matcher.py::TestCrossFileMatching::test_match_via_imports PASSED [ 11%]
+tests/matcher/test_contextual_matcher.py::TestCrossFileMatching::test_match_refactored_module PASSED [ 14%]
+tests/matcher/test_contextual_matcher.py::TestInheritanceMatching::test_inheritance_aware_matching PASSED [ 17%]
+tests/matcher/test_contextual_matcher.py::TestAdvancedScenarios::test_namespace_conflicts FAILED [ 20%]
+tests/matcher/test_contextual_matcher.py::TestAdvancedScenarios::test_circular_import_handling PASSED [ 23%]
+tests/matcher/test_contextual_matcher.py::TestAdvancedScenarios::test_dynamic_imports PASSED [ 26%]
+tests/matcher/test_contextual_matcher.py::TestEdgeCases::test_cross_package_documentation FAILED [ 29%]
+tests/matcher/test_contextual_matcher.py::TestEdgeCases::test_match_accuracy_threshold PASSED [ 32%]
+tests/matcher/test_direct_matcher.py::TestPerformance::test_match_1000_functions_under_1_second PASSED [ 35%]
+tests/matcher/test_direct_matcher.py::TestPerformance::test_single_function_performance PASSED [ 38%]
+tests/matcher/test_direct_matcher.py::TestMatchingAccuracy::test_exact_name_match PASSED [ 41%]
+tests/matcher/test_direct_matcher.py::TestMatchingAccuracy::test_fuzzy_match_common_patterns PASSED [ 44%]
+tests/matcher/test_direct_matcher.py::TestMatchingAccuracy::test_confidence_scoring PASSED [ 47%]
+tests/matcher/test_direct_matcher.py::TestMatchingAccuracy::test_handle_private_methods PASSED [ 50%]
+tests/matcher/test_direct_matcher.py::TestMatchingAccuracy::test_match_class_methods PASSED [ 52%]
+tests/matcher/test_direct_matcher.py::TestEdgeCases::test_empty_function_list PASSED [ 55%]
+tests/matcher/test_direct_matcher.py::TestEdgeCases::test_functions_without_docstrings PASSED [ 58%]
+tests/matcher/test_direct_matcher.py::TestEdgeCases::test_mixed_documented_undocumented PASSED [ 61%]
+tests/matcher/test_direct_matcher.py::TestEdgeCases::test_performance_consistency PASSED [ 64%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherPerformance::test_embedding_generation_time ERROR [ 67%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherPerformance::test_cache_hit_performance ERROR [ 70%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherPerformance::test_similarity_threshold ERROR [ 73%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherFallback::test_semantic_match_renamed_function ERROR [ 76%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherFallback::test_no_match_below_threshold ERROR [ 79%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherFallback::test_openai_api_failure_handling ERROR [ 82%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_prepare_semantic_index_performance ERROR [ 85%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_cache_invalidation_on_function_change ERROR [ 88%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_batch_embedding_generation ERROR [ 91%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_vector_store_integration ERROR [ 94%]
+tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_multiple_model_fallback ERROR [ 97%]
+tests/matcher/test_semantic_matcher.py::test_embedding_cache_performance_stats PASSED [100%]
+
+=================================== ERRORS ====================================
+_ ERROR at setup of TestSemanticMatcherPerformance.test_embedding_generation_time _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_embedding_generation_time0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954A7E510>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherPerformance.test_cache_hit_performance _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_cache_hit_performance0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954AC2850>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherPerformance.test_similarity_threshold __
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_similarity_threshold0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954AC2E90>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherFallback.test_semantic_match_renamed_function _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_semantic_match_renamed_fu0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954EDCE90>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherFallback.test_no_match_below_threshold _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_no_match_below_threshold0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x00000209549BFE10>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherFallback.test_openai_api_failure_handling _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_openai_api_failure_handli0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954AC9EB0>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherAdvanced.test_prepare_semantic_index_performance _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_prepare_semantic_index_pe0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020955058490>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherAdvanced.test_cache_invalidation_on_function_change _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_cache_invalidation_on_fun0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020955058F30>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherAdvanced.test_batch_embedding_generation _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_batch_embedding_generatio0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954A75150>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherAdvanced.test_vector_store_integration _
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_vector_store_integration0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954A76550>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+_ ERROR at setup of TestSemanticMatcherAdvanced.test_multiple_model_fallback __
+
+tmp_path = WindowsPath('C:/Users/issak/AppData/Local/Temp/pytest-of-issak/pytest-47/test_multiple_model_fallback0')
+
+    @pytest.fixture
+    def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+        config = EmbeddingConfig(
+            primary_model=EmbeddingModel.OPENAI_SMALL,
+            cache_embeddings=True,
+            batch_size=10,
+        )
+
+        # Create matcher with mocked dependencies
+        with patch(
+            "codedocsync.matcher.semantic_matcher.VectorStore"
+        ) as mock_vector_store_class:
+            with patch(
+                "codedocsync.matcher.semantic_matcher.EmbeddingCache"
+            ) as mock_cache_class:
+                # Setup mock instances
+                mock_vector_store = MagicMock()
+                mock_vector_store.get_stats.return_value = {"collection_count": 0}
+                mock_vector_store.search_similar.return_value = []
+                mock_vector_store_class.return_value = mock_vector_store
+
+                mock_cache = MagicMock()
+                mock_cache.get.return_value = None
+                mock_cache.get_stats.return_value = {
+                    "memory_size": 0,
+                    "memory_hit_rate": 0.0,
+                    "overall_hit_rate": 0.0,
+                    "total_saves": 0,
+                    "total_requests": 0,
+                }
+                mock_cache_class.return_value = mock_cache
+
+>               matcher = SemanticMatcher(str(tmp_path), config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\matcher\test_semantic_matcher.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\matcher\semantic_matcher.py:33: in __init__
+    self.embedding_generator = EmbeddingGenerator(self.config)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <codedocsync.matcher.embedding_generator.EmbeddingGenerator object at 0x0000020954F85220>
+config = EmbeddingConfig(primary_model=<EmbeddingModel.OPENAI_SMALL: 'text-embedding-3-small'>, fallback_models=[<EmbeddingMode...ddingModel.LOCAL_MINILM: 'all-MiniLM-L6-v2'>], batch_size=10, max_retries=3, timeout_seconds=30, cache_embeddings=True)
+
+    def __init__(self, config: EmbeddingConfig | None = None) -> None:
+        from ..storage.embedding_config import EmbeddingConfigManager
+
+        self.config = config or EmbeddingConfig()
+        self.config_manager = EmbeddingConfigManager()
+
+        # Validate configuration
+        if not self.config_manager.validate_config():
+>           raise ValueError("Invalid embedding configuration")
+E           ValueError: Invalid embedding configuration
+
+codedocsync\matcher\embedding_generator.py:24: ValueError
+----------------------------- Captured log setup ------------------------------
+WARNING  codedocsync.storage.embedding_config:embedding_config.py:25 No OPENAI_API_KEY found in environment
+ERROR    codedocsync.storage.embedding_config:embedding_config.py:66 OpenAI model selected but no API key found
+================================== FAILURES ===================================
+_______________ TestAdvancedScenarios.test_namespace_conflicts ________________
+
+self = <tests.matcher.test_contextual_matcher.TestAdvancedScenarios object at 0x000002095499DA90>
+
+        def test_namespace_conflicts(self) -> None:
+            """Test handling of functions with same names in different namespaces."""
+            with TemporaryDirectory() as tmpdir:
+                tmppath = Path(tmpdir)
+
+                # Create multiple modules with same function names
+                api_v1 = tmppath / "api" / "v1" / "users.py"
+                api_v1.parent.mkdir(parents=True, exist_ok=True)
+                api_v1.write_text(
+                    """
+    def get_user(user_id: int) -> Dict[str, Any]:
+        '''Get user by ID (API v1).
+
+        Legacy API endpoint.
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            User data dictionary
+        '''
+        return {"id": user_id, "version": "v1"}
+    """
+                )
+
+                api_v2 = tmppath / "api" / "v2" / "users.py"
+                api_v2.parent.mkdir(parents=True, exist_ok=True)
+                api_v2.write_text(
+                    """
+    def get_user(user_id: int, include_metadata: bool = False) -> Dict[str, Any]:
+        '''Get user by ID (API v2).
+
+        Enhanced API endpoint with metadata support.
+
+        Args:
+            user_id: User identifier
+            include_metadata: Include additional metadata
+
+        Returns:
+            User data with optional metadata
+        '''
+        result = {"id": user_id, "version": "v2"}
+        if include_metadata:
+            result["metadata"] = {"created_at": "2024-01-01"}
+        return result
+    """
+                )
+
+                internal_users = tmppath / "internal" / "users.py"
+                internal_users.parent.mkdir(parents=True, exist_ok=True)
+                internal_users.write_text(
+                    """
+    def get_user(username: str) -> Dict[str, Any]:
+        '''Get user by username (internal).
+
+        Internal user lookup by username.
+
+        Args:
+            username: User's username
+
+        Returns:
+            Internal user representation
+        '''
+        return {"username": username, "internal": True}
+    """
+                )
+
+                # Setup matcher
+                matcher = ContextualMatcher(str(tmppath))
+                matcher.analyze_project()
+
+                # Test function from v2 API
+                v2_function = ParsedFunction(
+                    signature=FunctionSignature(
+                        name="get_user",
+                        parameters=[
+                            FunctionParameter(
+                                name="user_id",
+                                type_annotation="int",
+                                default_value=None,
+                                is_required=True,
+                            ),
+                            FunctionParameter(
+                                name="include_metadata",
+                                type_annotation="bool",
+                                default_value="False",
+                                is_required=False,
+                            ),
+                        ],
+                        return_type="Dict[str, Any]",
+                        is_async=False,
+                        is_method=False,
+                        decorators=[],
+                    ),
+                    file_path=str(api_v2),
+                    line_number=2,
+                    end_line_number=17,
+                    docstring=RawDocstring(
+                        raw_text="""Get user by ID (API v2).
+
+        Enhanced API endpoint with metadata support.
+
+        Args:
+            user_id: User identifier
+            include_metadata: Include additional metadata
+
+        Returns:
+            User data with optional metadata
+        """,
+                        line_number=3,
+                    ),
+                )
+
+                # Test matching - should match the correct namespace
+                result = matcher.match_with_context([v2_function])
+
+                assert result.total_functions == 1
+>               assert len(result.matched_pairs) == 1
+E               AssertionError: assert 0 == 1
+E                +  where 0 = len([])
+E                +    where [] = MatchResult(matched_pairs=[], unmatched_functions=[ParsedFunction(signature=FunctionSignature(name='get_user', parameters=[FunctionParameter(name='user_id', type_annotation='int', default_value=None, is_required=True), FunctionParameter(name='include_metadata', type_annotation='bool', default_value='False', is_required=False)], return_type='Dict[str, Any]', is_async=False, is_method=False, decorators=[]), docstring=RawDocstring(raw_text='Get user by ID (API v2).\n\n    Enhanced API endpoint with metadata support.\n\n    Args:\n        user_id: User identifier\n        include_metadata: Include additional metadata\n\n    Returns:\n        User data with optional metadata\n    ', line_number=3), file_path='C:\\Users\\issak\\AppData\\Local\\Temp\\tmpb77s6yrn\\api\\v2\\users.py', line_number=2, end_line_number=17, source_code='')], total_functions=1, match_duration_ms=0.0).matched_pairs
+
+tests\matcher\test_contextual_matcher.py:915: AssertionError
+_______________ TestEdgeCases.test_cross_package_documentation ________________
+
+self = <tests.matcher.test_contextual_matcher.TestEdgeCases object at 0x000002095499DD10>
+
+        def test_cross_package_documentation(self) -> None:
+            """Test finding documentation in package __init__.py files."""
+            with TemporaryDirectory() as tmpdir:
+                tmppath = Path(tmpdir)
+
+                # Create package structure
+                package_init = tmppath / "mypackage" / "__init__.py"
+                package_init.parent.mkdir(parents=True, exist_ok=True)
+                package_init.write_text(
+                    '''
+    """MyPackage - A comprehensive data processing library.
+
+    This package provides various utilities for data processing.
+
+    Key Functions:
+    --------------
+    process_data: Main data processing function
+    validate_input: Input validation utility
+    transform_output: Output transformation
+
+    Examples:
+    ---------
+    >>> from mypackage import process_data
+    >>> result = process_data({"value": 42})
+    >>> print(result)
+    {'value': 42, 'processed': True}
+    """
+
+    from .core import process_data
+    from .validators import validate_input
+    from .transformers import transform_output
+
+    __all__ = ['process_data', 'validate_input', 'transform_output']
+    '''
+                )
+
+                # Create actual implementation without docstring
+                core_module = tmppath / "mypackage" / "core.py"
+                core_module.write_text(
+                    """
+    def process_data(data: Dict[str, Any]) -> Dict[str, Any]:
+        # Implementation without docstring
+        data['processed'] = True
+        return data
+    """
+                )
+
+                # Setup matcher
+                matcher = ContextualMatcher(str(tmppath))
+                matcher.analyze_project()
+
+                # Test function without local docstring
+                undocumented_function = ParsedFunction(
+                    signature=FunctionSignature(
+                        name="process_data",
+                        parameters=[
+                            FunctionParameter(
+                                name="data",
+                                type_annotation="Dict[str, Any]",
+                                default_value=None,
+                                is_required=True,
+                            ),
+                        ],
+                        return_type="Dict[str, Any]",
+                        is_async=False,
+                        is_method=False,
+                        decorators=[],
+                    ),
+                    file_path=str(core_module),
+                    line_number=2,
+                    end_line_number=5,
+                    docstring=None,  # No local docstring
+                )
+
+                # Should find documentation in package __init__.py
+                result = matcher.match_with_context([undocumented_function])
+
+                assert result.total_functions == 1
+                assert len(result.matched_pairs) == 1
+
+                match = result.matched_pairs[0]
+                assert match.match_type == MatchType.CONTEXTUAL
+                assert "package" in match.match_reason.lower()
+>               assert match.confidence.overall >= 0.7
+E               AssertionError: assert 0.63 >= 0.7
+E                +  where 0.63 = MatchConfidence(overall=0.63, name_similarity=1.0, location_score=0.5, signature_similarity=0.9).overall
+E                +    where MatchConfidence(overall=0.63, name_similarity=1.0, location_score=0.5, signature_similarity=0.9) = MatchedPair(function=ParsedFunction(signature=FunctionSignature(name='process_data', parameters=[FunctionParameter(name='data', type_annotation='Dict[str, Any]', default_value=None, is_required=True)], return_type='Dict[str, Any]', is_async=False, is_method=False, decorators=[]), docstring=None, file_path='C:\\Users\\issak\\AppData\\Local\\Temp\\tmp5bmnjd8w\\mypackage\\core.py', line_number=2, end_line_number=5, source_code=''), match_type=<MatchType.CONTEXTUAL: 'contextual'>, confidence=MatchConfidence(overall=0.63, name_similarity=1.0, location_score=0.5, signature_similarity=0.9), match_reason='Documentation found in package __init__.py at C:\\Users\\issak\\AppData\\Local\\Temp\\tmp5bmnjd8w\\mypackage\\__init__.py', docstring=ParsedDocstring(format=<DocstringFormat.GOOGLE: 'google'>, summary='Main data processing function', description=None, parameters=[], returns=None, raises=[], examples=[], raw_text='Main data processing function', is_valid=True, parse_errors=[]), doc_location='C:\\Users\\issak\\AppData\\Local\\Temp\\tmp5bmnjd8w\\mypackage\\__init__.py').confidence
+
+tests\matcher\test_contextual_matcher.py:1259: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/matcher/test_contextual_matcher.py::TestAdvancedScenarios::test_namespace_conflicts
+FAILED tests/matcher/test_contextual_matcher.py::TestEdgeCases::test_cross_package_documentation
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherPerformance::test_embedding_generation_time
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherPerformance::test_cache_hit_performance
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherPerformance::test_similarity_threshold
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherFallback::test_semantic_match_renamed_function
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherFallback::test_no_match_below_threshold
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherFallback::test_openai_api_failure_handling
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_prepare_semantic_index_performance
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_cache_invalidation_on_function_change
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_batch_embedding_generation
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_vector_store_integration
+ERROR tests/matcher/test_semantic_matcher.py::TestSemanticMatcherAdvanced::test_multiple_model_fallback
+=================== 2 failed, 21 passed, 11 errors in 4.79s ===================

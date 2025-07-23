@@ -54,4 +54,4 @@ def create_test_function(
 
 
 # Make it available to all tests
-pytest.create_test_function = create_test_function
+pytest.create_test_function = create_test_function  # type: ignore[attr-defined]

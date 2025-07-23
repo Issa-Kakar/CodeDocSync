@@ -1,0 +1,15 @@
+tests\helpers.py:4: error: Cannot find implementation or library stub for module named "codedocsync.parser.models"  [import-not-found]
+tests\helpers.py:4: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+tests\helpers.py:9: error: Incompatible default for argument "params" (default has type "None", argument has type "list[str]")  [assignment]
+tests\helpers.py:9: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+tests\helpers.py:9: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+tests\helpers.py:11: error: Incompatible default for argument "docstring" (default has type "None", argument has type "str")  [assignment]
+tests\helpers.py:11: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+tests\helpers.py:11: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+tests\helpers.py:15: error: Incompatible default for argument "source_code" (default has type "None", argument has type "str")  [assignment]
+tests\helpers.py:15: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+tests\helpers.py:15: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+tests\helpers.py:19: error: Statement is unreachable  [unreachable]
+tests\helpers.py:22: error: Statement is unreachable  [unreachable]
+tests\helpers.py:49: error: Unexpected keyword argument "style" for "ParsedDocstring"  [call-arg]
+Found 7 errors in 1 file (checked 1 source file)

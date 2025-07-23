@@ -1,0 +1,26 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 15 items
+
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_parameter_name_mismatch PASSED [  6%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_parameter_count_mismatch PASSED [ 13%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_parameter_type_mismatch PASSED [ 20%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_return_type_mismatch PASSED [ 26%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_missing_raises_documentation PASSED [ 33%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_undocumented_exceptions PASSED [ 40%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_behavioral_description_accuracy PASSED [ 46%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_example_code_validity PASSED [ 53%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_version_deprecation_info PASSED [ 60%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_missing_params PASSED [ 66%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_parameter_order_different PASSED [ 73%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_optional_parameters PASSED [ 80%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_analyze_single_function_under_5ms PASSED [ 86%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_analyze_100_functions_under_500ms PASSED [ 93%]
+tests/analyzer/test_rule_engine.py::TestRuleEngine::test_zero_false_positives_for_perfect_match PASSED [100%]
+
+============================= 15 passed in 1.85s ==============================

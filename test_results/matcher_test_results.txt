@@ -1,0 +1,29 @@
+Matcher Module Test Results
+===========================
+
+Total: 34 tests
+Passed: 31 (91.2%)
+Failed: 3 (8.8%)
+
+Issues Found:
+1. Contextual Matcher - Namespace conflicts
+   - Same function names across different modules not properly resolved
+   - Issue: Detecting differences between api.v1.users.get_user and api.v2.users.get_user
+
+2. Contextual Matcher - Cross-package documentation
+   - Confidence score too low (0.63) when matching documentation from package __init__.py
+   - Expected: >= 0.7 confidence for package-level documentation
+
+3. Direct Matcher - Performance consistency
+   - High performance variance across runs (134.4% deviation)
+   - Likely due to system load or caching effects
+
+Root Causes:
+- Namespace conflict resolution needs improvement
+- Confidence scoring for cross-package matches is too conservative
+- Performance test may be too strict for Windows environment
+
+Recommendations:
+1. Improve namespace handling in contextual matcher
+2. Adjust confidence scoring for package-level documentation
+3. Relax performance consistency requirements or add warm-up runs

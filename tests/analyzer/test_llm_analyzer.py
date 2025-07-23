@@ -9,11 +9,10 @@ import asyncio
 import json
 import os
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import openai
 import pytest
 
 from codedocsync.analyzer import LLMAnalyzer
@@ -38,7 +37,7 @@ from codedocsync.parser import (
 
 
 @pytest.fixture(autouse=True)
-def mock_openai_api():
+def mock_openai_api() -> Generator[MagicMock, None, None]:
     """Mock OpenAI API for all tests."""
     with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}):
         with patch("openai.AsyncOpenAI") as mock_client:
@@ -57,7 +56,7 @@ def mock_openai_api():
             mock_response.model = "gpt-4o-mini"
 
             # Make the completion method async
-            async def mock_create(**kwargs):
+            async def mock_create(**kwargs: Any) -> MagicMock:
                 return mock_response
 
             mock_instance.chat.completions.create = mock_create
@@ -758,16 +757,17 @@ class TestLLMAnalyzer:
             start_time = time.time()
 
             # Since we're mocking _call_openai, the retry logic inside it won't run
-            # The test should expect the exception to be raised
-            with pytest.raises(openai.APIError):
-                await llm_analyzer.analyze_function(request)
+            # The mock will fail twice then succeed on third call
+            result = await llm_analyzer.analyze_function(request)
 
             elapsed = time.time() - start_time
 
-            # Only one call should be made since we're mocking at the wrong level
-            assert call_count == 1
-            # No retry delays since retries are inside _call_openai
+            # Three calls should be made (2 failures + 1 success)
+            assert call_count == 3
+            # Should be quick since no real retry delays
             assert elapsed < 0.5
+            # Result should be successful
+            assert result.issues == []
 
     @pytest.mark.asyncio
     async def test_rate_limit_handling(
@@ -857,6 +857,10 @@ class TestLLMAnalyzer:
                 json.dumps(mock_response),
                 {"prompt_tokens": 150, "completion_tokens": 50},
             )
+
+        # Clear cache to ensure clean test
+        if hasattr(llm_analyzer, "_cache_manager"):
+            llm_analyzer._cache_manager.clear_cache()
 
         with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
             # First call should hit API
@@ -1011,6 +1015,10 @@ class TestLLMAnalyzer:
                 {"prompt_tokens": 100, "completion_tokens": 20},
             )
 
+        # Clear cache to ensure clean test
+        if hasattr(llm_analyzer, "_cache_manager"):
+            llm_analyzer._cache_manager.clear_cache()
+
         with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
             # Analyze each function 5 times (50 total requests)
             total_requests = 0
@@ -1141,7 +1149,8 @@ class TestLLMAnalyzer:
             # Make multiple failing requests
             for _ in range(6):  # Threshold is 5
                 try:
-                    await llm_analyzer.analyze_with_fallback(request)
+                    # Use analyze_function directly to trigger circuit breaker
+                    await llm_analyzer.analyze_function(request)
                 except Exception:
                     pass
 

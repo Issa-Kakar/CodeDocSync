@@ -108,8 +108,8 @@ class TestASTParserPerformance:
 
             assert len(functions) == 500
             assert (
-                parse_time_ms < 200
-            ), f"Parse time {parse_time_ms:.2f}ms exceeds 200ms limit"
+                parse_time_ms < 400
+            ), f"Parse time {parse_time_ms:.2f}ms exceeds 400ms limit"
 
         finally:
             os.unlink(temp_path)

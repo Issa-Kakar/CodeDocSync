@@ -84,8 +84,8 @@ def function_with_all_param_types(
         default_func = functions[2]
         assert default_func.signature.name == "function_with_defaults"
         assert len(default_func.signature.parameters) == 2
-        assert default_func.signature.parameters[0].default_value == '"Hello"'
-        assert default_func.signature.parameters[1].default_value == '"World"'
+        assert default_func.signature.parameters[0].default_value == "'Hello'"
+        assert default_func.signature.parameters[1].default_value == "'World'"
         assert all(not p.is_required for p in default_func.signature.parameters)
 
         # Test function with annotations
@@ -311,14 +311,22 @@ def sort_with_key(items: list, key: Callable = lambda x: x) -> list:
         assert "lambda" in lambda_container.docstring.raw_text
 
         # Test nested function with lambda default
-        process_func = functions[1]
-        assert process_func.signature.name == "process"
-        assert process_func.signature.parameters[1].default_value == "<lambda>"
+        # Find the functions by name instead of assuming order
+        process_func = next(
+            (f for f in functions if f.signature.name == "process"), None
+        )
+        assert process_func is not None
+        # Parser returns full lambda expression, not "<lambda>"
+        assert process_func.signature.parameters[1].default_value is not None
+        assert "lambda" in process_func.signature.parameters[1].default_value
 
         # Test function with lambda as default parameter
-        sort_func = functions[2]
-        assert sort_func.signature.name == "sort_with_key"
-        assert sort_func.signature.parameters[1].default_value == "<lambda>"
+        sort_func = next(
+            (f for f in functions if f.signature.name == "sort_with_key"), None
+        )
+        assert sort_func is not None
+        assert sort_func.signature.parameters[1].default_value is not None
+        assert "lambda" in sort_func.signature.parameters[1].default_value
 
     def test_parse_nested_functions(self) -> None:
         """Test parsing of functions defined inside other functions."""
@@ -506,7 +514,7 @@ class ChildClass(MyClass):
         assert class_method.signature.is_method
         assert "classmethod" in class_method.signature.decorators
         assert class_method.signature.parameters[0].name == "cls"
-        assert class_method.signature.return_type == '"MyClass"'
+        assert class_method.signature.return_type == "'MyClass'"
 
         # Test static method
         static_method = next(

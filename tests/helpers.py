@@ -1,18 +1,19 @@
 """Test helpers for creating valid test objects."""
 
 from codedocsync.parser import FunctionSignature, ParsedDocstring, ParsedFunction
-from codedocsync.parser.models import FunctionParameter, ParameterKind
+from codedocsync.parser.ast_parser import FunctionParameter
+from codedocsync.parser.docstring_models import DocstringFormat
 
 
 def create_test_function(
     name: str = "test_func",
-    params: list[str] = None,
+    params: list[str] | None = None,
     return_type: str = "None",
-    docstring: str = None,
+    docstring: str | None = None,
     file_path: str = "test.py",
     line_number: int = 1,
     end_line_number: int = 10,
-    source_code: str = None,
+    source_code: str | None = None,
 ) -> ParsedFunction:
     """Create a valid ParsedFunction for tests."""
     if params is None:
@@ -30,7 +31,6 @@ def create_test_function(
                 type_annotation=None,
                 default_value=None,
                 is_required=True,
-                kind=ParameterKind.POSITIONAL_OR_KEYWORD,
             )
         )
 
@@ -47,11 +47,12 @@ def create_test_function(
     parsed_docstring = None
     if docstring:
         parsed_docstring = ParsedDocstring(
-            description=docstring,
+            format=DocstringFormat.GOOGLE,
+            summary=docstring,
+            description=None,
             parameters=[],
             returns=None,
             raises=[],
-            style="google",
         )
 
     return ParsedFunction(

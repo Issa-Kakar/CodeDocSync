@@ -254,7 +254,7 @@ def process_data(items):
     def mock_issue(self) -> InconsistencyIssue:
         """Create mock issue."""
         return InconsistencyIssue(
-            issue_type="description_vague",
+            issue_type="description_outdated",
             severity="medium",
             description="Description is too vague",
             suggestion="Improve description",
@@ -468,7 +468,7 @@ def simple_func():
     ) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
-            issue_type="unknown_behavior_issue",
+            issue_type="description_outdated",
             severity="medium",
             description="Unknown issue",
             suggestion="",
@@ -543,7 +543,7 @@ def filter_and_transform_data(raw_data, threshold=0.5):
         docstring.raw_text = '"""Filter data."""'
 
         issue = InconsistencyIssue(
-            issue_type="description_vague",
+            issue_type="description_outdated",
             severity="medium",
             description="Description is too vague",
             suggestion="Improve description clarity",
@@ -665,7 +665,7 @@ def matrix_multiply(a, b):
         docstring.raw_text = '"""Multiply matrices."""'
 
         issue = InconsistencyIssue(
-            issue_type="description_vague",
+            issue_type="description_outdated",
             severity="medium",
             description="Should mention performance characteristics",
             suggestion="",

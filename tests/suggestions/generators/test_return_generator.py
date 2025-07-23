@@ -217,7 +217,7 @@ def test_function() -> None:
     ) -> None:
         """Test improving vague return description."""
         mock_docstring.returns = DocstringReturns(type_str="str", description="result")
-        mock_issue.issue_type = "return_description_vague"
+        mock_issue.issue_type = "return_type_mismatch"
 
         context = SuggestionContext(
             function=mock_function, docstring=mock_docstring, issue=mock_issue

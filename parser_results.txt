@@ -1,0 +1,939 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 77 items
+
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_parse_medium_file_under_50ms PASSED [  1%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_parse_large_file_under_200ms PASSED [  2%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_memory_usage_per_function_under_50kb PASSED [  3%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_regular_functions PASSED [  5%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_async_functions PASSED [  6%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_generator_functions PASSED [  7%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_lambda_in_functions PASSED [  9%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserComplexSignatures::test_parse_all_parameter_types PASSED [ 10%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserComplexSignatures::test_parse_complex_type_annotations PASSED [ 11%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserComplexSignatures::test_parse_variadic_parameters PASSED [ 12%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_multiple_decorators PASSED [ 14%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_class_method_decorators PASSED [ 15%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_decorator_with_complex_args PASSED [ 16%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserNestedStructures::test_parse_nested_functions PASSED [ 18%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserNestedStructures::test_parse_nested_classes PASSED [ 19%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserNestedStructures::test_parse_async_nested_functions PASSED [ 20%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_syntax_error_recovery PASSED [ 22%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_empty_file_handling PASSED [ 23%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_unicode_content PASSED [ 24%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_file_not_found PASSED [ 25%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_imports_only_file PASSED [ 27%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_property_getters_setters PASSED [ 28%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_dunder_methods PASSED [ 29%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_abstract_methods PASSED [ 31%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_yield_from PASSED [ 32%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_complex_real_world_function PASSED [ 33%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_async_context_managers PASSED [ 35%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_dataclass_methods PASSED [ 36%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_lazy_parsing_performance PASSED [ 37%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_caching_improves_performance PASSED [ 38%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_single_decorator PASSED [ 40%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_multiple_decorators PASSED [ 41%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorator_with_arguments FAILED [ 42%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_class_decorators PASSED [ 44%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_nested_classes_and_functions FAILED [ 45%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorated_async_functions PASSED [ 46%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_edge_cases PASSED [ 48%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_syntax_errors PASSED [ 49%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_partial_file PASSED [ 50%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_unicode_content FAILED [ 51%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_empty_file PASSED [ 53%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_imports_only_file PASSED [ 54%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_not_found PASSED [ 55%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_permission_denied PASSED [ 57%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_invalid_encoding FAILED [ 58%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_only_comments PASSED [ 59%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_mixed_content PASSED [ 61%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_lazy_parser_with_errors FAILED [ 62%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_nested_functions PASSED [ 63%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_lambda_in_defaults FAILED [ 64%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_regular_functions FAILED [ 66%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_async_functions PASSED [ 67%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_generator_functions PASSED [ 68%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_lambda_functions FAILED [ 70%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_nested_functions PASSED [ 71%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_class_methods FAILED [ 72%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_medium_file_under_50ms PASSED [ 74%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_large_file_performance FAILED [ 75%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_memory_usage_per_function PASSED [ 76%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_lazy_parsing_memory_efficiency PASSED [ 77%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_incremental_parsing_performance PASSED [ 79%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_caching_performance_improvement PASSED [ 80%]
+tests/parser/test_docstring_parser_integration.py::TestFormatDetection::test_auto_detect_google_style PASSED [ 81%]
+tests/parser/test_docstring_parser_integration.py::TestFormatDetection::test_auto_detect_numpy_style PASSED [ 83%]
+tests/parser/test_docstring_parser_integration.py::TestFormatDetection::test_auto_detect_sphinx_style PASSED [ 84%]
+tests/parser/test_docstring_parser_integration.py::TestFormatDetection::test_auto_detect_rest_style PASSED [ 85%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_extract_all_param_info PASSED [ 87%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_extract_returns_section PASSED [ 88%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_extract_raises_section PASSED [ 89%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_preserve_examples_section PASSED [ 90%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_handle_malformed_docstrings PASSED [ 92%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_extract_complex_types PASSED [ 93%]
+tests/parser/test_docstring_parser_integration.py::TestExtractionAccuracy::test_optional_parameters_with_defaults PASSED [ 94%]
+tests/parser/test_docstring_parser_integration.py::TestMixedFormats::test_mixed_format_handling PASSED [ 96%]
+tests/parser/test_docstring_parser_integration.py::TestPerformance::test_parse_time_performance PASSED [ 97%]
+tests/parser/test_docstring_parser_integration.py::TestPerformance::test_batch_parsing_performance PASSED [ 98%]
+tests/parser/test_docstring_parser_integration.py::TestEdgeCases::test_unicode_and_special_characters PASSED [100%]
+
+================================== FAILURES ===================================
+_________ TestASTParserDecorators.test_parse_decorator_with_arguments _________
+
+self = <tests.parser.test_ast_parser_decorators.TestASTParserDecorators object at 0x0000022917DD7950>
+
+        def test_parse_decorator_with_arguments(self) -> None:
+            """Test parsing decorators with arguments."""
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+                f.write(
+                    '''
+    import functools
+    from typing import Any, List, Optional
+
+    @decorator_with_args("string_arg", 42, keyword=True)
+    def func1():
+        """Function with decorator arguments."""
+        pass
+
+    @functools.lru_cache(maxsize=None)
+    def func2(n: int) -> int:
+        """LRU cache with None maxsize."""
+        return n * 2
+
+    @retry(max_attempts=3, delay=1.5, exceptions=(ValueError, TypeError))
+    def func3(data: dict) -> Optional[str]:
+        """Retry decorator with multiple arguments."""
+        return data.get("key")
+
+    @app.route("/api/users", methods=["GET", "POST"])
+    def api_endpoint():
+        """Flask-style route decorator."""
+        return {"status": "ok"}
+
+    @validate_schema(
+        input_schema=UserSchema,
+        output_schema=ResponseSchema,
+        strict=True
+    )
+    def func4(user_data: dict) -> dict:
+        """Decorator with multiline arguments."""
+        return {"id": 1, **user_data}
+    '''
+                )
+                f.flush()
+
+                try:
+                    functions = parse_python_file(f.name)
+
+                    # Should find 5 functions
+                    assert len(functions) == 5
+
+                    # Check func1
+                    func1 = functions[0]
+                    assert func1.signature.name == "func1"
+                    assert len(func1.signature.decorators) == 1
+                    assert (
+                        func1.signature.decorators[0]
+                        == "decorator_with_args('string_arg', 42, keyword=True)"
+                    )
+
+                    # Check func2
+                    func2 = functions[1]
+                    assert func2.signature.name == "func2"
+                    assert (
+                        func2.signature.decorators[0] == "functools.lru_cache(maxsize=None)"
+                    )
+
+                    # Check func3
+                    func3 = functions[2]
+                    assert func3.signature.name == "func3"
+                    assert (
+                        func3.signature.decorators[0]
+                        == "retry(max_attempts=3, delay=1.5, exceptions=(ValueError, TypeError))"
+                    )
+
+                    # Check api_endpoint
+                    api_func = functions[3]
+                    assert api_func.signature.name == "api_endpoint"
+>                   assert (
+                        api_func.signature.decorators[0]
+                        == 'app.route("/api/users", methods=["GET", "POST"])'
+                    )
+E                   assert "app.route('/...ET', 'POST'])" == 'app.route("/...ET", "POST"])'
+E
+E                     - app.route("/api/users", methods=["GET", "POST"])
+E                     ?           ^          ^           ^   ^  ^    ^
+E                     + app.route('/api/users', methods=['GET', 'POST'])
+E                     ?           ^          ^           ^   ^  ^    ^
+
+tests\parser\test_ast_parser_decorators.py:211: AssertionError
+_______ TestASTParserDecorators.test_parse_nested_classes_and_functions _______
+
+self = <tests.parser.test_ast_parser_decorators.TestASTParserDecorators object at 0x0000022917EE2570>
+
+        def test_parse_nested_classes_and_functions(self) -> None:
+            """Test parsing deeply nested structures."""
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+                f.write(
+                    '''
+    def outer_function(x):
+        """Outer function with nested functions."""
+
+        @decorator1
+        def inner_function(y):
+            """First level nested function."""
+
+            @decorator2
+            @decorator3
+            def deeply_nested(z):
+                """Second level nested function."""
+                return x + y + z
+
+            return deeply_nested
+
+        class NestedClass:
+            """Nested class inside function."""
+
+            @property
+            def nested_property(self):
+                """Property in nested class."""
+                return x
+
+            @staticmethod
+            def nested_static():
+                """Static method in nested class."""
+
+                def triple_nested():
+                    """Function inside static method."""
+                    return 42
+
+                return triple_nested()
+
+        return inner_function
+
+    class OuterClass:
+        """Outer class with nested structures."""
+
+        class InnerClass:
+            """Inner class."""
+
+            @classmethod
+            def inner_classmethod(cls):
+                """Class method in inner class."""
+
+                def method_nested_func():
+                    """Function inside class method."""
+                    return cls.__name__
+
+                return method_nested_func()
+
+            class DoublyNestedClass:
+                """Doubly nested class."""
+
+                @property
+                def deep_property(self):
+                    """Property in doubly nested class."""
+                    return "deep"
+    '''
+                )
+                f.flush()
+
+                try:
+                    functions = parse_python_file(f.name)
+
+                    # Count all functions including nested ones
+                    func_names = [f.signature.name for f in functions]
+
+                    # Should find all functions at all nesting levels
+                    assert "outer_function" in func_names
+                    assert "inner_function" in func_names
+                    assert "deeply_nested" in func_names
+                    assert "nested_property" in func_names
+                    assert "nested_static" in func_names
+                    assert "triple_nested" in func_names
+                    assert "inner_classmethod" in func_names
+                    assert "method_nested_func" in func_names
+                    assert "deep_property" in func_names
+
+                    # Check decorators on nested functions
+                    func_dict = {f.signature.name: f for f in functions}
+
+                    # Check inner_function decorators
+                    inner_func = func_dict["inner_function"]
+                    assert inner_func.signature.decorators == ["decorator1"]
+                    assert inner_func.line_number == 6  # Line of 'def', not decorator
+
+                    # Check deeply_nested decorators
+                    deeply_nested = func_dict["deeply_nested"]
+                    assert len(deeply_nested.signature.decorators) == 2
+                    assert deeply_nested.signature.decorators == [
+                        "decorator2",
+                        "decorator3",
+                    ]
+>                   assert deeply_nested.line_number == 10
+E                   assert 11 == 10
+E                    +  where 11 = ParsedFunction(signature=FunctionSignature(name='deeply_nested', parameters=[FunctionParameter(name='z', type_annotation=None, default_value=None, is_required=True)], return_type=None, is_async=False, is_method=False, decorators=['decorator2', 'decorator3']), docstring=RawDocstring(raw_text='Second level nested function.', line_number=12), file_path='C:\\Users\\issak\\AppData\\Local\\Temp\\tmp45rycbmp.py', line_number=11, end_line_number=13, source_code='        def deeply_nested(z):\n            """Second level nested function."""\n            return x + y + z').line_number
+
+tests\parser\test_ast_parser_decorators.py:431: AssertionError
+____________ TestASTParserErrorRecovery.test_parse_unicode_content ____________
+
+self = <tests.parser.test_ast_parser_error_recovery.TestASTParserErrorRecovery object at 0x0000022917E2C2B0>
+
+        def test_parse_unicode_content(self) -> None:
+            """Test parsing files with unicode characters."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False, encoding="utf-8"
+            ) as f:
+                f.write(
+                    """
+    def unicode_function():
+        '''Function with unicode: \u4f60\u597d\u4e16\u754c \U0001f30d \u03b1 \u03b2 \u03b3'''
+        emoji = "\U0001f600"
+        chinese = "\u4e2d\u6587"
+        greek = "\u03b1\u03b2\u03b3\u03b4\u03b5"
+        return f"{emoji} {chinese} {greek}"
+
+    def calculate_\u03c0():
+        '''Calculate \u03c0 using unicode identifier.'''
+        \u03c0 = 3.14159
+        return \u03c0 * 2
+    """
+                )
+                temp_path = f.name
+
+            try:
+                functions = parse_python_file(temp_path)
+>               assert len(functions) == 2
+E               assert 1 == 2
+E                +  where 1 = len([ParsedFunction(signature=FunctionSignature(name='unicode_function', parameters=[], return_type=None, is_async=False, is_method=False, decorators=[]), docstring=RawDocstring(raw_text='Function with unicode: \u4f60\u597d\u4e16\u754c \U0001f30d \u03b1 \u03b2 \u03b3', line_number=3), file_path='C:\\\\Users\\\\issak\\\\AppData\\\\Local\\\\Temp\\\\tmp89fpro5n.py', line_number=2, end_line_number=7, source_code='def unicode_function():\\n    \\'\\'\\'Function with unicode: \u4f60\u597d\u4e16\u754c \U0001f30d \u03b1 \u03b2 \u03b3\\'\\'\\'\\n    emoji = "\U0001f600"\\n    chinese = "\u4e2d\u6587"\\n    greek = "\u03b1\u03b2\u03b3\u03b4\u03b5"\\n    return f"{emoji} {chinese} {greek}"')])
+
+tests\parser\test_ast_parser_error_recovery.py:126: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    codedocsync.parser.ast_parser:ast_parser.py:442 Failed to extract function calculate_\u03c0: Invalid function name: 'calculate_\u03c0'\nWARNING  codedocsync.parser.ast_parser:ast_parser.py:270 Failed to extract function calculate_\u03c0 from C:\\Users\\issak\\AppData\\Local\\Temp\\tmp89fpro5n.py: Invalid function name: 'calculate_\u03c0'
+___________ TestASTParserErrorRecovery.test_parse_invalid_encoding ____________
+
+file_path = 'C:\\Users\\issak\\AppData\\Local\\Temp\\tmpm0dre31v.py'
+
+    def parse_python_file(file_path: str) -> list[ParsedFunction]:
+        """
+        Parse Python file with comprehensive error handling.
+
+        Performance targets:
+        - Small file (<100 lines): <10ms
+        - Medium file (100-1000 lines): <50ms
+        - Large file (>1000 lines): <200ms
+
+        Args:
+            file_path: Path to the Python file to parse
+
+        Returns:
+            List of ParsedFunction objects representing all functions found
+
+        Raises:
+            ParsingError: If file cannot be parsed or accessed
+        """
+        start_time = time.time()
+
+        try:
+            with open(file_path, encoding="utf-8") as f:
+                source_content = f.read()
+        except FileNotFoundError as e:
+            error_msg = f"File not found: {file_path}"
+            logger.error(error_msg)
+            raise FileAccessError(
+                error_msg, recovery_hint="Check the file path and ensure the file exists"
+            ) from e
+        except PermissionError as e:
+            error_msg = f"Permission denied: {file_path}"
+            logger.error(error_msg)
+            raise FileAccessError(
+                error_msg, recovery_hint="Check file permissions and ensure read access"
+            ) from e
+        except UnicodeDecodeError as e:
+            # Try alternative encodings
+            try:
+                with open(file_path, encoding="latin-1") as f:
+                    source_content = f.read()
+                logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
+            except Exception:
+                error_msg = f"Encoding error in {file_path}: {e}"
+                logger.error(error_msg)
+                raise ParsingError(
+                    error_msg,
+                    recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
+                ) from e
+
+        if not source_content.strip():
+            logger.info(f"Empty file: {file_path}")
+            return []  # Empty file
+
+        # Check if file contains only imports and comments
+        if _is_imports_only(source_content):
+            logger.info(f"File contains only imports/comments: {file_path}")
+            return []
+
+        # Create hash for caching
+        file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
+
+        try:
+>           tree = _get_cached_ast(file_content_hash, file_path)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+codedocsync\parser\ast_parser.py:241:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+codedocsync\parser\ast_parser.py:176: in _get_cached_ast
+    return ast.parse(source_content, filename=file_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+source = 'ÿþ\x00\x00def test():\n    return "test"'
+filename = 'C:\\Users\\issak\\AppData\\Local\\Temp\\tmpm0dre31v.py'
+mode = 'exec'
+
+    def parse(source, filename='<unknown>', mode='exec', *,
+              type_comments=False, feature_version=None, optimize=-1):
+        """
+        Parse the source into an AST node.
+        Equivalent to compile(source, filename, mode, PyCF_ONLY_AST).
+        Pass type_comments=True to get back type comments where the syntax allows.
+        """
+        flags = PyCF_ONLY_AST
+        if optimize > 0:
+            flags |= PyCF_OPTIMIZED_AST
+        if type_comments:
+            flags |= PyCF_TYPE_COMMENTS
+        if feature_version is None:
+            feature_version = -1
+        elif isinstance(feature_version, tuple):
+            major, minor = feature_version  # Should be a 2-tuple.
+            if major != 3:
+                raise ValueError(f"Unsupported major version: {major}")
+            feature_version = minor
+        # Else it should be an int giving the minor version for 3.x.
+>       return compile(source, filename, mode, flags,
+                       _feature_version=feature_version, optimize=optimize)
+E       SyntaxError: source code string cannot contain null bytes
+
+C:\Python313\Lib\ast.py:50: SyntaxError
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.parser.test_ast_parser_error_recovery.TestASTParserErrorRecovery object at 0x0000022917EEA350>
+
+    def test_parse_invalid_encoding(self) -> None:
+        """Test handling encoding errors."""
+        # Create a file with invalid UTF-8 encoding
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".py", delete=False) as f:
+            # Write some invalid UTF-8 bytes
+            f.write(b'\xff\xfe\x00\x00def test():\n    return "test"')
+            temp_path = f.name
+
+        try:
+            # The parser should try latin-1 as fallback
+>           functions = parse_python_file(temp_path)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\parser\test_ast_parser_error_recovery.py:223:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_path = 'C:\\Users\\issak\\AppData\\Local\\Temp\\tmpm0dre31v.py'
+
+    def parse_python_file(file_path: str) -> list[ParsedFunction]:
+        """
+        Parse Python file with comprehensive error handling.
+
+        Performance targets:
+        - Small file (<100 lines): <10ms
+        - Medium file (100-1000 lines): <50ms
+        - Large file (>1000 lines): <200ms
+
+        Args:
+            file_path: Path to the Python file to parse
+
+        Returns:
+            List of ParsedFunction objects representing all functions found
+
+        Raises:
+            ParsingError: If file cannot be parsed or accessed
+        """
+        start_time = time.time()
+
+        try:
+            with open(file_path, encoding="utf-8") as f:
+                source_content = f.read()
+        except FileNotFoundError as e:
+            error_msg = f"File not found: {file_path}"
+            logger.error(error_msg)
+            raise FileAccessError(
+                error_msg, recovery_hint="Check the file path and ensure the file exists"
+            ) from e
+        except PermissionError as e:
+            error_msg = f"Permission denied: {file_path}"
+            logger.error(error_msg)
+            raise FileAccessError(
+                error_msg, recovery_hint="Check file permissions and ensure read access"
+            ) from e
+        except UnicodeDecodeError as e:
+            # Try alternative encodings
+            try:
+                with open(file_path, encoding="latin-1") as f:
+                    source_content = f.read()
+                logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
+            except Exception:
+                error_msg = f"Encoding error in {file_path}: {e}"
+                logger.error(error_msg)
+                raise ParsingError(
+                    error_msg,
+                    recovery_hint="Ensure the file uses UTF-8 encoding or check file content",
+                ) from e
+
+        if not source_content.strip():
+            logger.info(f"Empty file: {file_path}")
+            return []  # Empty file
+
+        # Check if file contains only imports and comments
+        if _is_imports_only(source_content):
+            logger.info(f"File contains only imports/comments: {file_path}")
+            return []
+
+        # Create hash for caching
+        file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
+
+        try:
+            tree = _get_cached_ast(file_content_hash, file_path)
+        except SyntaxError as e:
+            # Attempt partial parsing up to the error line
+            logger.warning(
+                f"Syntax error in {file_path}:{e.lineno}: {e.msg}. Attempting partial parse."
+            )
+            functions = _parse_partial_file(file_path, source_content, e.lineno or 1)
+
+            if functions:
+                logger.info(
+                    f"Partial parse successful for {file_path}: found {len(functions)} functions"
+                )
+                return functions
+            else:
+>               raise SyntaxParsingError(
+                    f"Syntax error in {file_path}:{e.lineno}: {e.msg}",
+                    recovery_hint="Fix the syntax error and try again",
+                ) from e
+E               codedocsync.utils.errors.SyntaxParsingError: Syntax error in C:\Users\issak\AppData\Local\Temp\tmpm0dre31v.py:None: source code string cannot contain null bytes
+
+codedocsync\parser\ast_parser.py:255: SyntaxParsingError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.parser.test_ast_parser_error_recovery.TestASTParserErrorRecovery object at 0x0000022917EEA350>
+
+    def test_parse_invalid_encoding(self) -> None:
+        """Test handling encoding errors."""
+        # Create a file with invalid UTF-8 encoding
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".py", delete=False) as f:
+            # Write some invalid UTF-8 bytes
+            f.write(b'\xff\xfe\x00\x00def test():\n    return "test"')
+            temp_path = f.name
+
+        try:
+            # The parser should try latin-1 as fallback
+            functions = parse_python_file(temp_path)
+            # If it can parse with fallback encoding, it should work
+            assert isinstance(functions, list)
+
+        except ParsingError as e:
+            # If fallback also fails, should get ParsingError
+>           assert "Encoding error" in str(e)
+E           AssertionError: assert 'Encoding error' in 'Syntax error in C:\\Users\\issak\\AppData\\Local\\Temp\\tmpm0dre31v.py:None: source code string cannot contain null bytes'
+E            +  where 'Syntax error in C:\\Users\\issak\\AppData\\Local\\Temp\\tmpm0dre31v.py:None: source code string cannot contain null bytes' = str(SyntaxParsingError('Syntax error in C:\\Users\\issak\\AppData\\Local\\Temp\\tmpm0dre31v.py:None: source code string cannot contain null bytes'))
+
+tests\parser\test_ast_parser_error_recovery.py:229: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  codedocsync.parser.ast_parser:ast_parser.py:219 File C:\Users\issak\AppData\Local\Temp\tmpm0dre31v.py decoded using latin-1 instead of utf-8
+WARNING  codedocsync.parser.ast_parser:ast_parser.py:175 File C:\Users\issak\AppData\Local\Temp\tmpm0dre31v.py decoded using latin-1 instead of utf-8
+WARNING  codedocsync.parser.ast_parser:ast_parser.py:244 Syntax error in C:\Users\issak\AppData\Local\Temp\tmpm0dre31v.py:None: source code string cannot contain null bytes. Attempting partial parse.
+___________ TestASTParserErrorRecovery.test_lazy_parser_with_errors ___________
+
+self = <tests.parser.test_ast_parser_error_recovery.TestASTParserErrorRecovery object at 0x0000022917E0B3E0>
+
+        def test_lazy_parser_with_errors(self) -> None:
+            """Test that lazy parser also handles errors gracefully."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False, encoding="utf-8"
+            ) as f:
+                f.write(
+                    """
+    def function1():
+        return 1
+
+    def function2():
+        return 2
+
+    # Syntax error
+    def broken(]:
+        pass
+    """
+                )
+                temp_path = f.name
+
+            try:
+                # Lazy parser should also raise syntax error
+>               with pytest.raises(SyntaxParsingError):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               Failed: DID NOT RAISE <class 'codedocsync.utils.errors.SyntaxParsingError'>
+
+tests\parser\test_ast_parser_error_recovery.py:356: Failed
+------------------------------ Captured log call ------------------------------
+WARNING  codedocsync.parser.ast_parser:ast_parser.py:347 Syntax error in C:\Users\issak\AppData\Local\Temp\tmpcpozd1j9.py:9: closing parenthesis ']' does not match opening parenthesis '('. Attempting partial parse.
+_____ TestASTParserErrorRecovery.test_parse_file_with_lambda_in_defaults ______
+
+self = <tests.parser.test_ast_parser_error_recovery.TestASTParserErrorRecovery object at 0x0000022917E8A970>
+
+        def test_parse_file_with_lambda_in_defaults(self) -> None:
+            """Test parsing functions with lambda expressions in default values."""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False, encoding="utf-8"
+            ) as f:
+                f.write(
+                    """
+    def function_with_lambda_default(
+        callback=lambda x: x * 2,
+        data_processor=lambda data: [d.upper() for d in data]
+    ):
+        '''Function with lambda default values.'''
+        return callback(10)
+
+    def function_with_complex_defaults(
+        list_default=[1, 2, 3],
+        dict_default={"key": "value"},
+        callable_default=print
+    ):
+        '''Function with various complex default values.'''
+        pass
+    """
+                )
+                temp_path = f.name
+
+            try:
+                functions = parse_python_file(temp_path)
+                assert len(functions) == 2
+
+                # Check lambda defaults
+                lambda_func = functions[0]
+                assert lambda_func.signature.name == "function_with_lambda_default"
+                params = lambda_func.signature.parameters
+>               assert params[0].default_value == "<lambda>"
+E               AssertionError: assert 'lambda x: x * 2' == '<lambda>'
+E
+E                 - <lambda>
+E                 + lambda x: x * 2
+
+tests\parser\test_ast_parser_error_recovery.py:437: AssertionError
+___________ TestASTParserFunctionTypes.test_parse_regular_functions ___________
+
+self = <tests.parser.test_ast_parser_function_types.TestASTParserFunctionTypes object at 0x0000022917EE5BD0>
+
+        def test_parse_regular_functions(self) -> None:
+            """Test parsing of regular def functions with various signatures."""
+            test_code = '''
+    def simple_function():
+        """A simple function with no parameters."""
+        pass
+
+    def function_with_params(name, age):
+        """Function with positional parameters."""
+        return f"{name} is {age} years old"
+
+    def function_with_defaults(greeting="Hello", name="World"):
+        """Function with default parameters."""
+        return f"{greeting}, {name}!"
+
+    def function_with_annotations(x: int, y: int) -> int:
+        """Function with type annotations."""
+        return x + y
+
+    def function_with_complex_annotations(
+        data: List[Dict[str, Any]],
+        callback: Callable[[int], str] | None = None
+    ) -> Dict[str, List[int]]:
+        """Function with complex type annotations."""
+        return {}
+
+    def function_with_all_param_types(
+        pos_only_param, /,
+        regular_param,
+        *args,
+        keyword_only: str,
+        **kwargs
+    ) -> None:
+        """Function with all parameter types."""
+        pass
+    '''
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+                f.write(test_code)
+                f.flush()
+
+                functions = parse_python_file(f.name)
+
+            # Clean up
+            Path(f.name).unlink()
+
+            assert len(functions) == 6
+
+            # Test simple function
+            simple_func = functions[0]
+            assert simple_func.signature.name == "simple_function"
+            assert len(simple_func.signature.parameters) == 0
+            assert not simple_func.signature.is_async
+            assert not simple_func.signature.is_method
+            assert simple_func.docstring is not None
+            assert simple_func.docstring is not None
+            assert "simple function" in simple_func.docstring.raw_text
+
+            # Test function with params
+            param_func = functions[1]
+            assert param_func.signature.name == "function_with_params"
+            assert len(param_func.signature.parameters) == 2
+            assert param_func.signature.parameters[0].name == "name"
+            assert param_func.signature.parameters[1].name == "age"
+            assert all(p.is_required for p in param_func.signature.parameters)
+
+            # Test function with defaults
+            default_func = functions[2]
+            assert default_func.signature.name == "function_with_defaults"
+            assert len(default_func.signature.parameters) == 2
+>           assert default_func.signature.parameters[0].default_value == '"Hello"'
+E           assert "'Hello'" == '"Hello"'
+E
+E             - "Hello"
+E             + 'Hello'
+
+tests\parser\test_ast_parser_function_types.py:87: AssertionError
+___________ TestASTParserFunctionTypes.test_parse_lambda_functions ____________
+
+self = <tests.parser.test_ast_parser_function_types.TestASTParserFunctionTypes object at 0x0000022917E2D220>
+
+        def test_parse_lambda_functions(self) -> None:
+            """Test parsing of lambda expressions within functions."""
+            test_code = '''
+    def function_with_lambdas():
+        """Function containing lambda expressions."""
+        # Simple lambda
+        square = lambda x: x ** 2
+
+        # Lambda with multiple params
+        add = lambda x, y: x + y
+
+        # Lambda with default param
+        greet = lambda name="World": f"Hello, {name}!"
+
+        # Lambda in list comprehension
+        operations = [lambda x: x + i for i in range(5)]
+
+        # Lambda as default value
+        def process(data, transform=lambda x: x):
+            return transform(data)
+
+        return square, add, greet, operations
+
+    # Lambda as module-level variable
+    module_lambda = lambda x, y=10: x * y
+
+    # Function using lambda as default parameter
+    def sort_with_key(items: list, key: Callable = lambda x: x) -> list:
+        """Sort items using a key function."""
+        return sorted(items, key=key)
+    '''
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+                f.write(test_code)
+                f.flush()
+
+                functions = parse_python_file(f.name)
+
+            # Clean up
+            Path(f.name).unlink()
+
+            # We should find the regular functions, not the lambdas themselves
+            assert len(functions) == 3  # function_with_lambdas, process, sort_with_key
+
+            # Test function containing lambdas
+            lambda_container = functions[0]
+            assert lambda_container.signature.name == "function_with_lambdas"
+            assert lambda_container.docstring is not None
+            assert "lambda" in lambda_container.docstring.raw_text
+
+            # Test nested function with lambda default
+            process_func = functions[1]
+>           assert process_func.signature.name == "process"
+E           AssertionError: assert 'sort_with_key' == 'process'
+E
+E             - process
+E             + sort_with_key
+
+tests\parser\test_ast_parser_function_types.py:315: AssertionError
+_____________ TestASTParserFunctionTypes.test_parse_class_methods _____________
+
+self = <tests.parser.test_ast_parser_function_types.TestASTParserFunctionTypes object at 0x0000022917E6B130>
+
+        def test_parse_class_methods(self) -> None:
+            """Test parsing of methods inside classes (regular, static, class methods)."""
+            test_code = '''
+    class MyClass:
+        """Test class with various method types."""
+
+        def __init__(self, name: str):
+            """Constructor method."""
+            self.name = name
+
+        def regular_method(self, value: int) -> str:
+            """Regular instance method."""
+            return f"{self.name}: {value}"
+
+        @classmethod
+        def class_method(cls, data: dict) -> "MyClass":
+            """Class method creating instance."""
+            return cls(data.get("name", "default"))
+
+        @staticmethod
+        def static_method(x: float, y: float) -> float:
+            """Static method performing calculation."""
+            return x + y
+
+        @property
+        def name_upper(self) -> str:
+            """Property getter."""
+            return self.name.upper()
+
+        @name_upper.setter
+        def name_upper(self, value: str) -> None:
+            """Property setter."""
+            self.name = value.lower()
+
+        async def async_method(self, url: str) -> dict:
+            """Async instance method."""
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    return await response.json()
+
+        def __str__(self) -> str:
+            """String representation."""
+            return self.name
+
+        def __repr__(self) -> str:
+            """Object representation."""
+            return f"MyClass(name={self.name!r})"
+
+        @classmethod
+        async def async_class_method(cls) -> List["MyClass"]:
+            """Async class method."""
+            data = await fetch_data()
+            return [cls(item["name"]) for item in data]
+
+    class ChildClass(MyClass):
+        """Child class with method overrides."""
+
+        def regular_method(self, value: int) -> str:
+            """Override of parent method."""
+            return f"Child {super().regular_method(value)}"
+
+        @staticmethod
+        def new_static_method() -> None:
+            """New static method in child."""
+            pass
+    '''
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+                f.write(test_code)
+                f.flush()
+
+                functions = parse_python_file(f.name)
+
+            # Clean up
+            Path(f.name).unlink()
+
+            # Check that we found all methods
+            method_names = [f.signature.name for f in functions]
+
+            # MyClass methods
+            assert "__init__" in method_names
+            assert "regular_method" in method_names
+            assert "class_method" in method_names
+            assert "static_method" in method_names
+            assert "name_upper" in method_names  # Both getter and setter
+            assert "async_method" in method_names
+            assert "__str__" in method_names
+            assert "__repr__" in method_names
+            assert "async_class_method" in method_names
+            assert "new_static_method" in method_names
+
+            # Test regular method
+            regular_methods = [f for f in functions if f.signature.name == "regular_method"]
+            assert len(regular_methods) == 2  # One in parent, one in child
+            for method in regular_methods:
+                assert method.signature.is_method
+                assert method.signature.parameters[0].name == "self"
+
+            # Test class method
+            class_method = next(f for f in functions if f.signature.name == "class_method")
+            assert class_method.signature.is_method
+            assert "classmethod" in class_method.signature.decorators
+            assert class_method.signature.parameters[0].name == "cls"
+>           assert class_method.signature.return_type == '"MyClass"'
+E           assert "'MyClass'" == '"MyClass"'
+E
+E             - "MyClass"
+E             ? ^       ^
+E             + 'MyClass'
+E             ? ^       ^
+
+tests\parser\test_ast_parser_function_types.py:509: AssertionError
+_________ TestASTParserPerformance.test_parse_large_file_performance __________
+
+self = <tests.parser.test_ast_parser_performance.TestASTParserPerformance object at 0x0000022917EE5F90>
+
+    def test_parse_large_file_performance(self) -> None:
+        """Test parsing a large file (5000+ lines) completes under 200ms."""
+        # Generate a file with 500 functions (10 lines each = 5000 lines)
+        content = generate_test_file(num_functions=500, lines_per_function=10)
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            # Warm up
+            parse_python_file(temp_path)
+
+            # Actual timing
+            start_time = time.perf_counter()
+            functions = parse_python_file(temp_path)
+            end_time = time.perf_counter()
+
+            parse_time_ms = (end_time - start_time) * 1000
+
+            assert len(functions) == 500
+>           assert (
+                parse_time_ms < 200
+            ), f"Parse time {parse_time_ms:.2f}ms exceeds 200ms limit"
+E           AssertionError: Parse time 321.95ms exceeds 200ms limit
+E           assert 321.94629999958124 < 200
+
+tests\parser\test_ast_parser_performance.py:110: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorator_with_arguments
+FAILED tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_nested_classes_and_functions
+FAILED tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_unicode_content
+FAILED tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_invalid_encoding
+FAILED tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_lazy_parser_with_errors
+FAILED tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_lambda_in_defaults
+FAILED tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_regular_functions
+FAILED tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_lambda_functions
+FAILED tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_class_methods
+FAILED tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_large_file_performance
+======================== 10 failed, 67 passed in 8.19s ========================

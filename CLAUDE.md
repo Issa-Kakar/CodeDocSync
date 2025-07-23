@@ -302,5 +302,5 @@ Detection accuracy (based on test suite):
 - **Project Stage**: Week 4 of 6-week implementation
 - **Python Version**: 3.13.5 (in .venv)
 - **Key Files**:
-  - `PROJECT_OVERVIEW.MD`: Full project specification
-  - `WEEK_4_STATUS.md`: Current progress tracking
+  - 'IMPLEMENTATION_STATE.MD`: Current progress tracking (READ THIS FIRST)
+  - `TEST_FIXES_LOG.md`: Test fix history (READ THIS FIRST)

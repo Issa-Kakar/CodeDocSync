@@ -1,0 +1,7 @@
+=== Suggestions Test Summary ===
+Passed tests:
+470
+Failed tests:
+304
+Error tests:
+55

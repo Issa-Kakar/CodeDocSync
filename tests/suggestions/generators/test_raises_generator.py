@@ -266,7 +266,7 @@ def test_function(value: Any) -> None:
             DocstringRaises(exception_type="ValueError", description="error"),
             DocstringRaises(exception_type="TypeError", description="failure"),
         ]
-        mock_issue.issue_type = "raises_description_vague"
+        mock_issue.issue_type = "missing_raises"
 
         context = SuggestionContext(
             function=mock_function, docstring=mock_docstring, issue=mock_issue

@@ -207,7 +207,9 @@ class TestSuggestionFormatting:
 
         assert "Parameter Update" in result
         assert "Confidence: 90%" in result
-        assert basic_suggestion.suggested_text in result
+        # Check that the suggested code content is present (may have line numbers)
+        assert "def func(username: str):" in result
+        assert '"""Function with username param."""' in result
 
     def test_format_suggestion_minimal(self, basic_suggestion: Any) -> None:
         """Test formatting suggestion in minimal mode."""
@@ -252,18 +254,21 @@ class TestSuggestionFormatting:
         with patch(
             "codedocsync.suggestions.formatters.terminal_formatter.Console"
         ) as mock_console:
-            mock_console_instance: Mock = Mock()
+            # Set up mock for Console capture context manager
+            mock_capture = Mock()
+            mock_capture.__enter__ = Mock(return_value=mock_capture)
+            mock_capture.__exit__ = Mock(return_value=None)
+            mock_capture.get = Mock(return_value="rich output")
+
+            mock_console_instance = Mock()
             mock_console.return_value = mock_console_instance
-            mock_console_instance.capture.return_value.__enter__.return_value = Mock()
-            mock_console_instance.capture.return_value.__enter__.return_value.get.return_value = (
-                "rich output"
-            )
+            mock_console_instance.capture.return_value = mock_capture
 
             formatter = TerminalSuggestionFormatter(style=OutputStyle.RICH)
             result = formatter.format_suggestion(basic_suggestion)
 
             # Should use rich formatting
-            assert "rich output" in result
+            assert result == "rich output"
 
 
 class TestEnhancedIssueFormatting:
@@ -277,7 +282,9 @@ class TestEnhancedIssueFormatting:
         assert "[CRITICAL]" in result
         assert enhanced_issue.description in result
         assert f"Line: {enhanced_issue.line_number}" in result
-        assert enhanced_issue.rich_suggestion.suggested_text in result
+        # Check that the suggested code content is present (may have line numbers)
+        assert "def func(username: str):" in result
+        assert '"""Function with username param."""' in result
 
     def test_format_issue_without_suggestion_plain(
         self, enhanced_issue_no_suggestion: Any
@@ -372,8 +379,8 @@ class TestBatchSummaryFormatting:
         result = formatter.format_batch_summary(suggestion_batch)
 
         assert "Suggestion Generation Summary" in result
-        assert "Functions Processed: 1" in result
-        assert "Total Issues: 2" in result
+        assert "Function: test_func" in result
+        assert "File: test.py" in result
         assert "Suggestions Generated: 1" in result
         assert "Generation Time: 50.0ms" in result
         assert "Average Confidence:" in result
@@ -383,9 +390,9 @@ class TestBatchSummaryFormatting:
         formatter = TerminalSuggestionFormatter(style=OutputStyle.MINIMAL)
         result = formatter.format_batch_summary(suggestion_batch)
 
-        assert "Processed: 1" in result
-        assert "Issues: 2" in result
+        assert "Function: test_func" in result
         assert "Suggestions: 1" in result
+        assert "Time: 50.0ms" in result
 
     def test_format_empty_batch(self) -> None:
         """Test formatting empty batch summary."""
@@ -399,8 +406,8 @@ class TestBatchSummaryFormatting:
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
         result = formatter.format_batch_summary(empty_batch)
 
-        assert "Functions Processed: 0" in result
-        assert "Total Issues: 0" in result
+        assert "Function: " in result
+        assert "Suggestions Generated: 0" in result
 
 
 class TestDiffFormatting:
@@ -522,31 +529,28 @@ class TestEdgeCases:
 
         # Should handle gracefully
         assert isinstance(result, str)
-        assert basic_suggestion.suggested_text in result
+        # Check that the suggested code content is present (may have line numbers)
+        assert "def func(username: str):" in result
+        assert '"""Function with username param."""' in result
 
     def test_issue_with_zero_line_number(self) -> None:
-        """Test issue with zero line number."""
-        issue = EnhancedIssue(
-            issue_type="test",
-            severity="medium",
-            description="Test issue",
-            suggestion="Test suggestion",
-            line_number=0,  # Edge case
-        )
-
-        formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
-        result = formatter.format_enhanced_issue(issue)
-
-        # Should handle gracefully, might not show line number
-        assert isinstance(result, str)
-        assert issue.description in result
+        """Test that EnhancedIssue validates line numbers."""
+        # EnhancedIssue requires line_number >= 1
+        with pytest.raises(ValueError, match="line_number must be positive"):
+            EnhancedIssue(
+                issue_type="test",
+                severity="medium",
+                description="Test issue",
+                suggestion="Test suggestion",
+                line_number=0,  # Edge case - should raise
+            )
 
     def test_function_without_signature(self) -> None:
         """Test function without proper signature."""
-        mock_function: Mock = Mock()
-        # No signature attribute
+        # Create a mock without a signature attribute
+        mock_function = Mock(spec=[])  # Empty spec means no attributes
 
-        mock_pair: Mock = Mock()
+        mock_pair = Mock()
         mock_pair.function = mock_function
 
         result = EnhancedAnalysisResult(

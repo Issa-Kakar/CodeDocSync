@@ -1,0 +1,31 @@
+Analyzer Module Test Results
+============================
+
+Total: 31 tests
+Passed: 15 (48.4%)
+Failed: 1 (3.2%)
+Errors: 15 (48.4%)
+
+Issues Found:
+1. LLM Analyzer Tests (15 errors)
+   - All LLM analyzer tests fail with API key validation error
+   - API key format validation expects "sk-" prefix
+   - Test environment uses mock keys that fail validation
+
+2. Configuration Validation Test (1 failure)
+   - Same API key validation issue
+
+3. Rule Engine Tests (15 passed)
+   - All rule engine tests pass successfully
+   - Performance meets requirements (<5ms per function)
+   - Zero false positives for perfect matches
+
+Root Causes:
+- LLM tests need mocking of API key validation
+- Tests are trying to create actual LLM connections with test keys
+- Rule engine works perfectly without external dependencies
+
+Recommendations:
+1. Mock the LLMConfig._validate_api_key method in tests
+2. Add environment variable to disable API key validation in test mode
+3. Consider using dependency injection for easier testing

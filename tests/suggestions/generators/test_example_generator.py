@@ -423,7 +423,7 @@ def calculate_area(width, height):
     def mock_issue(self) -> InconsistencyIssue:
         """Create mock issue."""
         return InconsistencyIssue(
-            issue_type="missing_examples",
+            issue_type="example_invalid",
             severity="low",
             description="Missing usage examples",
             suggestion="Add examples",
@@ -635,7 +635,7 @@ def calculate_distance(x1, y1, x2, y2):
         docstring.raw_text = '"""Calculate distance between two points."""'
 
         issue = InconsistencyIssue(
-            issue_type="missing_examples",
+            issue_type="example_invalid",
             severity="low",
             description="Function lacks usage examples",
             suggestion="Add examples",
@@ -698,7 +698,7 @@ def process_csv_file(filepath, encoding='utf-8'):
         docstring.raw_text = '"""Process CSV file and return rows."""'
 
         issue = InconsistencyIssue(
-            issue_type="missing_examples",
+            issue_type="example_invalid",
             severity="low",
             description="Add usage examples",
             suggestion="",
@@ -752,7 +752,7 @@ async def fetch_user_data(user_id):
         docstring.raw_text = '"""Fetch user data asynchronously."""'
 
         issue = InconsistencyIssue(
-            issue_type="missing_examples",
+            issue_type="example_invalid",
             severity="low",
             description="Add async examples",
             suggestion="",

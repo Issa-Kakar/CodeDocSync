@@ -1,0 +1,48 @@
+=== Analyzer Test Summary ===
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_behavioral_consistency_check ERROR [  3%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_semantic_parameter_analysis ERROR [  6%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_return_value_semantic_check ERROR [  9%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_exception_flow_analysis ERROR [ 12%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_example_correctness_check ERROR [ 16%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_deprecation_consistency ERROR [ 19%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_llm_retry_logic ERROR [ 22%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_rate_limit_handling ERROR [ 25%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_cache_identical_analyses ERROR [ 29%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_fallback_to_rules_on_llm_failure ERROR [ 32%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_analysis_time_under_2s_per_function ERROR [ 35%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_cache_effectiveness_above_80_percent ERROR [ 38%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_batch_analysis_with_concurrency ERROR [ 41%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_circuit_breaker_protection ERROR [ 45%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_configuration_validation FAILED [ 48%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_performance_monitoring ERROR [ 51%]
+=================================== ERRORS ====================================
+_____ ERROR at setup of TestLLMAnalyzer.test_behavioral_consistency_check _____
+_____ ERROR at setup of TestLLMAnalyzer.test_semantic_parameter_analysis ______
+_____ ERROR at setup of TestLLMAnalyzer.test_return_value_semantic_check ______
+_______ ERROR at setup of TestLLMAnalyzer.test_exception_flow_analysis ________
+______ ERROR at setup of TestLLMAnalyzer.test_example_correctness_check _______
+_______ ERROR at setup of TestLLMAnalyzer.test_deprecation_consistency ________
+___________ ERROR at setup of TestLLMAnalyzer.test_llm_retry_logic ____________
+_________ ERROR at setup of TestLLMAnalyzer.test_rate_limit_handling __________
+_______ ERROR at setup of TestLLMAnalyzer.test_cache_identical_analyses _______
+___ ERROR at setup of TestLLMAnalyzer.test_fallback_to_rules_on_llm_failure ___
+_ ERROR at setup of TestLLMAnalyzer.test_analysis_time_under_2s_per_function __
+_ ERROR at setup of TestLLMAnalyzer.test_cache_effectiveness_above_80_percent _
+___ ERROR at setup of TestLLMAnalyzer.test_batch_analysis_with_concurrency ____
+______ ERROR at setup of TestLLMAnalyzer.test_circuit_breaker_protection ______
+________ ERROR at setup of TestLLMAnalyzer.test_performance_monitoring ________
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_behavioral_consistency_check
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_semantic_parameter_analysis
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_return_value_semantic_check
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_exception_flow_analysis
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_example_correctness_check
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_deprecation_consistency
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_llm_retry_logic
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_rate_limit_handling
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_cache_identical_analyses
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_fallback_to_rules_on_llm_failure
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_analysis_time_under_2s_per_function
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_cache_effectiveness_above_80_percent
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_batch_analysis_with_concurrency
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_circuit_breaker_protection
+ERROR tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_performance_monitoring
