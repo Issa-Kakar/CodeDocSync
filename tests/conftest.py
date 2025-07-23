@@ -1,6 +1,9 @@
 """Shared test fixtures and helpers."""
 
+from pathlib import Path
+
 import pytest
+from dotenv import load_dotenv
 
 from codedocsync.parser.ast_parser import (
     FunctionParameter,
@@ -8,6 +11,11 @@ from codedocsync.parser.ast_parser import (
     ParsedFunction,
     RawDocstring,
 )
+
+# Load test environment variables
+test_env_path = Path(__file__).parent.parent / ".env.test"
+if test_env_path.exists():
+    load_dotenv(test_env_path, override=True)
 
 
 def create_test_function(

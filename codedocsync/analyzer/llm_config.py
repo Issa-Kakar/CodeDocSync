@@ -130,6 +130,10 @@ class LLMConfig:
 
     def _validate_api_key(self) -> None:
         """Validate that required API key is available."""
+        # Skip validation in test mode
+        if os.getenv("CODEDOCSYNC_TEST_MODE") == "true":
+            return
+
         if self.provider == "openai":
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:

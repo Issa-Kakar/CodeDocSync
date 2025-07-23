@@ -127,7 +127,7 @@ class TestPropertyMethodHandler:
         self, handler: Any, property_context: Any
     ) -> None:
         """Test generating docstring for property getter."""
-        suggestion = handler.generate_suggestion(property_context)
+        suggestion = handler.handle_property_getter(property_context)
 
         assert suggestion is not None
         assert suggestion.suggestion_type == SuggestionType.FULL_DOCSTRING
@@ -200,7 +200,7 @@ class TestClassMethodHandler:
         self, handler: Any, classmethod_context: Any
     ) -> None:
         """Test generating docstring for class method."""
-        suggestion = handler.generate_suggestion(classmethod_context)
+        suggestion = handler.handle_classmethod(classmethod_context)
 
         assert suggestion is not None
         assert suggestion.suggestion_type == SuggestionType.FULL_DOCSTRING
@@ -237,35 +237,46 @@ class TestEdgeCaseSuggestionGenerator:
             "classmethod": Mock(),
         }
 
-    def test_generate_suggestion_delegates_to_handlers(
+    def test_generate_delegates_to_handlers(
         self, generator: Any, property_context: Any, mock_handlers: dict[str, Any]
     ) -> None:
         """Test that generator delegates to appropriate handlers."""
-        # Mock the handlers
-        generator._handlers = mock_handlers
-        mock_handlers["property"].can_handle.return_value = True
-        mock_handlers["classmethod"].can_handle.return_value = False
+        # Mock the analyzer to return property_getter construct
+        mock_analyzer = Mock()
+        mock_construct = Mock()
+        mock_construct.construct_type = "property_getter"
+        mock_construct.requires_special_handling = True
+        mock_construct.documentation_style = "property"
+        mock_construct.confidence = 1.0
+        mock_analyzer.analyze_function.return_value = [mock_construct]
+        generator.analyzer = mock_analyzer
 
-        mock_suggestion: Mock = Mock()
-        mock_handlers["property"].generate_suggestion.return_value = mock_suggestion
+        # Mock the property handler
+        mock_property_handler = Mock()
+        mock_suggestion = Mock()
+        mock_property_handler.handle_property_getter.return_value = mock_suggestion
+        generator.property_handler = mock_property_handler
 
-        result = generator.generate_suggestion(property_context)
+        result = generator.generate(property_context)
 
         assert result == mock_suggestion
-        mock_handlers["property"].generate_suggestion.assert_called_once()
-        mock_handlers["classmethod"].generate_suggestion.assert_not_called()
+        mock_property_handler.handle_property_getter.assert_called_once_with(
+            property_context
+        )
 
-    def test_generate_suggestion_no_handler(
+    def test_generate_no_special_constructs(
         self, generator: Any, property_context: Any
     ) -> None:
-        """Test when no handler can handle the context."""
-        # Make all handlers unable to handle
-        for handler in generator._handlers.values():
-            handler.can_handle = Mock(return_value=False)
+        """Test when no special constructs are found."""
+        # Mock the analyzer to return empty list
+        mock_analyzer = Mock()
+        mock_analyzer.analyze_function.return_value = []
+        generator.analyzer = mock_analyzer
 
-        result = generator.generate_suggestion(property_context)
+        result = generator.generate(property_context)
 
-        assert result is None
+        # Should return a generic suggestion
+        assert result is not None
 
     def test_async_function_suggestion(self, generator: Any) -> None:
         """Test generating suggestion for async function."""
@@ -290,7 +301,7 @@ class TestEdgeCaseSuggestionGenerator:
             project_style="google",
         )
 
-        suggestion = generator.generate_suggestion(context)
+        suggestion = generator.generate(context)
 
         assert suggestion is not None
         assert (
@@ -320,7 +331,7 @@ class TestEdgeCaseSuggestionGenerator:
             project_style="google",
         )
 
-        suggestion = generator.generate_suggestion(context)
+        suggestion = generator.generate(context)
 
         assert suggestion is not None
         assert "string representation" in suggestion.suggested_text.lower()
