@@ -1,0 +1,27 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 31 items
+
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_behavioral_consistency_check PASSED [  3%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_semantic_parameter_analysis PASSED [  6%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_return_value_semantic_check PASSED [  9%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_exception_flow_analysis PASSED [ 12%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_example_correctness_check PASSED [ 16%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_deprecation_consistency PASSED [ 19%]
+tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_llm_retry_logic FAILED [ 22%]
+
+================================== FAILURES ===================================
+____________________ TestLLMAnalyzer.test_llm_retry_logic _____________________
+tests\analyzer\test_llm_analyzer.py:753: in test_llm_retry_logic
+    assert mock_call.called
+E   AssertionError: assert False
+E    +  where False = <AsyncMock name='_call_openai' id='2661892183712'>.called
+=========================== short test summary info ===========================
+FAILED tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_llm_retry_logic
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+========================= 1 failed, 6 passed in 2.38s =========================

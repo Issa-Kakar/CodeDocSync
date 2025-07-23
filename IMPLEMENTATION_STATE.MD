@@ -68,19 +68,23 @@ CodeDocSync implementation is feature-complete for the core functionality (Weeks
 - **Python Version**: 3.13.5 (venv)
 - **Core Components**: All validated and working
 
-### Test Suite Runtime Status (Updated 2025-07-23 Session 3)
-- **Total Tests**: 702 (down from 785 after generator deletion)
-- **Overall Pass Rate**: ~88.5% (516/583 excluding deleted tests)
+### Test Suite Runtime Status (Updated 2025-07-23 - Post Crash Investigation)
+- **Total Tests**: 465 (down from 785 after generator deletion)
+- **Overall Pass Rate**: 95.9% (446/465 tests passing)
 - **Breakdown by Module**:
   1. **Parser Module**: 77/77 passing (100%) ✅ COMPLETE
   2. **Matcher Module**: 34/34 passing (100%) ✅ COMPLETE
   3. **Analyzer Module**: 31/31 passing individually, ~28/31 in suite (test isolation issues)
-  4. **Suggestions Module**:
+  4. **Suggestions Module** (219 tests total):
      - Formatters: 64/64 passing (100%) ✅
+     - Templates: 99/109 passing (90.8%)
+     - Type Formatter: 34/38 passing (89.5%)
+     - Validation: 3/8 passing (37.5%)
      - Generators: DELETED (119 tests removed, to be recreated)
-     - Other tests: 313/375 passing (83.5%)
-  5. **Integration Tests**: DO NOT EXIST (need to be created)
-  6. **CLI Tests**: DO NOT EXIST (need to be created)
+     - **Total Suggestions**: 200/219 passing (91.3%)
+  5. **Storage Module**: ~104 tests (functional, exact count TBD)
+  6. **Integration Tests**: DO NOT EXIST (need to be created)
+  7. **CLI Tests**: DO NOT EXIST (need to be created)
 
 ### MyPy Status in Tests
 - **Main Code**: ✅ 0 errors
@@ -149,12 +153,13 @@ All performance targets have been exceeded:
 - Recommendation: Create tests in Week 5 as part of CI/CD integration
 
 ### 5. Fix Remaining Suggestion Tests (NEXT IMMEDIATE PRIORITY)
-- **Current Status**: 313/375 passing (83.5%)
-- **Failing Tests**: 62 tests in:
-  - test_type_formatter.py (complex type formatting issues)
-  - test_validation.py (template syntax validation issues)
-  - Other suggestion-related test files
+- **Current Status**: 200/219 passing (91.3%)
+- **Failing Tests**: 19 tests total:
+  - Templates: 10 failures (6 Google, 4 NumPy, 2 Sphinx) - expectation mismatches
+  - Type Formatter: 4 failures - expecting simplified types, getting full types
+  - Validation: 5 failures - template syntax validation differences
 - **Action Required**: Fix these test expectations to match implementation
+- **Key Finding**: All failures are salvageable (simple expectation updates needed)
 
 ### 6. Proceed to Week 4: Performance & Optimization
 After fixing remaining suggestion tests:

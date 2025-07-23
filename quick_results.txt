@@ -1,0 +1,15 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 702 items
+
+test_style_detector.py .                                                 [  0%]
+tests\analyzer\test_llm_analyzer.py ........F
+
+=========================== short test summary info ===========================
+FAILED tests/analyzer/test_llm_analyzer.py::TestLLMAnalyzer::test_cache_identical_analyses
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+========================= 1 failed, 9 passed in 4.41s =========================

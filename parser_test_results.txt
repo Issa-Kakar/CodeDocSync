@@ -1,0 +1,78 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 77 items
+
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_parse_medium_file_under_50ms PASSED [  1%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_parse_large_file_under_200ms PASSED [  2%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserPerformance::test_memory_usage_per_function_under_50kb PASSED [  3%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_regular_functions PASSED [  5%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_async_functions PASSED [  6%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_generator_functions PASSED [  7%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserCorrectness::test_parse_lambda_in_functions PASSED [  9%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserComplexSignatures::test_parse_all_parameter_types PASSED [ 10%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserComplexSignatures::test_parse_complex_type_annotations PASSED [ 11%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserComplexSignatures::test_parse_variadic_parameters PASSED [ 12%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_multiple_decorators PASSED [ 14%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_class_method_decorators PASSED [ 15%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserDecorators::test_parse_decorator_with_complex_args PASSED [ 16%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserNestedStructures::test_parse_nested_functions PASSED [ 18%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserNestedStructures::test_parse_nested_classes PASSED [ 19%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserNestedStructures::test_parse_async_nested_functions PASSED [ 20%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_syntax_error_recovery PASSED [ 22%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_empty_file_handling PASSED [ 23%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_unicode_content PASSED [ 24%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_file_not_found PASSED [ 25%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserErrorRecovery::test_imports_only_file PASSED [ 27%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_property_getters_setters PASSED [ 28%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_dunder_methods PASSED [ 29%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_abstract_methods PASSED [ 31%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserSpecialCases::test_parse_yield_from PASSED [ 32%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_complex_real_world_function PASSED [ 33%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_async_context_managers PASSED [ 35%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_dataclass_methods PASSED [ 36%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_lazy_parsing_performance PASSED [ 37%]
+tests/parser/test_ast_parser_comprehensive.py::TestASTParserIntegration::test_caching_improves_performance PASSED [ 38%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_single_decorator PASSED [ 40%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_multiple_decorators PASSED [ 41%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorator_with_arguments PASSED [ 42%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_class_decorators PASSED [ 44%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_nested_classes_and_functions PASSED [ 45%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_parse_decorated_async_functions PASSED [ 46%]
+tests/parser/test_ast_parser_decorators.py::TestASTParserDecorators::test_edge_cases PASSED [ 48%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_syntax_errors PASSED [ 49%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_partial_file PASSED [ 50%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_unicode_content PASSED [ 51%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_empty_file PASSED [ 53%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_imports_only_file PASSED [ 54%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_not_found PASSED [ 55%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_permission_denied PASSED [ 57%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_invalid_encoding PASSED [ 58%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_only_comments PASSED [ 59%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_mixed_content PASSED [ 61%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_lazy_parser_with_errors PASSED [ 62%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_nested_functions PASSED [ 63%]
+tests/parser/test_ast_parser_error_recovery.py::TestASTParserErrorRecovery::test_parse_file_with_lambda_in_defaults PASSED [ 64%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_regular_functions PASSED [ 66%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_async_functions PASSED [ 67%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_generator_functions PASSED [ 68%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_lambda_functions PASSED [ 70%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_nested_functions PASSED [ 71%]
+tests/parser/test_ast_parser_function_types.py::TestASTParserFunctionTypes::test_parse_class_methods PASSED [ 72%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_medium_file_under_50ms PASSED [ 74%]
+tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_large_file_performance FAILED [ 75%]
+
+================================== FAILURES ===================================
+_________ TestASTParserPerformance.test_parse_large_file_performance __________
+tests\parser\test_ast_parser_performance.py:110: in test_parse_large_file_performance
+    assert (
+E   AssertionError: Parse time 416.70ms exceeds 400ms limit
+E   assert 416.69839999985925 < 400
+=========================== short test summary info ===========================
+FAILED tests/parser/test_ast_parser_performance.py::TestASTParserPerformance::test_parse_large_file_performance
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+======================== 1 failed, 57 passed in 3.82s =========================

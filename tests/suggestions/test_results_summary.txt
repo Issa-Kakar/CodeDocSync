@@ -1,0 +1,194 @@
+Test run at: Wed Jul 23 04:00:56 2025
+Duration: 4.33 seconds
+============================================================
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\issak\CodeDocSync
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, mock-3.14.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 521 items
+
+formatters\test_json_formatter.py::TestJSONSuggestionFormatterInit::test_default_initialization PASSED [  0%]
+formatters\test_json_formatter.py::TestJSONSuggestionFormatterInit::test_custom_initialization PASSED [  0%]
+formatters\test_json_formatter.py::TestSuggestionFormatting::test_format_basic_suggestion PASSED [  0%]
+formatters\test_json_formatter.py::TestSuggestionFormatting::test_format_suggestion_without_timestamps PASSED [  0%]
+formatters\test_json_formatter.py::TestSuggestionFormatting::test_format_suggestion_with_diff PASSED [  0%]
+formatters\test_json_formatter.py::TestSuggestionFormatting::test_format_suggestion_with_metadata PASSED [  1%]
+formatters\test_json_formatter.py::TestSuggestionFormatting::test_format_suggestion_without_metadata PASSED [  1%]
+formatters\test_json_formatter.py::TestSuggestionFormatting::test_format_suggestion_without_diff PASSED [  1%]
+formatters\test_json_formatter.py::TestEnhancedIssueFormatting::test_format_enhanced_issue PASSED [  1%]
+formatters\test_json_formatter.py::TestEnhancedIssueFormatting::test_format_issue_without_rich_suggestion PASSED [  1%]
+formatters\test_json_formatter.py::TestEnhancedIssueFormatting::test_format_issue_without_ranking_score PASSED [  2%]
+formatters\test_json_formatter.py::TestAnalysisResultFormatting::test_format_analysis_result PASSED [  2%]
+formatters\test_json_formatter.py::TestAnalysisResultFormatting::test_format_result_without_documentation PASSED [  2%]
+formatters\test_json_formatter.py::TestAnalysisResultFormatting::test_format_result_with_metadata PASSED [  2%]
+formatters\test_json_formatter.py::TestAnalysisResultFormatting::test_format_result_without_metadata PASSED [  2%]
+formatters\test_json_formatter.py::TestBatchFormatting::test_format_batch_results PASSED [  3%]
+formatters\test_json_formatter.py::TestBatchFormatting::test_format_empty_batch PASSED [  3%]
+formatters\test_json_formatter.py::TestBatchFormatting::test_format_suggestion_batch PASSED [  3%]
+formatters\test_json_formatter.py::TestJSONSerialization::test_to_json_string PASSED [  3%]
+formatters\test_json_formatter.py::TestJSONSerialization::test_to_json_string_no_indent PASSED [  3%]
+formatters\test_json_formatter.py::TestFunctionInformationExtraction::test_format_function_info_complete PASSED [  4%]
+formatters\test_json_formatter.py::TestFunctionInformationExtraction::test_format_function_info_minimal PASSED [  4%]
+formatters\test_json_formatter.py::TestBatchSummaryStatistics::test_create_batch_summary_multiple_results PASSED [  4%]
+formatters\test_json_formatter.py::TestConvenienceFunctions::test_suggestion_to_json PASSED [  4%]
+formatters\test_json_formatter.py::TestConvenienceFunctions::test_analysis_result_to_json PASSED [  4%]
+formatters\test_json_formatter.py::TestConvenienceFunctions::test_batch_results_to_json PASSED [  4%]
+formatters\test_json_formatter.py::TestConvenienceFunctions::test_suggestion_batch_to_json PASSED [  5%]
+formatters\test_json_formatter.py::TestEdgeCases::test_format_suggestion_with_none_values PASSED [  5%]
+formatters\test_json_formatter.py::TestEdgeCases::test_format_issue_with_empty_details PASSED [  5%]
+formatters\test_json_formatter.py::TestEdgeCases::test_batch_summary_with_no_suggestions PASSED [  5%]
+formatters\test_json_formatter.py::TestTimestampHandling::test_timestamp_format PASSED [  5%]
+formatters\test_terminal_formatter.py::TestTerminalFormatterConfig::test_default_config PASSED [  6%]
+formatters\test_terminal_formatter.py::TestTerminalFormatterConfig::test_custom_config PASSED [  6%]
+formatters\test_terminal_formatter.py::TestTerminalSuggestionFormatterInit::test_default_initialization PASSED [  6%]
+formatters\test_terminal_formatter.py::TestTerminalSuggestionFormatterInit::test_custom_config_initialization PASSED [  6%]
+formatters\test_terminal_formatter.py::TestTerminalSuggestionFormatterInit::test_no_rich_fallback PASSED [  6%]
+formatters\test_terminal_formatter.py::TestSuggestionFormatting::test_format_basic_suggestion_plain PASSED [  7%]
+formatters\test_terminal_formatter.py::TestSuggestionFormatting::test_format_suggestion_minimal PASSED [  7%]
+formatters\test_terminal_formatter.py::TestSuggestionFormatting::test_format_suggestion_with_line_numbers PASSED [  7%]
+formatters\test_terminal_formatter.py::TestSuggestionFormatting::test_format_suggestion_without_line_numbers PASSED [  7%]
+formatters\test_terminal_formatter.py::TestSuggestionFormatting::test_format_suggestion_without_confidence PASSED [  7%]
+formatters\test_terminal_formatter.py::TestSuggestionFormatting::test_format_suggestion_rich PASSED [  8%]
+formatters\test_terminal_formatter.py::TestEnhancedIssueFormatting::test_format_issue_with_suggestion_plain PASSED [  8%]
+formatters\test_terminal_formatter.py::TestEnhancedIssueFormatting::test_format_issue_without_suggestion_plain PASSED [  8%]
+formatters\test_terminal_formatter.py::TestEnhancedIssueFormatting::test_format_issue_minimal PASSED [  8%]
+formatters\test_terminal_formatter.py::TestEnhancedIssueFormatting::test_severity_indicators PASSED [  8%]
+formatters\test_terminal_formatter.py::TestAnalysisResultFormatting::test_format_result_with_issues_plain PASSED [  9%]
+formatters\test_terminal_formatter.py::TestAnalysisResultFormatting::test_format_result_no_issues PASSED [  9%]
+formatters\test_terminal_formatter.py::TestAnalysisResultFormatting::test_format_result_minimal PASSED [  9%]
+formatters\test_terminal_formatter.py::TestBatchSummaryFormatting::test_format_batch_summary_plain PASSED [  9%]
+formatters\test_terminal_formatter.py::TestBatchSummaryFormatting::test_format_batch_summary_minimal PASSED [  9%]
+formatters\test_terminal_formatter.py::TestBatchSummaryFormatting::test_format_empty_batch PASSED [  9%]
+formatters\test_terminal_formatter.py::TestDiffFormatting::test_diff_preview_creation PASSED [ 10%]
+formatters\test_terminal_formatter.py::TestDiffFormatting::test_diff_display_configuration PASSED [ 10%]
+formatters\test_terminal_formatter.py::TestDiffFormatting::test_no_diff_display PASSED [ 10%]
+formatters\test_terminal_formatter.py::TestUtilityMethods::test_format_issue_only PASSED [ 10%]
+formatters\test_terminal_formatter.py::TestUtilityMethods::test_format_no_issues PASSED [ 10%]
+formatters\test_terminal_formatter.py::TestConfigurationOptions::test_max_width_configuration PASSED [ 11%]
+formatters\test_terminal_formatter.py::TestConfigurationOptions::test_unicode_configuration PASSED [ 11%]
+formatters\test_terminal_formatter.py::TestConfigurationOptions::test_compact_mode PASSED [ 11%]
+formatters\test_terminal_formatter.py::TestEdgeCases::test_suggestion_without_diff PASSED [ 11%]
+formatters\test_terminal_formatter.py::TestEdgeCases::test_issue_with_zero_line_number PASSED [ 11%]
+formatters\test_terminal_formatter.py::TestEdgeCases::test_function_without_signature PASSED [ 12%]
+formatters\test_terminal_formatter.py::TestEdgeCases::test_very_long_suggestion_text PASSED [ 12%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_parameters_simple FAILED [ 12%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_parameters_empty PASSED [ 12%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_parameters_no_type PASSED [ 12%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_parameters_long_description PASSED [ 13%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_returns_simple PASSED [ 13%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_returns_no_type PASSED [ 13%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_returns_empty PASSED [ 13%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_raises_simple PASSED [ 13%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_raises_empty PASSED [ 14%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_render_complete_docstring PASSED [ 14%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_format_parameter_line_with_type PASSED [ 14%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_format_parameter_line_without_type PASSED [ 14%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_format_parameter_line_no_description PASSED [ 14%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_match_parameter_line FAILED [ 14%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_extract_section_boundaries FAILED [ 15%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_replace_section PASSED [ 15%]
+templates\test_google_template.py::TestGoogleStyleTemplate::test_template_with_max_line_length FAILED [ 15%]
+templates\test_google_template.py::TestTemplateRegistry::test_register_and_get_template PASSED [ 15%]
+templates\test_google_template.py::TestTemplateRegistry::test_available_styles PASSED [ 15%]
+templates\test_google_template.py::TestTemplateRegistry::test_invalid_style_raises_error FAILED [ 16%]
+templates\test_google_template.py::TestTemplateIntegration::test_realistic_function_docstring FAILED [ 16%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_initialization PASSED [ 16%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_initialization_with_custom_params PASSED [ 16%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_parameters_empty PASSED [ 16%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_parameters_single PASSED [ 17%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_parameters_multiple PASSED [ 17%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_parameters_without_types PASSED [ 17%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_parameters_long_description PASSED [ 17%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_returns_empty PASSED [ 17%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_returns_with_type PASSED [ 18%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_returns_without_type PASSED [ 18%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_raises_empty PASSED [ 18%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_raises_single PASSED [ 18%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_raises_multiple PASSED [ 18%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_raises_without_type FAILED [ 19%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_parameter_line_with_type PASSED [ 19%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_parameter_line_without_type PASSED [ 19%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_return_line_with_type PASSED [ 19%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_return_line_without_type PASSED [ 19%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_match_parameter_line FAILED [ 19%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_merge_descriptions PASSED [ 20%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_examples PASSED [ 20%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_type_annotation_array_types FAILED [ 20%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_complete_docstring_rendering PASSED [ 20%]
+templates\test_numpy_template.py::TestNumpyStyleTemplate::test_long_line_wrapping FAILED [ 20%]
+
+================================== FAILURES ===================================
+____________ TestGoogleStyleTemplate.test_render_parameters_simple ____________
+templates\test_google_template.py:41: in test_render_parameters_simple
+    assert "    param2 (int, optional): Second parameter" in result
+E   AssertionError: assert '    param2 (int, optional): Second parameter' in ['Args:', '    param1 (str): First parameter', '    param2 (int): Second parameter']
+______________ TestGoogleStyleTemplate.test_match_parameter_line ______________
+templates\test_google_template.py:189: in test_match_parameter_line
+    assert result == expected
+E   AssertionError: assert None == '**kwargs'
+___________ TestGoogleStyleTemplate.test_extract_section_boundaries ___________
+templates\test_google_template.py:217: in test_extract_section_boundaries
+    assert params_end == 4  # Last parameter line
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   assert 5 == 4
+_________ TestGoogleStyleTemplate.test_template_with_max_line_length __________
+templates\test_google_template.py:266: in test_template_with_max_line_length
+    assert len(line) <= 50 or line.strip() == ""
+E   AssertionError: assert (71 <= 50 or 'param (str):...ld be wrapped' == ''
+E    +  where 71 = len('    param (str): This is a very long description that should be wrapped')
+E
+E     + param (str): This is a very long description that should be wrapped)
+____________ TestTemplateRegistry.test_invalid_style_raises_error _____________
+templates\test_google_template.py:291: in test_invalid_style_raises_error
+    with pytest.raises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+__________ TestTemplateIntegration.test_realistic_function_docstring __________
+templates\test_google_template.py:353: in test_realistic_function_docstring
+    assert "config (Optional[Config], optional): Configuration object" in result
+E   assert 'config (Optional[Config], optional): Configuration object' in '"""\nProcess input data with optional configuration.\n\nThis function validates and processes input data according to the provided\nconfiguration. It supports various input formats and provides detailed error reporting.\n\nArgs:\n    data (List[Dict[str, Any]]): Input data to process\n    config (Config, optional): Configuration object\n    verbose (bool): Enable verbose output\n\nReturns:\n    ProcessedData: Processed data object with validation results\n\nRaises:\n    ValidationError: When input data fails validation\n    ConfigurationError: When configuration is invalid\n"""'
+___________ TestNumpyStyleTemplate.test_render_raises_without_type ____________
+templates\test_numpy_template.py:259: in test_render_raises_without_type
+    assert "If something goes wrong" in result
+E   AssertionError: assert 'If something goes wrong' in ['Raises', '------', 'Exception', '    If something goes wrong']
+______________ TestNumpyStyleTemplate.test_match_parameter_line _______________
+templates\test_numpy_template.py:315: in test_match_parameter_line
+    assert template._match_parameter_line("    description") is None
+E   AssertionError: assert 'description' is None
+E    +  where 'description' = _match_parameter_line('    description')
+E    +    where _match_parameter_line = <codedocsync.suggestions.templates.numpy_template.NumpyStyleTemplate object at 0x000001C0AC5CCC30>._match_parameter_line
+_______ TestNumpyStyleTemplate.test_format_type_annotation_array_types ________
+templates\test_numpy_template.py:366: in test_format_type_annotation_array_types
+    assert template._format_type_annotation("Dict[str, Any]") == "dict of Any"
+E   AssertionError: assert 'dict of str, Any' == 'dict of Any'
+E
+E     - dict of Any
+E     + dict of str, Any
+E     ?        +++++
+_______________ TestNumpyStyleTemplate.test_long_line_wrapping ________________
+templates\test_numpy_template.py:413: in test_long_line_wrapping
+    assert len(line) <= template.max_line_length or line.strip() == ""
+E   AssertionError: assert (81 <= 50 or 'very_long_pa...uple[int, str' == ''
+E    +  where 81 = len('very_long_parameter_name_that_exceeds_limit : dict of str, list of Tuple[int, str')
+E    +  and   50 = <codedocsync.suggestions.templates.numpy_template.NumpyStyleTemplate object at 0x000001C0AC0C4910>.max_line_length
+E
+E     + very_long_parameter_name_that_exceeds_limit : dict of str, list of Tuple[int, str)
+============================ slowest 10 durations =============================
+
+(10 durations < 0.005s hidden.  Use -vv to show these durations.)
+=========================== short test summary info ===========================
+FAILED templates\test_google_template.py::TestGoogleStyleTemplate::test_render_parameters_simple
+FAILED templates\test_google_template.py::TestGoogleStyleTemplate::test_match_parameter_line
+FAILED templates\test_google_template.py::TestGoogleStyleTemplate::test_extract_section_boundaries
+FAILED templates\test_google_template.py::TestGoogleStyleTemplate::test_template_with_max_line_length
+FAILED templates\test_google_template.py::TestTemplateRegistry::test_invalid_style_raises_error
+FAILED templates\test_google_template.py::TestTemplateIntegration::test_realistic_function_docstring
+FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_render_raises_without_type
+FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_match_parameter_line
+FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_type_annotation_array_types
+FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_long_line_wrapping
+!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 10 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+======================== 10 failed, 99 passed in 2.80s ========================
