@@ -6,10 +6,9 @@ ensuring proper conversion between different docstring styles while preserving
 information and applying appropriate formatting.
 """
 
-import pytest
+from typing import Any
 
-from pathlib import Path
-from typing import Any, Callable, Optional
+import pytest
 
 from codedocsync.parser.docstring_models import (
     DocstringFormat,
@@ -88,7 +87,9 @@ class TestDocstringStyleConverter:
         assert isinstance(converter._conversion_stats, dict)
         assert converter._conversion_stats["conversions_performed"] == 0
 
-    def test_convert_same_style(self, converter: Any, sample_parsed_docstring: Any) -> None:
+    def test_convert_same_style(
+        self, converter: Any, sample_parsed_docstring: Any
+    ) -> None:
         """Test conversion when source and target styles are the same."""
         result = converter.convert(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.GOOGLE
@@ -101,7 +102,9 @@ class TestDocstringStyleConverter:
         assert "Returns:" in result
         assert "Raises:" in result
 
-    def test_convert_google_to_numpy(self, converter: Any, sample_parsed_docstring: Any) -> None:
+    def test_convert_google_to_numpy(
+        self, converter: Any, sample_parsed_docstring: Any
+    ) -> None:
         """Test conversion from Google to NumPy style."""
         result = converter.convert(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.NUMPY
@@ -118,7 +121,9 @@ class TestDocstringStyleConverter:
         # Check type conversion (np.ndarray should become array_like)
         assert "array_like" in result
 
-    def test_convert_google_to_sphinx(self, converter: Any, sample_parsed_docstring: Any) -> None:
+    def test_convert_google_to_sphinx(
+        self, converter: Any, sample_parsed_docstring: Any
+    ) -> None:
         """Test conversion from Google to Sphinx style."""
         result = converter.convert(
             sample_parsed_docstring, DocstringStyle.GOOGLE, DocstringStyle.SPHINX

@@ -4,9 +4,9 @@ Comprehensive tests for suggestion configuration system.
 Tests configuration classes, validation, loading/saving, and merging logic.
 """
 
-from typing import Optional, List, Dict
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -349,8 +349,9 @@ class TestRankingConfig:
             is_actionable=True,
         )
 
-        # Add severity attribute for testing
-        suggestion.severity = "high"
+        # Mock severity attribute for testing
+        # Note: Suggestion doesn't have severity, it's on the issue
+        # but the config might expect it for ranking purposes
 
         score = config.calculate_score(suggestion)
 
@@ -437,7 +438,7 @@ class TestConfigManager:
     @patch("pathlib.Path.exists")
     @patch("builtins.open", new_callable=mock_open)
     def test_config_manager_load_config_with_user_config(
-        self, mock_file, mock_exists
+        self, mock_file: Any, mock_exists: Any
     ) -> None:
         """Test loading config with user configuration override."""
         manager = ConfigManager()

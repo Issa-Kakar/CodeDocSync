@@ -1,7 +1,8 @@
 """Tests for smart docstring merging functionality."""
 
+from typing import Any
+
 import pytest
-from typing import Any, Optional
 
 from codedocsync.parser.docstring_models import DocstringParameter
 from codedocsync.suggestions.merging import (

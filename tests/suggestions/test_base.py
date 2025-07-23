@@ -4,6 +4,7 @@ Comprehensive tests for base suggestion generator functionality.
 Tests the abstract base class, validation methods, and utility functions.
 """
 
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -27,12 +28,12 @@ from codedocsync.suggestions.models import (
 class TestBaseSuggestionGenerator:
     """Test BaseSuggestionGenerator abstract class."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
 
         # Create a concrete implementation for testing
         class ConcreteGenerator(BaseSuggestionGenerator):
-            def generate(self, context):
+            def generate(self, context: SuggestionContext) -> Suggestion:
                 return Suggestion(
                     suggestion_type=SuggestionType.PARAMETER_UPDATE,
                     original_text="def func(): pass",
@@ -85,7 +86,7 @@ class TestBaseSuggestionGenerator:
 
         # Create a generator that raises an exception
         class FailingGenerator(BaseSuggestionGenerator):
-            def generate(self, context):
+            def generate(self, context: SuggestionContext) -> Suggestion:
                 raise ValueError("Test error")
 
         generator = FailingGenerator()
@@ -563,7 +564,7 @@ class TestWithSuggestionFallback:
         """Test decorator allows normal execution."""
 
         @with_suggestion_fallback
-        def normal_function(arg1, arg2):
+        def normal_function(arg1: str, arg2: str) -> str:
             return f"Result: {arg1} + {arg2}"
 
         result = normal_function("A", "B")
@@ -574,7 +575,7 @@ class TestWithSuggestionFallback:
         from codedocsync.suggestions.models import SuggestionGenerationError
 
         @with_suggestion_fallback
-        def failing_function():
+        def failing_function() -> str:
             error = SuggestionGenerationError(
                 "Generation failed", partial_result="Partial content"
             )
@@ -588,7 +589,7 @@ class TestWithSuggestionFallback:
         from codedocsync.suggestions.models import SuggestionError
 
         @with_suggestion_fallback
-        def failing_function():
+        def failing_function() -> None:
             raise SuggestionError("Generation failed")
 
         # Should re-raise since no partial result and no fallback method
@@ -599,7 +600,7 @@ class TestWithSuggestionFallback:
         """Test decorator converts unexpected exceptions."""
 
         @with_suggestion_fallback
-        def failing_function():
+        def failing_function() -> None:
             raise ValueError("Unexpected error")
 
         with pytest.raises(SuggestionError) as exc_info:
@@ -612,11 +613,11 @@ class TestWithSuggestionFallback:
         """Test decorator can use fallback method."""
 
         class MockGenerator:
-            def _create_fallback_suggestion(self, context):
+            def _create_fallback_suggestion(self, context: Any) -> str:
                 return "Fallback suggestion"
 
             @with_suggestion_fallback
-            def generate(self, context):
+            def generate(self, context: Any) -> str:
                 from codedocsync.suggestions.models import SuggestionError
 
                 raise SuggestionError("Generation failed")
@@ -633,7 +634,7 @@ class TestBaseSuggestionGeneratorIntegration:
         """Test complete validation pipeline."""
 
         class TestGenerator(BaseSuggestionGenerator):
-            def generate(self, context):
+            def generate(self, context: SuggestionContext) -> Suggestion:
                 return Suggestion(
                     suggestion_type=SuggestionType.PARAMETER_UPDATE,
                     original_text="def func(x): pass",
@@ -695,11 +696,11 @@ class TestBaseSuggestionGeneratorIntegration:
         """Test integration of style-specific validation."""
 
         class StyleTestGenerator(BaseSuggestionGenerator):
-            def __init__(self, style):
+            def __init__(self, style: str) -> None:
                 super().__init__()
                 self._style = style
 
-            def generate(self, context):
+            def generate(self, context: SuggestionContext) -> Suggestion:
                 if self._style == "google":
                     suggested_text = '''
     """

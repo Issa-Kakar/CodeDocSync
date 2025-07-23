@@ -5,11 +5,12 @@ Tests each generator's ability to handle various issue types,
 edge cases, and integration scenarios.
 """
 
+from typing import Any
+
 import pytest
 
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators import (
-from typing import Any, Dict, Optional
     BehaviorSuggestionGenerator,
     EdgeCaseSuggestionGenerator,
     ExampleSuggestionGenerator,
@@ -67,7 +68,7 @@ class TestParameterSuggestionGenerator:
         suggestion = generator.generate(context)
 
         # Verify suggestion
-        assert suggestion.type == SuggestionType.PARAMETER_UPDATE
+        assert suggestion.suggestion_type == SuggestionType.PARAMETER_UPDATE
         assert "username" in suggestion.suggested_text
         assert "email" not in suggestion.suggested_text
         assert suggestion.confidence >= 0.9
@@ -224,7 +225,6 @@ class TestReturnSuggestionGenerator:
         function = create_test_function(
             name="iterate_items", return_type="Generator[int, None, None]"
         )
-        function.signature.is_generator = True
 
         issue = create_test_issue(
             issue_type="return_type_mismatch",
@@ -487,7 +487,7 @@ class TestEdgeCaseSuggestionGenerator:
         function = create_test_function(
             name="from_dict", params=["cls", "data"], return_type="MyClass"
         )
-        function.signature.is_classmethod = True
+        function.signature.decorators = ["classmethod"]
 
         issue = create_test_issue(
             issue_type="classmethod_documentation",

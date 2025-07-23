@@ -5,15 +5,16 @@ and can be parsed correctly by docstring parsers.
 """
 
 import ast
+from typing import Any
 
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.ast_parser import (
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
     RawDocstring,
 )
+from codedocsync.parser.docstring_models import DocstringParameter
 from codedocsync.parser.docstring_parser import DocstringParser
 from codedocsync.suggestions.generators.parameter_generator import (
     ParameterSuggestionGenerator,
@@ -25,9 +26,9 @@ from codedocsync.suggestions.generators.return_generator import (
     ReturnSuggestionGenerator,
 )
 from codedocsync.suggestions.models import SuggestionContext
-from codedocsync.suggestions.templates.google_template import GoogleDocstringTemplate
-from codedocsync.suggestions.templates.numpy_template import NumpyDocstringTemplate
-from codedocsync.suggestions.templates.sphinx_template import SphinxDocstringTemplate
+from codedocsync.suggestions.templates.google_template import GoogleStyleTemplate
+from codedocsync.suggestions.templates.numpy_template import NumpyStyleTemplate
+from codedocsync.suggestions.templates.sphinx_template import SphinxStyleTemplate
 
 
 class TestTemplateSyntaxValidation:
@@ -58,7 +59,7 @@ def test_func() -> None:
 
     def test_google_style_template_validity(self) -> None:
         """Test Google style templates produce valid syntax."""
-        template = GoogleDocstringTemplate()
+        template = GoogleStyleTemplate()
         # Test various parameter configurations
         test_cases = [
             # Simple parameters
@@ -101,13 +102,23 @@ def test_func() -> None:
             },
         ]
         for case in test_cases:
-            docstring = template.format_parameters(case["params"])
+            # Convert test case params to DocstringParameter objects
+            params = [
+                DocstringParameter(
+                    name=p["name"],
+                    type_str=p.get("type"),
+                    description=p.get("description", ""),
+                )
+                for p in case["params"]
+            ]
+            lines = template.render_parameters(params)
+            docstring = "\n".join(lines)
             assert self.validate_python_syntax(docstring)
             assert self.validate_docstring_parse(docstring, "google")
 
     def test_numpy_style_template_validity(self) -> None:
         """Test NumPy style templates produce valid syntax."""
-        template = NumpyDocstringTemplate()
+        template = NumpyStyleTemplate()
         # Test various configurations
         test_cases = [
             # Basic parameters
@@ -137,13 +148,23 @@ def test_func() -> None:
             },
         ]
         for case in test_cases:
-            docstring = template.format_parameters(case["params"])
+            # Convert test case params to DocstringParameter objects
+            params = [
+                DocstringParameter(
+                    name=p["name"],
+                    type_str=p.get("type"),
+                    description=p.get("description", ""),
+                )
+                for p in case["params"]
+            ]
+            lines = template.render_parameters(params)
+            docstring = "\n".join(lines)
             assert self.validate_python_syntax(docstring)
             assert self.validate_docstring_parse(docstring, "numpy")
 
     def test_sphinx_style_template_validity(self) -> None:
         """Test Sphinx style templates produce valid syntax."""
-        template = SphinxDocstringTemplate()
+        template = SphinxStyleTemplate()
         test_cases = [
             # Simple types
             {
@@ -164,7 +185,17 @@ def test_func() -> None:
             },
         ]
         for case in test_cases:
-            docstring = template.format_parameters(case["params"])
+            # Convert test case params to DocstringParameter objects
+            params = [
+                DocstringParameter(
+                    name=p["name"],
+                    type_str=p.get("type"),
+                    description=p.get("description", ""),
+                )
+                for p in case["params"]
+            ]
+            lines = template.render_parameters(params)
+            docstring = "\n".join(lines)
             assert self.validate_python_syntax(docstring)
             assert self.validate_docstring_parse(docstring, "sphinx")
 
@@ -200,7 +231,7 @@ def test_func() -> None:
                 )
                 suggestion = generator.generate(context)
                 assert suggestion is not None
-                assert self.validate_python_syntax(suggestion.content)
+                assert self.validate_python_syntax(suggestion.suggested_text)
 
     def test_raises_documentation_validity(self) -> None:
         """Test exception documentation produces valid syntax."""
@@ -231,7 +262,7 @@ def test_func() -> None:
                 )
                 suggestion = generator.generate(context)
                 assert suggestion is not None
-                assert self.validate_python_syntax(suggestion.content)
+                assert self.validate_python_syntax(suggestion.suggested_text)
 
     def test_complete_docstring_validity(self) -> None:
         """Test complete docstrings with all sections are valid."""
@@ -299,14 +330,14 @@ def test_func() -> None:
                 )
                 suggestion = generators[issue_type].generate(context)
                 if suggestion:
-                    combined += suggestion.content + "\n\n"
+                    combined += suggestion.suggested_text + "\n\n"
             combined += '"""'
             # Validate complete docstring
             assert self.validate_python_syntax(combined)
 
     def test_edge_case_validity(self) -> None:
         """Test edge cases produce valid syntax."""
-        edge_cases = [
+        edge_cases: list[dict[str, Any]] = [
             # Empty parameter list
             {
                 "params": [],
@@ -396,4 +427,4 @@ def test_func() -> None:
             generator = ParameterSuggestionGenerator()
             suggestion = generator.generate(context)
             assert suggestion is not None
-            assert self.validate_python_syntax(suggestion.content)
+            assert self.validate_python_syntax(suggestion.suggested_text)

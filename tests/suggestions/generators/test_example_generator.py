@@ -5,15 +5,15 @@ Tests cover example generation, parameter value generation, and usage example
 creation for various function scenarios.
 """
 
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
 
+# from pytest_mock import Mock  # Not needed
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.example_generator import (
-from typing import Any, Dict, List, Optional, Union
-from pytest_mock import MockerFixture
     ExampleGenerator,
     ExamplePatternAnalyzer,
     ExampleSuggestionGenerator,
@@ -199,7 +199,7 @@ class TestExampleGenerator:
         return ExampleGenerator()
 
     @pytest.fixture
-    def mock_function(self) -> MockerFixture:
+    def mock_function(self) -> Mock:
         """Create mock function."""
         function: Mock = Mock()
         function.signature = Mock()
@@ -221,7 +221,7 @@ class TestExampleGenerator:
         function.signature.parameters = [param1, param2]
         return function
 
-    def test_generate_basic_example(self, generator: Any, mock_function: MockerFixture) -> None:
+    def test_generate_basic_example(self, generator: Any, mock_function: Mock) -> None:
         """Test generating basic usage example."""
         analysis = {
             "is_property": False,
@@ -240,7 +240,9 @@ class TestExampleGenerator:
         assert "a=" in example.function_call
         assert "b=" in example.function_call
 
-    def test_generate_edge_case_example(self, generator: Any, mock_function: MockerFixture) -> None:
+    def test_generate_edge_case_example(
+        self, generator: Any, mock_function: Mock
+    ) -> None:
         """Test generating edge case example."""
         analysis = {
             "is_async": False,
@@ -253,7 +255,9 @@ class TestExampleGenerator:
         assert example.complexity == "intermediate"
         assert "Edge case" in example.description
 
-    def test_generate_advanced_example(self, generator: Any, mock_function: MockerFixture) -> None:
+    def test_generate_advanced_example(
+        self, generator: Any, mock_function: Mock
+    ) -> None:
         """Test generating advanced example."""
         analysis = {
             "is_async": False,
@@ -344,7 +348,9 @@ class TestExampleGenerator:
             result = generator._generate_expected_output(analysis)
             assert result == expected_output
 
-    def test_generate_multiple_examples(self, generator: Any, mock_function: MockerFixture) -> None:
+    def test_generate_multiple_examples(
+        self, generator: Any, mock_function: Mock
+    ) -> None:
         """Test generating multiple examples."""
         examples = generator.generate_examples(mock_function, count=3)
 
@@ -369,12 +375,12 @@ class TestExampleSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create example suggestion generator."""
         return ExampleSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self) -> MockerFixture:
+    def mock_function(self) -> Mock:
         """Create mock function."""
         function: Mock = Mock()
         function.signature = Mock()
@@ -400,7 +406,7 @@ def calculate_area(width, height):
         return function
 
     @pytest.fixture
-    def mock_docstring(self) -> MockerFixture:
+    def mock_docstring(self) -> Mock:
         """Create mock docstring."""
         docstring: Mock = Mock()
         docstring.format = "google"
@@ -414,7 +420,7 @@ def calculate_area(width, height):
         return docstring
 
     @pytest.fixture
-    def mock_issue(self) -> MockerFixture:
+    def mock_issue(self) -> InconsistencyIssue:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="missing_examples",
@@ -425,7 +431,11 @@ def calculate_area(width, height):
         )
 
     def test_add_missing_examples(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test adding missing examples."""
         context = SuggestionContext(
@@ -445,7 +455,11 @@ def calculate_area(width, height):
         assert "height=" in suggested_text
 
     def test_fix_invalid_example(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fixing invalid examples."""
         mock_issue.issue_type = "example_invalid"
@@ -460,7 +474,11 @@ def calculate_area(width, height):
         assert suggestion.suggestion_type == SuggestionType.EXAMPLE_UPDATE
 
     def test_update_outdated_example(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test updating outdated examples."""
         mock_issue.issue_type = "example_outdated"
@@ -475,7 +493,11 @@ def calculate_area(width, height):
         assert suggestion.suggestion_type == SuggestionType.EXAMPLE_UPDATE
 
     def test_complete_example(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test completing incomplete examples."""
         mock_issue.issue_type = "example_incomplete"
@@ -508,7 +530,11 @@ def calculate_area(width, height):
         assert "# Expected: [2, 4, 6]" in formatted
 
     def test_no_examples_generated_fallback(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fallback when no examples can be generated."""
         # Function without signature
@@ -523,7 +549,9 @@ def calculate_area(width, height):
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
-    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
+    def test_unknown_issue_type(
+        self, generator: Any, mock_function: Mock, mock_docstring: Mock
+    ) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_example_issue",
@@ -541,7 +569,7 @@ def calculate_area(width, height):
 
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1
-        assert "Unknown example issue type" in suggestion.description
+        assert "Unknown example issue type" in suggestion.suggested_text
 
 
 class TestExampleGeneratorIntegration:
@@ -553,7 +581,7 @@ class TestExampleGeneratorIntegration:
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create example suggestion generator."""
         return ExampleSuggestionGenerator(config)
 

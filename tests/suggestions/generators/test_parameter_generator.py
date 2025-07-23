@@ -1,7 +1,7 @@
 """Tests for parameter suggestion generator."""
 
+from typing import Any
 from unittest.mock import Mock, patch
-from typing import Any, List, Optional, Union
 
 import pytest
 
@@ -74,7 +74,7 @@ class TestParameterSuggestionGenerator:
         )
 
     def test_fix_parameter_name_mismatch(
-        self, generator, sample_function, sample_docstring
+        self, generator: Any, sample_function: Any, sample_docstring: Any
     ) -> None:
         """Test fixing parameter name mismatch."""
         issue = InconsistencyIssue(
@@ -130,7 +130,9 @@ class TestParameterSuggestionGenerator:
         assert "param2" in suggestion.suggested_text
         assert "Args:" in suggestion.suggested_text
 
-    def test_fix_parameter_type_mismatch(self, generator: Any, sample_function: Any) -> None:
+    def test_fix_parameter_type_mismatch(
+        self, generator: Any, sample_function: Any
+    ) -> None:
         """Test fixing parameter type mismatch."""
         # Docstring has wrong type for param1
         docstring = ParsedDocstring(

@@ -10,8 +10,6 @@ import time
 
 from codedocsync.parser.docstring_models import DocstringFormat
 from codedocsync.parser.docstring_parser import DocstringParser
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 
 class TestFormatDetection:
@@ -566,7 +564,7 @@ class TestPerformance:
         parser = DocstringParser()
 
         # Generate 100 varied docstrings
-        docstrings: List[Optional[str]] = []
+        docstrings: list[str | None] = []
         for i in range(100):
             doc = f"""Function {i} with parameters.
 

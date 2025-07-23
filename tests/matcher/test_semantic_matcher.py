@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -336,7 +336,7 @@ class TestSemanticMatcherFallback:
 
         async def mock_generate_embedding(
             text: str, model: EmbeddingModel
-        ) -> List[float]:
+        ) -> list[float]:
             nonlocal call_count
             call_count += 1
 
@@ -465,7 +465,7 @@ class TestSemanticMatcherAdvanced:
 
         async def mock_generate_embedding(
             text: str, model: EmbeddingModel
-        ) -> List[float]:
+        ) -> list[float]:
             return [0.1] * 1536
 
         # Mock the embedding generator to track batch processing
@@ -547,7 +547,7 @@ class TestSemanticMatcherAdvanced:
 
         async def mock_generate_embedding(
             text: str, model: EmbeddingModel
-        ) -> List[float]:
+        ) -> list[float]:
             models_tried.append(model)
 
             if model == EmbeddingModel.OPENAI_SMALL:

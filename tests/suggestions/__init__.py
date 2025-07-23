@@ -37,7 +37,7 @@ TEST_CATEGORIES = {
 }
 
 
-def get_test_info() -> Dict[str, Any]:
+def get_test_info() -> dict[str, Any]:
     """Get information about the test suite."""
     return {
         "version": __version__,

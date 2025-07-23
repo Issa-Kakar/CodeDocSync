@@ -7,9 +7,6 @@ to ensure each generator handles its specific issues correctly.
 from textwrap import dedent
 
 from codedocsync.analyzer.models import InconsistencyIssue
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
-
 from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
@@ -296,7 +293,9 @@ class TestSpecificIssueFixes:
         assert suggestion is not None
         assert "data (pd.DataFrame):" in suggestion.suggested_text
         assert "columns (Optional[List[str]], optional):" in suggestion.suggested_text
-        assert "callback (Callable[[int], None], optional):" in suggestion.suggested_text
+        assert (
+            "callback (Callable[[int], None], optional):" in suggestion.suggested_text
+        )
 
     def test_fix_example_invalid(self) -> None:
         """Test fixing invalid examples in docstring."""
@@ -419,5 +418,11 @@ class TestSpecificIssueFixes:
         assert "async" in suggestion.suggested_text.lower()
         assert "compress" in suggestion.suggested_text
         assert "Path" in suggestion.suggested_text
-        assert "None" in suggestion.suggested_text or "nothing" in suggestion.suggested_text.lower()
-        assert "CSV" not in suggestion.suggested_text or "JSON" in suggestion.suggested_text
+        assert (
+            "None" in suggestion.suggested_text
+            or "nothing" in suggestion.suggested_text.lower()
+        )
+        assert (
+            "CSV" not in suggestion.suggested_text
+            or "JSON" in suggestion.suggested_text
+        )

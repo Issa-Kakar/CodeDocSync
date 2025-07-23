@@ -7,8 +7,8 @@ including structured output, metadata inclusion, and batch processing.
 
 import json
 from datetime import datetime
-from unittest.mock import Mock
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
@@ -22,7 +22,6 @@ from codedocsync.suggestions.formatters.json_formatter import (
 )
 from codedocsync.suggestions.integration import EnhancedAnalysisResult, EnhancedIssue
 from codedocsync.suggestions.models import (
-    DocstringStyle,
     Suggestion,
     SuggestionBatch,
     SuggestionDiff,
@@ -47,7 +46,7 @@ def basic_suggestion() -> Any:
         start_line=1,
         end_line=2,
     )
-    
+
     return Suggestion(
         suggestion_type=SuggestionType.PARAMETER_UPDATE,
         original_text='def func(email: str):\n    """Function with email param."""',
@@ -101,7 +100,7 @@ def suggestion_with_metadata() -> Any:
         start_line=1,
         end_line=1,
     )
-    
+
     return Suggestion(
         suggestion_type=SuggestionType.RETURN_UPDATE,
         original_text='"""Returns something."""',
@@ -156,7 +155,9 @@ def mock_documentation() -> Any:
 
 
 @pytest.fixture
-def enhanced_result(enhanced_issue: Any, mock_function: Any, mock_documentation: Any) -> Any:
+def enhanced_result(
+    enhanced_issue: Any, mock_function: Any, mock_documentation: Any
+) -> Any:
     """Create an enhanced analysis result."""
     mock_pair: Mock = Mock()
     mock_pair.function = mock_function
@@ -256,7 +257,9 @@ class TestSuggestionFormatting:
         assert diff_data["start_line"] == 1
         assert diff_data["end_line"] == 2
 
-    def test_format_suggestion_with_metadata(self, suggestion_with_metadata: Any) -> None:
+    def test_format_suggestion_with_metadata(
+        self, suggestion_with_metadata: Any
+    ) -> None:
         """Test formatting suggestion with metadata."""
         formatter = JSONSuggestionFormatter(include_metadata=True)
         result = formatter.format_suggestion(suggestion_with_metadata)
@@ -270,7 +273,9 @@ class TestSuggestionFormatting:
         assert metadata["validation_passed"]
         assert metadata["quality_score"] == 0.88
 
-    def test_format_suggestion_without_metadata(self, suggestion_with_metadata: Any) -> None:
+    def test_format_suggestion_without_metadata(
+        self, suggestion_with_metadata: Any
+    ) -> None:
         """Test formatting suggestion without metadata."""
         formatter = JSONSuggestionFormatter(include_metadata=False)
         result = formatter.format_suggestion(suggestion_with_metadata)
@@ -627,7 +632,7 @@ class TestEdgeCases:
             start_line=1,
             end_line=1,
         )
-        
+
         suggestion = Suggestion(
             suggestion_type=SuggestionType.PARAMETER_UPDATE,
             original_text="original",

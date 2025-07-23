@@ -5,15 +5,15 @@ Tests cover behavioral pattern analysis, description enhancement, and suggestion
 generation for function behavior documentation.
 """
 
-from unittest.mock import Mock
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.behavior_generator import (
-from pytest_mock import MockerFixture
     BehaviorAnalyzer,
     BehaviorPattern,
     BehaviorSuggestionGenerator,
@@ -214,7 +214,7 @@ class TestBehaviorSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create behavior suggestion generator."""
         return BehaviorSuggestionGenerator(config)
 
@@ -251,7 +251,7 @@ def process_data(items):
         return docstring
 
     @pytest.fixture
-    def mock_issue(self) -> MockerFixture:
+    def mock_issue(self) -> InconsistencyIssue:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="description_vague",
@@ -262,7 +262,11 @@ def process_data(items):
         )
 
     def test_improve_vague_description(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Any,
+        mock_docstring: Any,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test improving vague description."""
         context = SuggestionContext(
@@ -280,7 +284,11 @@ def process_data(items):
         assert len(suggested_text) > len(mock_docstring.raw_text)
 
     def test_improve_outdated_description(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Any,
+        mock_docstring: Any,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test improving outdated description."""
         mock_issue.issue_type = "description_outdated"
@@ -295,7 +303,11 @@ def process_data(items):
         assert suggestion.suggestion_type == SuggestionType.DESCRIPTION_UPDATE
 
     def test_add_behavior_description(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Any,
+        mock_docstring: Any,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test adding missing behavior description."""
         mock_issue.issue_type = "missing_behavior_description"
@@ -310,7 +322,11 @@ def process_data(items):
         assert suggestion.suggestion_type == SuggestionType.DESCRIPTION_UPDATE
 
     def test_add_side_effects_documentation(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Any,
+        mock_docstring: Any,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test adding side effects documentation."""
         # Function with side effects
@@ -369,7 +385,7 @@ def process_data(items, log_file):
         assert "processes input data" in result.lower()
 
     def test_generate_enhanced_description_with_side_effects_focus(
-        self, generator
+        self, generator: Any
     ) -> None:
         """Test enhanced description with side effects focus."""
         patterns = [
@@ -403,7 +419,11 @@ def process_data(items, log_file):
             assert "handles" in result.lower()
 
     def test_no_source_code_fallback(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Any,
+        mock_docstring: Any,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fallback when source code is not available."""
         mock_function.source_code = ""
@@ -418,7 +438,11 @@ def process_data(items, log_file):
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
     def test_no_patterns_detected(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Any,
+        mock_docstring: Any,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test handling when no behavioral patterns are detected."""
         # Very simple function that might not trigger pattern detection
@@ -436,7 +460,12 @@ def simple_func():
         # Should be a fallback suggestion
         assert suggestion.confidence == 0.1
 
-    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
+    def test_unknown_issue_type(
+        self,
+        generator: Any,
+        mock_function: MockerFixture,
+        mock_docstring: MockerFixture,
+    ) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_behavior_issue",
@@ -454,7 +483,7 @@ def simple_func():
 
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1
-        assert "Unknown behavior issue type" in suggestion.description
+        assert "Unknown behavior issue type" in suggestion.suggested_text
 
 
 class TestBehaviorGeneratorIntegration:
@@ -466,7 +495,7 @@ class TestBehaviorGeneratorIntegration:
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create behavior suggestion generator."""
         return BehaviorSuggestionGenerator(config)
 

@@ -6,7 +6,6 @@ Tests focus on:
 - Edge cases and special scenarios
 """
 
-from typing import Any, Dict, List, Optional
 import time
 
 from rapidfuzz import fuzz

@@ -8,6 +8,8 @@ reliability features, and performance benchmarks.
 import asyncio
 import os
 import time
+from collections.abc import AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -37,7 +39,7 @@ class TestLLMAnalyzer:
     """Test suite for the LLMAnalyzer class."""
 
     @pytest.fixture
-    def mock_env(self, monkeypatch) -> None:
+    def mock_env(self, monkeypatch: Any) -> None:
         """Mock environment variables for testing."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-api-key")
 
@@ -56,7 +58,9 @@ class TestLLMAnalyzer:
         )
 
     @pytest.fixture
-    async def llm_analyzer(self, mock_env, llm_config) -> LLMAnalyzer:
+    async def llm_analyzer(
+        self, mock_env: Any, llm_config: LLMConfig
+    ) -> AsyncGenerator[LLMAnalyzer, None]:
         """Create an LLMAnalyzer instance for testing."""
         with patch("openai.AsyncOpenAI"):
             analyzer = LLMAnalyzer(llm_config)
@@ -699,13 +703,18 @@ class TestLLMAnalyzer:
         # Mock OpenAI to fail twice then succeed
         call_count = 0
 
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             nonlocal call_count
             call_count += 1
             if call_count <= 2:
+                from unittest.mock import Mock
+
                 import openai
 
-                raise openai.APIError("Temporary failure")
+                mock_request = Mock()
+                raise openai.APIError(
+                    "Temporary failure", request=mock_request, body=None
+                )
             return (
                 '{"issues": [], "confidence": 0.9}',
                 {"prompt_tokens": 100, "completion_tokens": 20},
@@ -743,7 +752,7 @@ class TestLLMAnalyzer:
             requests.append(request)
 
         # Mock fast responses
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             return (
                 '{"issues": [], "confidence": 0.9}',
                 {"prompt_tokens": 100, "completion_tokens": 20},
@@ -802,7 +811,7 @@ class TestLLMAnalyzer:
 
         call_count = 0
 
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             nonlocal call_count
             call_count += 1
             return (
@@ -860,7 +869,7 @@ class TestLLMAnalyzer:
         )
 
         # Mock OpenAI to always fail
-        async def mock_fail(*args, **kwargs):
+        async def mock_fail(*args: Any, **kwargs: Any) -> None:
             raise LLMError("LLM service unavailable")
 
         with patch.object(llm_analyzer, "_call_openai", side_effect=mock_fail):
@@ -895,7 +904,7 @@ class TestLLMAnalyzer:
         )
 
         # Mock reasonable API response time
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             await asyncio.sleep(0.5)  # Simulate API latency
             return (
                 '{"issues": [], "confidence": 0.9}',
@@ -957,7 +966,7 @@ class TestLLMAnalyzer:
             docstrings.append(doc)
 
         # Mock fast API responses
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             return (
                 '{"issues": [], "confidence": 0.9}',
                 {"prompt_tokens": 100, "completion_tokens": 20},
@@ -1044,7 +1053,7 @@ class TestLLMAnalyzer:
             requests.append(request)
 
         # Mock API responses with varying delays
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             import random
 
             await asyncio.sleep(random.uniform(0.1, 0.3))
@@ -1086,7 +1095,7 @@ class TestLLMAnalyzer:
         )
 
         # Mock to always fail
-        async def mock_fail(*args, **kwargs):
+        async def mock_fail(*args: Any, **kwargs: Any) -> None:
             raise LLMNetworkError("Network error")
 
         with patch.object(llm_analyzer, "_call_openai", side_effect=mock_fail):
@@ -1109,7 +1118,7 @@ class TestLLMAnalyzer:
             assert "Circuit breaker" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_configuration_validation(self, mock_env) -> None:
+    async def test_configuration_validation(self, mock_env: Any) -> None:
         """Test configuration validation and error handling."""
         # Test with invalid configuration
         with pytest.raises(ValueError):
@@ -1148,7 +1157,7 @@ class TestLLMAnalyzer:
 
         response_idx = 0
 
-        async def mock_call(*args, **kwargs):
+        async def mock_call(*args: Any, **kwargs: Any) -> tuple[str, dict[str, int]]:
             nonlocal response_idx
             tokens = mock_responses[response_idx]
             response_idx += 1

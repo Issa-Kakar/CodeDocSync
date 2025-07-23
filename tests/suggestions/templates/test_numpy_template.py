@@ -5,10 +5,9 @@ This module contains comprehensive tests for the NumpyStyleTemplate class,
 ensuring proper formatting, parameter rendering, and style-specific features.
 """
 
-import pytest
+from typing import Any
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from pathlib import Path
+import pytest
 
 from codedocsync.parser.docstring_models import (
     DocstringParameter,
@@ -114,7 +113,9 @@ class TestNumpyStyleTemplate:
 
         assert result == expected
 
-    def test_render_parameters_multiple(self, template: Any, sample_parameters: Any) -> None:
+    def test_render_parameters_multiple(
+        self, template: Any, sample_parameters: Any
+    ) -> None:
         """Test rendering multiple parameters."""
         result = template.render_parameters(sample_parameters)
 
@@ -365,7 +366,11 @@ class TestNumpyStyleTemplate:
         assert template._format_type_annotation("Dict[str, Any]") == "dict of Any"
 
     def test_complete_docstring_rendering(
-        self, template: Any, sample_parameters: Any, sample_returns: Any, sample_raises: Any
+        self,
+        template: Any,
+        sample_parameters: Any,
+        sample_returns: Any,
+        sample_raises: Any,
     ) -> None:
         """Test rendering a complete docstring."""
         docstring = template.render_complete_docstring(

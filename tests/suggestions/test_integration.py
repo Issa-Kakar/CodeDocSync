@@ -5,15 +5,14 @@ Tests the integration between analyzer results and suggestion generation,
 including enhancement of analysis results and batch processing.
 """
 
-from unittest.mock import Mock
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 from codedocsync.analyzer.models import AnalysisResult, InconsistencyIssue
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.integration import (
-from pytest_mock import MockerFixture
     EnhancedAnalysisResult,
     EnhancedIssue,
     SuggestionBatchProcessor,
@@ -26,7 +25,7 @@ from codedocsync.suggestions.models import Suggestion, SuggestionType
 
 # Test fixtures
 @pytest.fixture
-def mock_issue() -> MockerFixture:
+def mock_issue() -> InconsistencyIssue:
     """Create a mock InconsistencyIssue."""
     return InconsistencyIssue(
         issue_type="parameter_name_mismatch",
@@ -39,7 +38,7 @@ def mock_issue() -> MockerFixture:
 
 
 @pytest.fixture
-def mock_function() -> MockerFixture:
+def mock_function() -> Mock:
     """Create a mock ParsedFunction."""
     function: Mock = Mock()
     function.signature = Mock()
@@ -50,7 +49,7 @@ def mock_function() -> MockerFixture:
 
 
 @pytest.fixture
-def mock_matched_pair(mock_function) -> MockerFixture:
+def mock_matched_pair(mock_function: Mock) -> Mock:
     """Create a mock MatchedPair."""
     pair: Mock = Mock()
     pair.function = mock_function
@@ -64,7 +63,9 @@ def mock_matched_pair(mock_function) -> MockerFixture:
 
 
 @pytest.fixture
-def mock_analysis_result(mock_matched_pair, mock_issue) -> MockerFixture:
+def mock_analysis_result(
+    mock_matched_pair: Mock, mock_issue: InconsistencyIssue
+) -> AnalysisResult:
     """Create a mock AnalysisResult."""
     return AnalysisResult(
         matched_pair=mock_matched_pair,
@@ -76,7 +77,7 @@ def mock_analysis_result(mock_matched_pair, mock_issue) -> MockerFixture:
 
 
 @pytest.fixture
-def mock_suggestion() -> MockerFixture:
+def mock_suggestion() -> Suggestion:
     """Create a mock Suggestion."""
     from codedocsync.suggestions.models import SuggestionDiff
 
@@ -156,7 +157,7 @@ class TestEnhancedIssue:
 class TestEnhancedAnalysisResult:
     """Test EnhancedAnalysisResult data model."""
 
-    def test_creation(self, mock_matched_pair: MockerFixture) -> None:
+    def test_creation(self, mock_matched_pair: Mock) -> None:
         """Test creating an enhanced analysis result."""
         result = EnhancedAnalysisResult(
             matched_pair=mock_matched_pair,
@@ -171,7 +172,9 @@ class TestEnhancedAnalysisResult:
         assert result.suggestions_skipped == 1
         assert not result.has_suggestions  # No issues with suggestions yet
 
-    def test_has_suggestions(self, mock_matched_pair: MockerFixture, mock_suggestion: MockerFixture) -> None:
+    def test_has_suggestions(
+        self, mock_matched_pair: Mock, mock_suggestion: Suggestion
+    ) -> None:
         """Test has_suggestions property."""
         issue = EnhancedIssue(
             issue_type="test",
@@ -203,7 +206,9 @@ class TestSuggestionIntegration:
         assert "parameter_name_mismatch" in integration._generators
         assert "return_type_mismatch" in integration._generators
 
-    def test_create_enhanced_issue(self, config: Any, mock_issue: MockerFixture) -> None:
+    def test_create_enhanced_issue(
+        self, config: Any, mock_issue: InconsistencyIssue
+    ) -> None:
         """Test creating enhanced issue from original."""
         integration = SuggestionIntegration(config)
         enhanced = integration._create_enhanced_issue(mock_issue)
@@ -214,7 +219,9 @@ class TestSuggestionIntegration:
         assert enhanced.confidence == mock_issue.confidence
         assert enhanced.rich_suggestion is None
 
-    def test_create_context(self, config: Any, mock_issue: MockerFixture, mock_matched_pair: MockerFixture) -> None:
+    def test_create_context(
+        self, config: Any, mock_issue: InconsistencyIssue, mock_matched_pair: Mock
+    ) -> None:
         """Test creating suggestion context."""
         integration = SuggestionIntegration(config)
         context = integration._create_context(mock_issue, mock_matched_pair)
@@ -223,7 +230,9 @@ class TestSuggestionIntegration:
         assert context.function == mock_matched_pair.function
         assert context.project_style == config.default_style
 
-    def test_enhance_analysis_result(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_enhance_analysis_result(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test enhancing analysis result with suggestions."""
         # Mock the generator to return a suggestion
         integration = SuggestionIntegration(config)
@@ -242,7 +251,9 @@ class TestSuggestionIntegration:
         assert len(result.issues) == 1
         assert result.suggestions_generated >= 0
 
-    def test_enhance_with_low_confidence(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_enhance_with_low_confidence(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test enhancement skips low confidence issues."""
         # Set high confidence threshold
         config.confidence_threshold = 0.9
@@ -258,13 +269,15 @@ class TestSuggestionIntegration:
         if result.issues:
             assert result.issues[0].rich_suggestion is None
 
-    def test_generator_failure_handling(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_generator_failure_handling(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test handling when generator fails."""
         integration = SuggestionIntegration(config)
 
         # Mock generator that raises exception
         mock_generator: Mock = Mock()
-        mock_generator.generate.side_effect = Exception("Generator failed")  # type: ignore[attr-defined]
+        mock_generator.generate.side_effect = Exception("Generator failed")
         integration._generators["parameter_name_mismatch"] = mock_generator
 
         # Should not raise exception, should handle gracefully
@@ -284,7 +297,9 @@ class TestSuggestionBatchProcessor:
         assert processor.config == config
         assert isinstance(processor.integration, SuggestionIntegration)
 
-    def test_process_batch(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_process_batch(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test processing batch of analysis results."""
         processor = SuggestionBatchProcessor(config)
         results = [mock_analysis_result]
@@ -309,7 +324,10 @@ class TestSuggestionBatchProcessor:
         assert isinstance(enhanced_results[0], EnhancedAnalysisResult)
 
     def test_create_suggestion_batch(
-        self, config, mock_analysis_result, mock_suggestion
+        self,
+        config: Any,
+        mock_analysis_result: AnalysisResult,
+        mock_suggestion: Suggestion,
     ) -> None:
         """Test creating suggestion batch from results."""
         processor = SuggestionBatchProcessor(config)
@@ -346,7 +364,9 @@ class TestSuggestionBatchProcessor:
 class TestFactoryFunctions:
     """Test factory functions for integration."""
 
-    def test_enhance_with_suggestions(self, mock_analysis_result: MockerFixture, config: Any) -> None:
+    def test_enhance_with_suggestions(
+        self, mock_analysis_result: AnalysisResult, config: Any
+    ) -> None:
         """Test enhance_with_suggestions factory function."""
         result = enhance_with_suggestions(mock_analysis_result, config)
 
@@ -354,7 +374,7 @@ class TestFactoryFunctions:
         assert result.matched_pair == mock_analysis_result.matched_pair
 
     def test_enhance_multiple_with_suggestions(
-        self, mock_analysis_result, config
+        self, mock_analysis_result: AnalysisResult, config: Any
     ) -> None:
         """Test enhance_multiple_with_suggestions factory function."""
         results = [mock_analysis_result]
@@ -363,7 +383,9 @@ class TestFactoryFunctions:
         assert len(enhanced_results) == 1
         assert isinstance(enhanced_results[0], EnhancedAnalysisResult)
 
-    def test_enhance_with_default_config(self, mock_analysis_result: MockerFixture) -> None:
+    def test_enhance_with_default_config(
+        self, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test enhancement with default configuration."""
         result = enhance_with_suggestions(mock_analysis_result)
 
@@ -374,7 +396,7 @@ class TestFactoryFunctions:
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_empty_analysis_result(self, config: Any, mock_matched_pair: MockerFixture) -> None:
+    def test_empty_analysis_result(self, config: Any, mock_matched_pair: Mock) -> None:
         """Test enhancing analysis result with no issues."""
         empty_result = AnalysisResult(
             matched_pair=mock_matched_pair,
@@ -390,7 +412,9 @@ class TestEdgeCases:
         assert enhanced.suggestions_generated == 0
         assert enhanced.suggestions_skipped == 0
 
-    def test_unknown_issue_type(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_unknown_issue_type(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test handling unknown issue type."""
         # Change to unknown issue type
         mock_analysis_result.issues[0].issue_type = "unknown_issue_type"
@@ -425,7 +449,9 @@ class TestEdgeCases:
 class TestPerformanceMetrics:
     """Test performance tracking in integration."""
 
-    def test_timing_metrics(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_timing_metrics(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test that timing metrics are tracked."""
         integration = SuggestionIntegration(config)
         result = integration.enhance_analysis_result(mock_analysis_result)
@@ -433,7 +459,9 @@ class TestPerformanceMetrics:
         assert result.suggestion_generation_time_ms >= 0
         assert result.total_time_ms >= result.analysis_time_ms
 
-    def test_generation_counts(self, config: Any, mock_analysis_result: MockerFixture) -> None:
+    def test_generation_counts(
+        self, config: Any, mock_analysis_result: AnalysisResult
+    ) -> None:
         """Test that generation counts are accurate."""
         integration = SuggestionIntegration(config)
         result = integration.enhance_analysis_result(mock_analysis_result)

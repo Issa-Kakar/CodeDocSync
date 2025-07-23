@@ -10,7 +10,6 @@ import tempfile
 from pathlib import Path
 
 from codedocsync.parser.ast_parser import parse_python_file
-from typing import Any, Callable, Dict, List, Optional
 
 
 class TestASTParserFunctionTypes:

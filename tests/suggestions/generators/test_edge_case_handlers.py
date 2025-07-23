@@ -5,13 +5,12 @@ Tests cover special Python constructs like properties, class methods, magic meth
 async functions, and other edge cases requiring specialized documentation.
 """
 
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
 
 from codedocsync.analyzer.models import InconsistencyIssue
-from typing import Any, Dict, Optional
-
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.edge_case_handlers import (
     ClassMethodHandler,
@@ -20,7 +19,6 @@ from codedocsync.suggestions.generators.edge_case_handlers import (
     SpecialConstructAnalyzer,
 )
 from codedocsync.suggestions.models import (
-    Suggestion,
     SuggestionContext,
     SuggestionType,
 )
@@ -172,16 +170,16 @@ class TestClassMethodHandler:
         function.signature.name = "from_config"
         function.signature.decorators = ["classmethod"]
         function.signature.return_annotation = "MyClass"
-        
+
         # Mock parameters
         cls_param: Mock = Mock()
         cls_param.name = "cls"
         cls_param.type_annotation = None
-        
+
         config_param: Mock = Mock()
         config_param.name = "config"
         config_param.type_annotation = "dict"
-        
+
         function.signature.parameters = [cls_param, config_param]
 
         issue = InconsistencyIssue(
@@ -217,7 +215,7 @@ class TestClassMethodHandler:
         function: Mock = Mock()
         function.signature = Mock()
         function.signature.decorators = ["staticmethod"]
-        
+
         constructs = handler._analyze_constructs(function)
         assert "staticmethod" in constructs
 
@@ -232,7 +230,7 @@ class TestEdgeCaseSuggestionGenerator:
         return EdgeCaseSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_handlers(self) -> Dict[str, Any]:
+    def mock_handlers(self) -> dict[str, Any]:
         """Create mock handlers."""
         return {
             "property": Mock(),
@@ -240,14 +238,14 @@ class TestEdgeCaseSuggestionGenerator:
         }
 
     def test_generate_suggestion_delegates_to_handlers(
-        self, generator: Any, property_context: Any, mock_handlers: Dict[str, Any]
+        self, generator: Any, property_context: Any, mock_handlers: dict[str, Any]
     ) -> None:
         """Test that generator delegates to appropriate handlers."""
         # Mock the handlers
         generator._handlers = mock_handlers
         mock_handlers["property"].can_handle.return_value = True
         mock_handlers["classmethod"].can_handle.return_value = False
-        
+
         mock_suggestion: Mock = Mock()
         mock_handlers["property"].generate_suggestion.return_value = mock_suggestion
 
@@ -295,7 +293,10 @@ class TestEdgeCaseSuggestionGenerator:
         suggestion = generator.generate_suggestion(context)
 
         assert suggestion is not None
-        assert "async" in suggestion.suggested_text.lower() or "asynchronous" in suggestion.suggested_text.lower()
+        assert (
+            "async" in suggestion.suggested_text.lower()
+            or "asynchronous" in suggestion.suggested_text.lower()
+        )
 
     def test_magic_method_suggestion(self, generator: Any) -> None:
         """Test generating suggestion for magic method."""

@@ -5,8 +5,8 @@ Tests cover exception analysis, raises documentation generation, and suggestion
 creation for various exception scenarios.
 """
 
-from unittest.mock import Mock
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
@@ -14,7 +14,6 @@ from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.docstring_models import DocstringRaises
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.raises_generator import (
-from pytest_mock import MockerFixture
     ExceptionAnalyzer,
     ExceptionInfo,
     RaisesSuggestionGenerator,
@@ -73,7 +72,7 @@ def test_func(filename: Any) -> None:
 
         exc_types = [e.exception_type for e in exceptions]
         # Should detect FileNotFoundError from open() and ValueError from int()
-        assert any("FileNotFoundError" in exc_types or "IOError" in exc_types)
+        assert "FileNotFoundError" in exc_types or "IOError" in exc_types
         assert "ValueError" in exc_types
 
     def test_analyze_subscript_operations(self) -> None:
@@ -153,12 +152,12 @@ class TestRaisesSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create raises suggestion generator."""
         return RaisesSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self) -> MockerFixture:
+    def mock_function(self) -> Mock:
         """Create mock function."""
         function: Mock = Mock()
         function.signature = Mock()
@@ -175,7 +174,7 @@ def test_function(value: Any) -> None:
         return function
 
     @pytest.fixture
-    def mock_docstring(self) -> MockerFixture:
+    def mock_docstring(self) -> Mock:
         """Create mock docstring."""
         docstring: Mock = Mock()
         docstring.format = "google"
@@ -189,7 +188,7 @@ def test_function(value: Any) -> None:
         return docstring
 
     @pytest.fixture
-    def mock_issue(self) -> MockerFixture:
+    def mock_issue(self) -> InconsistencyIssue:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="missing_raises",
@@ -200,7 +199,11 @@ def test_function(value: Any) -> None:
         )
 
     def test_add_missing_raises_documentation(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test adding missing raises documentation."""
         context = SuggestionContext(
@@ -220,7 +223,11 @@ def test_function(value: Any) -> None:
         assert "TypeError" in suggestion.suggested_text
 
     def test_fix_raises_type_mismatch(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fixing raises type mismatch."""
         # Add existing (incorrect) raises documentation
@@ -248,7 +255,11 @@ def test_function(value: Any) -> None:
         # RuntimeError should be removed (not in actual exceptions)
 
     def test_improve_raises_description(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test improving vague raises descriptions."""
         mock_docstring.raises = [
@@ -312,7 +323,11 @@ def test_func() -> None:
         assert "key" in result.lower()
 
     def test_no_source_code_fallback(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fallback when source code is not available."""
         mock_function.source_code = ""
@@ -327,7 +342,11 @@ def test_func() -> None:
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
     def test_no_significant_exceptions(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test handling when no significant exceptions are detected."""
         # Function with only very low-confidence exceptions
@@ -345,7 +364,9 @@ def simple_func():
         # Should be a fallback suggestion since no significant exceptions
         assert suggestion.confidence <= 0.3
 
-    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
+    def test_unknown_issue_type(
+        self, generator: Any, mock_function: Mock, mock_docstring: Mock
+    ) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_raises_issue",
@@ -363,7 +384,7 @@ def simple_func():
 
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1
-        assert "Unknown raises issue type" in suggestion.description
+        assert "Unknown raises issue type" in suggestion.suggested_text
 
 
 class TestRaisesGeneratorIntegration:
@@ -375,7 +396,7 @@ class TestRaisesGeneratorIntegration:
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create raises suggestion generator."""
         return RaisesSuggestionGenerator(config)
 

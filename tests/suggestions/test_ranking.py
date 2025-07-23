@@ -5,13 +5,17 @@ Tests the ranking algorithms, filtering criteria, and priority boosting
 functionality for organizing suggestions by importance and quality.
 """
 
-from unittest.mock import Mock
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 from codedocsync.suggestions.integration import EnhancedAnalysisResult, EnhancedIssue
-from codedocsync.suggestions.models import DocstringStyle, Suggestion, SuggestionType
+from codedocsync.suggestions.models import (
+    Suggestion,
+    SuggestionDiff,
+    SuggestionType,
+)
 from codedocsync.suggestions.ranking import (
     PriorityBooster,
     RankingConfig,
@@ -99,7 +103,13 @@ def high_quality_suggestion() -> Any:
         original_text="old text",
         suggested_text="new text",
         confidence=0.9,
-        style=DocstringStyle.GOOGLE,
+        diff=SuggestionDiff(
+            original_lines=["old text"],
+            suggested_lines=["new text"],
+            start_line=1,
+            end_line=1,
+        ),
+        style="google",
         copy_paste_ready=True,
     )
 
@@ -112,7 +122,13 @@ def low_quality_suggestion() -> Any:
         original_text="old text",
         suggested_text="very long text that spans many lines and is complex",
         confidence=0.6,
-        style=DocstringStyle.GOOGLE,
+        diff=SuggestionDiff(
+            original_lines=["old text"],
+            suggested_lines=["very long text that spans many lines and is complex"],
+            start_line=1,
+            end_line=1,
+        ),
+        style="google",
         copy_paste_ready=False,
     )
 
@@ -179,7 +195,7 @@ class TestSuggestionRanker:
         assert ranker.config == config
 
     def test_rank_by_severity(
-        self, critical_issue, high_issue, medium_issue, low_issue
+        self, critical_issue: Any, high_issue: Any, medium_issue: Any, low_issue: Any
     ) -> None:
         """Test ranking by severity."""
         config = RankingConfig(strategy=RankingStrategy.SEVERITY_FIRST)
@@ -196,7 +212,9 @@ class TestSuggestionRanker:
         low_index = next(i for i, s in enumerate(severities) if s == "low")
         assert critical_index < low_index
 
-    def test_rank_by_confidence(self, critical_issue: Any, low_confidence_issue: Any) -> None:
+    def test_rank_by_confidence(
+        self, critical_issue: Any, low_confidence_issue: Any
+    ) -> None:
         """Test ranking considers confidence."""
         config = RankingConfig(strategy=RankingStrategy.CONFIDENCE_FIRST)
         ranker = SuggestionRanker(config)
@@ -207,7 +225,9 @@ class TestSuggestionRanker:
         # Higher confidence should rank higher
         assert ranked[0].confidence > ranked[1].confidence
 
-    def test_filter_by_confidence(self, critical_issue: Any, low_confidence_issue: Any) -> None:
+    def test_filter_by_confidence(
+        self, critical_issue: Any, low_confidence_issue: Any
+    ) -> None:
         """Test filtering by minimum confidence."""
         config = RankingConfig(min_confidence=0.7)
         ranker = SuggestionRanker(config)
@@ -244,7 +264,10 @@ class TestSuggestionRanker:
         assert "parameter_name_mismatch" not in issue_types
 
     def test_copy_paste_ready_filter(
-        self, critical_issue, high_quality_suggestion, low_quality_suggestion
+        self,
+        critical_issue: Any,
+        high_quality_suggestion: Any,
+        low_quality_suggestion: Any,
     ) -> None:
         """Test filtering for copy-paste ready suggestions."""
         config = RankingConfig(copy_paste_ready_only=True)
@@ -272,7 +295,7 @@ class TestSuggestionRanker:
                 assert issue.rich_suggestion.copy_paste_ready
 
     def test_max_suggestions_limit(
-        self, critical_issue, high_issue, medium_issue
+        self, critical_issue: Any, high_issue: Any, medium_issue: Any
     ) -> None:
         """Test limiting maximum suggestions."""
         config = RankingConfig(max_total_suggestions=2)
@@ -319,7 +342,9 @@ class TestSuggestionRanker:
 class TestSuggestionFilter:
     """Test SuggestionFilter static methods."""
 
-    def test_by_confidence(self, critical_issue: Any, low_confidence_issue: Any) -> None:
+    def test_by_confidence(
+        self, critical_issue: Any, low_confidence_issue: Any
+    ) -> None:
         """Test filtering by confidence."""
         issues = [critical_issue, low_confidence_issue]
         filtered = SuggestionFilter.by_confidence(issues, 0.7)
@@ -327,7 +352,9 @@ class TestSuggestionFilter:
         assert len(filtered) == 1
         assert filtered[0].confidence >= 0.7
 
-    def test_by_severity(self, critical_issue: Any, medium_issue: Any, low_issue: Any) -> None:
+    def test_by_severity(
+        self, critical_issue: Any, medium_issue: Any, low_issue: Any
+    ) -> None:
         """Test filtering by severity."""
         issues = [critical_issue, medium_issue, low_issue]
         filtered = SuggestionFilter.by_severity(issues, ["critical", "high"])
@@ -377,9 +404,12 @@ class TestSuggestionFilter:
         filtered = SuggestionFilter.copy_paste_ready_only(issues)
 
         assert len(filtered) == 1
+        assert filtered[0].rich_suggestion is not None
         assert filtered[0].rich_suggestion.copy_paste_ready
 
-    def test_top_n(self, critical_issue: Any, high_issue: Any, medium_issue: Any) -> None:
+    def test_top_n(
+        self, critical_issue: Any, high_issue: Any, medium_issue: Any
+    ) -> None:
         """Test getting top N suggestions."""
         # Set ranking scores
         critical_issue.ranking_score = 10.0
@@ -415,7 +445,7 @@ class TestPriorityBooster:
         """Test adding custom boost rule."""
         booster = PriorityBooster()
 
-        def custom_rule(issue):
+        def custom_rule(issue: Any) -> float:
             return 5.0 if issue.severity == "critical" else 0.0
 
         booster.add_boost_rule(custom_rule)
@@ -428,7 +458,7 @@ class TestPriorityBooster:
         """Test handling when boost rule fails."""
         booster = PriorityBooster()
 
-        def failing_rule(issue):
+        def failing_rule(issue: Any) -> float:
             raise Exception("Rule failed")
 
         booster.add_boost_rule(failing_rule)
@@ -441,7 +471,9 @@ class TestPriorityBooster:
 class TestRankingStrategies:
     """Test different ranking strategies."""
 
-    def test_severity_first_strategy(self, critical_issue: Any, medium_issue: Any) -> None:
+    def test_severity_first_strategy(
+        self, critical_issue: Any, medium_issue: Any
+    ) -> None:
         """Test severity-first ranking strategy."""
         config = RankingConfig(strategy=RankingStrategy.SEVERITY_FIRST)
         ranker = SuggestionRanker(config)
@@ -456,7 +488,9 @@ class TestRankingStrategies:
         # Critical should rank higher due to severity boost
         assert ranked[0].severity == "critical"
 
-    def test_confidence_first_strategy(self, critical_issue: Any, medium_issue: Any) -> None:
+    def test_confidence_first_strategy(
+        self, critical_issue: Any, medium_issue: Any
+    ) -> None:
         """Test confidence-first ranking strategy."""
         config = RankingConfig(strategy=RankingStrategy.CONFIDENCE_FIRST)
         ranker = SuggestionRanker(config)
@@ -513,7 +547,7 @@ class TestActionabilityScoring:
     """Test actionability scoring for suggestions."""
 
     def test_high_actionability_suggestion(
-        self, critical_issue, high_quality_suggestion
+        self, critical_issue: Any, high_quality_suggestion: Any
     ) -> None:
         """Test scoring high actionability suggestion."""
         critical_issue.rich_suggestion = high_quality_suggestion

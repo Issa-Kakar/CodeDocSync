@@ -5,10 +5,9 @@ This module contains comprehensive tests for the SphinxStyleTemplate class,
 ensuring proper field list formatting and Sphinx-specific features.
 """
 
-import pytest
+from typing import Any
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+import pytest
 
 from codedocsync.parser.docstring_models import (
     DocstringParameter,
@@ -112,7 +111,9 @@ class TestSphinxStyleTemplate:
 
         assert result == expected
 
-    def test_render_parameters_multiple(self, template: Any, sample_parameters: Any) -> None:
+    def test_render_parameters_multiple(
+        self, template: Any, sample_parameters: Any
+    ) -> None:
         """Test rendering multiple parameters."""
         result = template.render_parameters(sample_parameters)
 
@@ -357,7 +358,11 @@ class TestSphinxStyleTemplate:
         assert template._format_type_annotation("Optional[str]") == "str, optional"
 
     def test_complete_docstring_rendering(
-        self, template: Any, sample_parameters: Any, sample_returns: Any, sample_raises: Any
+        self,
+        template: Any,
+        sample_parameters: Any,
+        sample_returns: Any,
+        sample_raises: Any,
     ) -> None:
         """Test rendering a complete Sphinx docstring."""
         docstring = template.render_complete_docstring(

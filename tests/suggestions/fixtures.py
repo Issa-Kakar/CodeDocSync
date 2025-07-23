@@ -5,17 +5,17 @@ Provides reusable test data, mock objects, and utility functions
 for comprehensive testing of the suggestion generation system.
 """
 
-from inspect import Parameter as ParameterKind
+from typing import Any
 
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.ast_parser import (
-from typing import Any, Dict, List, Optional, Tuple
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
     RawDocstring,
 )
 from codedocsync.parser.docstring_models import (
+    DocstringFormat,
     DocstringParameter,
     DocstringRaises,
     DocstringReturns,
@@ -25,11 +25,12 @@ from codedocsync.parser.docstring_models import (
 
 def create_test_function(
     name: str = "test_func",
-    params: Optional[List[str]] = None,
-    return_type: Optional[str] = None,
-    docstring: Optional[str] = None,
+    params: list[str] | None = None,
+    return_type: str | None = None,
+    docstring: str | None = None,
     line_number: int = 10,
     file_path: str = "test.py",
+    source_code: str | None = None,
 ) -> ParsedFunction:
     """Create test function with specified attributes."""
     if params is None:
@@ -44,7 +45,6 @@ def create_test_function(
                 type_annotation="str" if i == 0 else "int",
                 default_value=None,
                 is_required=True,
-                kind=ParameterKind.POSITIONAL_OR_KEYWORD,
             )
         )
 
@@ -54,10 +54,7 @@ def create_test_function(
         parameters=parameters,
         return_type=return_type,
         is_method=False,
-        is_classmethod=False,
-        is_staticmethod=False,
         is_async=False,
-        is_generator=False,
         decorators=[],
     )
 
@@ -69,16 +66,17 @@ def create_test_function(
         docstring=raw_docstring,
         file_path=file_path,
         line_number=line_number,
-        source_code=f"def {name}({', '.join(params)}): pass",
+        end_line_number=line_number + 1,  # Single line function
+        source_code=source_code or f"def {name}({', '.join(params)}): pass",
     )
 
 
 def create_parsed_docstring(
     summary: str = "Test function.",
-    params: Optional[Dict[str, str]] = None,
-    returns: Optional[str] = None,
-    raises: Optional[Dict[str, str]] = None,
-    examples: Optional[List[str]] = None,
+    params: dict[str, str] | None = None,
+    returns: str | None = None,
+    raises: dict[str, str] | None = None,
+    examples: list[str] | None = None,
     format_style: str = "google",
 ) -> ParsedDocstring:
     """Create a parsed docstring with specified components."""
@@ -103,16 +101,16 @@ def create_parsed_docstring(
     if returns:
         doc_returns = DocstringReturns(
             description=returns,
-            type_name="bool",
-            is_generator=False,
-            return_name=None,
+            type_str="bool",
         )
 
     # Create raises documentation
     doc_raises = []
     if raises:
         for exc_type, desc in raises.items():
-            doc_raises.append(DocstringRaises(type_name=exc_type, description=desc))
+            doc_raises.append(
+                DocstringRaises(exception_type=exc_type, description=desc)
+            )
 
     # Build raw text
     raw_text = summary
@@ -128,19 +126,13 @@ def create_parsed_docstring(
             raw_text += f"\n    {exc_type}: {desc}"
 
     return ParsedDocstring(
+        format=DocstringFormat[format_style.upper()],
         summary=summary,
         description="",
-        args=doc_params,
+        parameters=doc_params,
         returns=doc_returns,
-        yields=None,
-        receives=None,
         raises=doc_raises,
-        warns=[],
-        see_also=[],
-        notes=[],
-        references=[],
         examples=examples or [],
-        attributes=[],
         raw_text=raw_text,
     )
 
@@ -148,9 +140,10 @@ def create_parsed_docstring(
 def create_test_issue(
     issue_type: str = "parameter_name_mismatch",
     severity: str = "critical",
-    description: Optional[str] = None,
+    description: str | None = None,
     line_number: int = 10,
     confidence: float = 0.95,
+    details: dict[str, Any] | None = None,
 ) -> InconsistencyIssue:
     """Create test inconsistency issue."""
     if description is None:
@@ -163,7 +156,7 @@ def create_test_issue(
         suggestion=f"Fix {issue_type}",
         line_number=line_number,
         confidence=confidence,
-        details={},
+        details=details or {},
     )
 
 

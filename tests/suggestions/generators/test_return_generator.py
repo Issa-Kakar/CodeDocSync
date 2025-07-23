@@ -5,8 +5,8 @@ Tests cover return type analysis, mismatch detection, and suggestion generation
 for various return scenarios including generators, async functions, and complex types.
 """
 
+from typing import Any
 from unittest.mock import Mock
-from typing import Any, Union
 
 import pytest
 
@@ -14,7 +14,6 @@ from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.docstring_models import DocstringReturns
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.generators.return_generator import (
-from pytest_mock import MockerFixture
     ReturnAnalysisResult,
     ReturnStatementAnalyzer,
     ReturnSuggestionGenerator,
@@ -125,12 +124,12 @@ class TestReturnSuggestionGenerator:
         )
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create return suggestion generator."""
         return ReturnSuggestionGenerator(config)
 
     @pytest.fixture
-    def mock_function(self) -> MockerFixture:
+    def mock_function(self) -> Mock:
         """Create mock function."""
         function: Mock = Mock()
         function.signature = Mock()
@@ -144,7 +143,7 @@ def test_function() -> None:
         return function
 
     @pytest.fixture
-    def mock_docstring(self) -> MockerFixture:
+    def mock_docstring(self) -> Mock:
         """Create mock docstring."""
         docstring: Mock = Mock()
         docstring.format = "google"
@@ -158,7 +157,7 @@ def test_function() -> None:
         return docstring
 
     @pytest.fixture
-    def mock_issue(self) -> MockerFixture:
+    def mock_issue(self) -> InconsistencyIssue:
         """Create mock issue."""
         return InconsistencyIssue(
             issue_type="return_type_mismatch",
@@ -169,7 +168,11 @@ def test_function() -> None:
         )
 
     def test_fix_return_type_mismatch(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fixing return type mismatch."""
         context = SuggestionContext(
@@ -184,7 +187,11 @@ def test_function() -> None:
         assert "str" in suggestion.suggested_text
 
     def test_add_missing_return_documentation(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test adding missing return documentation."""
         mock_issue.issue_type = "missing_returns"
@@ -202,7 +209,11 @@ def test_function() -> None:
         )
 
     def test_improve_return_description(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test improving vague return description."""
         mock_docstring.returns = DocstringReturns(type_str="str", description="result")
@@ -218,7 +229,11 @@ def test_function() -> None:
         assert suggestion.suggestion_type == SuggestionType.RETURN_UPDATE
 
     def test_fix_generator_return(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fixing generator return documentation."""
         mock_function.source_code = """
@@ -304,7 +319,11 @@ def test_function() -> None:
         assert "result" in result.lower()
 
     def test_no_source_code_fallback(
-        self, generator, mock_function, mock_docstring, mock_issue
+        self,
+        generator: Any,
+        mock_function: Mock,
+        mock_docstring: Mock,
+        mock_issue: InconsistencyIssue,
     ) -> None:
         """Test fallback when source code is not available."""
         mock_function.source_code = ""
@@ -318,7 +337,9 @@ def test_function() -> None:
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1  # Fallback suggestion
 
-    def test_unknown_issue_type(self, generator: Any, mock_function: MockerFixture, mock_docstring: MockerFixture) -> None:
+    def test_unknown_issue_type(
+        self, generator: Any, mock_function: Mock, mock_docstring: Mock
+    ) -> None:
         """Test handling unknown issue types."""
         unknown_issue = InconsistencyIssue(
             issue_type="unknown_return_issue",
@@ -336,7 +357,7 @@ def test_function() -> None:
 
         assert isinstance(suggestion, Suggestion)
         assert suggestion.confidence == 0.1
-        assert "Unknown return issue type" in suggestion.description
+        assert "Unknown return issue type" in suggestion.suggested_text
 
 
 class TestReturnGeneratorIntegration:
@@ -348,7 +369,7 @@ class TestReturnGeneratorIntegration:
         return SuggestionConfig(default_style="google")
 
     @pytest.fixture
-    def generator(self, config) -> Any:
+    def generator(self, config: Any) -> Any:
         """Create return suggestion generator."""
         return ReturnSuggestionGenerator(config)
 

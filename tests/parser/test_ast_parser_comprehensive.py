@@ -18,7 +18,6 @@ import time
 import tracemalloc
 
 import pytest
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 from codedocsync.parser.ast_parser import (
     parse_python_file,

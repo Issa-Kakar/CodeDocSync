@@ -1,10 +1,10 @@
 """Tests for Google-style docstring template."""
 
+from typing import Any
+
 import pytest
 
 from codedocsync.parser.docstring_models import (
-from typing import Any, Dict, List, Optional
-from pathlib import Path
     DocstringParameter,
     DocstringRaises,
     DocstringReturns,
@@ -16,7 +16,7 @@ class TestGoogleStyleTemplate:
     """Test Google-style template functionality."""
 
     @pytest.fixture
-    def template(self) -> Path:
+    def template(self) -> GoogleStyleTemplate:
         """Create Google template instance."""
         return GoogleStyleTemplate()
 

@@ -7,7 +7,6 @@ Tests all data models including validation, serialization, and business logic.
 import pytest
 
 from codedocsync.suggestions.models import (
-from unittest.mock import Mock, MagicMock
     DocstringStyle,
     StyleDetectionError,
     Suggestion,
@@ -214,7 +213,7 @@ class TestSuggestionContext:
 class TestSuggestion:
     """Test Suggestion model."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
         self.valid_diff = SuggestionDiff(
             original_lines=["def func():"],
@@ -406,7 +405,7 @@ class TestSuggestion:
 class TestSuggestionBatch:
     """Test SuggestionBatch model."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
         self.diff = SuggestionDiff(
             original_lines=["test"],
@@ -516,6 +515,7 @@ class TestSuggestionBatch:
         best = batch.get_best_suggestion()
 
         # Should be the highest confidence one
+        assert best is not None
         assert best.confidence == 0.9
 
     def test_batch_sort_by_quality(self) -> None:

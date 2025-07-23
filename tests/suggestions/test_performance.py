@@ -6,13 +6,13 @@ Ensures suggestion generation meets performance requirements:
 """
 
 import time
+from typing import Any
 
 import pytest
 
 from codedocsync.analyzer.models import AnalysisResult, InconsistencyIssue
 from codedocsync.matcher import MatchConfidence, MatchedPair, MatchType
 from codedocsync.parser.ast_parser import (
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
@@ -55,10 +55,15 @@ class TestSuggestionPerformance:
         func = self.create_test_function(num_params=10)
         matched_pair = MatchedPair(
             function=func,
-            documentation=None,
-            confidence=MatchConfidence(overall=0.9),
-            match_type=MatchType.DIRECT,
+            match_type=MatchType.EXACT,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=0.9,
+                location_score=0.9,
+                signature_similarity=0.9,
+            ),
             match_reason="Direct match",
+            docstring=None,
         )
         issues = [
             InconsistencyIssue(
@@ -106,10 +111,15 @@ class TestSuggestionPerformance:
             func = self.create_test_function(num_params=5)
             matched_pair = MatchedPair(
                 function=func,
-                documentation=None,
-                confidence=MatchConfidence(overall=0.9),
-                match_type=MatchType.DIRECT,
+                match_type=MatchType.EXACT,
+                confidence=MatchConfidence(
+                    overall=0.9,
+                    name_similarity=0.9,
+                    location_score=0.9,
+                    signature_similarity=0.9,
+                ),
                 match_reason="Direct match",
+                docstring=None,
             )
             issues = [
                 InconsistencyIssue(
@@ -207,10 +217,15 @@ class TestSuggestionPerformance:
         )
         matched_pair = MatchedPair(
             function=func,
-            documentation=None,
-            confidence=MatchConfidence(overall=0.85),
-            match_type=MatchType.DIRECT,
+            match_type=MatchType.EXACT,
+            confidence=MatchConfidence(
+                overall=0.85,
+                name_similarity=0.85,
+                location_score=0.85,
+                signature_similarity=0.85,
+            ),
             match_reason="Direct match",
+            docstring=None,
         )
         issues = [
             InconsistencyIssue(

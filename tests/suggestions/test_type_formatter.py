@@ -6,12 +6,11 @@ ensuring proper formatting of Python type annotations for different docstring st
 """
 
 import ast
+from typing import Any
 
 import pytest
 
 from codedocsync.suggestions.models import DocstringStyle
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
-
 from codedocsync.suggestions.type_formatter import (
     TypeAnnotationFormatter,
     TypeComplexity,
@@ -78,9 +77,7 @@ class TestTypeAnnotationFormatter:
             google_formatter.format_for_docstring("Union[str, int, float]")
             == "str or int or float"
         )
-        assert (
-            google_formatter.format_for_docstring("Optional[str]") == "str, optional"
-        )
+        assert google_formatter.format_for_docstring("Optional[str]") == "str, optional"
 
     def test_format_generic_types(self, google_formatter: Any) -> None:
         """Test formatting of generic types."""

@@ -5,8 +5,8 @@ Tests the terminal formatting functionality for suggestions,
 including rich output, plain text, and minimal formatting modes.
 """
 
-from unittest.mock import Mock, patch
 from typing import Any
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -17,7 +17,6 @@ from codedocsync.suggestions.formatters.terminal_formatter import (
 )
 from codedocsync.suggestions.integration import EnhancedAnalysisResult, EnhancedIssue
 from codedocsync.suggestions.models import (
-    DocstringStyle,
     Suggestion,
     SuggestionBatch,
     SuggestionDiff,
@@ -29,12 +28,25 @@ from codedocsync.suggestions.models import (
 @pytest.fixture
 def basic_suggestion() -> Any:
     """Create a basic suggestion for testing."""
+    diff = SuggestionDiff(
+        original_lines=[
+            "def func(email: str):",
+            '    """Function with email param."""',
+        ],
+        suggested_lines=[
+            "def func(username: str):",
+            '    """Function with username param."""',
+        ],
+        start_line=1,
+        end_line=2,
+    )
     return Suggestion(
         suggestion_type=SuggestionType.PARAMETER_UPDATE,
         original_text='def func(email: str):\n    """Function with email param."""',
         suggested_text='def func(username: str):\n    """Function with username param."""',
         confidence=0.9,
-        style=DocstringStyle.GOOGLE,
+        diff=diff,
+        style="google",
         copy_paste_ready=True,
     )
 
@@ -60,14 +72,14 @@ def suggestion_with_diff() -> Any:
         original_text='def func(email: str):\n    """Function with email param."""',
         suggested_text='def func(username: str):\n    """Function with username param."""',
         confidence=0.85,
-        style=DocstringStyle.GOOGLE,
+        style="google",
         copy_paste_ready=True,
         diff=diff,
     )
 
 
 @pytest.fixture
-def enhanced_issue(basic_suggestion) -> Any:
+def enhanced_issue(basic_suggestion: Any) -> Any:
     """Create an enhanced issue with suggestion."""
     return EnhancedIssue(
         issue_type="parameter_name_mismatch",
@@ -94,7 +106,7 @@ def enhanced_issue_no_suggestion() -> Any:
 
 
 @pytest.fixture
-def enhanced_result(enhanced_issue) -> Any:
+def enhanced_result(enhanced_issue: Any) -> Any:
     """Create an enhanced analysis result."""
     mock_function: Mock = Mock()
     mock_function.signature = Mock()
@@ -116,13 +128,13 @@ def enhanced_result(enhanced_issue) -> Any:
 
 
 @pytest.fixture
-def suggestion_batch(basic_suggestion) -> Any:
+def suggestion_batch(basic_suggestion: Any) -> Any:
     """Create a suggestion batch."""
     return SuggestionBatch(
         suggestions=[basic_suggestion],
-        total_issues=2,
-        functions_processed=1,
-        generation_time_ms=50.0,
+        function_name="test_func",
+        file_path="test.py",
+        total_generation_time_ms=50.0,
     )
 
 
@@ -214,7 +226,9 @@ class TestSuggestionFormatting:
         # Should include line numbers
         assert "1:" in result or "  1:" in result
 
-    def test_format_suggestion_without_line_numbers(self, basic_suggestion: Any) -> None:
+    def test_format_suggestion_without_line_numbers(
+        self, basic_suggestion: Any
+    ) -> None:
         """Test formatting without line numbers."""
         config = TerminalFormatterConfig(show_line_numbers=False)
         formatter = TerminalSuggestionFormatter(config, OutputStyle.PLAIN)
@@ -240,8 +254,8 @@ class TestSuggestionFormatting:
         ) as mock_console:
             mock_console_instance: Mock = Mock()
             mock_console.return_value = mock_console_instance
-            mock_console_instance.capture.return_value.__enter__.return_value = Mock()  # type: ignore[attr-defined]
-            mock_console_instance.capture.return_value.__enter__.return_value.get.return_value = (  # type: ignore[attr-defined]
+            mock_console_instance.capture.return_value.__enter__.return_value = Mock()
+            mock_console_instance.capture.return_value.__enter__.return_value.get.return_value = (
                 "rich output"
             )
 
@@ -266,7 +280,7 @@ class TestEnhancedIssueFormatting:
         assert enhanced_issue.rich_suggestion.suggested_text in result
 
     def test_format_issue_without_suggestion_plain(
-        self, enhanced_issue_no_suggestion
+        self, enhanced_issue_no_suggestion: Any
     ) -> None:
         """Test formatting issue without suggestion in plain text."""
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
@@ -377,9 +391,9 @@ class TestBatchSummaryFormatting:
         """Test formatting empty batch summary."""
         empty_batch = SuggestionBatch(
             suggestions=[],
-            total_issues=0,
-            functions_processed=0,
-            generation_time_ms=0.0,
+            function_name="",
+            file_path="",
+            total_generation_time_ms=0.0,
         )
 
         formatter = TerminalSuggestionFormatter(style=OutputStyle.PLAIN)
@@ -550,12 +564,20 @@ class TestEdgeCases:
         """Test handling very long suggestion text."""
         long_text = "def function():\n    " + 'x = "very long string" * 100\n' * 50
 
+        diff = SuggestionDiff(
+            original_lines=["short"],
+            suggested_lines=long_text.split("\n"),
+            start_line=1,
+            end_line=1,
+        )
+
         suggestion = Suggestion(
             suggestion_type=SuggestionType.FULL_DOCSTRING,
             original_text="short",
             suggested_text=long_text,
             confidence=0.8,
-            style=DocstringStyle.GOOGLE,
+            diff=diff,
+            style="google",
             copy_paste_ready=True,
         )
 

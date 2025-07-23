@@ -11,7 +11,6 @@ import tempfile
 from unittest.mock import patch
 
 import pytest
-from typing import Any, Dict
 
 from codedocsync.parser.ast_parser import (
     parse_python_file,
