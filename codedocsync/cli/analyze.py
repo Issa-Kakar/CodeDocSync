@@ -107,6 +107,9 @@ def analyze(
         config = get_development_config()
 
     # Apply command line overrides
+    # If no_semantic is set, also disable LLM to ensure no API key is needed
+    if no_semantic:
+        rules_only = True
     if rules_only:
         config.use_llm = False
     config.rule_engine.confidence_threshold = confidence_threshold
@@ -366,6 +369,9 @@ def analyze_function(
         else:
             config = get_development_config()
 
+        # If no_semantic is set, also disable LLM to ensure no API key is needed
+        if no_semantic:
+            rules_only = True
         if rules_only:
             config.use_llm = False
 

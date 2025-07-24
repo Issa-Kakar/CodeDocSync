@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## [2025-07-24] - CLI & ChromaDB Compatibility Fixes
+
+### Fixed
+- **ChromaDB Compatibility**: Confirmed ChromaDB is fully compatible with NumPy 2.3.1
+- **CLI --no-semantic Flag**: Now properly disables ALL LLM/OpenAI usage
+  - Fixed analyze command to link --no-semantic to rules_only mode
+  - Updated LLMAnalyzer to handle missing API keys gracefully
+  - Added early return in analyze_function when no API key available
+- **Docstring Parser**: Enhanced error handling for malformed test fixtures
+  - Filters out invalid parameters with "# MISSING" markers
+  - Returns valid empty docstring for expected test errors
+- **Parse Command**: Now properly handles directories
+  - Recursively finds all Python files in directories
+  - Shows file names when parsing multiple files
+  - Improved table formatting for multi-file output
+- **Test Environment**: Added .env.test with dummy API key for testing
+
+### Known Issues
+- Unicode table rendering issues on Windows (functionality works correctly)
+
 ## [2025-07-24] - Directory Cleanup & Test Infrastructure Overhaul
 
 ### Changed

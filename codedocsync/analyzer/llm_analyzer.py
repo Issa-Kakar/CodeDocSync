@@ -196,9 +196,17 @@ class LLMAnalyzer:
 
         # Double-check API key exists (config validation should have caught this)
         if not api_key:
-            raise LLMAPIKeyError(
-                f"API key not found for provider: {self.config.provider}"
+            # Store None client to handle missing API key gracefully
+            self.openai_client = None
+            self.api_key = None
+            logger.warning(
+                f"API key not found for provider: {self.config.provider}. "
+                "LLM analysis will be disabled."
             )
+            return
+
+        # Store API key
+        self.api_key = api_key
 
         # Initialize OpenAI client
         self.openai_client = openai.AsyncOpenAI(
@@ -449,6 +457,19 @@ class LLMAnalyzer:
         """
         start_time = time.time()
 
+        # Check if API key is available
+        if not hasattr(self, "api_key") or not self.api_key or not self.openai_client:
+            logger.warning("No API key available, returning empty LLM analysis")
+            return LLMAnalysisResponse(
+                issues=[],
+                raw_response="LLM analysis disabled - no API key",
+                model_used=self.config.model,
+                prompt_tokens=0,
+                completion_tokens=0,
+                response_time_ms=0.0,
+                cache_hit=False,
+            )
+
         # Validate request
         if not request:
             raise ValueError("LLMAnalysisRequest cannot be None")
@@ -568,6 +589,10 @@ class LLMAnalyzer:
         # Retry logic with exponential backoff
         max_retries = self.config.max_retries
         base_delay = 1.0
+
+        # Check client exists
+        if not self.openai_client:
+            raise LLMAPIKeyError("OpenAI client not initialized - no API key")
 
         for attempt in range(max_retries + 1):
             try:

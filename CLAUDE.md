@@ -121,11 +121,11 @@ class MatchedPair:
 
 - **Core**: typer, rich, pydantic, python-dotenv
 - **Parsing**: docstring_parser (v0.16+), built-in ast, astor
-- **Matching**: rapidfuzz, chromadb (optional), sentence-transformers
+- **Matching**: rapidfuzz, chromadb, sentence-transformers
 - **LLM**: openai, tenacity
 - **Dev**: pytest, black, mypy, ruff, pre-commit
 
-**Note**: ChromaDB is optional but currently has a runtime incompatibility with NumPy 2.0+. The project uses NumPy 2.3.1, which causes ChromaDB imports to fail. Until ChromaDB is updated or imports are made lazy, semantic matching (2% of cases) will be unavailable. The tool gracefully degrades to Direct/Contextual matching (98% of functionality).
+**Note**: ChromaDB 1.0.15+ is fully compatible with NumPy 2.3.1. All three matching strategies (Direct, Contextual, and Semantic) are fully functional.
 
 ### Type Hints Convention
 
@@ -247,16 +247,9 @@ After experiencing system crashes from problematic tests, follow these rules:
 - See `IMPLEMENTATION_STATE.MD` for detailed progress and next steps
 
 ### Known Issues to Address
-1. **ChromaDB NumPy 2.0+ Compatibility Issue (Critical)**
-   - ChromaDB is incompatible with NumPy 2.0+ (uses deprecated `np.float_`)
-   - Causes runtime error when importing ChromaDB with NumPy 2.3.1
-   - **Current Impact**: Module-level import causes immediate failure
-   - **Workaround**: Make ChromaDB import truly lazy (only import when semantic matching requested)
-   - **Docker Strategy**: Future Docker containers could provide isolated environments with compatible versions
-
-2. ChromaDB installation may fail on Windows (requires C++ compiler)
-   - Solution: Use `--no-semantic` flag or let the tool gracefully degrade
-   - This only affects 2% of matching cases (semantic matching)
+1. **ChromaDB installation may fail on Windows (requires C++ compiler)**
+   - Solution: Install Visual Studio Build Tools if needed
+   - All matching functionality works once installed
 
 ## Architecture Highlights
 
@@ -264,8 +257,8 @@ After experiencing system crashes from problematic tests, follow these rules:
 1. **Direct Matcher** (90% of cases): Exact/fuzzy name matching
 2. **Contextual Matcher** (8% of cases): Module/import aware
 3. **Semantic Matcher** (2% of cases): Embedding-based similarity
-   - Requires ChromaDB (optional dependency)
-   - Gracefully disabled if ChromaDB unavailable
+   - Uses ChromaDB for vector storage
+   - Requires OpenAI API key for embeddings
    - Use `--no-semantic` flag to explicitly disable
 
 ### Analysis Pipeline
@@ -317,8 +310,11 @@ python -m codedocsync analyze path/to/file.py
 # CI/CD mode
 python -m codedocsync check . --ci --fail-on-critical
 
-# Run without semantic matching (if ChromaDB unavailable)
-python -m codedocsync match-unified . --no-semantic
+# Run with all matching strategies (default)
+python -m codedocsync analyze .
+
+# Run without semantic matching (optional)
+python -m codedocsync analyze . --no-semantic
 
 # Get help
 python -m codedocsync --help

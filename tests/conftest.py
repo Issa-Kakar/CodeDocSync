@@ -1,5 +1,6 @@
 """Shared test fixtures and helpers."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -12,8 +13,20 @@ from codedocsync.parser.ast_parser import (
     RawDocstring,
 )
 
-# Load test environment variables
-test_env_path = Path(__file__).parent.parent / ".env.test"
+
+def pytest_configure(config):
+    """Set up test environment."""
+    # Load test environment variables
+    test_env_path = Path(__file__).parent / ".env.test"
+    if test_env_path.exists():
+        load_dotenv(test_env_path, override=True)
+
+    # Ensure we're in test mode
+    os.environ["CODEDOCSYNC_TEST_MODE"] = "true"
+
+
+# Load test environment variables (for module-level access)
+test_env_path = Path(__file__).parent / ".env.test"
 if test_env_path.exists():
     load_dotenv(test_env_path, override=True)
 
