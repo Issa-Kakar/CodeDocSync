@@ -124,6 +124,25 @@ def analyze(
     start_time = time.time()
 
     try:
+        # Check if we need to handle missing API key gracefully
+        if config.use_llm and not rules_only:
+            try:
+                # Try to import and validate LLM config early
+                from codedocsync.analyzer.llm_config import LLMConfig
+
+                LLMConfig()  # This will validate API key
+            except Exception as e:
+                if "OPENAI_API_KEY" in str(e):
+                    console.print(
+                        "[yellow]No OpenAI API key found. Falling back to rules-only mode.[/yellow]\n"
+                        "[dim]Tip: Set OPENAI_API_KEY environment variable or use --rules-only flag.[/dim]"
+                    )
+                    # Fall back to rules-only mode
+                    rules_only = True
+                    config.use_llm = False
+                else:
+                    raise
+
         # First, get matched pairs using unified matching
         facade = UnifiedMatchingFacade()
 
@@ -155,9 +174,15 @@ def analyze(
             )
 
             # Run analysis
+            # Pass explicit llm_analyzer=None when rules_only to prevent initialization
             results = asyncio.run(
                 analyze_multiple_pairs(
-                    match_result.matched_pairs, config=config, cache=cache
+                    match_result.matched_pairs,
+                    config=config,
+                    cache=cache,
+                    llm_analyzer=(
+                        None if rules_only else None
+                    ),  # Explicitly pass None to prevent default creation
                 )
             )
 
@@ -366,6 +391,25 @@ def analyze_function(
         if rules_only:
             config.use_llm = False
 
+        # Check if we need to handle missing API key gracefully
+        if config.use_llm and not rules_only:
+            try:
+                # Try to import and validate LLM config early
+                from codedocsync.analyzer.llm_config import LLMConfig
+
+                LLMConfig()  # This will validate API key
+            except Exception as e:
+                if "OPENAI_API_KEY" in str(e):
+                    console.print(
+                        "[yellow]No OpenAI API key found. Falling back to rules-only mode.[/yellow]\n"
+                        "[dim]Tip: Set OPENAI_API_KEY environment variable or use --rules-only flag.[/dim]"
+                    )
+                    # Fall back to rules-only mode
+                    rules_only = True
+                    config.use_llm = False
+                else:
+                    raise
+
         # Analyze the function
         console.print(f"[cyan]Analyzing function: {function_name}[/cyan]")
         if verbose:
@@ -375,7 +419,15 @@ def analyze_function(
                 f"[dim]Profile: {config_profile}, LLM: {config.use_llm}[/dim]"
             )
 
-        result = asyncio.run(analyze_matched_pair(target_pair, config=config))
+        result = asyncio.run(
+            analyze_matched_pair(
+                target_pair,
+                config=config,
+                llm_analyzer=(
+                    None if rules_only else None
+                ),  # Explicitly pass None to prevent default creation
+            )
+        )
 
         # Display detailed results
         console.print(f"\n[bold]Analysis Results for {function_name}[/bold]")
