@@ -1,176 +1,182 @@
-Looking at the output errors, there are several critical issues preventing the CLI from working properly. Here are the exact instructions to fix these problems:
-Fix Instructions for CLI Runtime Errors
-Issue 1: Docstring Parser Failing on Test Fixtures
-The parser is failing with "Invalid parameter name: # MISSING" because the test fixtures contain intentionally malformed docstrings for testing.
-Fix in codedocsync/parser/docstring_parser.py:
-python# Find the parse_docstring function and add error handling for malformed parameters
+Looking at the output, there are still issues to fix. Here are detailed instructions for the AI agent:
+Investigation and Fix Instructions
+Issue 1: analyze Command Still Requires OpenAI API Key
+The analyze command fails with "OPENAI_API_KEY environment variable is required" even though it should work without it when using --rules-only or --no-semantic.
+Investigation Steps:
 
-def parse_docstring(docstring_text: str, style: str | None = None) -> ParsedDocstring | None:
-    """Parse a docstring with better error handling for test fixtures."""
-    if not docstring_text or not docstring_text.strip():
-        return None
+Check the analyze command implementation:
 
-    try:
-        # Existing parsing logic...
-        parsed = docstring_parser.parse(docstring_text, style=style)
+bash# Look at the analyze command in CLI
+grep -n "def analyze" codedocsync/cli/main.py -A 20
 
-        # Filter out invalid parameters that contain "# MISSING" or similar test markers
-        if parsed.params:
-            valid_params = []
-            for param in parsed.params:
-                # Skip parameters that are clearly test markers
-                if param.arg_name and not param.arg_name.startswith('#') and '# MISSING' not in str(param.arg_name):
-                    valid_params.append(param)
-            parsed.params = valid_params
+Find where the OpenAI error is coming from:
 
-        return _convert_to_parsed_docstring(parsed)
+bash# Search for the exact error message
+grep -r "OPENAI_API_KEY environment variable is required" codedocsync/
 
-    except Exception as e:
-        # Log but don't fail - return partial result
-        if "# MISSING" in str(e) or "Invalid parameter name" in str(e):
-            # This is expected in test fixtures, return empty parsed docstring
-            return ParsedDocstring(
-                summary="",
-                description="",
-                parameters=[],
-                returns=None,
-                raises=[],
-                examples=[],
-                notes=[],
-                attributes=[],
-                format_type="unknown"
-            )
-        # For other errors, still log but return None
-        return None
-Issue 2: OpenAI API Key Requirement Even with --no-semantic
-The analyzer is trying to use OpenAI even when semantic matching is disabled.
-Fix in codedocsync/cli/main.py:
-python# In the analyze command, ensure --no-semantic properly disables ALL LLM usage
+Check the Analyzer initialization:
+
+bash# Look at how DocumentationAnalyzer is initialized
+grep -n "DocumentationAnalyzer" codedocsync/cli/main.py -A 10 -B 5
+Expected Fix:
+The analyze command needs to support a --rules-only mode that completely bypasses LLM initialization. Here's what needs to be added:
+python# In codedocsync/cli/main.py, modify the analyze command:
 
 @app.command()
 def analyze(
     path: Path = typer.Argument(...),
-    no_semantic: bool = typer.Option(False, "--no-semantic", help="Disable semantic matching"),
     rules_only: bool = typer.Option(False, "--rules-only", help="Use only rule-based analysis (no LLM)"),
+    no_semantic: bool = typer.Option(False, "--no-semantic", help="Disable semantic matching"),
     # ... other options
 ):
     """Analyze Python code for documentation inconsistencies."""
 
-    # If no_semantic is set, also set rules_only to ensure no LLM usage
-    if no_semantic:
-        rules_only = True
-
-    # Pass both flags to the analyzer
-    config = AnalysisConfig(
-        enable_semantic_matching=not no_semantic,
-        enable_llm_analysis=not rules_only,  # This should disable LLM checks
-        # ... other config
-    )
-Fix in codedocsync/analyzer/llm_analyzer.py:
-python# Add a check at the beginning of analyze_consistency
-
-async def analyze_consistency(
-    self,
-    matched_pairs: list[MatchedPair],
-    config: AnalysisConfig | None = None
-) -> list[IssueReport]:
-    """Analyze matched pairs for consistency."""
-
-    # Early return if LLM analysis is disabled
-    if config and not config.enable_llm_analysis:
-        return []
-
-    # Check for API key only if we're actually going to use it
-    if not self.api_key:
-        logger.warning("No API key found, skipping LLM analysis")
-        return []
-
-    # Rest of the method...
-Issue 3: Module Path Resolution Error
-Fix in codedocsync/parser/code_analyzer.py:
-python# In resolve_module_path function, handle __init__.py files properly
-
-def resolve_module_path(file_path: Path, project_root: Path | None = None) -> str:
-    """Resolve module path from file path."""
-    try:
-        # Skip __init__.py files - they don't have a module path
-        if file_path.name == "__init__.py":
-            # Return the package name instead
-            return file_path.parent.name
-
-        # Rest of existing logic...
-    except Exception as e:
-        # Don't fail, just return a sensible default
-        return file_path.stem  # Just the filename without extension
-Issue 4: Permission Error on Directory
-The parse command is trying to parse a directory instead of finding Python files within it.
-Fix in codedocsync/cli/main.py:
-python@app.command()
-def parse(
-    path: Path = typer.Argument(..., help="Path to Python file or directory"),
-    format: OutputFormat = typer.Option(OutputFormat.TERMINAL, "--format", "-f"),
-):
-    """Parse Python code and extract function information."""
-
-    # Handle directory vs file
-    if path.is_dir():
-        # Find all Python files in directory
-        python_files = list(path.rglob("*.py"))
-        if not python_files:
-            console.print(f"[red]No Python files found in {path}[/red]")
-            raise typer.Exit(1)
-    elif path.is_file() and path.suffix == ".py":
-        python_files = [path]
+    # Create analyzer with optional LLM support
+    if rules_only:
+        # Don't even try to initialize LLM components
+        analyzer = DocumentationAnalyzer(
+            llm_provider=None,  # This should prevent LLM initialization
+            enable_llm=False
+        )
     else:
-        console.print(f"[red]Error: {path} is not a Python file or directory[/red]")
-        raise typer.Exit(1)
-
-    # Parse all files
-    all_functions = []
-    for file_path in python_files:
+        # Normal initialization (may fail if no API key)
         try:
-            parsed_result = parse_file(file_path)
-            all_functions.extend(parsed_result.functions)
+            analyzer = DocumentationAnalyzer()
         except Exception as e:
-            console.print(f"[yellow]Warning: Failed to parse {file_path}: {e}[/yellow]")
-            continue
+            if "OPENAI_API_KEY" in str(e):
+                console.print("[yellow]No API key found. Falling back to rules-only mode.[/yellow]")
+                analyzer = DocumentationAnalyzer(
+                    llm_provider=None,
+                    enable_llm=False
+                )
+            else:
+                raise
+Issue 2: Windows Unicode/ANSI Rendering
+The ANSI escape codes (like [1;35m[[0m[1;35m>>[0m) are showing because Windows PowerShell doesn't handle them properly by default.
+Investigation Steps:
 
-    # Rest of the display logic...
-Issue 5: Environment Variable Setup for Tests
-Create a test-specific .env file or mock the environment in tests:
-Create tests/.env.test:
-bash# Dummy API key for testing (not used when --no-semantic is set)
-OPENAI_API_KEY=sk-test-key-not-real
-LLM_PROVIDER=openai
-Update test setup in tests/conftest.py:
-pythonimport os
-from pathlib import Path
+Check Rich configuration:
 
-# Load test environment variables
-def pytest_configure(config):
-    """Set up test environment."""
-    test_env_file = Path(__file__).parent / ".env.test"
-    if test_env_file.exists():
-        from dotenv import load_dotenv
-        load_dotenv(test_env_file)
+bash# Look for Rich console initialization
+grep -n "Console(" codedocsync/cli/main.py -A 5
 
-    # Ensure we're in test mode
-    os.environ["CODEDOCSYNC_TEST_MODE"] = "true"
-Immediate Action Steps
+Check if Windows detection is in place:
 
-First, fix the docstring parser to handle malformed test fixtures gracefully
-Second, ensure --no-semantic flag properly disables ALL OpenAI usage
-Third, fix the parse command to handle directories properly
-Fourth, add the test environment setup
+bash# Search for platform or Windows checks
+grep -r "platform\|windows\|os.name" codedocsync/cli/
+Fix Options:
 
-Test Verification Commands
-After making these fixes, verify with:
-bash# Should work without API key
-python -m codedocsync analyze tests/fixtures/simple_project --no-semantic
+Option A - Force Windows Terminal Support:
 
-# Should list functions without errors
-python -m codedocsync parse tests/fixtures/simple_project
+python# In codedocsync/cli/main.py at the top where Console is initialized:
 
-# Should show unified matching results
+import os
+import platform
+from rich.console import Console
+
+# Detect Windows and configure appropriately
+if platform.system() == "Windows":
+    # Try to enable virtual terminal processing for ANSI codes
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+
+    # Create console with Windows-specific settings
+    console = Console(
+        force_terminal=True,  # Force terminal capabilities
+        force_interactive=True,
+        color_system="windows",  # Use Windows color system
+        legacy_windows=False  # Use modern Windows terminal features
+    )
+else:
+    console = Console()
+
+Option B - Detect Terminal Capabilities:
+
+python# More robust terminal detection
+from rich.console import Console
+import os
+
+# Check if we're in a capable terminal
+def supports_unicode():
+    # Windows Terminal, VS Code terminal, and modern terminals set this
+    if os.environ.get("WT_SESSION"):  # Windows Terminal
+        return True
+    if os.environ.get("TERM_PROGRAM") == "vscode":  # VS Code
+        return True
+    if os.environ.get("COLORTERM"):  # Modern color terminal
+        return True
+    return False
+
+# Configure console based on capabilities
+console = Console(
+    force_terminal=supports_unicode(),
+    legacy_windows=not supports_unicode()
+)
+
+Option C - Add a CLI Flag:
+
+python# Add a global option to disable rich formatting
+@app.callback()
+def main(
+    no_color: bool = typer.Option(False, "--no-color", help="Disable colored output"),
+    plain: bool = typer.Option(False, "--plain", help="Use plain text output (no Unicode)")
+):
+    """CodeDocSync - Intelligent documentation analysis for Python code."""
+    global console
+
+    if no_color or plain:
+        console = Console(
+            no_color=True,
+            force_terminal=False,
+            highlight=False
+        )
+    elif os.environ.get("NO_COLOR"):  # Respect NO_COLOR env var
+        console = Console(no_color=True)
+Testing Instructions
+After implementing fixes:
+
+Test analyze without API key:
+
+bash# Should work with rules-only flag
+python -m codedocsync analyze tests/fixtures/simple_project --rules-only
+
+# Should show proper error handling
+python -m codedocsync analyze tests/fixtures/simple_project
+
+Test Unicode rendering:
+
+bash# Test in PowerShell
 python -m codedocsync match-unified tests/fixtures/simple_project --no-semantic
-These fixes address the root causes of the errors shown in the output, not just the test expectations. The CLI needs to work properly before the tests can pass.
+
+# Test with plain output if implemented
+python -m codedocsync match-unified tests/fixtures/simple_project --no-semantic --plain
+
+# Test in Windows Terminal (if available)
+# Should render properly without escape codes
+
+Environment variable test:
+
+bash# Test NO_COLOR standard
+$env:NO_COLOR=1
+python -m codedocsync match-unified tests/fixtures/simple_project --no-semantic
+Remove-Item Env:\NO_COLOR
+Priority Order
+
+FIRST: Fix the analyze command to work without OpenAI API key (Critical)
+SECOND: Implement Windows terminal detection and configuration (Important for UX)
+THIRD: Add fallback options like --plain flag (Nice to have)
+
+Success Criteria
+✅ python -m codedocsync analyze <path> --rules-only works without any API key
+✅ python -m codedocsync analyze <path> gives helpful message when no API key found
+✅ Terminal output renders cleanly on Windows (no visible ANSI codes)
+✅ All three commands (parse, match-unified, analyze) work without errors
+Additional Notes
+
+The Windows Unicode issue is common with Rich on older Windows terminals
+Windows Terminal (the new default in Windows 11) handles ANSI codes properly
+The fix should gracefully degrade on older terminals while taking advantage of newer ones
+Don't spend too much time on Unicode if the functional fix for analyze is more important
+
+Start with the analyze command fix first - it's blocking functionality. The Unicode issue is cosmetic and can be addressed after core functionality works.

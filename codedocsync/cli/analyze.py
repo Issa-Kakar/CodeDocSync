@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.console import Console
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from codedocsync.analyzer import (
@@ -23,6 +21,7 @@ from codedocsync.analyzer import (
     get_fast_config,
     get_thorough_config,
 )
+from codedocsync.cli.console import console, create_progress
 from codedocsync.cli.formatting import format_analysis_results
 from codedocsync.matcher import (
     MatchConfidence,
@@ -31,8 +30,6 @@ from codedocsync.matcher import (
     UnifiedMatchingFacade,
 )
 from codedocsync.parser import IntegratedParser, ParsedDocstring
-
-console = Console()
 
 
 def analyze(
@@ -130,13 +127,7 @@ def analyze(
         # First, get matched pairs using unified matching
         facade = UnifiedMatchingFacade()
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            console=console,
-            transient=not verbose,
-        ) as progress:
+        with create_progress(transient=not verbose) as progress:
             # Match functions to documentation
             match_task = progress.add_task(
                 "Matching functions to documentation...", total=None

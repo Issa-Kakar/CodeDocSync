@@ -10,13 +10,11 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
+from codedocsync.cli.console import console
 from codedocsync.cli.formatting import serialize_docstring
 from codedocsync.parser import IntegratedParser, ParsedDocstring, ParsingError
-
-console = Console()
 
 
 def parse(

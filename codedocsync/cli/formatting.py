@@ -9,13 +9,11 @@ import json
 import sys
 from io import StringIO
 
-from rich.console import Console
 from rich.table import Table
 
+from codedocsync.cli.console import console
 from codedocsync.matcher import MatchResult
 from codedocsync.parser import ParsedDocstring, RawDocstring
-
-console = Console()
 
 
 def serialize_docstring(

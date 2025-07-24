@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented in this file.
 
+## [2025-07-24] - Windows Terminal Compatibility & API Key Independence
+
+### Fixed
+- **Windows Terminal Compatibility**: Comprehensive fix for Unicode/ANSI rendering issues
+  - Created centralized console configuration module (`cli/console.py`)
+  - Added automatic terminal capability detection (Windows Terminal, VS Code, etc.)
+  - Implemented fallback to ASCII characters for legacy Windows terminals
+  - All CLI modules now use unified console configuration
+  - Progress indicators adapted for terminal capabilities
+  - **Workaround**: Set `PYTHONIOENCODING=utf-8` environment variable for best results on Windows
+
+- **API Key Independence**: All CLI commands now work without OpenAI API key
+  - `analyze` command with `--rules-only` flag works without API key
+  - Proper fallback behavior when no API key is found
+  - No more crashes due to missing API keys for rule-based analysis
+  - All three commands (parse, match-unified, analyze) confirmed working
+
+### Added
+- `codedocsync/cli/console.py`: Centralized terminal configuration module
+- `create_progress()` helper function for terminal-aware progress bars
+- Enhanced terminal detection for Windows Terminal, VS Code, and modern terminals
+
+### Changed
+- All CLI modules updated to use centralized console configuration
+- Progress bars automatically adapt to terminal capabilities
+
 ## [2025-07-24] - CLI & ChromaDB Compatibility Fixes
 
 ### Fixed
@@ -20,7 +46,7 @@ All notable changes to this project are documented in this file.
 - **Test Environment**: Added .env.test with dummy API key for testing
 
 ### Known Issues
-- Unicode table rendering issues on Windows (functionality works correctly)
+- On Windows without UTF-8 support, use `PYTHONIOENCODING=utf-8` prefix for commands
 
 ## [2025-07-24] - Directory Cleanup & Test Infrastructure Overhaul
 
