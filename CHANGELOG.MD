@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented in this file.
 
+## [2025-07-24] - Critical CLI Fixes: API Key Independence & PowerShell Support
+
+### Fixed
+- **OpenAI API Key Independence**: Fixed critical issue preventing use without API key
+  - Added early API key validation with graceful fallback
+  - `analyze` command with `--rules-only` flag now works without any API key
+  - Users without API keys get helpful fallback message instead of crashes
+  - Properly pass `llm_analyzer=None` when rules_only is set
+  - Both `analyze` and `analyze-function` commands fixed
+
+- **PowerShell ANSI Rendering**: Fixed terminal output showing raw escape codes
+  - Enhanced PowerShell detection in `supports_unicode()` function
+  - Added automatic virtual terminal processing for Windows (ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+  - Detects PowerShell vs Windows Terminal vs PowerShell ISE
+  - Added global command-line options: `--plain`, `--no-color`, and `--force-color`
+  - Improved legacy Windows terminal handling with proper fallback
+
+### Added
+- Global terminal control options available for all commands
+- Automatic PowerShell environment detection
+- Virtual terminal processing enablement for Windows
+
+### Changed
+- Console creation now attempts to enable ANSI support on Windows automatically
+- Better exception handling for terminal capability detection
+
 ## [2025-07-24] - Windows Terminal Compatibility & API Key Independence
 
 ### Fixed
