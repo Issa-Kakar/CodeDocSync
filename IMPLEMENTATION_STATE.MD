@@ -22,10 +22,11 @@ CodeDocSync implementation is feature-complete for the core functionality (Weeks
 - **Test Status**: 62+/77 tests passing (~80.5%)
 
 ### ✅ Matcher Module
-**Exports**: `DirectMatcher`, `ContextualMatcher`, `SemanticMatcher`, `UnifiedMatchingFacade`
+**Exports**: `DirectMatcher`, `ContextualMatcher`, `SemanticMatcher` (optional), `UnifiedMatchingFacade`
 - Three-layer matching with configurable confidence thresholds
 - Cross-file documentation detection
-- OpenAI embeddings integration validated
+- OpenAI embeddings integration validated (when ChromaDB available)
+- SemanticMatcher gracefully disabled if ChromaDB unavailable
 - Performance targets met for all matchers
 - **Test Status**: 32/34 tests passing (94.1%)
 
@@ -48,8 +49,9 @@ CodeDocSync implementation is feature-complete for the core functionality (Weeks
   - Generators: 43/119 tests passing (36.1%) - TO BE DELETED AND RECREATED
 
 ### ✅ Storage Module
-**Exports**: `VectorStore`, `EmbeddingCache`, `PerformanceMonitor`
-- ChromaDB integration working
+**Exports**: `VectorStore` (optional), `EmbeddingCache`, `PerformanceMonitor`
+- ChromaDB integration with graceful degradation
+- VectorStore only available when ChromaDB is installed
 - Three-tier caching implemented
 - Real-time performance monitoring
 - **Test Status**: Functional (specific count TBD)
@@ -127,6 +129,7 @@ All performance targets have been exceeded:
 - **Implementation**: Core functionality solid and production-ready
 - **Test Infrastructure**: Not a bug-fixing exercise - tests needed updates to match implementation
 - **Generator Tests**: Need complete rewrite, not fixes (expecting non-existent behavior)
+- **ChromaDB**: Optional dependency with proper graceful degradation (affects only 2% of use cases)
 
 ## Immediate Next Steps (Priority Order) - UPDATED
 

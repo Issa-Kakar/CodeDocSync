@@ -320,6 +320,16 @@ class UnifiedMatchingFacade:
                         f"memory delta: {post_semantic_memory - pre_semantic_memory:.1f}MB"
                     )
 
+                except ImportError as e:
+                    if "ChromaDB" in str(e):
+                        logger.warning(
+                            "Semantic matching disabled: ChromaDB not available. "
+                            "Install with: pip install chromadb"
+                        )
+                    else:
+                        logger.error(f"Semantic matching import error: {e}")
+                    self.stats["errors"]["matching_errors"] += 1
+                    # Continue with contextual result as fallback
                 except Exception as e:
                     logger.error(f"Semantic matching failed: {e}")
                     self.stats["errors"]["matching_errors"] += 1

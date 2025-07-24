@@ -1,0 +1,137 @@
+warning: The top-level linter settings are deprecated in favour of their counterparts in the `lint` section. Please update the following options in `pyproject.toml`:
+  - 'ignore' -> 'lint.ignore'
+  - 'select' -> 'lint.select'
+  - 'isort' -> 'lint.isort'
+  - 'per-file-ignores' -> 'lint.per-file-ignores'
+codedocsync\matcher\semantic_matcher.py:43:1: W293 [*] Blank line contains whitespace
+   |
+41 |                 "Install with: pip install chromadb"
+42 |             )
+43 |         
+   | ^^^^^^^^ W293
+44 |         self.vector_store = VectorStore(project_id=None)  # Auto-generate from path
+45 |         self.embedding_cache = EmbeddingCache()
+   |
+   = help: Remove whitespace from blank line
+
+codedocsync\matcher\semantic_matcher.py:381:1: W293 [*] Blank line contains whitespace
+    |
+379 |                 self.vector_store.close()
+380 |                 self.vector_store = None
+381 |             
+    | ^^^^^^^^^^^^ W293
+382 |             # Close embedding cache
+383 |             if hasattr(self, 'embedding_cache') and self.embedding_cache is not None:
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\matcher\semantic_matcher.py:386:1: W293 [*] Blank line contains whitespace
+    |
+384 |                 self.embedding_cache.close()
+385 |                 self.embedding_cache = None
+386 |             
+    | ^^^^^^^^^^^^ W293
+387 |             # Clear embedding generator if it has resources
+388 |             if hasattr(self, 'embedding_generator') and self.embedding_generator is not None:
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\matcher\semantic_matcher.py:390:1: W293 [*] Blank line contains whitespace
+    |
+388 |             if hasattr(self, 'embedding_generator') and self.embedding_generator is not None:
+389 |                 self.embedding_generator = None
+390 |             
+    | ^^^^^^^^^^^^ W293
+391 |             # Clear scorer
+392 |             if hasattr(self, 'scorer') and self.scorer is not None:
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\matcher\semantic_matcher.py:394:1: W293 [*] Blank line contains whitespace
+    |
+392 |             if hasattr(self, 'scorer') and self.scorer is not None:
+393 |                 self.scorer = None
+394 |             
+    | ^^^^^^^^^^^^ W293
+395 |             logger.info("SemanticMatcher closed successfully")
+396 |         except Exception as e:
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\embedding_cache.py:301:1: W293 [*] Blank line contains whitespace
+    |
+299 |             # Clear memory cache
+300 |             self.memory_cache.clear()
+301 |             
+    | ^^^^^^^^^^^^ W293
+302 |             # No persistent connection to close for SQLite
+303 |             # Each operation opens and closes its own connection
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\vector_store.py:202:1: W293 [*] Blank line contains whitespace
+    |
+200 |                 except Exception as e:
+201 |                     logger.debug(f"Collection deletion failed (may not exist): {e}")
+202 |             
+    | ^^^^^^^^^^^^ W293
+203 |             # Clear references to release memory
+204 |             self.collection = None
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\vector_store.py:205:1: W293 [*] Blank line contains whitespace
+    |
+203 |             # Clear references to release memory
+204 |             self.collection = None
+205 |             
+    | ^^^^^^^^^^^^ W293
+206 |             # Reset the client to force cleanup
+207 |             if self.client:
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\vector_store.py:214:1: W293 [*] Blank line contains whitespace
+    |
+212 |                 except Exception as e:
+213 |                     logger.debug(f"Client reset failed: {e}")
+214 |             
+    | ^^^^^^^^^^^^ W293
+215 |             self.client = None
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\vector_store.py:216:1: W293 [*] Blank line contains whitespace
+    |
+215 |             self.client = None
+216 |             
+    | ^^^^^^^^^^^^ W293
+217 |             logger.info("VectorStore closed and resources released")
+218 |         except Exception as e:
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\vector_store.py:229:1: W293 [*] Blank line contains whitespace
+    |
+227 |             # Suppress errors during garbage collection
+228 |             pass
+229 |     
+    | ^^^^ W293
+230 |     def __enter__(self) -> "VectorStore":
+231 |         """Enter context manager."""
+    |
+    = help: Remove whitespace from blank line
+
+codedocsync\storage\vector_store.py:233:1: W293 [*] Blank line contains whitespace
+    |
+231 |         """Enter context manager."""
+232 |         return self
+233 |     
+    | ^^^^ W293
+234 |     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+235 |         """Exit context manager and cleanup resources."""
+    |
+    = help: Remove whitespace from blank line
+
+Found 12 errors.
+[*] 12 fixable with the `--fix` option.

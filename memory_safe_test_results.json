@@ -1,0 +1,172 @@
+{
+  "summary": {
+    "total": 20,
+    "passed": 0,
+    "failed": 0,
+    "memory_exceeded": 0,
+    "timed_out": 20,
+    "errors": 0
+  },
+  "results": [
+    {
+      "file": "tests\\suggestions\\formatters\\test_json_formatter.py",
+      "status": "timeout",
+      "duration": 69.03695702552795,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\formatters\\test_terminal_formatter.py",
+      "status": "timeout",
+      "duration": 69.08058667182922,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\templates\\test_google_template.py",
+      "status": "timeout",
+      "duration": 69.26063561439514,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\templates\\test_numpy_template.py",
+      "status": "timeout",
+      "duration": 69.02752232551575,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\templates\\test_sphinx_template.py",
+      "status": "timeout",
+      "duration": 69.02191376686096,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_base.py",
+      "status": "timeout",
+      "duration": 68.9772777557373,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_config.py",
+      "status": "timeout",
+      "duration": 69.0237717628479,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_converter.py",
+      "status": "timeout",
+      "duration": 70.7437915802002,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_e2e_integration.py",
+      "status": "timeout",
+      "duration": 70.51600527763367,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_generators.py",
+      "status": "timeout",
+      "duration": 68.94479846954346,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_integration.py",
+      "status": "timeout",
+      "duration": 69.09318995475769,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_merging.py",
+      "status": "timeout",
+      "duration": 68.87862944602966,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_models.py",
+      "status": "timeout",
+      "duration": 70.56776809692383,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_performance.py",
+      "status": "timeout",
+      "duration": 70.6906476020813,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_ranking.py",
+      "status": "timeout",
+      "duration": 69.14225673675537,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_specific_issues.py",
+      "status": "timeout",
+      "duration": 5653.5707223415375,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_style_detector.py",
+      "status": "timeout",
+      "duration": 71.12599658966064,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_suggestion_generator.py",
+      "status": "timeout",
+      "duration": 32391.08777499199,
+      "peak_memory_mb": 0.0,
+      "output": "============================= test session starts =============================\ncollected 11 items\n\ntests\\suggestions\\test_suggestion_generator.py FFFFFFFFFFF               [100%]\n\n============================= 11 failed in 5.98s ==============================\n",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_type_formatter.py",
+      "status": "timeout",
+      "duration": 75.49337673187256,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    },
+    {
+      "file": "tests\\suggestions\\test_validation.py",
+      "status": "timeout",
+      "duration": 69.13769435882568,
+      "peak_memory_mb": 0.0,
+      "output": "",
+      "error": ""
+    }
+  ]
+}

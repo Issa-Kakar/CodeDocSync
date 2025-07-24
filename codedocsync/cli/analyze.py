@@ -46,6 +46,13 @@ def analyze(
         bool,
         typer.Option("--rules-only", help="Skip LLM analysis, use only rule engine"),
     ] = False,
+    no_semantic: Annotated[
+        bool,
+        typer.Option(
+            "--no-semantic",
+            help="Disable semantic matching (uses only direct/contextual matching)",
+        ),
+    ] = False,
     confidence_threshold: Annotated[
         float,
         typer.Option(
@@ -84,6 +91,7 @@ def analyze(
     Examples:
         codedocsync analyze ./src --rules-only
         codedocsync analyze ./project --profile thorough --format json
+        codedocsync analyze ./src --no-semantic  # Without ChromaDB/semantic matching
     """
     # Validate path
     if not path.exists():
@@ -134,7 +142,9 @@ def analyze(
             if path.is_file():
                 match_result = facade.match_file(path)
             else:
-                match_result = asyncio.run(facade.match_project(str(path)))
+                match_result = asyncio.run(
+                    facade.match_project(str(path), enable_semantic=not no_semantic)
+                )
 
             progress.update(match_task, completed=True)
 
@@ -269,6 +279,9 @@ def analyze_function(
     rules_only: Annotated[
         bool, typer.Option("--rules-only", help="Skip LLM analysis")
     ] = False,
+    no_semantic: Annotated[
+        bool, typer.Option("--no-semantic", help="Disable semantic matching")
+    ] = False,
     config_profile: Annotated[
         str,
         typer.Option("--profile", help="Analysis profile (fast/thorough/development)"),
@@ -283,6 +296,7 @@ def analyze_function(
     Examples:
         codedocsync analyze-function ./myfile.py process_user --verbose
         codedocsync analyze-function ./src/utils.py validate_data --rules-only
+        codedocsync analyze-function ./myfile.py my_func --no-semantic
     """
     # Validate file
     if not file.exists():

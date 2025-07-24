@@ -334,9 +334,10 @@ class TestSphinxStyleTemplate:
         result = template._render_examples(examples)
 
         # Should use Sphinx rubric and code-block directives
-        assert ".. rubric:: Examples" in result
-        assert ".. code-block:: python" in result
-        assert "from mymodule import process" in result
+        result_text = "\n".join(result) if isinstance(result, list) else result
+        assert ".. rubric:: Examples" in result_text
+        assert ".. code-block:: python" in result_text
+        assert "from mymodule import process" in result_text
 
     def test_format_type_annotation_simple_types(self, template: Any) -> None:
         """Test formatting simple types for Sphinx style."""

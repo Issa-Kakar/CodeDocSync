@@ -188,3 +188,49 @@ class VectorStore:
             ),
             "collection_count": self.collection.count(),
         }
+
+    def close(self) -> None:
+        """Close ChromaDB client and release resources."""
+        try:
+            # Delete the collection to free resources
+            if self.client and self.collection:
+                try:
+                    self.client.delete_collection(self.collection_name)
+                    logger.info(f"Deleted collection: {self.collection_name}")
+                except Exception as e:
+                    logger.debug(f"Collection deletion failed (may not exist): {e}")
+
+            # Clear references to release memory
+            self.collection = None
+
+            # Reset the client to force cleanup
+            if self.client:
+                try:
+                    # Force reset to clean up resources
+                    self.client.reset()
+                    logger.info("ChromaDB client reset successfully")
+                except Exception as e:
+                    logger.debug(f"Client reset failed: {e}")
+
+            self.client = None
+
+            logger.info("VectorStore closed and resources released")
+        except Exception as e:
+            logger.error(f"Error closing VectorStore: {e}")
+
+    def __del__(self) -> None:
+        """Cleanup resources on deletion."""
+        try:
+            if hasattr(self, "client") and self.client is not None:
+                self.close()
+        except Exception:
+            # Suppress errors during garbage collection
+            pass
+
+    def __enter__(self) -> "VectorStore":
+        """Enter context manager."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager and cleanup resources."""
+        self.close()

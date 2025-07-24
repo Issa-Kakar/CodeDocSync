@@ -1,5 +1,5 @@
-Test run at: Wed Jul 23 04:00:56 2025
-Duration: 4.33 seconds
+Test run at: Wed Jul 23 04:18:05 2025
+Duration: 4.03 seconds
 ============================================================
 ============================= test session starts =============================
 platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\issak\CodeDocSync\.venv\Scripts\python.exe
@@ -139,7 +139,7 @@ templates\test_google_template.py:266: in test_template_with_max_line_length
     assert len(line) <= 50 or line.strip() == ""
 E   AssertionError: assert (71 <= 50 or 'param (str):...ld be wrapped' == ''
 E    +  where 71 = len('    param (str): This is a very long description that should be wrapped')
-E
+E     
 E     + param (str): This is a very long description that should be wrapped)
 ____________ TestTemplateRegistry.test_invalid_style_raises_error _____________
 templates\test_google_template.py:291: in test_invalid_style_raises_error
@@ -159,12 +159,12 @@ templates\test_numpy_template.py:315: in test_match_parameter_line
     assert template._match_parameter_line("    description") is None
 E   AssertionError: assert 'description' is None
 E    +  where 'description' = _match_parameter_line('    description')
-E    +    where _match_parameter_line = <codedocsync.suggestions.templates.numpy_template.NumpyStyleTemplate object at 0x000001C0AC5CCC30>._match_parameter_line
+E    +    where _match_parameter_line = <codedocsync.suggestions.templates.numpy_template.NumpyStyleTemplate object at 0x0000018FB3E7CC30>._match_parameter_line
 _______ TestNumpyStyleTemplate.test_format_type_annotation_array_types ________
 templates\test_numpy_template.py:366: in test_format_type_annotation_array_types
     assert template._format_type_annotation("Dict[str, Any]") == "dict of Any"
 E   AssertionError: assert 'dict of str, Any' == 'dict of Any'
-E
+E     
 E     - dict of Any
 E     + dict of str, Any
 E     ?        +++++
@@ -173,8 +173,8 @@ templates\test_numpy_template.py:413: in test_long_line_wrapping
     assert len(line) <= template.max_line_length or line.strip() == ""
 E   AssertionError: assert (81 <= 50 or 'very_long_pa...uple[int, str' == ''
 E    +  where 81 = len('very_long_parameter_name_that_exceeds_limit : dict of str, list of Tuple[int, str')
-E    +  and   50 = <codedocsync.suggestions.templates.numpy_template.NumpyStyleTemplate object at 0x000001C0AC0C4910>.max_line_length
-E
+E    +  and   50 = <codedocsync.suggestions.templates.numpy_template.NumpyStyleTemplate object at 0x0000018FB3974910>.max_line_length
+E     
 E     + very_long_parameter_name_that_exceeds_limit : dict of str, list of Tuple[int, str)
 ============================ slowest 10 durations =============================
 
@@ -191,4 +191,5 @@ FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_match_para
 FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_format_type_annotation_array_types
 FAILED templates\test_numpy_template.py::TestNumpyStyleTemplate::test_long_line_wrapping
 !!!!!!!!!!!!!!!!!!!!!!!!! stopping after 10 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
-======================== 10 failed, 99 passed in 2.80s ========================
+======================== 10 failed, 99 passed in 2.59s ========================
+

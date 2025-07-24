@@ -1,4 +1,5 @@
 import time
+from collections.abc import Generator
 from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
@@ -86,7 +87,7 @@ def renamed_function() -> ParsedFunction:
 
 
 @pytest.fixture
-def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
+def semantic_matcher(tmp_path: Path) -> Generator[SemanticMatcher, None, None]:
     config = EmbeddingConfig(
         primary_model=EmbeddingModel.OPENAI_SMALL,
         cache_embeddings=True,
@@ -104,6 +105,7 @@ def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
             mock_vector_store = MagicMock()
             mock_vector_store.get_stats.return_value = {"collection_count": 0}
             mock_vector_store.search_similar.return_value = []
+            mock_vector_store.close = MagicMock()  # Add close method
             mock_vector_store_class.return_value = mock_vector_store
 
             mock_cache = MagicMock()
@@ -115,15 +117,21 @@ def semantic_matcher(tmp_path: Path) -> SemanticMatcher:
                 "total_saves": 0,
                 "total_requests": 0,
             }
+            mock_cache.close = MagicMock()  # Add close method
             mock_cache_class.return_value = mock_cache
 
             matcher = SemanticMatcher(str(tmp_path), config)
 
-            # Replace with our mocks after initialization
-            matcher.vector_store = mock_vector_store
-            matcher.embedding_cache = mock_cache
+            # Ensure the mocks are used (they already are from the patching)
+            assert matcher.vector_store is mock_vector_store
+            assert matcher.embedding_cache is mock_cache
 
-            return matcher
+            # Yield the matcher and ensure cleanup
+            try:
+                yield matcher
+            finally:
+                # Ensure cleanup is called
+                matcher.close()
 
 
 @pytest.mark.asyncio
@@ -426,20 +434,29 @@ class TestSemanticMatcherAdvanced:
 
         # Create real cache for this test
         cache = EmbeddingCache(str(Path(semantic_matcher.project_root) / ".test_cache"))
+
+        # Store original cache for cleanup
+        original_cache = semantic_matcher.embedding_cache
         semantic_matcher.embedding_cache = cache
 
-        cache.set(original_embedding)
+        try:
+            cache.set(original_embedding)
 
-        # Cache should return None for changed hash
-        cached = cache.get(
-            original_embedding.text_embedded,
-            original_embedding.model,
-            changed_hash,
-        )
-        assert cached is None
+            # Cache should return None for changed hash
+            cached = cache.get(
+                original_embedding.text_embedded,
+                original_embedding.model,
+                changed_hash,
+            )
+            assert cached is None
 
-        cache_stats = cache.get_stats()
-        assert cache_stats["total_requests"] == 1
+            cache_stats = cache.get_stats()
+            assert cache_stats["total_requests"] == 1
+        finally:
+            # Cleanup the real cache
+            cache.close()
+            # Restore original mock cache
+            semantic_matcher.embedding_cache = original_cache
 
     async def test_batch_embedding_generation(
         self, semantic_matcher: SemanticMatcher
@@ -584,34 +601,38 @@ def test_embedding_cache_performance_stats(tmp_path: Path) -> None:
     """Test embedding cache hit rate meets 90% benchmark."""
     cache = EmbeddingCache(str(tmp_path / "cache"), max_memory_items=100)
 
-    # Add 150 embeddings (will trigger LRU eviction)
-    for i in range(150):
-        embedding = FunctionEmbedding(
-            function_id=f"func_{i}",
-            embedding=[0.1] * 1536,
-            model="text-embedding-3-small",
-            text_embedded=f"function_{i}()",
-            timestamp=time.time(),
-            signature_hash=f"hash_{i}",
-        )
-        cache.set(embedding)
+    try:
+        # Add 150 embeddings (will trigger LRU eviction)
+        for i in range(150):
+            embedding = FunctionEmbedding(
+                function_id=f"func_{i}",
+                embedding=[0.1] * 1536,
+                model="text-embedding-3-small",
+                text_embedded=f"function_{i}()",
+                timestamp=time.time(),
+                signature_hash=f"hash_{i}",
+            )
+            cache.set(embedding)
 
-    # Access first 50 (should be disk hits)
-    for i in range(50):
-        cache.get(f"function_{i}()", "text-embedding-3-small", f"hash_{i}")
+        # Access first 50 (should be disk hits)
+        for i in range(50):
+            cache.get(f"function_{i}()", "text-embedding-3-small", f"hash_{i}")
 
-    # Access recent 20 (should be memory hits)
-    for i in range(100, 120):
-        cache.get(f"function_{i}()", "text-embedding-3-small", f"hash_{i}")
+        # Access recent 20 (should be memory hits)
+        for i in range(100, 120):
+            cache.get(f"function_{i}()", "text-embedding-3-small", f"hash_{i}")
 
-    # Access non-existent (should be misses)
-    for i in range(200, 210):
-        cache.get(f"function_{i}()", "text-embedding-3-small", f"hash_{i}")
+        # Access non-existent (should be misses)
+        for i in range(200, 210):
+            cache.get(f"function_{i}()", "text-embedding-3-small", f"hash_{i}")
 
-    stats = cache.get_stats()
+        stats = cache.get_stats()
 
-    # Verify stats
-    assert stats["memory_size"] <= 100
-    assert stats["total_saves"] == 150
-    assert stats["overall_hit_rate"] >= 0.85  # 70 hits out of 80 requests
-    assert stats["total_requests"] == 80
+        # Verify stats
+        assert stats["memory_size"] <= 100
+        assert stats["total_saves"] == 150
+        assert stats["overall_hit_rate"] >= 0.85  # 70 hits out of 80 requests
+        assert stats["total_requests"] == 80
+    finally:
+        # Clean up the cache
+        cache.close()

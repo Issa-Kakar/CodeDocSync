@@ -292,3 +292,24 @@ class EmbeddingCache:
             "total_saves": self.metrics["saves"],
             "total_requests": total_requests,
         }
+
+    def close(self) -> None:
+        """Close database connections and clear cache."""
+        try:
+            # Clear memory cache
+            self.memory_cache.clear()
+
+            # No persistent connection to close for SQLite
+            # Each operation opens and closes its own connection
+            logger.info("EmbeddingCache closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing EmbeddingCache: {e}")
+
+    def __del__(self) -> None:
+        """Cleanup resources on deletion."""
+        try:
+            if hasattr(self, "memory_cache"):
+                self.close()
+        except Exception:
+            # Suppress errors during garbage collection
+            pass

@@ -1,0 +1,210 @@
+warning: The top-level linter settings are deprecated in favour of their counterparts in the `lint` section. Please update the following options in `pyproject.toml`:
+  - 'ignore' -> 'lint.ignore'
+  - 'select' -> 'lint.select'
+  - 'isort' -> 'lint.isort'
+  - 'per-file-ignores' -> 'lint.per-file-ignores'
+tests\matcher\test_semantic_matcher.py:3:1: UP035 [*] Import from `collections.abc` instead: `Generator`
+  |
+1 | import time
+2 | from pathlib import Path
+3 | from typing import Any, Generator, cast
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ UP035
+4 | from unittest.mock import MagicMock, patch
+  |
+  = help: Import from `collections.abc`
+
+tests\matcher\test_semantic_matcher.py:3:20: F401 [*] `typing.Any` imported but unused
+  |
+1 | import time
+2 | from pathlib import Path
+3 | from typing import Any, Generator, cast
+  |                    ^^^ F401
+4 | from unittest.mock import MagicMock, patch
+  |
+  = help: Remove unused import: `typing.Any`
+
+tests\matcher\test_semantic_matcher.py:436:1: W293 [*] Blank line contains whitespace
+    |
+434 |         # Create real cache for this test
+435 |         cache = EmbeddingCache(str(Path(semantic_matcher.project_root) / ".test_cache"))
+436 |         
+    | ^^^^^^^^ W293
+437 |         # Store original cache for cleanup
+438 |         original_cache = semantic_matcher.embedding_cache
+    |
+    = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+   |
+ 5 |   """
+ 6 |
+ 7 | / import sys
+ 8 | | from unittest.mock import patch, MagicMock
+ 9 | | import pytest
+10 | |
+11 | | from codedocsync.matcher import UnifiedMatchingFacade
+12 | | from codedocsync.parser import ParsedFunction, FunctionSignature
+   | |________________________________________________________________^ I001
+   |
+   = help: Organize imports
+
+tests\test_chromadb_graceful_degradation.py:8:34: F401 [*] `unittest.mock.MagicMock` imported but unused
+  |
+7 | import sys
+8 | from unittest.mock import patch, MagicMock
+  |                                  ^^^^^^^^^ F401
+9 | import pytest
+  |
+  = help: Remove unused import: `unittest.mock.MagicMock`
+
+tests\test_chromadb_graceful_degradation.py:18:5: F841 Local variable `test_func` is assigned to but never used
+   |
+16 |     """Test that UnifiedMatchingFacade works without ChromaDB."""
+17 |     # Create a test function
+18 |     test_func = ParsedFunction(
+   |     ^^^^^^^^^ F841
+19 |         signature=FunctionSignature(
+20 |             name="test_function",
+   |
+   = help: Remove assignment to unused variable `test_func`
+
+tests\test_chromadb_graceful_degradation.py:29:1: W293 [*] Blank line contains whitespace
+   |
+27 |         line_number=1
+28 |     )
+29 |     
+   | ^^^^ W293
+30 |     # Mock ChromaDB to be unavailable
+31 |     with patch.dict(sys.modules, {'chromadb': None}):
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:34:1: W293 [*] Blank line contains whitespace
+   |
+32 |         # This should not raise an error
+33 |         facade = UnifiedMatchingFacade(enable_semantic=True)
+34 |         
+   | ^^^^^^^^ W293
+35 |         # Verify semantic matching is disabled
+36 |         assert facade.enable_semantic == True  # Flag is set
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:36:16: E712 Avoid equality comparisons to `True`; use `facade.enable_semantic:` for truth checks
+   |
+35 |         # Verify semantic matching is disabled
+36 |         assert facade.enable_semantic == True  # Flag is set
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ E712
+37 |         assert facade.semantic_matcher is None  # But matcher is None due to import failure
+   |
+   = help: Replace with `facade.enable_semantic`
+
+tests\test_chromadb_graceful_degradation.py:38:1: W293 [*] Blank line contains whitespace
+   |
+36 |         assert facade.enable_semantic == True  # Flag is set
+37 |         assert facade.semantic_matcher is None  # But matcher is None due to import failure
+38 |         
+   | ^^^^^^^^ W293
+39 |         # Test that matching still works (using direct/contextual only)
+40 |         # Since match_file expects a real file, we'll test the internal state instead
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:47:5: I001 [*] Import block is un-sorted or un-formatted
+   |
+45 |   def test_analyze_command_with_no_semantic_flag():
+46 |       """Test that analyze command properly handles --no-semantic flag."""
+47 | /     from codedocsync.cli.analyze import analyze
+48 | |     from typer.testing import CliRunner
+49 | |     import typer
+   | |________________^ I001
+50 |       
+51 |       app = typer.Typer()
+   |
+   = help: Organize imports
+
+tests\test_chromadb_graceful_degradation.py:50:1: W293 [*] Blank line contains whitespace
+   |
+48 |     from typer.testing import CliRunner
+49 |     import typer
+50 |     
+   | ^^^^ W293
+51 |     app = typer.Typer()
+52 |     app.command()(analyze)
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:53:1: W293 [*] Blank line contains whitespace
+   |
+51 |     app = typer.Typer()
+52 |     app.command()(analyze)
+53 |     
+   | ^^^^ W293
+54 |     runner = CliRunner()
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:55:1: W293 [*] Blank line contains whitespace
+   |
+54 |     runner = CliRunner()
+55 |     
+   | ^^^^ W293
+56 |     # Test help text includes --no-semantic
+57 |     result = runner.invoke(app, ["--help"])
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:66:1: W293 [*] Blank line contains whitespace
+   |
+64 |     with patch('codedocsync.matcher.semantic_matcher.VECTOR_STORE_AVAILABLE', False):
+65 |         from codedocsync.matcher.semantic_matcher import SemanticMatcher
+66 |         
+   | ^^^^^^^^ W293
+67 |         with pytest.raises(ImportError) as exc_info:
+68 |             SemanticMatcher()
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:69:1: W293 [*] Blank line contains whitespace
+   |
+67 |         with pytest.raises(ImportError) as exc_info:
+68 |             SemanticMatcher()
+69 |         
+   | ^^^^^^^^ W293
+70 |         assert "ChromaDB is not installed" in str(exc_info.value)
+71 |         assert "pip install chromadb" in str(exc_info.value)
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:78:1: W293 [*] Blank line contains whitespace
+   |
+76 |     with patch('codedocsync.storage.vector_store.CHROMADB_AVAILABLE', False):
+77 |         from codedocsync.storage.vector_store import VectorStore
+78 |         
+   | ^^^^^^^^ W293
+79 |         with pytest.raises(ImportError) as exc_info:
+80 |             VectorStore()
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:81:1: W293 [*] Blank line contains whitespace
+   |
+79 |         with pytest.raises(ImportError) as exc_info:
+80 |             VectorStore()
+81 |         
+   | ^^^^^^^^ W293
+82 |         assert "ChromaDB is not installed" in str(exc_info.value)
+   |
+   = help: Remove whitespace from blank line
+
+tests\test_chromadb_graceful_degradation.py:82:66: W292 [*] No newline at end of file
+   |
+80 |             VectorStore()
+81 |         
+82 |         assert "ChromaDB is not installed" in str(exc_info.value)
+   |                                                                  ^ W292
+   |
+   = help: Add trailing newline
+
+Found 19 errors.
+[*] 17 fixable with the `--fix` option (2 hidden fixes can be enabled with the `--unsafe-fixes` option).

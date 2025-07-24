@@ -123,9 +123,11 @@ class MatchedPair:
 
 - **Core**: typer, rich, pydantic, python-dotenv
 - **Parsing**: docstring_parser (v0.16+), built-in ast, astor
-- **Matching**: rapidfuzz, chromadb, sentence-transformers
+- **Matching**: rapidfuzz, chromadb (optional), sentence-transformers
 - **LLM**: openai, tenacity
 - **Dev**: pytest, black, mypy, ruff, pre-commit
+
+**Note**: ChromaDB is optional. If not available, semantic matching (2% of cases) is disabled gracefully.
 
 ### Type Hints Convention
 
@@ -191,12 +193,22 @@ python -m ruff check codedocsync
 # Run the main CLI
 python -m codedocsync analyze .
 ```
+  # Run all tests safely
+  python memory_safe_test_runner.py
 
+  # Run suggestion tests with 2GB limit
+  python memory_safe_test_runner.py --pattern suggestion --memory-limit 2048
+
+  # Clean up artifacts only
+  python memory_safe_test_runner.py --clean-only
+  
 ## Current Implementation Focus
 (PLACEHOLDER)
 
 ### Known Issues to Address
-1. Some Poetry dependencies fail on Windows (C++ compiler needed)
+1. ChromaDB installation may fail on Windows (requires C++ compiler)
+   - Solution: Use `--no-semantic` flag or let the tool gracefully degrade
+   - This only affects 2% of matching cases (semantic matching)
 
 ## Architecture Highlights
 
@@ -204,6 +216,9 @@ python -m codedocsync analyze .
 1. **Direct Matcher** (90% of cases): Exact/fuzzy name matching
 2. **Contextual Matcher** (8% of cases): Module/import aware
 3. **Semantic Matcher** (2% of cases): Embedding-based similarity
+   - Requires ChromaDB (optional dependency)
+   - Gracefully disabled if ChromaDB unavailable
+   - Use `--no-semantic` flag to explicitly disable
 
 ### Analysis Pipeline
 1. Parse Python files with AST
@@ -253,6 +268,9 @@ python -m codedocsync analyze path/to/file.py
 
 # CI/CD mode
 python -m codedocsync check . --ci --fail-on-critical
+
+# Run without semantic matching (if ChromaDB unavailable)
+python -m codedocsync match-unified . --no-semantic
 
 # Get help
 python -m codedocsync --help

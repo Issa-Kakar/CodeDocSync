@@ -1,0 +1,7 @@
+would reformat C:\Users\issak\CodeDocSync\codedocsync\storage\embedding_cache.py
+would reformat C:\Users\issak\CodeDocSync\codedocsync\storage\vector_store.py
+would reformat C:\Users\issak\CodeDocSync\codedocsync\matcher\semantic_matcher.py
+would reformat C:\Users\issak\CodeDocSync\codedocsync\cli\analyze.py
+
+Oh no! \U0001f4a5 \U0001f494 \U0001f4a5
+4 files would be reformatted, 83 files would be left unchanged.
