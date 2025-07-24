@@ -60,7 +60,7 @@ def safely_remove_tests():
             try:
                 dirpath.rmdir()
                 print(f"[REMOVED DIR] {dirpath}")
-            except:
+            except (OSError, PermissionError):
                 pass
 
     print("\n" + "=" * 60)
