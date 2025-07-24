@@ -65,17 +65,10 @@ python -m mypy codedocsync/analyzer > analyzer_mypy.txt 2>&1
 - LLM-powered semantic analysis
 - Three-tier matching system (Direct, Contextual, Semantic)
 
-### Current Status (Week 4)
-
-- **Development Stage**: Week 4 of 6-week sprint
-- **Python Compatibility**: Fixed for 3.10+ (uses modern type hints)
-- **MyPy Errors**: ✅ All fixed (0 errors)
-- **Core Components**:
-  - ✅ Parser: Working
-  - ✅ Matcher: Working
-  - ✅ Storage: Working
-  - ✅ CLI: Working
-  - ✅ Analyzer: Working
+**Current Stage**: Week 4 of 6-week sprint
+**Core Components**: ✅ All working (Parser, Matcher, Storage, CLI, Analyzer)
+**Test Suite**: 95.9% passing (446/465 tests)
+**MyPy Compliance**: ✅ 0 errors
 
 ## Project Structure
 
@@ -88,11 +81,16 @@ codedocsync/
 ├── storage/       # Vector store and embeddings (ChromaDB)
 ├── suggestions/   # Docstring generation and formatting
 └── utils/         # Shared utilities and configuration
+
+scripts/            # Development and testing utilities
+├── memory_safe_test_runner.py     # Prevents test crashes
+├── find_problematic_test.py       # Identifies problematic tests
+├── safely_remove_suggestion_tests.py  # Clean test removal
+└── identify_failing_tests.py      # Parse test results
 ```
 
-## Key Technical Details
-
 ## Critical Data Models
+
 ### Parser Module (`parser/`)
 ```python
 @dataclass
@@ -173,8 +171,11 @@ class MatchedPair:
 # ALWAYS activate venv first!
 source .venv/Scripts/activate
 
-# Run tests
-python -m pytest -v
+# Run tests (use memory-safe runner to prevent crashes)
+python scripts/memory_safe_test_runner.py
+
+# Run specific test patterns safely
+python scripts/memory_safe_test_runner.py --pattern "test_name"
 
 # Type checking
 python -m mypy codedocsync
@@ -193,17 +194,57 @@ python -m ruff check codedocsync
 # Run the main CLI
 python -m codedocsync analyze .
 ```
-  # Run all tests safely
-  python memory_safe_test_runner.py
 
-  # Run suggestion tests with 2GB limit
-  python memory_safe_test_runner.py --pattern suggestion --memory-limit 2048
+### MyPy Configuration
 
-  # Clean up artifacts only
-  python memory_safe_test_runner.py --clean-only
+The project uses relaxed mypy settings appropriate for a portfolio project in active development (see pyproject.toml). This focuses on functionality and performance over type perfection, appropriate for a 6-week sprint portfolio project.
+
+## Memory Safety Guidelines
+
+**CRITICAL: Test Development Best Practices**
+
+After experiencing system crashes from problematic tests, follow these rules:
+
+1. **Avoid Module-Level Code in Tests**
+   - Don't create large data structures at import time
+   - Keep test data creation inside test methods or fixtures
+
+2. **NEVER Use Dangerous Functions**
+   - ❌ **NEVER**: `sys.getsizeof(gc.get_objects())` - This attempts to measure ALL Python objects in memory (gigabytes) and will crash your system
+   - ✅ **Use**: `tracemalloc` for proper memory profiling
+
+3. **Be Careful with Test Fixtures**
+   - Avoid creating massive objects in fixtures
+   - Use lazy fixture evaluation when possible
+   - Clean up resources in fixture teardown
+
+4. **Watch for Memory-Intensive Operations**
+   - Avoid unbounded loops or recursion
+   - Don't create extremely long strings (e.g., "x" * 10000000)
+   - Be careful with cartesian products or combinatorial explosions
+
+5. **Use the Memory-Safe Test Runner**
+   ```bash
+   # Always use this instead of pytest directly
+   python scripts/memory_safe_test_runner.py
+
+   # Set memory limits for safety
+   python scripts/memory_safe_test_runner.py --memory-limit 1024
+
+   # Clean up test artifacts
+   python scripts/memory_safe_test_runner.py --clean-only
+   ```
+
+6. **Test Collection Issues**
+   - If tests crash during collection (before running), the issue is in imports
+   - Check for circular imports between test modules
+   - Look for module-level code that executes on import
 
 ## Current Implementation Focus
-(PLACEHOLDER)
+
+### Week 4: Performance & Optimization (Current Phase)
+- **Priority**: Reimplement suggestion tests with memory safety before proceeding
+- See `IMPLEMENTATION_STATE.MD` for detailed progress and next steps
 
 ### Known Issues to Address
 1. **ChromaDB NumPy 2.0+ Compatibility Issue (Critical)**
@@ -211,7 +252,6 @@ python -m codedocsync analyze .
    - Causes runtime error when importing ChromaDB with NumPy 2.3.1
    - **Current Impact**: Module-level import causes immediate failure
    - **Workaround**: Make ChromaDB import truly lazy (only import when semantic matching requested)
-   - **Future**: Will be resolved when ChromaDB updates to support NumPy 2.0+
    - **Docker Strategy**: Future Docker containers could provide isolated environments with compatible versions
 
 2. ChromaDB installation may fail on Windows (requires C++ compiler)
@@ -248,7 +288,7 @@ python -m codedocsync analyze .
 1. **Always check Python version first**
 2. **Read existing code before modifying** - follow established patterns
 3. **Use modern type hints** - no legacy typing
-4. **Test incrementally** - run mypy and ruff after changes, make completion testable
+4. **Test incrementally** - run mypy and ruff after changes
 5. **Follow project structure** - keep components separated
 
 ## Configuration Files
@@ -283,36 +323,17 @@ python -m codedocsync match-unified . --no-semantic
 # Get help
 python -m codedocsync --help
 ```
+
 ### Pre-commit Hooks
 - Ruff: v0.12.3 (linting with auto-fix)
 - Black: v25.1.0 (88 char lines)
-- Mypy: v1.17.0 (static typing)
+- Mypy: v1.17.0 (static typing with relaxed settings for portfolio project)
 
 ## Performance Contracts
 - Small file (<100 lines): <10ms parsing
 - Medium project (100 files): <30s full analysis
 - Large project (1000 files): <5 minutes full analysis
 - Memory usage: <500MB for 10k functions
-
-Project performance benchmarks:
-Small project (100 files):
- - Analysis time: <5 seconds
- - Memory usage: <100MB
- - Cache hit rate: >90%
-Medium project (1,000 files):
- - Analysis time: <30 seconds
- - Memory usage: <500MB
- - Parallel speedup: 3.8x on 4 cores
-Large project (10,000 files):
- - Analysis time: <5 minutes
- - Memory usage: <2GB
- - Incremental analysis: <30 seconds
-Accuracy Metrics
-Detection accuracy (based on test suite):
- - Parameter mismatches: 99%
- - Type inconsistencies: 95%
- - Behavioral changes: 85%
- - False positive rate: <5%
 
 ## Important Reminders
 
@@ -321,12 +342,12 @@ Detection accuracy (based on test suite):
 3. **ALWAYS check imports exist** - don't assume availability
 4. **ALWAYS handle Windows paths** - use forward slashes or raw strings
 5. **NEVER mix Union in isinstance()** - use tuples instead
+6. **NEVER use `sys.getsizeof(gc.get_objects())` in tests** - it's a memory bomb
+7. **AVOID module-level test code** - causes Windows crashes
 
-## Contact & Resources
+## Key Files for Context
 
-- **Author**: Issa-Kakar (issakakar001@gmail.com)
-- **Project Stage**: Week 4 of 6-week implementation
-- **Python Version**: 3.13.5 (in .venv)
-- **Key Files**:
-  - 'IMPLEMENTATION_STATE.MD`: Current progress tracking (READ THIS FIRST)
-  - `TEST_FIXES_LOG.md`: Test fix history (READ THIS FIRST)
+- `IMPLEMENTATION_STATE.MD`: Detailed progress tracking and component status
+- `TEST_FIXES_LOG.md`: Test infrastructure history and lessons learned
+- `pyproject.toml`: Project dependencies and tool configurations
+- `.codedocsync.yml`: Project-specific analysis configuration

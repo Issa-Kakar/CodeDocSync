@@ -2,7 +2,11 @@ import hashlib
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import chromadb
+    from chromadb.config import Settings
 
 try:
     import chromadb
@@ -10,8 +14,8 @@ try:
 
     CHROMADB_AVAILABLE = True
 except ImportError:
-    chromadb = None
-    Settings = None
+    chromadb = None  # type: ignore[assignment]
+    Settings = None  # type: ignore[assignment,misc]
     CHROMADB_AVAILABLE = False
 
 logger = logging.getLogger(__name__)

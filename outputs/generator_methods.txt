@@ -1,8 +1,0 @@
-BaseSuggestionGenerator methods:
-  create_metadata: (self, generator_type: str, template_used: str | None = None, style_detected: str | None = None, rule_triggers: list[str] | None = None) -> codedocsync.suggestions.models.SuggestionMetadata
-  format_docstring_lines: (self, content: str, indent: int = 4) -> list[str]
-  generate: (self, context: codedocsync.suggestions.models.SuggestionContext) -> codedocsync.suggestions.models.Suggestion
-  generate_with_timing: (self, context: codedocsync.suggestions.models.SuggestionContext) -> codedocsync.suggestions.models.Suggestion
-  preserve_existing_content: (self, original: str, updated_section: str, section_name: str) -> str
-  validate_suggestion: (self, suggestion: codedocsync.suggestions.models.Suggestion) -> bool
-  wrap_long_lines: (self, text: str, max_length: int | None = None) -> str

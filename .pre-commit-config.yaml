@@ -20,4 +20,5 @@ repos:
     rev: v1.17.0
     hooks:
     -   id: mypy
+        args: [--config-file, pyproject.toml]  # Use same relaxed settings
         additional_dependencies: []

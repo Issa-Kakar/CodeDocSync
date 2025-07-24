@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 
 from codedocsync.matcher import UnifiedMatchingFacade
-from codedocsync.parser import FunctionSignature, ParsedFunction
 
 
 def test_unified_facade_without_chromadb() -> None:
@@ -19,7 +18,7 @@ def test_unified_facade_without_chromadb() -> None:
     with patch.dict(sys.modules, {"chromadb": None}):
         # This should not raise an error - facade should work without ChromaDB
         facade = UnifiedMatchingFacade()
-        
+
         # The facade should still be functional even without semantic matching
         # It will use direct and contextual matching only
         assert facade is not None
