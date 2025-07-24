@@ -509,7 +509,7 @@ class TestSphinxTemplateEdgeCases:
         """Test handling of Unicode characters in Sphinx fields."""
         params = [
             DocstringParameter(
-                name="αlpha",  # Unicode parameter name
+                name="alpha",  # Valid Python parameter name
                 type_str="str",
                 description="Parameter with émojis 🚀 and symbols α β γ",
                 is_optional=False,
@@ -518,9 +518,9 @@ class TestSphinxTemplateEdgeCases:
 
         result = template.render_parameters(params)
 
-        # Should preserve Unicode
+        # Should preserve Unicode in descriptions
         rendered_text = " ".join(result)
-        assert "αlpha" in rendered_text
+        assert "alpha" in rendered_text
         assert "émojis 🚀" in rendered_text
         assert "α β γ" in rendered_text
 

@@ -10,8 +10,8 @@ try:
 
     CHROMADB_AVAILABLE = True
 except ImportError:
-    chromadb = None  # type: ignore[assignment]
-    Settings = None  # type: ignore[assignment, misc]
+    chromadb = None
+    Settings = None
     CHROMADB_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -193,18 +193,15 @@ class VectorStore:
         """Close ChromaDB client and release resources."""
         try:
             # Delete the collection to free resources
-            if self.client and self.collection:
+            if hasattr(self, "client") and hasattr(self, "collection"):
                 try:
                     self.client.delete_collection(self.collection_name)
                     logger.info(f"Deleted collection: {self.collection_name}")
                 except Exception as e:
                     logger.debug(f"Collection deletion failed (may not exist): {e}")
 
-            # Clear references to release memory
-            self.collection = None
-
             # Reset the client to force cleanup
-            if self.client:
+            if hasattr(self, "client"):
                 try:
                     # Force reset to clean up resources
                     self.client.reset()
@@ -212,7 +209,7 @@ class VectorStore:
                 except Exception as e:
                     logger.debug(f"Client reset failed: {e}")
 
-            self.client = None
+            # Note: References will be cleared when the object is garbage collected
 
             logger.info("VectorStore closed and resources released")
         except Exception as e:

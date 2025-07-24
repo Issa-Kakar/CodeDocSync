@@ -127,7 +127,7 @@ class MatchedPair:
 - **LLM**: openai, tenacity
 - **Dev**: pytest, black, mypy, ruff, pre-commit
 
-**Note**: ChromaDB is optional. If not available, semantic matching (2% of cases) is disabled gracefully.
+**Note**: ChromaDB is optional but currently has a runtime incompatibility with NumPy 2.0+. The project uses NumPy 2.3.1, which causes ChromaDB imports to fail. Until ChromaDB is updated or imports are made lazy, semantic matching (2% of cases) will be unavailable. The tool gracefully degrades to Direct/Contextual matching (98% of functionality).
 
 ### Type Hints Convention
 
@@ -201,12 +201,20 @@ python -m codedocsync analyze .
 
   # Clean up artifacts only
   python memory_safe_test_runner.py --clean-only
-  
+
 ## Current Implementation Focus
 (PLACEHOLDER)
 
 ### Known Issues to Address
-1. ChromaDB installation may fail on Windows (requires C++ compiler)
+1. **ChromaDB NumPy 2.0+ Compatibility Issue (Critical)**
+   - ChromaDB is incompatible with NumPy 2.0+ (uses deprecated `np.float_`)
+   - Causes runtime error when importing ChromaDB with NumPy 2.3.1
+   - **Current Impact**: Module-level import causes immediate failure
+   - **Workaround**: Make ChromaDB import truly lazy (only import when semantic matching requested)
+   - **Future**: Will be resolved when ChromaDB updates to support NumPy 2.0+
+   - **Docker Strategy**: Future Docker containers could provide isolated environments with compatible versions
+
+2. ChromaDB installation may fail on Windows (requires C++ compiler)
    - Solution: Use `--no-semantic` flag or let the tool gracefully degrade
    - This only affects 2% of matching cases (semantic matching)
 

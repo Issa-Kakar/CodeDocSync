@@ -469,11 +469,14 @@ class TestProductionScenarios:
     def test_memory_efficiency(self) -> None:
         """Test memory efficiency with large suggestions."""
         import gc
-        import sys
+        import tracemalloc
 
-        # Get initial memory
+        # Start memory tracking
+        tracemalloc.start()
         gc.collect()
-        initial_size = sys.getsizeof(gc.get_objects())
+
+        # Get initial memory snapshot
+        snapshot1 = tracemalloc.take_snapshot()
 
         # Generate many large suggestions
         for _ in range(100):
@@ -497,11 +500,16 @@ class TestProductionScenarios:
 
         # Check memory didn't explode
         gc.collect()
-        final_size = sys.getsizeof(gc.get_objects())
-        memory_growth = final_size - initial_size
+        snapshot2 = tracemalloc.take_snapshot()
 
-        # Memory growth should be reasonable
-        assert memory_growth < 100 * 1024 * 1024  # Less than 100MB growth
+        # Calculate memory growth
+        stats = snapshot2.compare_to(snapshot1, "lineno")
+        total_growth = sum(stat.size_diff for stat in stats if stat.size_diff > 0)
+
+        tracemalloc.stop()
+
+        # Memory growth should be reasonable (100MB)
+        assert total_growth < 100 * 1024 * 1024  # Less than 100MB growth
 
     def test_concurrent_suggestion_generation(self) -> None:
         """Test concurrent suggestion generation."""

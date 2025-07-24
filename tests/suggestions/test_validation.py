@@ -217,6 +217,7 @@ def test_func() -> None:
                     docstring=RawDocstring(raw_text='""""""'),
                     file_path="test.py",
                     line_number=1,
+                    end_line_number=5,
                 )
                 issue = InconsistencyIssue(
                     issue_type="missing_returns",
@@ -248,6 +249,7 @@ def test_func() -> None:
                     docstring=RawDocstring(raw_text='""""""'),
                     file_path="test.py",
                     line_number=1,
+                    end_line_number=5,
                 )
                 issue = InconsistencyIssue(
                     issue_type="missing_raises",
@@ -288,6 +290,7 @@ def test_func() -> None:
             docstring=RawDocstring(raw_text='""""""'),
             file_path="test.py",
             line_number=1,
+            end_line_number=10,
         )
         # Generate suggestions for all missing parts
         generators = {
@@ -405,6 +408,7 @@ def test_func() -> None:
             docstring=RawDocstring(raw_text='""""""'),
             file_path="test.py",
             line_number=1,
+            end_line_number=15,
         )
         issue = InconsistencyIssue(
             issue_type="missing_params",

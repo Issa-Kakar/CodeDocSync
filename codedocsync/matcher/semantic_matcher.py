@@ -29,10 +29,10 @@ class SemanticMatcher:
     Only handles ~2% of cases but critical for major refactorings.
     """
 
-    vector_store: VectorStore | None
-    embedding_cache: EmbeddingCache | None
-    embedding_generator: EmbeddingGenerator | None
-    scorer: SemanticScorer | None
+    vector_store: VectorStore
+    embedding_cache: EmbeddingCache
+    embedding_generator: EmbeddingGenerator
+    scorer: SemanticScorer
 
     def __init__(
         self, project_root: str, config: EmbeddingConfig | None = None
@@ -381,27 +381,15 @@ class SemanticMatcher:
         """Close all resources and cleanup."""
         try:
             # Close vector store
-            if hasattr(self, "vector_store") and self.vector_store is not None:
+            if hasattr(self, "vector_store"):
                 self.vector_store.close()
-                self.vector_store = None
 
             # Close embedding cache
-            if hasattr(self, "embedding_cache") and self.embedding_cache is not None:
+            if hasattr(self, "embedding_cache"):
                 self.embedding_cache.close()
-                self.embedding_cache = None
 
-            # Clear embedding generator if it has resources
-            if (
-                hasattr(self, "embedding_generator")
-                and self.embedding_generator is not None
-            ):
-                # Just clear the reference - generator has no explicit close method
-                self.embedding_generator = None
-
-            # Clear scorer
-            if hasattr(self, "scorer") and self.scorer is not None:
-                # Just clear the reference - scorer has no explicit close method
-                self.scorer = None
+            # Note: embedding_generator and scorer don't have explicit close methods
+            # They will be cleaned up when the object is garbage collected
 
             logger.info("SemanticMatcher closed successfully")
         except Exception as e:
