@@ -1,5 +1,0 @@
-would reformat C:\Users\issak\CodeDocSync\tests\test_chromadb_graceful_degradation.py
-would reformat C:\Users\issak\CodeDocSync\tests\matcher\test_semantic_matcher.py
-
-Oh no! \U0001f4a5 \U0001f494 \U0001f4a5
-2 files would be reformatted, 40 files would be left unchanged.
