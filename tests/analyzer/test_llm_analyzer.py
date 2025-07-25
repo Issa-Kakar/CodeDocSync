@@ -20,6 +20,7 @@ from codedocsync.analyzer.llm_config import LLMConfig
 
 # from pytest_mock import MockerFixture
 from codedocsync.analyzer.llm_errors import (
+    CircuitState,
     LLMAPIKeyError,
     LLMError,
     LLMNetworkError,
@@ -817,16 +818,33 @@ class TestLLMAnalyzer:
             related_functions=[],
         )
 
-        # Mock OpenAI response
+        # Clear cache database to ensure clean state
+        if llm_analyzer.cache_db_path.exists():
+            try:
+                llm_analyzer.cache_db_path.unlink()
+            except Exception:
+                pass
+        # Reinitialize cache database
+        llm_analyzer._init_cache_database()
+
+        # Reset performance stats to ensure clean state
+        llm_analyzer.performance_stats["cache_hits"] = 0
+        llm_analyzer.performance_stats["cache_misses"] = 0
+
+        # Create a unique function name to avoid cache collisions
+        import uuid
+
+        unique_id = str(uuid.uuid4())
+        request.function.signature.name = f"test_func_{unique_id}"
+
+        # Mock successful API response
         mock_response = {
             "issues": [
                 {
                     "type": "behavior_mismatch",
                     "description": "Test issue",
-                    "suggestion": "Test suggestion",
                     "confidence": 0.85,
                     "line_number": 10,
-                    "details": {},
                 }
             ],
             "confidence": 0.90,
@@ -842,36 +860,27 @@ class TestLLMAnalyzer:
                 {"prompt_tokens": 150, "completion_tokens": 50},
             )
 
-        # Clear any existing cache
-        if hasattr(llm_analyzer, "_cache_manager"):
-            try:
-                # Try different cache clearing methods
-                if hasattr(llm_analyzer._cache_manager, "clear"):
-                    await llm_analyzer._cache_manager.clear()
-                elif hasattr(llm_analyzer._cache_manager, "clear_cache"):
-                    llm_analyzer._cache_manager.clear_cache()
-            except Exception:
-                pass  # If cache clearing fails, continue anyway
-
         with patch.object(llm_analyzer, "_call_openai", side_effect=mock_call):
-            # First call
+            # First call - should miss cache
             response1 = await llm_analyzer.analyze_function(request)
+            assert response1.cache_hit is False
+            assert call_count == 1
+            assert llm_analyzer.performance_stats["cache_misses"] == 1
+            assert llm_analyzer.performance_stats["cache_hits"] == 0
 
-            # Second identical call
+            # Second identical call - should hit cache
             response2 = await llm_analyzer.analyze_function(request)
+            assert response2.cache_hit is True
+            assert call_count == 1  # Should not make another API call
+            assert llm_analyzer.performance_stats["cache_hits"] == 1
+            assert llm_analyzer.performance_stats["cache_misses"] == 1
 
-            # The test logic depends on how caching is implemented
-            # If cache_hit is always True due to how the mock works, adjust expectations
-
-            # At minimum, verify that both calls return the same result
+            # Verify both responses have same content
             assert len(response1.issues) == len(response2.issues)
             if len(response1.issues) > 0 and len(response2.issues) > 0:
                 assert (
                     response1.issues[0].description == response2.issues[0].description
                 )
-
-            # Verify the mock was called at least once
-            assert call_count >= 1
 
     @pytest.mark.asyncio
     async def test_fallback_to_rules_on_llm_failure(
@@ -1131,33 +1140,41 @@ class TestLLMAnalyzer:
             related_functions=[],
         )
 
-        # Mock to always fail
+        # Reset circuit breaker state
+        llm_analyzer.circuit_breaker.reset()
+
+        # Mock _call_openai to always fail with an LLMError
         async def mock_fail(*args: Any, **kwargs: Any) -> None:
             raise LLMNetworkError("Network error")
 
-        # The circuit breaker might be tracking failures at a different level
-        # Since analyze_function has error handling that might not trigger the breaker
-        # Let's verify the behavior is correct regardless of internal implementation
-
+        # Test the circuit breaker directly, not through analyze_function
         with patch.object(llm_analyzer, "_call_openai", side_effect=mock_fail):
-            # Make multiple failing requests
             failures = 0
+
+            # Use analyze_with_fallback which properly interacts with circuit breaker
             for _ in range(6):  # Threshold is 5
                 try:
-                    await llm_analyzer.analyze_function(request)
-                except Exception:
+                    # Call the method that actually uses the circuit breaker
+                    result = await llm_analyzer.analyze_with_fallback(request)
+                    # If we get a result, it means fallback worked
+                    if not result.used_llm:
+                        failures += 1
+                except LLMError as e:
                     failures += 1
+                    # Check if circuit breaker message
+                    if "Circuit breaker is open" in str(e):
+                        break
 
-            # We should have seen failures
-            assert failures >= 5
+            # After 5 failures, circuit should be open
+            assert llm_analyzer.circuit_breaker.failure_count >= 5
+            assert llm_analyzer.circuit_breaker.state == CircuitState.OPEN
 
-            # Check if circuit breaker is implemented and working
-            if hasattr(llm_analyzer, "get_circuit_breaker_stats"):
-                breaker_stats = llm_analyzer.get_circuit_breaker_stats()
-                # The breaker might not be open if errors are handled differently
-                # Just verify we can get stats
-                assert "state" in breaker_stats
-                assert "failure_count" in breaker_stats
+            # Verify subsequent calls fall back to rules immediately due to open circuit
+            result = await llm_analyzer.analyze_with_fallback(request)
+            # Should have fallen back to rules since circuit is open
+            assert not result.used_llm
+            # Circuit breaker should still be open
+            assert llm_analyzer.circuit_breaker.state == CircuitState.OPEN
 
     @pytest.mark.asyncio
     async def test_configuration_validation(self, mock_env: Any) -> None:

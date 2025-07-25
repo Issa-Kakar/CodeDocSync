@@ -376,16 +376,28 @@ class TestEmbeddingCache:
         """Test error handling in disk operations."""
         cache = EmbeddingCache(cache_dir=temp_cache_dir)
 
-        # Mock database error
-        with patch("sqlite3.connect") as mock_connect:
-            mock_connect.side_effect = sqlite3.Error("Database error")
+        # First establish a working connection to create the database
+        cache._save_to_disk("test_key", mock_embedding)
 
-            # Should handle error gracefully
+        # Mock database operations to fail after connection is established
+        with patch("sqlite3.connect") as mock_connect:
+            # Create a mock connection that works but has failing cursor operations
+            mock_conn = mock_connect.return_value
+            mock_cursor = mock_conn.cursor.return_value
+
+            # Make cursor execute raise an error
+            mock_cursor.execute.side_effect = sqlite3.Error("Database error")
+            mock_cursor.fetchone.return_value = None
+
+            # Should handle error gracefully when loading
             result = cache._get_from_disk("any_key")
             assert result is None
             assert "Failed to load from disk cache" in caplog.text
 
-            # Save should also handle error
+            # Clear the log for next test
+            caplog.clear()
+
+            # Should handle error gracefully when saving
             cache._save_to_disk("any_key", mock_embedding)
             assert "Failed to save to disk cache" in caplog.text
 
