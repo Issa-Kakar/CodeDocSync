@@ -145,7 +145,7 @@ class DocstringTemplate(ABC):
             return f"{inner_type}, optional"
 
         # Handle Union types with None
-        if "Union[" in type_str and ", None]" in type_str:
+        if "Union[" in type_str and "]" in type_str:
             # Extract non-None types
             union_match = re.match(r"Union\[(.*), None\]", type_str)
             if union_match:
@@ -227,9 +227,11 @@ class TemplateRegistry:
 
     def __init__(self) -> None:
         """Initialize empty registry."""
-        self._templates: dict[DocstringStyle, type] = {}
+        self._templates: dict[DocstringStyle, type[DocstringTemplate]] = {}
 
-    def register(self, style: DocstringStyle, template_class: type) -> None:
+    def register(
+        self, style: DocstringStyle, template_class: type[DocstringTemplate]
+    ) -> None:
         """Register a template class for a style."""
         if not issubclass(template_class, DocstringTemplate):
             raise ValueError("Template class must inherit from DocstringTemplate")
@@ -242,7 +244,7 @@ class TemplateRegistry:
             raise ValueError(f"No template registered for style: {style}")
 
         template_class = self._templates[style]
-        return template_class(style, **kwargs)  # type: ignore[no-any-return]
+        return template_class(style, **kwargs)
 
     def available_styles(self) -> list[DocstringStyle]:
         """Get list of available styles."""

@@ -1,0 +1,65 @@
+"""Test helpers for creating valid test objects."""
+
+from codedocsync.parser import FunctionSignature, ParsedDocstring, ParsedFunction
+from codedocsync.parser.ast_parser import FunctionParameter
+from codedocsync.parser.docstring_models import DocstringFormat
+
+
+def create_test_function(
+    name: str = "test_func",
+    params: list[str] | None = None,
+    return_type: str = "None",
+    docstring: str | None = None,
+    file_path: str = "test.py",
+    line_number: int = 1,
+    end_line_number: int = 10,
+    source_code: str | None = None,
+) -> ParsedFunction:
+    """Create a valid ParsedFunction for tests."""
+    if params is None:
+        params = []
+
+    if source_code is None:
+        source_code = f"def {name}({', '.join(params)}): pass"
+
+    # Create FunctionParameter objects
+    parameters = []
+    for param_name in params:
+        parameters.append(
+            FunctionParameter(
+                name=param_name,
+                type_annotation=None,
+                default_value=None,
+                is_required=True,
+            )
+        )
+
+    signature = FunctionSignature(
+        name=name,
+        parameters=parameters,
+        return_type=return_type,
+        is_method=False,
+        is_async=False,
+        decorators=[],
+    )
+
+    # Create ParsedDocstring if docstring is provided
+    parsed_docstring = None
+    if docstring:
+        parsed_docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary=docstring,
+            description=None,
+            parameters=[],
+            returns=None,
+            raises=[],
+        )
+
+    return ParsedFunction(
+        signature=signature,
+        docstring=parsed_docstring,
+        file_path=file_path,
+        line_number=line_number,
+        end_line_number=end_line_number,
+        source_code=source_code,
+    )

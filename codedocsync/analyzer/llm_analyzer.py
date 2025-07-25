@@ -10,6 +10,9 @@ Key Requirements (Chunk 1):
 - Cache must use SQLite (create table if not exists)
 - Must validate API key exists in environment
 - Performance target: Foundation setup in <100ms
+
+Note: Using OpenAI directly for MVP.
+TODO: Consider litellm for multi-provider support in v2
 """
 
 import asyncio
@@ -20,6 +23,7 @@ import os
 import sqlite3
 import time
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -189,6 +193,20 @@ class LLMAnalyzer:
         """Initialize OpenAI client with proper configuration."""
         # Get API key from environment (already validated in config)
         api_key = os.getenv("OPENAI_API_KEY")
+
+        # Double-check API key exists (config validation should have caught this)
+        if not api_key:
+            # Store None client to handle missing API key gracefully
+            self.openai_client = None
+            self.api_key = None
+            logger.warning(
+                f"API key not found for provider: {self.config.provider}. "
+                "LLM analysis will be disabled."
+            )
+            return
+
+        # Store API key
+        self.api_key = api_key
 
         # Initialize OpenAI client
         self.openai_client = openai.AsyncOpenAI(
@@ -439,6 +457,19 @@ class LLMAnalyzer:
         """
         start_time = time.time()
 
+        # Check if API key is available
+        if not hasattr(self, "api_key") or not self.api_key or not self.openai_client:
+            logger.warning("No API key available, returning empty LLM analysis")
+            return LLMAnalysisResponse(
+                issues=[],
+                raw_response="LLM analysis disabled - no API key",
+                model_used=self.config.model,
+                prompt_tokens=0,
+                completion_tokens=0,
+                response_time_ms=0.0,
+                cache_hit=False,
+            )
+
         # Validate request
         if not request:
             raise ValueError("LLMAnalysisRequest cannot be None")
@@ -558,6 +589,10 @@ class LLMAnalyzer:
         # Retry logic with exponential backoff
         max_retries = self.config.max_retries
         base_delay = 1.0
+
+        # Check client exists
+        if not self.openai_client:
+            raise LLMAPIKeyError("OpenAI client not initialized - no API key")
 
         for attempt in range(max_retries + 1):
             try:
@@ -887,6 +922,13 @@ class LLMAnalyzer:
 
                 response_json, model, created_at = row
 
+                # Convert created_at from SQLite timestamp to Unix timestamp
+                if isinstance(created_at, str):
+                    created_at_dt = datetime.fromisoformat(
+                        created_at.replace("Z", "+00:00")
+                    )
+                    created_at = created_at_dt.timestamp()
+
                 # Check if expired
                 ttl_seconds = self.config.cache_ttl_days * 24 * 3600
                 if time.time() - created_at > ttl_seconds:
@@ -909,6 +951,12 @@ class LLMAnalyzer:
                 # Deserialize response
                 response_data = json.loads(response_json)
                 response_data["cache_hit"] = True
+
+                # Convert issue dicts back to InconsistencyIssue objects
+                response_data["issues"] = [
+                    InconsistencyIssue(**issue_dict)
+                    for issue_dict in response_data["issues"]
+                ]
 
                 return LLMAnalysisResponse(**response_data)
 

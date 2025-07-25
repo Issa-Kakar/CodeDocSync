@@ -4,8 +4,16 @@ from typing import Any
 
 from ..parser import ParsedFunction
 from ..storage.embedding_cache import EmbeddingCache
-from ..storage.vector_store import VectorStore
 from .embedding_generator import EmbeddingGenerator
+
+# Import VectorStore conditionally
+try:
+    from ..storage.vector_store import VectorStore
+
+    VECTOR_STORE_AVAILABLE = True
+except ImportError:
+    VectorStore = None  # type: ignore[assignment,misc]
+    VECTOR_STORE_AVAILABLE = False
 from .models import MatchedPair, MatchResult, MatchType
 from .semantic_models import EmbeddingConfig, FunctionEmbedding
 from .semantic_scorer import SemanticScorer
@@ -21,6 +29,11 @@ class SemanticMatcher:
     Only handles ~2% of cases but critical for major refactorings.
     """
 
+    vector_store: VectorStore
+    embedding_cache: EmbeddingCache
+    embedding_generator: EmbeddingGenerator
+    scorer: SemanticScorer
+
     def __init__(
         self, project_root: str, config: EmbeddingConfig | None = None
     ) -> None:
@@ -28,6 +41,12 @@ class SemanticMatcher:
         self.config = config or EmbeddingConfig()
 
         # Initialize components
+        if not VECTOR_STORE_AVAILABLE:
+            raise ImportError(
+                "ChromaDB is required for semantic matching. "
+                "Install with: pip install chromadb"
+            )
+
         self.vector_store = VectorStore(project_id=None)  # Auto-generate from path
         self.embedding_cache = EmbeddingCache()
         self.embedding_generator = EmbeddingGenerator(self.config)
@@ -357,3 +376,29 @@ class SemanticMatcher:
         except Exception as e:
             logger.error(f"Failed to get embedding for {function.signature.name}: {e}")
             return None
+
+    def close(self) -> None:
+        """Close all resources and cleanup."""
+        try:
+            # Close vector store
+            if hasattr(self, "vector_store"):
+                self.vector_store.close()
+
+            # Close embedding cache
+            if hasattr(self, "embedding_cache"):
+                self.embedding_cache.close()
+
+            # Note: embedding_generator and scorer don't have explicit close methods
+            # They will be cleaned up when the object is garbage collected
+
+            logger.info("SemanticMatcher closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing SemanticMatcher: {e}")
+
+    def __del__(self) -> None:
+        """Cleanup resources on deletion."""
+        try:
+            self.close()
+        except Exception:
+            # Suppress errors during garbage collection
+            pass

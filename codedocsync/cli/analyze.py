@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.console import Console
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from codedocsync.analyzer import (
@@ -23,6 +21,7 @@ from codedocsync.analyzer import (
     get_fast_config,
     get_thorough_config,
 )
+from codedocsync.cli.console import console, create_progress
 from codedocsync.cli.formatting import format_analysis_results
 from codedocsync.matcher import (
     MatchConfidence,
@@ -31,8 +30,6 @@ from codedocsync.matcher import (
     UnifiedMatchingFacade,
 )
 from codedocsync.parser import IntegratedParser, ParsedDocstring
-
-console = Console()
 
 
 def analyze(
@@ -45,6 +42,13 @@ def analyze(
     rules_only: Annotated[
         bool,
         typer.Option("--rules-only", help="Skip LLM analysis, use only rule engine"),
+    ] = False,
+    no_semantic: Annotated[
+        bool,
+        typer.Option(
+            "--no-semantic",
+            help="Disable semantic matching (uses only direct/contextual matching)",
+        ),
     ] = False,
     confidence_threshold: Annotated[
         float,
@@ -84,6 +88,7 @@ def analyze(
     Examples:
         codedocsync analyze ./src --rules-only
         codedocsync analyze ./project --profile thorough --format json
+        codedocsync analyze ./src --no-semantic  # Without ChromaDB/semantic matching
     """
     # Validate path
     if not path.exists():
@@ -99,6 +104,9 @@ def analyze(
         config = get_development_config()
 
     # Apply command line overrides
+    # If no_semantic is set, also disable LLM to ensure no API key is needed
+    if no_semantic:
+        rules_only = True
     if rules_only:
         config.use_llm = False
     config.rule_engine.confidence_threshold = confidence_threshold
@@ -116,16 +124,29 @@ def analyze(
     start_time = time.time()
 
     try:
+        # Check if we need to handle missing API key gracefully
+        if config.use_llm and not rules_only:
+            try:
+                # Try to import and validate LLM config early
+                from codedocsync.analyzer.llm_config import LLMConfig
+
+                LLMConfig()  # This will validate API key
+            except Exception as e:
+                if "OPENAI_API_KEY" in str(e):
+                    console.print(
+                        "[yellow]No OpenAI API key found. Falling back to rules-only mode.[/yellow]\n"
+                        "[dim]Tip: Set OPENAI_API_KEY environment variable or use --rules-only flag.[/dim]"
+                    )
+                    # Fall back to rules-only mode
+                    rules_only = True
+                    config.use_llm = False
+                else:
+                    raise
+
         # First, get matched pairs using unified matching
         facade = UnifiedMatchingFacade()
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            console=console,
-            transient=not verbose,
-        ) as progress:
+        with create_progress(transient=not verbose) as progress:
             # Match functions to documentation
             match_task = progress.add_task(
                 "Matching functions to documentation...", total=None
@@ -134,7 +155,9 @@ def analyze(
             if path.is_file():
                 match_result = facade.match_file(path)
             else:
-                match_result = asyncio.run(facade.match_project(str(path)))
+                match_result = asyncio.run(
+                    facade.match_project(str(path), enable_semantic=not no_semantic)
+                )
 
             progress.update(match_task, completed=True)
 
@@ -151,9 +174,15 @@ def analyze(
             )
 
             # Run analysis
+            # Pass explicit llm_analyzer=None when rules_only to prevent initialization
             results = asyncio.run(
                 analyze_multiple_pairs(
-                    match_result.matched_pairs, config=config, cache=cache
+                    match_result.matched_pairs,
+                    config=config,
+                    cache=cache,
+                    llm_analyzer=(
+                        None if rules_only else None
+                    ),  # Explicitly pass None to prevent default creation
                 )
             )
 
@@ -269,6 +298,9 @@ def analyze_function(
     rules_only: Annotated[
         bool, typer.Option("--rules-only", help="Skip LLM analysis")
     ] = False,
+    no_semantic: Annotated[
+        bool, typer.Option("--no-semantic", help="Disable semantic matching")
+    ] = False,
     config_profile: Annotated[
         str,
         typer.Option("--profile", help="Analysis profile (fast/thorough/development)"),
@@ -283,6 +315,7 @@ def analyze_function(
     Examples:
         codedocsync analyze-function ./myfile.py process_user --verbose
         codedocsync analyze-function ./src/utils.py validate_data --rules-only
+        codedocsync analyze-function ./myfile.py my_func --no-semantic
     """
     # Validate file
     if not file.exists():
@@ -352,8 +385,30 @@ def analyze_function(
         else:
             config = get_development_config()
 
+        # If no_semantic is set, also disable LLM to ensure no API key is needed
+        if no_semantic:
+            rules_only = True
         if rules_only:
             config.use_llm = False
+
+        # Check if we need to handle missing API key gracefully
+        if config.use_llm and not rules_only:
+            try:
+                # Try to import and validate LLM config early
+                from codedocsync.analyzer.llm_config import LLMConfig
+
+                LLMConfig()  # This will validate API key
+            except Exception as e:
+                if "OPENAI_API_KEY" in str(e):
+                    console.print(
+                        "[yellow]No OpenAI API key found. Falling back to rules-only mode.[/yellow]\n"
+                        "[dim]Tip: Set OPENAI_API_KEY environment variable or use --rules-only flag.[/dim]"
+                    )
+                    # Fall back to rules-only mode
+                    rules_only = True
+                    config.use_llm = False
+                else:
+                    raise
 
         # Analyze the function
         console.print(f"[cyan]Analyzing function: {function_name}[/cyan]")
@@ -364,7 +419,15 @@ def analyze_function(
                 f"[dim]Profile: {config_profile}, LLM: {config.use_llm}[/dim]"
             )
 
-        result = asyncio.run(analyze_matched_pair(target_pair, config=config))
+        result = asyncio.run(
+            analyze_matched_pair(
+                target_pair,
+                config=config,
+                llm_analyzer=(
+                    None if rules_only else None
+                ),  # Explicitly pass None to prevent default creation
+            )
+        )
 
         # Display detailed results
         console.print(f"\n[bold]Analysis Results for {function_name}[/bold]")

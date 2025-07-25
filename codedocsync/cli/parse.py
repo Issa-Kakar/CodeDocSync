@@ -10,33 +10,59 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
+from codedocsync.cli.console import console
 from codedocsync.cli.formatting import serialize_docstring
 from codedocsync.parser import IntegratedParser, ParsedDocstring, ParsingError
 
-console = Console()
-
 
 def parse(
-    file: Annotated[Path, typer.Argument(help="Python file to parse")],
+    path: Annotated[Path, typer.Argument(help="Path to Python file or directory")],
     json_output: Annotated[
         bool,
         typer.Option("--json", help="Output as JSON instead of pretty-printed table"),
     ] = False,
 ) -> None:
     """
-    Parse a Python file and display extracted functions.
+    Parse Python files and display extracted functions.
 
     This command demonstrates the AST parser functionality by analyzing
-    a Python file and extracting all function definitions with their
+    Python files and extracting all function definitions with their
     signatures, parameters, and docstrings.
     """
     try:
-        # Use IntegratedParser for complete parsing with docstring analysis
+        # Handle directory vs file
+        if path.is_dir():
+            # Find all Python files in directory
+            python_files = list(path.rglob("*.py"))
+            if not python_files:
+                console.print(f"[red]No Python files found in {path}[/red]")
+                raise typer.Exit(1)
+        elif path.is_file() and path.suffix == ".py":
+            python_files = [path]
+        else:
+            console.print(f"[red]Error: {path} is not a Python file or directory[/red]")
+            raise typer.Exit(1)
+
+        # Parse all files
+        all_functions = []
         parser = IntegratedParser()
-        functions = parser.parse_file(str(file))
+
+        for file_path in python_files:
+            try:
+                functions = parser.parse_file(str(file_path))
+                # Add file path to each function for tracking
+                for func in functions:
+                    func._parsed_file = str(file_path)  # type: ignore[attr-defined]
+                all_functions.extend(functions)
+            except Exception as e:
+                console.print(
+                    f"[yellow]Warning: Failed to parse {file_path}: {e}[/yellow]"
+                )
+                continue
+
+        functions = all_functions
 
         if json_output:
             # Convert to JSON-serializable format
@@ -71,7 +97,18 @@ def parse(
                 console.print("[yellow]No functions found in the file.[/yellow]")
                 return
 
-            table = Table(title=f"Functions in {file}")
+            # Create appropriate title
+            if len(python_files) == 1:
+                title = f"Functions in {python_files[0]}"
+            else:
+                title = f"Functions in {len(python_files)} files from {path}"
+
+            table = Table(title=title)
+
+            # Add file column if parsing multiple files
+            if len(python_files) > 1:
+                table.add_column("File", style="dim")
+
             table.add_column("Name", style="cyan")
             table.add_column("Type", style="magenta")
             table.add_column("Parameters", style="green")
@@ -112,15 +149,27 @@ def parse(
                     if len(docstring_preview) > 37:
                         docstring_preview = docstring_preview[:37] + "..."
 
-                table.add_row(
-                    func.signature.name,
-                    func_type,
-                    param_str,
-                    return_type,
-                    line_range,
-                    docstring_preview,
-                    docstring_format,
+                # Build row data
+                row_data = []
+
+                # Add file name if parsing multiple files
+                if len(python_files) > 1:
+                    file_name = Path(getattr(func, "_parsed_file", "unknown")).name
+                    row_data.append(file_name)
+
+                row_data.extend(
+                    [
+                        func.signature.name,
+                        func_type,
+                        param_str,
+                        return_type,
+                        line_range,
+                        docstring_preview,
+                        docstring_format,
+                    ]
                 )
+
+                table.add_row(*row_data)
 
             console.print(table)
             console.print(f"\n[green]Found {len(functions)} functions[/green]")

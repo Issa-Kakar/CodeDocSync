@@ -14,7 +14,10 @@ import time
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Union
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 if TYPE_CHECKING:
     from .docstring_models import ParsedDocstring

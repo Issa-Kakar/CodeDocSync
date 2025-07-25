@@ -234,12 +234,20 @@ class GoogleStyleTemplate(DocstringTemplate):
         """Render just a specific section for partial updates."""
         if section_type == "parameters" and isinstance(content, list):
             # Type check to ensure it's a list of DocstringParameter
-            return self.render_parameters(content)  # type: ignore[arg-type]
+            if content and all(
+                hasattr(item, "name") and hasattr(item, "type") for item in content
+            ):
+                # Type narrowing: this is a list[DocstringParameter]
+                return self.render_parameters(content)  # type: ignore[arg-type]
+            return []
         elif section_type == "returns" and isinstance(content, DocstringReturns):
             return self.render_returns(content)
         elif section_type == "raises" and isinstance(content, list):
             # Type check to ensure it's a list of DocstringRaises
-            return self.render_raises(content)  # type: ignore[arg-type]
+            if content and all(hasattr(item, "type") for item in content):
+                # Type narrowing: this is a list[DocstringRaises]
+                return self.render_raises(content)  # type: ignore[arg-type]
+            return []
         else:
             raise ValueError(f"Unsupported section type: {section_type}")
 

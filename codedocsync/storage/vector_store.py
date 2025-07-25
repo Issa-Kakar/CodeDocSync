@@ -2,7 +2,11 @@ import hashlib
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import chromadb
+    from chromadb.config import Settings
 
 try:
     import chromadb
@@ -10,8 +14,8 @@ try:
 
     CHROMADB_AVAILABLE = True
 except ImportError:
-    chromadb = None
-    Settings = None
+    chromadb = None  # type: ignore[assignment]
+    Settings = None  # type: ignore[assignment,misc]
     CHROMADB_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -188,3 +192,46 @@ class VectorStore:
             ),
             "collection_count": self.collection.count(),
         }
+
+    def close(self) -> None:
+        """Close ChromaDB client and release resources."""
+        try:
+            # Delete the collection to free resources
+            if hasattr(self, "client") and hasattr(self, "collection"):
+                try:
+                    self.client.delete_collection(self.collection_name)
+                    logger.info(f"Deleted collection: {self.collection_name}")
+                except Exception as e:
+                    logger.debug(f"Collection deletion failed (may not exist): {e}")
+
+            # Reset the client to force cleanup
+            if hasattr(self, "client"):
+                try:
+                    # Force reset to clean up resources
+                    self.client.reset()
+                    logger.info("ChromaDB client reset successfully")
+                except Exception as e:
+                    logger.debug(f"Client reset failed: {e}")
+
+            # Note: References will be cleared when the object is garbage collected
+
+            logger.info("VectorStore closed and resources released")
+        except Exception as e:
+            logger.error(f"Error closing VectorStore: {e}")
+
+    def __del__(self) -> None:
+        """Cleanup resources on deletion."""
+        try:
+            if hasattr(self, "client") and self.client is not None:
+                self.close()
+        except Exception:
+            # Suppress errors during garbage collection
+            pass
+
+    def __enter__(self) -> "VectorStore":
+        """Enter context manager."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager and cleanup resources."""
+        self.close()

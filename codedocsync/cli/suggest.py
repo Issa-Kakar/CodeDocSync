@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import typer
-from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 
 from codedocsync.analyzer import analyze_multiple_pairs, get_development_config
+from codedocsync.cli.console import console
 from codedocsync.matcher import UnifiedMatchingFacade
 from codedocsync.suggestions import (
     SuggestionConfig,
@@ -27,8 +27,6 @@ from codedocsync.suggestions.formatters import (
     TerminalSuggestionFormatter,
 )
 from codedocsync.suggestions.ranking import create_balanced_ranker
-
-console = Console()
 
 
 def suggest(

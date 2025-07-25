@@ -102,7 +102,7 @@ class SemanticErrorRecovery:
                 logger.debug(
                     f"Trying {func_name} embedding generation for {function.signature.name}"
                 )
-                result = await func(function, *args, **kwargs)
+                result: FunctionEmbedding | None = await func(function, *args, **kwargs)
 
                 if result:
                     if not is_primary:
@@ -110,7 +110,7 @@ class SemanticErrorRecovery:
                         logger.info(
                             f"Successfully recovered using {func_name} for {function.signature.name}"
                         )
-                    return result  # type: ignore[no-any-return]
+                    return result
 
             except Exception as error:
                 self.error_stats["total_errors"] += 1

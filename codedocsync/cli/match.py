@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.console import Console
 from rich.progress import (
     BarColumn,
     Progress,
@@ -20,6 +19,7 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 
+from codedocsync.cli.console import console
 from codedocsync.cli.formatting import (
     display_match_results,
     format_json_contextual_result,
@@ -33,8 +33,6 @@ from codedocsync.matcher import (
     UnifiedMatchingFacade,
 )
 from codedocsync.utils.config import CodeDocSyncConfig
-
-console = Console()
 
 
 def match(

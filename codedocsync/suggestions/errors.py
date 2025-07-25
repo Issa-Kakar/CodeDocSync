@@ -219,8 +219,8 @@ def with_suggestion_fallback(
         Decorated function
     """
 
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        def wrapper(*args: Any, **kwargs: Any) -> T:
+    def decorator(func: Callable[..., T]) -> Callable[..., T | Suggestion]:
+        def wrapper(*args: Any, **kwargs: Any) -> T | Suggestion:
             try:
                 return func(*args, **kwargs)
             except SuggestionGenerationError as e:
@@ -247,7 +247,7 @@ def with_suggestion_fallback(
                         rule_triggers=[e.context.issue.issue_type],
                     )
 
-                    return Suggestion(  # type: ignore[return-value]
+                    return Suggestion(
                         suggestion_type=e.suggestion_type
                         or SuggestionType.FULL_DOCSTRING,
                         original_text=(
@@ -268,11 +268,11 @@ def with_suggestion_fallback(
                         args[0] if isinstance(args[0], SuggestionContext) else None
                     )
                     if context:
-                        return fallback_func(context)  # type: ignore[return-value]
+                        return fallback_func(context)
 
                 # Use default fallback
                 if hasattr(e, "context") and e.context:
-                    return create_fallback_suggestion(e.context, e)  # type: ignore[return-value]
+                    return create_fallback_suggestion(e.context, e)
 
                 # Re-raise if no fallback possible
                 raise
@@ -282,7 +282,7 @@ def with_suggestion_fallback(
 
                 # Try to create minimal suggestion
                 if hasattr(e, "context") and e.context:
-                    return create_fallback_suggestion(e.context, e)  # type: ignore[return-value]
+                    return create_fallback_suggestion(e.context, e)
 
                 # Re-raise if no context
                 raise
@@ -299,7 +299,7 @@ def with_suggestion_fallback(
                         break
 
                 if context:
-                    return create_fallback_suggestion(context, e)  # type: ignore[return-value]
+                    return create_fallback_suggestion(context, e)
 
                 # Re-raise if no recovery possible
                 raise

@@ -6,7 +6,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-import psutil  # type: ignore[import-untyped]
+import psutil
 
 from ..parser import ParsedFunction
 from .semantic_models import FunctionEmbedding

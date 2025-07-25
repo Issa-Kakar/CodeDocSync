@@ -5,6 +5,8 @@ This package contains comprehensive tests for all components of the
 suggestion generation system implemented in Chunk 1.
 """
 
+from typing import Any, Optional
+
 # Test module information
 __version__ = "1.0.0"
 __description__ = "Test suite for CodeDocSync suggestion generation system"
@@ -35,7 +37,7 @@ TEST_CATEGORIES = {
 }
 
 
-def get_test_info():
+def get_test_info() -> dict[str, Any]:
     """Get information about the test suite."""
     return {
         "version": __version__,

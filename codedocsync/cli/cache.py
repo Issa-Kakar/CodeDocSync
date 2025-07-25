@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.console import Console
 
-console = Console()
+from codedocsync.cli.console import console
 
 
 def clear_cache(
