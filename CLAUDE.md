@@ -11,6 +11,7 @@ The system has multiple Python installations:
 ### Environment Activation (REQUIRED EVERY SESSION)
 
 ```bash
+
 # Git Bash (preferred)
 source .venv/Scripts/activate
 

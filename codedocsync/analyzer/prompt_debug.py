@@ -216,10 +216,10 @@ class PromptDebugger:
         estimated_tokens = character_count // 4  # Rough estimation
 
         # Check for examples
-        has_examples = bool(re.search(r"Union[example, Example]|EXAMPLE", prompt))
+        has_examples = bool(re.search(r"(?:example|Example|EXAMPLE)", prompt))
 
         # Check for output format specification
-        has_output_format = bool(re.search(r"Union[JSON, json]|format", prompt))
+        has_output_format = bool(re.search(r"(?:JSON|json|format)", prompt))
 
         # Calculate complexity score (0-1)
         complexity_factors = [
