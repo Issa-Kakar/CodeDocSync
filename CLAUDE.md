@@ -1,62 +1,35 @@
 # CodeDocSync - Claude Context Guide
 
-## CRITICAL: Python Environment Setup
+## ⚠️ CRITICAL: Python Environment Setup
 
-**MANDATORY BEFORE ANY CODE EXECUTION:**
-
-The system has multiple Python installations:
-- **System Default**: Anaconda Python 3.9.12 (INCOMPATIBLE)
-- **Project Python**: Python 3.13.5 in .venv (REQUIRED)
-
-### Environment Activation (REQUIRED EVERY SESSION)
+**System has dual Python installations - MUST use venv (Python 3.13.5) not system Python (3.9.12)**
 
 ```bash
+# Activate venv EVERY session:
+source .venv/Scripts/activate  # Git Bash
+.\.venv\Scripts\activate      # PowerShell
 
-# Git Bash (preferred)
-source .venv/Scripts/activate
+# Verify: python --version  # Must show 3.13.5
 
-# Windows PowerShell
-.\.venv\Scripts\activate
-
-# VERIFY activation worked:
-python --version  # MUST show Python 3.13.5
-which python     # MUST show .venv/Scripts/python
+# Git Bash pipe workaround:
+python -m mypy codedocsync > mypy_output.txt 2>&1  # Don't use pipes
 ```
 
-### Alternative: Direct Venv Python Usage
+**Common Issues**: Wrong Python = syntax errors on `list[str]`, `x | None`. Always activate venv!
 
-```bash
-# If activation fails, use direct paths:
-.venv/Scripts/python.exe <command>
-.venv/Scripts/python.exe -m pip install <package>
-.venv/Scripts/python.exe -m pytest
-```
+## MCP Integration (Enhanced Capabilities)
 
-### Common Environment Issues
+This project supports MCP servers for enhanced Claude Desktop capabilities:
 
-1. **Python 3.9 SyntaxError**: You're using system Python - activate venv!
-2. **"invalid syntax" on `list[str] | None`**: Wrong Python version
-3. **Poetry issues on Windows**: Use `python -m poetry` instead of `poetry`
-4. **New terminal loses venv**: Must activate in EVERY new session
+1. **Filesystem Server**: Direct file access to project without explicit paths
+2. **Memory Server**: Persistent knowledge across sessions (claude-memory.json)
 
-### Git Bash Command Workarounds
+**Benefits**:
+- Natural file navigation and editing
+- Remembers project patterns, decisions, and known issues
+- No need to re-explain context between sessions
 
-Due to Git Bash limitations on Windows, use file redirection instead of pipes:
-
-```bash
-# ❌ WRONG (Unix pipes don't work)
-python -m mypy codedocsync | head -50
-
-# ✅ CORRECT (Use file redirection)
-python -m mypy codedocsync > mypy_output.txt 2>&1
-cat mypy_output.txt  # or open in editor
-
-# ✅ For specific modules (faster)
-python -m mypy codedocsync/cli > cli_mypy.txt 2>&1
-python -m mypy codedocsync/analyzer > analyzer_mypy.txt 2>&1
-```
-
-**Note**: The ".venv/Scripts/activate: line 40: uname: command not found" warning is harmless and can be ignored.
+**Setup**: Requires Node.js and Claude Desktop with MCP support. Configuration goes in `%APPDATA%\Claude\claude_desktop_config.json`.
 
 ## Project Overview
 
@@ -66,10 +39,9 @@ python -m mypy codedocsync/analyzer > analyzer_mypy.txt 2>&1
 - LLM-powered semantic analysis
 - Three-tier matching system (Direct, Contextual, Semantic)
 
-**Current Stage**: Week 4 of 6-week sprint
-**Core Components**: ✅ All working (Parser, Matcher, Storage, CLI, Analyzer)
-**Test Suite**: 95.9% passing (446/465 tests)
+**Current Status**: Core implementation complete, Week 4 optimizations in progress
 **MyPy Compliance**: ✅ 0 errors
+**Details**: See IMPLEMENTATION_STATE.MD
 
 ## Project Structure
 
@@ -118,53 +90,30 @@ class MatchedPair:
     match_reason: str
 ```
 
-### Dependencies
+### Key Dependencies
 
 - **Core**: typer, rich, pydantic, python-dotenv
-- **Parsing**: docstring_parser (v0.16+), built-in ast, astor
+- **Parsing**: docstring_parser (v0.16+), ast
 - **Matching**: rapidfuzz, chromadb, sentence-transformers
 - **LLM**: openai, tenacity
 - **Dev**: pytest, black, mypy, ruff, pre-commit
 
-**Note**: ChromaDB 1.0.15+ is fully compatible with NumPy 2.3.1. All three matching strategies (Direct, Contextual, and Semantic) are fully functional.
+### Type Hints (MANDATORY Python 3.10+)
 
-### Type Hints Convention
+✅ Use: `list[str]`, `dict[str, int]`, `str | None`, `int | float`
+❌ NOT: `List[str]`, `Dict[str, int]`, `Optional[str]`, `Union[int, float]`
 
-**ALWAYS use modern Python 3.10+ syntax:**
-- ✅ `list[str]` not ❌ `List[str]`
-- ✅ `dict[str, int]` not ❌ `Dict[str, int]`
-- ✅ `str | None` not ❌ `Optional[str]`
-- ✅ `int | float` not ❌ `Union[int, float]`
+### Critical Code Patterns
 
-### Common Code Patterns to Follow
+```python
+# isinstance with unions: Use tuple not union type
+isinstance(x, (int, float))  # ✅
+isinstance(x, int | float)   # ❌
 
-1. **isinstance() with Union types**:
-   ```python
-   # ✅ CORRECT
-   isinstance(x, (int, float))
-
-   # ❌ WRONG
-   isinstance(x, int | float)
-   ```
-
-2. **Regex flags**:
-   ```python
-   # ✅ CORRECT
-   re.MULTILINE | re.IGNORECASE
-
-   # ❌ WRONG
-   Union[re.MULTILINE, re.IGNORECASE]
-   ```
-
-3. **Optional AST types**:
-   ```python
-   # ✅ CORRECT
-   from typing import Optional
-   Optional[ast.AST]
-
-   # ❌ WRONG
-   ast.Optional
-   ```
+# Optional AST types need typing import
+from typing import Optional
+Optional[ast.AST]  # ✅
+```
 
 ## Testing and Quality Checks
 
@@ -196,61 +145,19 @@ python -m ruff check codedocsync
 python -m codedocsync analyze .
 ```
 
-### MyPy Configuration
+## 🚨 Memory Safety Guidelines (CRITICAL)
 
-The project uses relaxed mypy settings appropriate for a portfolio project in active development (see pyproject.toml). This focuses on functionality and performance over type perfection, appropriate for a 6-week sprint portfolio project.
+**System crashes from problematic tests - follow these rules:**
 
-## Memory Safety Guidelines
+1. **NEVER use**: `sys.getsizeof(gc.get_objects())` - crashes system by measuring ALL Python objects
+2. **Avoid module-level test code** - causes Windows crashes
+3. **Use memory-safe runner**: `python scripts/memory_safe_test_runner.py`
+4. **For memory profiling**: Use `tracemalloc`, not gc.get_objects()
+5. **Test crashes during collection** = module-level code problem
 
-**CRITICAL: Test Development Best Practices**
+## Current Focus
 
-After experiencing system crashes from problematic tests, follow these rules:
-
-1. **Avoid Module-Level Code in Tests**
-   - Don't create large data structures at import time
-   - Keep test data creation inside test methods or fixtures
-
-2. **NEVER Use Dangerous Functions**
-   - ❌ **NEVER**: `sys.getsizeof(gc.get_objects())` - This attempts to measure ALL Python objects in memory (gigabytes) and will crash your system
-   - ✅ **Use**: `tracemalloc` for proper memory profiling
-
-3. **Be Careful with Test Fixtures**
-   - Avoid creating massive objects in fixtures
-   - Use lazy fixture evaluation when possible
-   - Clean up resources in fixture teardown
-
-4. **Watch for Memory-Intensive Operations**
-   - Avoid unbounded loops or recursion
-   - Don't create extremely long strings (e.g., "x" * 10000000)
-   - Be careful with cartesian products or combinatorial explosions
-
-5. **Use the Memory-Safe Test Runner**
-   ```bash
-   # Always use this instead of pytest directly
-   python scripts/memory_safe_test_runner.py
-
-   # Set memory limits for safety
-   python scripts/memory_safe_test_runner.py --memory-limit 1024
-
-   # Clean up test artifacts
-   python scripts/memory_safe_test_runner.py --clean-only
-   ```
-
-6. **Test Collection Issues**
-   - If tests crash during collection (before running), the issue is in imports
-   - Check for circular imports between test modules
-   - Look for module-level code that executes on import
-
-## Current Implementation Focus
-
-### Week 4: Performance & Optimization (Current Phase)
-- **Priority**: Reimplement suggestion tests with memory safety before proceeding
-- See `IMPLEMENTATION_STATE.MD` for detailed progress and next steps
-
-### Known Issues to Address
-1. **ChromaDB installation may fail on Windows (requires C++ compiler)**
-   - Solution: Install Visual Studio Build Tools if needed
-   - All matching functionality works once installed
+Implementing Week 4: Performance & RAG MVP - see IMPLEMENTATION_STATE.MD for details.
 
 ## Architecture Highlights
 
@@ -270,31 +177,24 @@ After experiencing system crashes from problematic tests, follow these rules:
 5. Use LLM for semantic validation
 6. Generate fix suggestions
 
-### Performance Strategy
-- File-level hash caching
-- AST serialization cache
-- Embedding persistence
-- Multiprocessing for CPU-bound tasks
-- Async I/O for LLM calls
+### RAG-Enhanced Suggestions (NEW - Implemented 2025-01-25)
+- **Pre-trained corpus**: 143 examples extracted from CodeDocSync's own codebase
+- **Self-improvement**: Learns from accepted suggestions and good examples during analysis
+- **Retrieval**: Memory-based similarity matching (no embeddings required)
+- **Performance**: <100ms retrieval time, <50MB memory overhead
+- **Graceful degradation**: Works without embeddings or vector store
+- **Storage**: Bootstrap corpus in `data/bootstrap_corpus.json`
 
-## Development Workflow
-
-1. **Always check Python version first**
-2. **Read existing code before modifying** - follow established patterns
-3. **Use modern type hints** - no legacy typing
-4. **Test incrementally** - run mypy and ruff after changes
-5. **Follow project structure** - keep components separated
+#### RAG Commands:
+- `python -m codedocsync analyze . --no-rag` - Disable RAG enhancement
+- `python -m codedocsync accept-suggestion <file> <function> <issue_type>` - Mark suggestion as accepted
+- `python -m codedocsync rag-stats` - View corpus statistics and performance metrics
 
 ## Configuration Files
 
 - `.codedocsync.yml`: Project-specific analysis configuration
 - `.env`: API keys and environment settings
 - `pyproject.toml`: Project dependencies and tool configs
-
-### Error Handling Strategy
-- LLM failures → fall back to rules
-- Parsing errors → continue with partial results
-- Network issues → use cached data
 
 ## Quick Command Reference
 
@@ -317,30 +217,31 @@ python -m codedocsync analyze .
 # Run without semantic matching (optional)
 python -m codedocsync analyze . --no-semantic
 
+# Run without RAG enhancement (optional)
+python -m codedocsync analyze . --no-rag
+
+# Accept a suggestion (for RAG learning)
+python -m codedocsync accept-suggestion file.py function_name issue_type
+
+# View RAG corpus statistics
+python -m codedocsync rag-stats
+
 # Get help
 python -m codedocsync --help
 ```
 
-### Pre-commit Hooks
-- Ruff: v0.12.3 (linting with auto-fix)
-- Black: v25.1.0 (88 char lines)
-- Mypy: v1.17.0 (static typing with relaxed settings for portfolio project)
+### Quality Tools
+- **Formatting**: black (88 char lines)
+- **Linting**: ruff with auto-fix
+- **Type checking**: mypy (see pyproject.toml)
 
-## Performance Contracts
-- Small file (<100 lines): <10ms parsing
-- Medium project (100 files): <30s full analysis
-- Large project (1000 files): <5 minutes full analysis
-- Memory usage: <500MB for 10k functions
+## Critical Reminders
 
-## Important Reminders
-
-1. **NEVER commit without activating venv** - wrong Python = broken code
-2. **NEVER use old typing imports** - project requires Python 3.10+
-3. **ALWAYS check imports exist** - don't assume availability
-4. **ALWAYS handle Windows paths** - use forward slashes or raw strings
-5. **NEVER mix Union in isinstance()** - use tuples instead
-6. **NEVER use `sys.getsizeof(gc.get_objects())` in tests** - it's a memory bomb
-7. **AVOID module-level test code** - causes Windows crashes
+1. **ALWAYS activate venv** - wrong Python = broken code
+2. **NEVER use old typing imports** - Python 3.10+ only
+3. **NEVER use `sys.getsizeof(gc.get_objects())`** - memory bomb
+4. **Use isinstance(x, (int, float))** not isinstance(x, int | float)
+5. **Follow established patterns** - read existing code first
 
 ## Key Files for Context
 
@@ -348,3 +249,9 @@ python -m codedocsync --help
 - `TEST_FIXES_LOG.md`: Test infrastructure history and lessons learned
 - `pyproject.toml`: Project dependencies and tool configurations
 - `.codedocsync.yml`: Project-specific analysis configuration
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

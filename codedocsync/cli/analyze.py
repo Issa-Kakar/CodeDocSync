@@ -50,6 +50,13 @@ def analyze(
             help="Disable semantic matching (uses only direct/contextual matching)",
         ),
     ] = False,
+    no_rag: Annotated[
+        bool,
+        typer.Option(
+            "--no-rag",
+            help="Disable RAG corpus building and enhancement",
+        ),
+    ] = False,
     confidence_threshold: Annotated[
         float,
         typer.Option(
@@ -89,6 +96,7 @@ def analyze(
         codedocsync analyze ./src --rules-only
         codedocsync analyze ./project --profile thorough --format json
         codedocsync analyze ./src --no-semantic  # Without ChromaDB/semantic matching
+        codedocsync analyze ./src --no-rag  # Without RAG corpus building
     """
     # Validate path
     if not path.exists():
@@ -111,6 +119,7 @@ def analyze(
         config.use_llm = False
     config.rule_engine.confidence_threshold = confidence_threshold
     config.parallel_analysis = parallel
+    config.build_rag_corpus = not no_rag  # Disable RAG if --no-rag is set
 
     # Set up cache
     cache = AnalysisCache() if config.enable_cache else None

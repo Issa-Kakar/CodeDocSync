@@ -8,6 +8,7 @@ from the various submodules.
 from typing import Annotated
 
 import typer
+from dotenv import load_dotenv
 
 from codedocsync import __version__
 
@@ -20,6 +21,7 @@ from codedocsync.cli.cache import clear_cache
 from codedocsync.cli.match import match, match_contextual, match_unified
 from codedocsync.cli.parse import parse
 from codedocsync.cli.placeholders import check, watch
+from codedocsync.cli.rag import accept_suggestion, rag_stats
 from codedocsync.cli.suggest import suggest, suggest_interactive
 
 # Create the main app
@@ -67,6 +69,8 @@ def main(
     """
     Manage documentation consistency checks for your codebase.
     """
+    # Load environment variables from .env file
+    load_dotenv()
     # Handle terminal output configuration
     if plain or no_color:
         # Recreate console with plain settings
@@ -103,6 +107,8 @@ app.command("suggest")(suggest)
 app.command("suggest-interactive")(suggest_interactive)
 app.command("watch")(watch)
 app.command("check")(check)
+app.command("rag-stats")(rag_stats)
+app.command("accept-suggestion")(accept_suggestion)
 
 
 if __name__ == "__main__":

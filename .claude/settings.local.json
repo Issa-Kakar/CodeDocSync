@@ -103,7 +103,11 @@
       "Bash(\"C:\\Users\\issak\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\codedocsync-5yfwj9Sn-py3.12\\Scripts\\python.exe\" -m mypy codedocsync --no-error-summary)",
       "Bash(\"C:\\Users\\issak\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\codedocsync-5yfwj9Sn-py3.12\\Scripts\\python.exe\" -m mypy codedocsync/analyzer/__init__.py --no-error-summary)",
       "Bash(\"C:\\Users\\issak\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\codedocsync-5yfwj9Sn-py3.12\\Scripts\\python.exe\" -m mypy codedocsync/suggestions/__init__.py --no-error-summary)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "Bash(echo $APPDATA)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "defaultMode": "bypassPermissions",
