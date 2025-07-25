@@ -642,11 +642,11 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         # Remove common prefixes/suffixes
         name = function_name.lower()
         name = re.sub(
-            r"^(Union[get_, set_]|Union[create_, build_]|Union[calculate_, compute_])",
+            r"^(get_|set_|create_|build_|calculate_|compute_)",
             "",
             name,
         )
-        name = re.sub(r"(Union[_function, _method])$", "", name)
+        name = re.sub(r"(_function|_method)$", "", name)
 
         # Convert snake_case to words
         words = name.replace("_", " ")
