@@ -510,9 +510,22 @@ async def analyze_matched_pair(
                 quality_score = 5 if len(final_issues) == 0 else 4
 
                 # Add to corpus
+                # Convert RawDocstring to ParsedDocstring if needed
+                parsed_docstring = (
+                    pair.docstring
+                    if isinstance(pair.docstring, ParsedDocstring)
+                    else ParsedDocstring(
+                        format=DocstringFormat.GOOGLE,  # Default to Google format
+                        summary="",
+                        parameters=[],
+                        returns=None,
+                        raises=[],
+                        raw_text=pair.docstring.raw_text if pair.docstring else "",
+                    )
+                )
                 _rag_manager.add_good_example(
                     function=pair.function,
-                    docstring=pair.docstring,
+                    docstring=parsed_docstring,
                     quality_score=quality_score,
                 )
 
