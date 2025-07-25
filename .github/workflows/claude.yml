@@ -1,47 +1,104 @@
-name: Claude PR Assistant
+name: Claude AI Assistant
 
 on:
+  pull_request:
+    types: [opened, synchronize]
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened, assigned]
-  pull_request_review:
-    types: [submitted]
 
 jobs:
-  claude-code-action:
+  claude-analysis:
+    name: Claude Code Analysis
     if: |
+      (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0  # Get full history for better context
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            **/*.py
+          separator: ","
+
+      - name: Prepare Claude context
+        id: prepare-context
+        run: |
+          # Create a focused context for Claude
+          echo "## Changed Python Files" > claude_context.md
+          echo "" >> claude_context.md
+
+          # Add list of changed files
+          IFS=',' read -ra FILES <<< "${{ steps.changed-files.outputs.all_changed_files }}"
+          for file in "${FILES[@]}"; do
+            echo "- $file" >> claude_context.md
+          done
+
+          echo "" >> claude_context.md
+          echo "## Analysis Tasks" >> claude_context.md
+          echo "1. Review code changes for bugs and potential issues" >> claude_context.md
+          echo "2. Check if documentation matches the code implementation" >> claude_context.md
+          echo "3. Suggest missing docstrings or documentation updates" >> claude_context.md
+          echo "4. Identify missing test cases" >> claude_context.md
+          echo "5. Check for security vulnerabilities" >> claude_context.md
 
       - name: Run Claude PR Action
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_model: "claude-opus-4-20250514"
+          timeout_minutes: "30"
+          prompt: |
+            You are reviewing a PR for CodeDocSync, an intelligent tool that detects inconsistencies between Python code and documentation.
+
+            Please analyze the changed files and provide:
+            1. **Bug Detection**: Identify any potential bugs or logic errors
+            2. **Documentation Review**: Check if docstrings accurately describe the code
+            3. **Missing Documentation**: Suggest docstrings for undocumented functions
+            4. **Test Coverage**: Suggest test cases for new/modified code
+            5. **Code Quality**: Identify any code smells or improvement opportunities
+
+            Focus on high-impact issues and be concise. Use the project's existing patterns.
+
+            Changed files context is provided above.
+
+  claude-interactive:
+    name: Claude Interactive Assistant
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude PR Action (Interactive)
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_model: "claude-opus-4-20250514"
           timeout_minutes: "60"
-          # mode: tag  # Default: responds to @claude mentions
-          # Optional: Restrict network access to specific domains only
-          # experimental_allowed_domains: |
-          #   .anthropic.com
-          #   .github.com
-          #   api.github.com
-          #   .githubusercontent.com
-          #   bun.sh
-          #   registry.npmjs.org
-          #   .blob.core.windows.net
+          # This responds to @claude mentions with full context
