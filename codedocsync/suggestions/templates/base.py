@@ -145,7 +145,7 @@ class DocstringTemplate(ABC):
             return f"{inner_type}, optional"
 
         # Handle Union types with None
-        if "Optional[" in type_str and "]" in type_str:
+        if "Union[" in type_str and "]" in type_str:
             # Extract non-None types
             union_match = re.match(r"Union\[(.*), None\]", type_str)
             if union_match:
