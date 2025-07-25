@@ -33,6 +33,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_model: "claude-opus-4-20250514"
           timeout_minutes: "60"
           # mode: tag  # Default: responds to @claude mentions
           # Optional: Restrict network access to specific domains only
