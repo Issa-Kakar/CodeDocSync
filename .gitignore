@@ -260,3 +260,28 @@ Thumbs.db
 
 # Fix tracker
 fix_tracker.py
+
+# Internal development documents
+INVESTIGATION.MD
+RAG_IMPLEMENTATION_ANALYSIS.md
+QUICK_FIX_GUIDE.md
+STORAGE_TESTS_INSTRUCTIONS.md
+TEST_FIXES_LOG.md
+REIMPLEMENT_SUGGESTION_TESTS_PROMPT.md
+
+# Temporary output files
+mypy_output.txt
+storage_mypy.txt
+storage_tests.txt
+*_mypy.txt
+*_tests.txt
+
+# Local test scripts
+test_cli.ps1
+*.ps1
+
+# Memory crash prevention scripts (internal use)
+scripts/memory_safe_test_runner.py
+scripts/find_problematic_test.py
+scripts/safely_remove_suggestion_tests.py
+scripts/identify_failing_tests.py
