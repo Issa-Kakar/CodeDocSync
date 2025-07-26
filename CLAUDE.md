@@ -157,7 +157,12 @@ python -m codedocsync analyze .
 
 ## Current Focus
 
-Implementing Week 4: Performance & RAG MVP - see IMPLEMENTATION_STATE.MD for details.
+**RAG Sprint Continuation (16-20 hours)** - Addressing critical gaps in RAG implementation:
+- Persistence layer for accepted suggestions
+- Generator coverage (4 of 5 generators need RAG enhancement)
+- Curated examples expansion (5 → 75+)
+- Improvement measurement system
+See RAG_SPRINT_CONTINUATION.MD for detailed plan.
 
 ## Architecture Highlights
 
@@ -177,13 +182,14 @@ Implementing Week 4: Performance & RAG MVP - see IMPLEMENTATION_STATE.MD for det
 5. Use LLM for semantic validation
 6. Generate fix suggestions
 
-### RAG-Enhanced Suggestions (NEW - Implemented 2025-01-25)
-- **Pre-trained corpus**: 143 examples extracted from CodeDocSync's own codebase
-- **Self-improvement**: Learns from accepted suggestions and good examples during analysis
-- **Retrieval**: Memory-based similarity matching (no embeddings required)
-- **Performance**: <100ms retrieval time, <50MB memory overhead
-- **Graceful degradation**: Works without embeddings or vector store
-- **Storage**: Bootstrap corpus in `data/bootstrap_corpus.json`
+### RAG-Enhanced Suggestions (⚠️ PARTIAL - Core infrastructure only)
+- **Bootstrap corpus**: 143 examples from CodeDocSync + 5 curated (need 75+)
+- **Self-improvement**: ❌ No persistence - accepted suggestions lost on exit
+- **Retrieval**: Basic string similarity (not semantic)
+- **Performance**: ✅ <100ms retrieval, <50MB memory
+- **Generator coverage**: Only ParameterGenerator enhanced (1 of 5)
+- **Effectiveness**: Limited impact on suggestion quality
+- **Storage**: Bootstrap in `data/bootstrap_corpus.json`, no persistence for accepted
 
 #### RAG Commands:
 - `python -m codedocsync analyze . --no-rag` - Disable RAG enhancement
@@ -220,7 +226,7 @@ python -m codedocsync analyze . --no-semantic
 # Run without RAG enhancement (optional)
 python -m codedocsync analyze . --no-rag
 
-# Accept a suggestion (for RAG learning)
+# Accept a suggestion (⚠️ WARNING: Not persisted across sessions)
 python -m codedocsync accept-suggestion file.py function_name issue_type
 
 # View RAG corpus statistics

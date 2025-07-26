@@ -43,6 +43,10 @@ class DocstringExample:
     embedding_id: str | None = None
     source: str = "bootstrap"  # bootstrap, accepted, or good_example
     timestamp: float = 0.0
+    category: str | None = None  # Optional category field for compatibility
+    similarity_score: float | None = (
+        None  # Optional similarity score for retrieval results
+    )
 
 
 class RAGCorpusManager:
@@ -100,15 +104,21 @@ class RAGCorpusManager:
         self.memory_corpus: list[DocstringExample] = []
 
         # Track metrics
-        self.metrics = {
+        self._metrics = {
             "examples_loaded": 0,
             "examples_added": 0,
             "retrievals_performed": 0,
+            "searches_performed": 0,
+            "examples_retrieved": 0,
             "total_retrieval_time": 0.0,
+            "avg_retrieval_time_ms": 0.0,
         }
 
         # Load bootstrap corpus on initialization
         self._load_bootstrap_corpus()
+
+        # Load persisted metrics
+        self._load_persisted_metrics()
 
     def _load_bootstrap_corpus(self) -> None:
         """Load the bootstrap corpus from JSON files."""
@@ -166,7 +176,7 @@ class RAGCorpusManager:
             except Exception as e:
                 logger.warning(f"No curated examples loaded: {e}")
 
-        self.metrics["examples_loaded"] = loaded_count
+        self._metrics["examples_loaded"] = loaded_count
 
     def _store_example(self, example: DocstringExample) -> None:
         """Store an example in the corpus."""
@@ -247,7 +257,7 @@ class RAGCorpusManager:
 
             # Store the example
             self._store_example(example)
-            self.metrics["examples_added"] += 1
+            self._metrics["examples_added"] += 1
 
             logger.debug(f"Added good example: {example.function_name}")
 
@@ -299,7 +309,7 @@ class RAGCorpusManager:
 
             # Store the example
             self._store_example(example)
-            self.metrics["examples_added"] += 1
+            self._metrics["examples_added"] += 1
 
             logger.info(f"Added accepted suggestion for {example.function_name}")
 
@@ -323,6 +333,11 @@ class RAGCorpusManager:
         start_time = time.time()
 
         try:
+            logger.debug(
+                f"Retrieving examples for function '{function.signature.name}' "
+                f"(n_results={n_results}, min_similarity={min_similarity})"
+            )
+
             # If embeddings are enabled and available, use vector search
             if self.enable_embeddings and self.vector_store and self.embedding_cache:
                 # Create query text
@@ -333,21 +348,70 @@ class RAGCorpusManager:
 
             # Use memory-based search (simple heuristics)
             scored_examples = []
+            total_corpus_size = len(self.memory_corpus)
+            logger.debug(
+                f"Searching through {total_corpus_size} examples in memory corpus"
+            )
 
             for example in self.memory_corpus:
                 score = self._calculate_similarity_score(function, example)
                 if score >= min_similarity:
                     scored_examples.append((example, score))
 
+            logger.info(
+                f"RAG: Searched {total_corpus_size} examples, found {len(scored_examples)} with similarity >= {min_similarity}"
+            )
+
             # Sort by score and take top n
             scored_examples.sort(key=lambda x: x[1], reverse=True)
-            examples = [ex[0] for ex in scored_examples[:n_results]]
+
+            # Return examples with scores attached
+            results = []
+            for example, score in scored_examples[:n_results]:
+                # Create a copy with similarity score included
+                example_with_score = DocstringExample(
+                    function_name=example.function_name,
+                    module_path=example.module_path,
+                    function_signature=example.function_signature,
+                    docstring_format=example.docstring_format,
+                    docstring_content=example.docstring_content,
+                    has_params=example.has_params,
+                    has_returns=example.has_returns,
+                    has_examples=example.has_examples,
+                    complexity_score=example.complexity_score,
+                    quality_score=example.quality_score,
+                    embedding_id=example.embedding_id,
+                    source=example.source,
+                    timestamp=example.timestamp,
+                    similarity_score=score,  # Include similarity score in the dataclass
+                )
+                results.append(example_with_score)
 
             # Update metrics
-            self.metrics["retrievals_performed"] += 1
-            self.metrics["total_retrieval_time"] += time.time() - start_time
+            retrieval_time = time.time() - start_time
+            self._metrics["retrievals_performed"] += 1
+            self._metrics["searches_performed"] += 1
+            self._metrics["total_retrieval_time"] += retrieval_time
+            if results:
+                self._metrics["examples_retrieved"] = self._metrics.get(
+                    "examples_retrieved", 0
+                ) + len(results)
 
-            return examples
+            # Persist metrics for cross-process visibility
+            self._persist_metrics()
+
+            if results:
+                top_scores = [getattr(r, "similarity_score", 0) for r in results[:3]]
+                logger.debug(
+                    f"Retrieved {len(results)} examples in {retrieval_time * 1000:.1f}ms. "
+                    f"Top scores: {', '.join(f'{s:.2f}' for s in top_scores)}"
+                )
+            else:
+                logger.info(
+                    f"RAG: No examples found with similarity >= {min_similarity} in {retrieval_time * 1000:.1f}ms"
+                )
+
+            return results
 
         except Exception as e:
             logger.error(f"Failed to retrieve examples: {e}")
@@ -359,26 +423,26 @@ class RAGCorpusManager:
         """Calculate similarity between a function and an example using heuristics."""
         score = 0.0
 
-        # Name similarity (40% weight)
+        # Name similarity (20% weight - reduced from 40%)
         name_similarity = self._string_similarity(
             function.signature.name, example.function_name
         )
-        score += name_similarity * 0.4
+        score += name_similarity * 0.2
 
-        # Parameter count similarity (20% weight)
+        # Parameter count similarity (30% weight - increased from 20%)
         func_param_count = len(function.signature.parameters)
         # Parse parameter count from signature string
         example_param_count = self._extract_parameter_count(example.function_signature)
         param_diff = abs(func_param_count - example_param_count)
         param_score = 1.0 / (1.0 + param_diff * 0.5)
-        score += param_score * 0.2
+        score += param_score * 0.3
 
-        # Return type presence (20% weight)
+        # Return type presence (30% weight - increased from 20%)
         has_return = bool(function.signature.return_type)
         if has_return == example.has_returns:
-            score += 0.2
+            score += 0.3
 
-        # Complexity similarity (20% weight)
+        # Complexity similarity (20% weight - same)
         func_complexity = self._calculate_complexity(function)
         complexity_diff = abs(func_complexity - example.complexity_score)
         complexity_score = 1.0 / (1.0 + complexity_diff * 0.3)
@@ -509,8 +573,9 @@ class RAGCorpusManager:
     def get_stats(self) -> dict[str, Any]:
         """Get corpus statistics."""
         avg_retrieval_time = (
-            self.metrics["total_retrieval_time"] / self.metrics["retrievals_performed"]
-            if self.metrics["retrievals_performed"] > 0
+            self._metrics["total_retrieval_time"]
+            / self._metrics["retrievals_performed"]
+            if self._metrics["retrievals_performed"] > 0
             else 0
         )
 
@@ -519,9 +584,11 @@ class RAGCorpusManager:
 
         stats: dict[str, Any] = {
             "corpus_size": corpus_size,
-            "examples_loaded": self.metrics["examples_loaded"],
-            "examples_added": self.metrics["examples_added"],
-            "retrievals_performed": self.metrics["retrievals_performed"],
+            "examples_loaded": self._metrics["examples_loaded"],
+            "examples_added": self._metrics["examples_added"],
+            "retrievals_performed": self._metrics["retrievals_performed"],
+            "searches_performed": self._metrics.get("searches_performed", 0),
+            "examples_retrieved": self._metrics.get("examples_retrieved", 0),
             "average_retrieval_time_ms": avg_retrieval_time * 1000,
             "embeddings_enabled": self.enable_embeddings,
         }
@@ -539,3 +606,33 @@ class RAGCorpusManager:
         stats["vector_store_stats"] = vector_store_stats
 
         return stats
+
+    def _persist_metrics(self) -> None:
+        """Save metrics to file for cross-process visibility."""
+        metrics_file = self.corpus_dir / "rag_metrics.json"
+        try:
+            with open(metrics_file, "w", encoding="utf-8") as f:
+                json.dump({**self._metrics, "last_updated": time.time()}, f, indent=2)
+        except Exception as e:
+            logger.debug(f"Failed to persist metrics: {e}")
+
+    def _load_persisted_metrics(self) -> None:
+        """Load metrics from file if available."""
+        metrics_file = self.corpus_dir / "rag_metrics.json"
+        if metrics_file.exists():
+            try:
+                with open(metrics_file, encoding="utf-8") as f:
+                    saved_metrics = json.load(f)
+                    # Only use if recent (within 24 hours)
+                    if time.time() - saved_metrics.get("last_updated", 0) < 86400:
+                        self._metrics.update(
+                            {
+                                k: v
+                                for k, v in saved_metrics.items()
+                                if k != "last_updated"
+                            }
+                        )
+                        logger.debug("Loaded persisted metrics from file")
+            except Exception as e:
+                logger.debug(f"Failed to load persisted metrics: {e}")
+                # Ignore errors, use default metrics

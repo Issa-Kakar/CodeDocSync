@@ -1,4 +1,70 @@
 {
   "version": "1.0",
-  "examples": []
+  "examples": [
+    {
+      "function_name": "get_user",
+      "module_path": "api/endpoints.py",
+      "function_signature": "def get_user(user_id: str, include_details: bool = False) -> dict[str, Any]",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"Retrieve user information from the database.\n\nArgs:\n    user_id (str): Unique identifier for the user to retrieve.\n    include_details (bool): Whether to include additional user details\n        such as preferences and activity history. Defaults to False.\n\nReturns:\n    dict[str, Any]: User information including id, name, email, and\n        optionally detailed information if requested.\n\nRaises:\n    ValueError: If user_id is empty or invalid format.\n    UserNotFoundError: If no user exists with the given id.\n    DatabaseConnectionError: If unable to connect to the database.\n\nExample:\n    >>> user = get_user(\"12345\")\n    >>> print(user['name'])\n    'John Doe'\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 5,
+      "source": "curated"
+    },
+    {
+      "function_name": "fetch_data",
+      "module_path": "async/client.py",
+      "function_signature": "async def fetch_data(url: str, timeout: float = 30.0, retries: int = 3) -> Response",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"Asynchronously fetch data from the specified URL.\n\nArgs:\n    url (str): The URL to fetch data from. Must be a valid HTTP/HTTPS URL.\n    timeout (float): Maximum time to wait for response in seconds.\n        Defaults to 30.0.\n    retries (int): Number of retry attempts for failed requests.\n        Defaults to 3.\n\nReturns:\n    Response: The response object containing status code, headers,\n        and body content.\n\nRaises:\n    InvalidURLError: If the URL format is invalid.\n    TimeoutError: If the request exceeds the timeout duration.\n    ConnectionError: If unable to establish connection after all retries.\n\nExample:\n    >>> response = await fetch_data(\"https://api.example.com/data\")\n    >>> data = response.json()\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 5,
+      "source": "curated"
+    },
+    {
+      "function_name": "database_connection",
+      "module_path": "db/context.py",
+      "function_signature": "@contextmanager\ndef database_connection(host: str, port: int = 5432, database: str = \"main\") -> Connection",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"Context manager for database connections.\n\nArgs:\n    host (str): Database server hostname or IP address.\n    port (int): Port number for database connection. Defaults to 5432.\n    database (str): Name of the database to connect to. Defaults to \"main\".\n\nYields:\n    Connection: Active database connection object that is automatically\n        closed when exiting the context.\n\nRaises:\n    ConnectionError: If unable to establish database connection.\n    AuthenticationError: If credentials are invalid.\n\nExample:\n    >>> with database_connection(\"localhost\") as conn:\n    ...     cursor = conn.cursor()\n    ...     cursor.execute(\"SELECT * FROM users\")\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 5,
+      "source": "curated"
+    },
+    {
+      "function_name": "retry",
+      "module_path": "utils/decorators.py",
+      "function_signature": "def retry(max_attempts: int = 3, delay: float = 1.0, backoff: float = 2.0) -> Callable",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"Decorator to retry function execution on failure.\n\nArgs:\n    max_attempts (int): Maximum number of retry attempts. Defaults to 3.\n    delay (float): Initial delay between retries in seconds. Defaults to 1.0.\n    backoff (float): Multiplier for delay after each retry. Defaults to 2.0.\n\nReturns:\n    Callable: Decorated function that will retry on exceptions.\n\nExample:\n    >>> @retry(max_attempts=5, delay=0.5)\n    ... def unstable_network_call():\n    ...     return requests.get(\"https://api.example.com\")\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 5,
+      "source": "curated"
+    },
+    {
+      "function_name": "train_model",
+      "module_path": "ml/training.py",
+      "function_signature": "def train_model(X: np.ndarray, y: np.ndarray, model_type: str = \"random_forest\", **kwargs) -> Model",
+      "docstring_format": "numpy",
+      "docstring_content": "\"\"\"Train a machine learning model on the provided dataset.\n\nParameters\n----------\nX : np.ndarray\n    Feature matrix with shape (n_samples, n_features).\ny : np.ndarray\n    Target values with shape (n_samples,) for regression\n    or classification.\nmodel_type : str, optional\n    Type of model to train. Options are 'random_forest',\n    'gradient_boosting', 'neural_network'. Default is 'random_forest'.\n**kwargs : dict\n    Additional keyword arguments passed to the model constructor.\n    Common options include n_estimators, max_depth, learning_rate.\n\nReturns\n-------\nModel\n    Trained model instance with fit() and predict() methods.\n\nRaises\n------\nValueError\n    If X and y have incompatible shapes.\nNotImplementedError\n    If model_type is not supported.\n\nExamples\n--------\n>>> X_train = np.random.randn(100, 10)\n>>> y_train = np.random.randint(0, 2, 100)\n>>> model = train_model(X_train, y_train, model_type='random_forest')\n>>> predictions = model.predict(X_test)\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 5,
+      "source": "curated"
+    }
+  ]
 }

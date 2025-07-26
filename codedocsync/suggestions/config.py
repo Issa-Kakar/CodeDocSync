@@ -48,6 +48,10 @@ class SuggestionConfig:
     merge_related_issues: bool = True  # Combine related suggestions
     cache_suggestions: bool = True  # Cache generated suggestions
 
+    # RAG enhancement
+    use_rag: bool = True  # Enable RAG-enhanced suggestions
+    rag_min_similarity: float = 0.3  # Minimum similarity for RAG retrieval
+
     # Advanced options
     custom_templates: dict[str, str] = field(default_factory=dict)
     abbreviation_map: dict[str, str] = field(

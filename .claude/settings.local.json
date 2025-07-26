@@ -107,7 +107,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:modelcontextprotocol.io)",
       "Bash(echo $APPDATA)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(jq:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "defaultMode": "bypassPermissions",

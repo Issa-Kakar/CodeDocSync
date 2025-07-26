@@ -94,6 +94,7 @@ class SuggestionMetadata:
     llm_used: bool = False  # Whether LLM was involved
     generation_time_ms: float = 0.0  # Time to generate
     token_usage: int | None = None  # Tokens if LLM used
+    used_rag_examples: bool = False  # Whether RAG examples were used
 
     def __post_init__(self) -> None:
         """Validate metadata."""

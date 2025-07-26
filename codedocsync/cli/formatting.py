@@ -359,9 +359,23 @@ def display_analysis_results(
         )
         for issue in critical_issues[:10]:  # Show first 10
             console.print(f"  • {issue.description}")
-            console.print(
-                f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
-            )
+            # Check if we have an enhanced suggestion
+            if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
+                console.print(
+                    f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
+                )
+                console.print(
+                    f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
+                )
+                console.print(
+                    f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
+                    if len(issue.rich_suggestion.suggested_text) > 100
+                    else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
+                )
+            else:
+                console.print(
+                    f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
+                )
         if len(critical_issues) > 10:
             console.print(f"  ... and {len(critical_issues) - 10} more critical issues")
 
@@ -372,9 +386,23 @@ def display_analysis_results(
         )
         for issue in high_issues[:5]:  # Show first 5
             console.print(f"  • {issue.description}")
-            console.print(
-                f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
-            )
+            # Check if we have an enhanced suggestion
+            if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
+                console.print(
+                    f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
+                )
+                console.print(
+                    f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
+                )
+                console.print(
+                    f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
+                    if len(issue.rich_suggestion.suggested_text) > 100
+                    else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
+                )
+            else:
+                console.print(
+                    f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
+                )
         if len(high_issues) > 5:
             console.print(f"  ... and {len(high_issues) - 5} more high priority issues")
 
