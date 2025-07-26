@@ -91,23 +91,41 @@ Created tools in `scripts/` to prevent future crashes:
 ## RAG MVP Implementation Status (Week 4)
 
 ### Overview
-RAG MVP core infrastructure completed (2025-01-25), but critical functionality gaps discovered. Starting RAG Sprint Continuation to address persistence, generator coverage, and measurement.
+RAG MVP core infrastructure completed (2025-01-25), but critical functionality gaps discovered. Starting RAG Sprint Continuation (2025-01-26) to address persistence, generator coverage, and measurement.
 
 #### What's Working ✅
-- **Memory-based RAG**: 143 bootstrap + 5 curated examples (148 total)
-- **Retrieval Performance**: <100ms (avg 67ms), memory <50MB
+- **Memory-based RAG**: No embeddings required - Heuristic similarity scoring
+- **<100ms retrieval**: 67ms average, 89ms 95th percentile
+- **143 bootstrap examples**: Extracted from CodeDocSync codebase
+- **Graceful degradation**: Never fails analysis
+- **Singleton pattern**: Shared corpus across analyses
 - **CLI Integration**: `--no-rag`, `accept-suggestion`, `rag-stats` commands
-- **Basic Integration**: ParameterGenerator enhanced (minimal impact)
 
 #### Critical Gaps ❌
-- **No Persistence**: Accepted suggestions lost on process exit
-- **Limited Generators**: Only 1 of 5 generators enhanced (ParameterGenerator)
-- **Minimal Curated Examples**: 5 vs 50-100 planned
-- **No Improvement Measurement**: Can't claim "X% improvement"
-- **Simple Similarity**: Basic string prefix matching, not semantic
+- **No Persistence**: Accepted suggestions only stored in memory, lost on exit
+- **Limited Generator Coverage**: Only ParameterGenerator enhanced (1 of 5)
+- **Minimal Curated Examples**: 5 vs 75+ planned
+- **No Improvement Measurement**: Can't make "X% improvement" claims
+- **Basic Similarity**: Heuristic scoring, not semantic understanding
+
+### Current Architecture
+```
+RAGCorpusManager (630 lines)
+├── Memory corpus (in-memory only)
+├── Bootstrap corpus (143 examples)
+├── Curated corpus (5 examples only)
+├── Heuristic similarity scoring
+└── Metrics persistence (data/rag_metrics.json)
+
+Similarity Scoring (Current):
+- Name similarity: 20% weight
+- Parameter count: 30% weight
+- Return type presence: 30% weight
+- Complexity matching: 20% weight
+```
 
 ### Implementation Summary (2025-01-25)
-- **Core Infrastructure**: ✅ Complete (630 lines in rag_corpus.py)
+- **Core Infrastructure**: ✅ Complete (639 lines in rag_corpus.py)
 - **Test Coverage**: ✅ 20 tests passing
 - **Bootstrap Corpus**: ✅ 143 examples loaded
 - **Curated Examples**: ❌ Only 5 (need 75+)
@@ -118,29 +136,44 @@ RAG MVP core infrastructure completed (2025-01-25), but critical functionality g
 
 ## Next Steps (Priority Order)
 
-1. **RAG Sprint Continuation** (16-20 hours - Starting 2025-01-26)
-   - [ ] Phase 1: Persistence Layer (4 hours)
-     - Implement save/load for accepted suggestions
-     - Add versioning and atomic writes
+1. **RAG Sprint Continuation** (16-20 hours - Started 2025-01-26)
+   - **Focus**: Persistence, Generator Coverage, Corpus Expansion, Measurable Improvements
+   - **Goal**: 40% improvement in suggestion acceptance rate (measured)
+
+   - [ ] **Phase 1: Persistence Layer** (4 hours)
+     - Implement `save_accepted_suggestions()` with versioning
+     - Add atomic writes with temporary files
      - Create `data/accepted_suggestions.json`
-   - [ ] Phase 2: Generator Coverage (6 hours)
+     - Implement `load_accepted_suggestions()` on startup
+     - Add backup retention (keep last 5 backups)
+
+   - [ ] **Phase 2: Generator Coverage** (6 hours)
      - Enhance ReturnGenerator with RAG patterns
      - Enhance RaisesGenerator with exception patterns
      - Enhance BehaviorGenerator with vocabulary learning
      - Enhance ExampleGenerator with pattern extraction
-   - [ ] Phase 3: Curated Examples (4 hours)
+     - Track RAG enhancement metrics for each generator
+
+   - [ ] **Phase 3: Curated Examples Expansion** (4 hours)
      - Add 25 async/await patterns
      - Add 20 REST API patterns
      - Add 15 data science patterns
      - Add 15 decorator/context manager patterns
-   - [ ] Phase 4: Measurement System (4 hours)
+     - Total: 75+ curated examples
+
+   - [ ] **Phase 4: Measurement System** (4 hours)
      - Implement A/B testing framework
-     - Track acceptance rates
-     - Generate improvement reports
-   - [ ] Phase 5: Enhanced Similarity (2 hours)
-     - Semantic name matching
+     - Track suggestion acceptance rates
+     - Generate improvement reports with percentages
+     - Add baseline metrics collection
+     - Create metrics dashboard
+
+   - [ ] **Phase 5: Enhanced Similarity Algorithm** (2 hours)
+     - Semantic name matching with equivalence mappings
      - Type compatibility scoring
      - Module context awareness
+     - Recency boost for accepted suggestions
+     - Quality weighting based on scores
 
 2. **Week 4: Performance & RAG MVP** (Days 5-7) - IN PROGRESS
    - RAG-enhanced suggestions ✅ Infrastructure complete, pattern matching needs improvement
