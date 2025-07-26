@@ -98,6 +98,9 @@ class AnalysisConfig:
     sort_by_severity: bool = True  # Sort issues by severity
     include_performance_stats: bool = False  # Include timing information
 
+    # RAG corpus configuration
+    build_rag_corpus: bool = True  # Collect good examples for RAG corpus
+
     def validate(self) -> list[str]:
         """Validate configuration and return any errors."""
         errors = []

@@ -24,8 +24,20 @@ from .generators.parameter_generator import ParameterSuggestionGenerator
 from .generators.raises_generator import RaisesSuggestionGenerator
 from .generators.return_generator import ReturnSuggestionGenerator
 from .models import Suggestion, SuggestionBatch, SuggestionContext
+from .rag_corpus import RAGCorpusManager
 
 logger = logging.getLogger(__name__)
+
+# Global RAG manager instance (singleton pattern)
+_suggestion_rag_manager = None
+
+
+def _get_rag_manager() -> RAGCorpusManager:
+    """Get singleton RAG manager instance."""
+    global _suggestion_rag_manager
+    if _suggestion_rag_manager is None:
+        _suggestion_rag_manager = RAGCorpusManager()
+    return _suggestion_rag_manager
 
 
 @dataclass
@@ -204,12 +216,67 @@ class SuggestionIntegration:
         """Create context for suggestion generation."""
         from .models import SuggestionContext
 
+        # Retrieve RAG examples if enabled
+        related_functions = []
+        if self.config.use_rag:
+            try:
+                import time
+
+                start_time = time.time()
+
+                # Get RAG corpus manager instance
+                rag_manager = _get_rag_manager()
+
+                # Retrieve similar examples
+                examples = rag_manager.retrieve_examples(
+                    function=pair.function,
+                    n_results=3,
+                    min_similarity=self.config.rag_min_similarity,
+                )
+
+                retrieval_time = (time.time() - start_time) * 1000  # Convert to ms
+
+                # Convert to format expected by generators
+                for example in examples:
+                    related_functions.append(
+                        {
+                            "signature": example.function_signature,
+                            "docstring": example.docstring_content,
+                            "similarity": getattr(example, "similarity_score", 0.8),
+                        }
+                    )
+
+                if examples:
+                    similarities = [
+                        f"{getattr(e, 'similarity_score', 0):.2f}" for e in examples[:3]
+                    ]
+                    logger.info(
+                        f"RAG: Retrieved {len(examples)} examples with similarities: {similarities}"
+                    )
+                    # Enhanced success logging with function name and best similarity
+                    logger.info(
+                        f"RAG: Using {len(examples)} examples for {pair.function.signature.name} "
+                        f"(best similarity: {getattr(examples[0], 'similarity_score', 0):.3f})"
+                    )
+                    logger.info(
+                        f"Retrieved {len(related_functions)} RAG examples for "
+                        f"{issue.issue_type} in {pair.function.signature.name} "
+                        f"(took {retrieval_time:.1f}ms)"
+                    )
+                else:
+                    logger.info(
+                        f"RAG: No suitable examples found for {pair.function.signature.name}"
+                    )
+            except Exception as e:
+                logger.debug(f"RAG retrieval failed (non-critical): {e}")
+
         return SuggestionContext(
             issue=issue,
             function=pair.function,
             docstring=pair.docstring,
             project_style=self.config.default_style,
             surrounding_code=None,  # Could be enhanced later
+            related_functions=related_functions,  # Now populated with RAG examples!
         )
 
     def _generate_suggestion(

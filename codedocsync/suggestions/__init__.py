@@ -92,6 +92,12 @@ from .models import (
     SuggestionValidationError,
 )
 
+# RAG corpus management
+from .rag_corpus import (
+    DocstringExample,
+    RAGCorpusManager,
+)
+
 # Ranking and filtering (Chunk 5)
 from .ranking import (
     PriorityBooster,
@@ -186,6 +192,9 @@ __all__ = [
     "IntegratedSuggestionConfig",
     "get_config_manager",
     "load_suggestion_config",
+    # RAG corpus management
+    "RAGCorpusManager",
+    "DocstringExample",
     # Exceptions
     "SuggestionError",
     "StyleDetectionError",

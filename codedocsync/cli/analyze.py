@@ -6,9 +6,10 @@ This module contains commands for analyzing code for documentation inconsistenci
 
 import asyncio
 import json
+import logging
 import time
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.table import Table
@@ -30,6 +31,8 @@ from codedocsync.matcher import (
     UnifiedMatchingFacade,
 )
 from codedocsync.parser import IntegratedParser, ParsedDocstring
+from codedocsync.suggestions.config import SuggestionConfig
+from codedocsync.suggestions.integration import enhance_multiple_with_suggestions
 
 
 def analyze(
@@ -48,6 +51,13 @@ def analyze(
         typer.Option(
             "--no-semantic",
             help="Disable semantic matching (uses only direct/contextual matching)",
+        ),
+    ] = False,
+    no_rag: Annotated[
+        bool,
+        typer.Option(
+            "--no-rag",
+            help="Disable RAG corpus building and enhancement",
         ),
     ] = False,
     confidence_threshold: Annotated[
@@ -78,6 +88,13 @@ def analyze(
     verbose: Annotated[
         bool, typer.Option("--verbose", "-v", help="Verbose output")
     ] = False,
+    show_suggestions: Annotated[
+        bool,
+        typer.Option(
+            "--show-suggestions/--no-suggestions",
+            help="Generate and display enhanced suggestions",
+        ),
+    ] = True,
 ) -> None:
     """
     Analyze code for documentation inconsistencies using rules and LLM.
@@ -89,6 +106,7 @@ def analyze(
         codedocsync analyze ./src --rules-only
         codedocsync analyze ./project --profile thorough --format json
         codedocsync analyze ./src --no-semantic  # Without ChromaDB/semantic matching
+        codedocsync analyze ./src --no-rag  # Without RAG corpus building
     """
     # Validate path
     if not path.exists():
@@ -111,6 +129,13 @@ def analyze(
         config.use_llm = False
     config.rule_engine.confidence_threshold = confidence_threshold
     config.parallel_analysis = parallel
+    config.build_rag_corpus = not no_rag  # Disable RAG if --no-rag is set
+
+    # Enable RAG logging for debugging
+    if not no_rag:
+        logging.getLogger("codedocsync.suggestions.integration").setLevel(logging.INFO)
+        logging.getLogger("codedocsync.suggestions.generators").setLevel(logging.INFO)
+        logging.getLogger("codedocsync.suggestions.rag_corpus").setLevel(logging.INFO)
 
     # Set up cache
     cache = AnalysisCache() if config.enable_cache else None
@@ -188,15 +213,42 @@ def analyze(
 
             progress.update(analysis_task, completed=len(results))
 
+        # Enhance results with suggestions if enabled
+        enhanced_results = None
+        if results and show_suggestions:
+            with progress:
+                suggestion_task = progress.add_task(
+                    "Generating enhanced suggestions...",
+                    total=len(results),
+                )
+
+                # Create suggestion config with RAG setting
+                suggestion_config = SuggestionConfig(
+                    use_rag=not no_rag,  # Use RAG unless --no-rag flag is set
+                    default_style="google",  # Default to Google style
+                    confidence_threshold=confidence_threshold,
+                )
+
+                # Enhance results with suggestions
+                enhanced_results = enhance_multiple_with_suggestions(
+                    results, config=suggestion_config
+                )
+
+                progress.update(suggestion_task, completed=len(results))
+
         total_time = time.time() - start_time
 
         # Aggregate results
-        all_issues = []
+        # All issues can be either InconsistencyIssue or EnhancedIssue
+        all_issues: list[Any] = []
         total_analysis_time = 0.0
         used_llm_count = 0
         cache_hits = 0
 
-        for result in results:
+        # Use enhanced results if available, otherwise use original results
+        results_to_aggregate = enhanced_results if enhanced_results else results
+
+        for result in results_to_aggregate:
             all_issues.extend(result.issues)
             total_analysis_time += result.analysis_time_ms
             if result.used_llm:
@@ -232,6 +284,22 @@ def analyze(
                         "line_number": issue.line_number,
                         "confidence": issue.confidence,
                         "details": issue.details,
+                        # Include enhanced suggestion if available
+                        "enhanced_suggestion": (
+                            {
+                                "suggested_text": issue.rich_suggestion.suggested_text,
+                                "confidence": issue.rich_suggestion.confidence,
+                                "style": issue.rich_suggestion.style,
+                                "ready_to_apply": issue.rich_suggestion.is_ready_to_apply,
+                                "uses_rag": hasattr(
+                                    issue.rich_suggestion.metadata, "used_rag_examples"
+                                )
+                                and issue.rich_suggestion.metadata.used_rag_examples,
+                            }
+                            if hasattr(issue, "rich_suggestion")
+                            and issue.rich_suggestion
+                            else None
+                        ),
                     }
                     for issue in all_issues
                 ],
@@ -245,7 +313,7 @@ def analyze(
                         "cache_hit": result.cache_hit,
                         "analysis_time_ms": result.analysis_time_ms,
                     }
-                    for result in results
+                    for result in results_to_aggregate
                 ],
             }
 
@@ -253,7 +321,7 @@ def analyze(
         else:
             # Terminal output
             output_text = format_analysis_results(
-                results, all_issues, total_time, show_summary
+                results_to_aggregate, all_issues, total_time, show_summary
             )
 
         # Save or print output

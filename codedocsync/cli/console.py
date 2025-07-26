@@ -11,6 +11,21 @@ import sys
 
 from rich.console import Console
 
+# Fix Windows encoding issues
+if platform.system() == "Windows":
+    # Set environment for future processes
+    if not os.environ.get("PYTHONIOENCODING"):
+        os.environ["PYTHONIOENCODING"] = "utf-8"
+
+    # Fix current process encoding
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+            if hasattr(sys.stderr, "reconfigure"):
+                sys.stderr.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
 
 def supports_unicode() -> bool:
     """Check if the terminal supports Unicode characters."""
@@ -24,6 +39,14 @@ def supports_unicode() -> bool:
 
     # Check for VS Code terminal
     if os.environ.get("TERM_PROGRAM") == "vscode":
+        return True
+
+    # Check for Git Bash / MINGW
+    if "MINGW" in os.environ.get("MSYSTEM", ""):
+        return True
+
+    # Check for Git Bash via path
+    if "Git" in os.environ.get("PATH", "") and os.environ.get("TERM"):
         return True
 
     # CRITICAL: Check for PowerShell specifically
@@ -48,7 +71,11 @@ def supports_unicode() -> bool:
     # Check stdout encoding
     try:
         if hasattr(sys.stdout, "encoding") and sys.stdout.encoding:
-            return sys.stdout.encoding.lower() in ("utf-8", "utf8")
+            encoding = sys.stdout.encoding.lower()
+            # Explicitly reject Windows codepages that can't handle Unicode
+            if encoding.startswith("cp") and encoding != "cp65001":
+                return False
+            return encoding in ("utf-8", "utf8", "utf-8-sig", "cp65001")
     except Exception:
         pass
 
@@ -66,13 +93,15 @@ def create_console() -> Console:
         try:
             import ctypes
 
-            kernel32 = ctypes.windll.kernel32
-            # Enable ANSI escape sequences (ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004)
-            handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
-            mode = ctypes.c_ulong()
-            kernel32.GetConsoleMode(handle, ctypes.byref(mode))
-            mode.value |= 0x0004
-            kernel32.SetConsoleMode(handle, mode)
+            # Check if windll exists (Windows-specific)
+            if hasattr(ctypes, "windll"):
+                kernel32 = ctypes.windll.kernel32
+                # Enable ANSI escape sequences (ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004)
+                handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+                mode = ctypes.c_ulong()
+                kernel32.GetConsoleMode(handle, ctypes.byref(mode))
+                mode.value |= 0x0004
+                kernel32.SetConsoleMode(handle, mode)
         except Exception:
             # If we can't enable it, we'll use legacy mode
             pass

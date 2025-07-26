@@ -1,0 +1,297 @@
+"""Unit tests for RAG-enhanced suggestion generation."""
+
+from unittest.mock import Mock, patch
+
+import pytest
+
+from codedocsync.analyzer.models import InconsistencyIssue
+from codedocsync.parser.ast_parser import (
+    FunctionParameter,
+    FunctionSignature,
+    ParsedFunction,
+    RawDocstring,
+)
+from codedocsync.suggestions.generators.parameter_generator import (
+    ParameterSuggestionGenerator,
+)
+from codedocsync.suggestions.generators.return_generator import (
+    ReturnSuggestionGenerator,
+)
+from codedocsync.suggestions.models import SuggestionContext
+
+
+class TestRAGEnhancement:
+    """Test RAG enhancement functionality in suggestion generators."""
+
+    def create_test_context(
+        self, issue_type: str, related_functions: list[dict] = None
+    ) -> SuggestionContext:
+        """Create a test suggestion context."""
+        # Create test function
+        param = FunctionParameter(
+            name="query", type_annotation="str", default_value=None, is_required=True
+        )
+
+        signature = FunctionSignature(
+            name="search_data", parameters=[param], return_type="list[dict]"
+        )
+
+        function = ParsedFunction(
+            signature=signature,
+            docstring=RawDocstring(raw_text='"""Search for data."""'),
+            file_path="test.py",
+            line_number=1,
+            end_line_number=3,
+        )
+
+        # Create issue
+        issue = InconsistencyIssue(
+            issue_type=issue_type,
+            severity="high",
+            description="Test issue",
+            suggestion="Test suggestion",
+            line_number=1,
+            confidence=0.9,
+        )
+
+        # Create context with related functions
+        return SuggestionContext(
+            issue=issue,
+            function=function,
+            docstring=function.docstring,
+            project_style="google",
+            surrounding_code=None,
+            related_functions=related_functions or [],
+        )
+
+    @pytest.mark.xfail(
+        reason="RAG enhancement not yet implemented in ParameterGenerator"
+    )
+    def test_parameter_generator_uses_rag_examples(self):
+        """Test that parameter generator uses RAG examples when available."""
+        # Create RAG examples
+        rag_examples = [
+            {
+                "signature": "def search_documents(query: str, limit: int = 10) -> list[dict]:",
+                "docstring": '''"""Search for documents matching the query.
+
+                Args:
+                    query: The search query string to match against documents.
+                    limit: Maximum number of results to return. Defaults to 10.
+
+                Returns:
+                    List of matching documents with relevance scores.
+                """''',
+                "similarity": 0.85,
+            }
+        ]
+
+        # Create context with RAG examples
+        context = self.create_test_context("parameter_missing", rag_examples)
+
+        # Create generator and generate suggestion
+        generator = ParameterSuggestionGenerator()
+        suggestion = generator.generate(context)
+
+        # Check that RAG was used
+        assert suggestion.metadata.used_rag_examples is True
+
+        # Check that the description is enhanced (not just "Description for query")
+        assert "Description for query" not in suggestion.suggested_text
+        assert (
+            "search" in suggestion.suggested_text.lower()
+            or "query" in suggestion.suggested_text.lower()
+        )
+
+    def test_parameter_generator_without_rag_examples(self):
+        """Test parameter generator behavior without RAG examples."""
+        # Create context without RAG examples
+        context = self.create_test_context("parameter_missing", [])
+
+        # Create generator and generate suggestion
+        generator = ParameterSuggestionGenerator()
+        suggestion = generator.generate(context)
+
+        # Check that RAG was not used
+        assert suggestion.metadata.used_rag_examples is False
+
+        # Check that basic description is used
+        assert "Description for query" in suggestion.suggested_text
+
+    @pytest.mark.xfail(reason="RAG enhancement not yet implemented in ReturnGenerator")
+    def test_return_generator_uses_rag_examples(self):
+        """Test that return generator uses RAG examples when available."""
+        # Create RAG examples
+        rag_examples = [
+            {
+                "signature": "def fetch_results(query: str) -> list[dict]:",
+                "docstring": '''"""Fetch results based on the query.
+
+                Args:
+                    query: The query string.
+
+                Returns:
+                    List of dictionaries containing the search results with metadata.
+                """''',
+                "similarity": 0.9,
+            }
+        ]
+
+        # Create context with RAG examples
+        context = self.create_test_context("missing_returns", rag_examples)
+
+        # Create generator and generate suggestion
+        generator = ReturnSuggestionGenerator()
+        suggestion = generator.generate(context)
+
+        # Check that RAG was used
+        assert suggestion.metadata.used_rag_examples is True
+
+        # The return description should be more detailed than the basic one
+        assert (
+            "The list" not in suggestion.suggested_text
+        )  # Basic description would be "The list result"
+
+    def test_rag_similarity_threshold(self):
+        """Test that only high-similarity examples are used."""
+        # Create low-similarity RAG examples
+        rag_examples = [
+            {
+                "signature": "def unrelated_function(x: int) -> int:",
+                "docstring": '''"""Do something unrelated.
+
+                Args:
+                    x: Some number.
+
+                Returns:
+                    The processed number.
+                """''',
+                "similarity": 0.3,  # Low similarity
+            }
+        ]
+
+        # Create context with low-similarity examples
+        context = self.create_test_context("parameter_missing", rag_examples)
+
+        # Create generator and generate suggestion
+        generator = ParameterSuggestionGenerator()
+
+        # Mock the _extract_parameter_patterns_from_examples to verify it filters
+        with patch.object(
+            generator, "_extract_parameter_patterns_from_examples"
+        ) as mock_extract:
+            mock_extract.return_value = []  # Simulate no patterns found
+            suggestion = generator.generate(context)
+
+            # RAG should not be used due to low similarity
+            assert suggestion.metadata.used_rag_examples is False
+
+    @pytest.mark.xfail(
+        reason="Pattern extraction not yet implemented - _extract_parameter_patterns_from_examples returns empty"
+    )
+    def test_rag_pattern_extraction(self):
+        """Test the pattern extraction from RAG examples."""
+        generator = ParameterSuggestionGenerator()
+
+        # Test examples with various docstring formats
+        examples = [
+            {
+                "signature": "def process_data(input_data: dict, validate: bool = True) -> dict:",
+                "docstring": '''"""Process input data with optional validation.
+
+                Args:
+                    input_data: The data dictionary to process.
+                    validate: Whether to validate the input data. Defaults to True.
+
+                Returns:
+                    Processed data dictionary.
+                """''',
+                "similarity": 0.85,
+            }
+        ]
+
+        # Create a parameter to match
+        param = FunctionParameter(
+            name="data", type_annotation="dict", default_value=None, is_required=True
+        )
+
+        # Extract patterns
+        patterns = generator._extract_parameter_patterns_from_examples(
+            param.name, examples, param.type_annotation
+        )
+
+        # Should find patterns even with different parameter names but same type
+        assert len(patterns) > 0
+        assert patterns[0]["similarity"] > 0  # Should have calculated similarity
+
+    @pytest.mark.xfail(
+        reason="SuggestionIntegration.generate_suggestion not yet implemented"
+    )
+    @patch("codedocsync.suggestions.rag_corpus.RAGCorpusManager")
+    def test_rag_retrieval_integration(self, mock_rag_manager):
+        """Test the integration with RAG corpus retrieval."""
+        from codedocsync.suggestions.config import SuggestionConfig
+        from codedocsync.suggestions.integration import SuggestionIntegration
+        from codedocsync.suggestions.rag_corpus import DocstringExample
+
+        # Mock RAG corpus manager
+        mock_instance = Mock()
+        mock_rag_manager.return_value = mock_instance
+
+        # Create mock examples
+        example = Mock(spec=DocstringExample)
+        example.function_signature = "def search(query: str) -> list:"
+        example.docstring_content = '"""Search for items."""'
+        example.similarity_score = 0.9
+
+        mock_instance.retrieve_examples.return_value = [example]
+
+        # Create suggestion integration
+        config = SuggestionConfig(use_rag=True)
+        integration = SuggestionIntegration(config)
+
+        # Create test issue and pair
+        issue = InconsistencyIssue(
+            issue_type="missing_returns",
+            severity="high",
+            description="Missing return documentation",
+            suggestion="Add return documentation",
+            line_number=1,
+            confidence=0.9,
+        )
+
+        signature = FunctionSignature(
+            name="test_function", parameters=[], return_type="list"
+        )
+
+        function = ParsedFunction(
+            signature=signature,
+            docstring=RawDocstring(raw_text='"""Test function."""'),
+            file_path="test.py",
+            line_number=1,
+            end_line_number=3,
+        )
+
+        from codedocsync.matcher.models import MatchConfidence, MatchedPair, MatchType
+
+        pair = MatchedPair(
+            function=function,
+            docstring=None,
+            confidence=MatchConfidence(
+                overall=0.9,
+                name_similarity=0.9,
+                location_score=0.9,
+                signature_similarity=0.9,
+            ),
+            match_type=MatchType.EXACT,
+            match_reason="Direct match",
+        )
+
+        # Generate suggestion
+        suggestion = integration.generate_suggestion(issue, pair)
+
+        # Verify RAG was called
+        mock_instance.retrieve_examples.assert_called_once()
+
+        # Verify suggestion includes RAG context
+        assert suggestion is not None

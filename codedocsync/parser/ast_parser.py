@@ -13,7 +13,6 @@ import re
 import time
 from collections.abc import Generator
 from dataclasses import dataclass, field
-from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
     Union,
@@ -31,6 +30,9 @@ from ..utils.errors import (
 
 # Configure module logger
 logger = logging.getLogger(__name__)
+
+# Module-level AST cache - keys are file content hashes
+_ast_cache: dict[str, ast.AST] = {}
 
 
 @dataclass
@@ -162,18 +164,33 @@ class ParsedFunction:
             )
 
 
-@lru_cache(maxsize=100)
-def _get_cached_ast(file_content_hash: str, file_path: str) -> ast.AST:
-    """Cache parsed AST trees for repeated analysis."""
-    try:
-        with open(file_path, encoding="utf-8") as f:
-            source_content = f.read()
-    except UnicodeDecodeError:
-        # Try alternative encodings
-        with open(file_path, encoding="latin-1") as f:
-            source_content = f.read()
-        logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
-    return ast.parse(source_content, filename=file_path)
+def _get_cached_ast(
+    file_content_hash: str, source_content: str, file_path: str
+) -> ast.AST:
+    """Cache parsed AST trees for repeated analysis.
+
+    Args:
+        file_content_hash: Hash of the file content for cache key
+        source_content: The actual file content to parse
+        file_path: Path to the file (used for error messages)
+    """
+    # Check cache first
+    if file_content_hash in _ast_cache:
+        logger.debug(f"Cache hit for {file_path} (hash: {file_content_hash[:8]}...)")
+        return _ast_cache[file_content_hash]
+
+    # Parse and cache the AST
+    tree = ast.parse(source_content, filename=file_path)
+
+    # Limit cache size to prevent memory issues
+    if len(_ast_cache) >= 100:
+        # Remove oldest entry (simple FIFO)
+        oldest_key = next(iter(_ast_cache))
+        del _ast_cache[oldest_key]
+
+    _ast_cache[file_content_hash] = tree
+    logger.debug(f"Cached AST for {file_path} (hash: {file_content_hash[:8]}...)")
+    return tree
 
 
 def parse_python_file(file_path: str) -> list[ParsedFunction]:
@@ -238,7 +255,7 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
     file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
 
     try:
-        tree = _get_cached_ast(file_content_hash, file_path)
+        tree = _get_cached_ast(file_content_hash, source_content, file_path)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(
@@ -341,7 +358,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
 
     try:
-        tree = _get_cached_ast(file_content_hash, file_path)
+        tree = _get_cached_ast(file_content_hash, source_content, file_path)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(

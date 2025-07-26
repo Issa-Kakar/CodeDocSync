@@ -51,10 +51,17 @@ jobs:
             ${{ runner.os }}-poetry-${{ matrix.python-version }}-
             ${{ runner.os }}-poetry-
 
-      - name: Install Poetry
+      - name: Install Poetry (Unix)
+        if: runner.os != 'Windows'
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Poetry (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:APPDATA\Python\Scripts"
 
       - name: Configure Poetry
         run: |

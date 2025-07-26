@@ -6,6 +6,7 @@ common functionality like style detection, validation, and error handling.
 """
 
 import ast
+import logging
 import re
 import time
 from abc import ABC, abstractmethod
@@ -21,6 +22,8 @@ from .models import (
 )
 
 T = TypeVar("T")
+
+logger = logging.getLogger(__name__)
 
 
 class BaseSuggestionGenerator(ABC):
@@ -389,6 +392,26 @@ class BaseSuggestionGenerator(ABC):
         # For now, return the updated section
         # TODO: Implement smart merging in future chunks
         return updated_section
+
+    def _format_rag_examples(self, examples: list[dict[str, Any]]) -> str:
+        """Format RAG examples for prompt context."""
+        if not examples:
+            logger.debug("No RAG examples to format")
+            return ""
+
+        logger.debug(f"Formatting {len(examples)} RAG examples for prompt context")
+
+        formatted = ["Similar well-documented functions:"]
+        for i, ex in enumerate(examples[:2], 1):
+            similarity = ex.get("similarity", 0)
+            logger.debug(
+                f"Example {i}: {ex.get('signature', '')[:50]} (similarity: {similarity:.2f})"
+            )
+            formatted.append(f"\nExample {i} (similarity: {similarity:.2f}):")
+            formatted.append(f"Signature: {ex.get('signature', '')}")
+            formatted.append(f"Documentation:\n{ex.get('docstring', '')}")
+
+        return "\n".join(formatted)
 
 
 def with_suggestion_fallback(func: Callable[..., T]) -> Callable[..., T]:

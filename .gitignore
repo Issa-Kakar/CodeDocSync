@@ -285,3 +285,13 @@ scripts/memory_safe_test_runner.py
 scripts/find_problematic_test.py
 scripts/safely_remove_suggestion_tests.py
 scripts/identify_failing_tests.py
+
+# All markdown documentation files
+*.md
+*.MD
+
+# Claude Desktop memory file (local only, not needed for GitHub Actions)
+claude-memory.json
+
+# Local task instructions folder
+tasks/

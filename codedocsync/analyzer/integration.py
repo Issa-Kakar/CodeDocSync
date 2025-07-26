@@ -92,6 +92,9 @@ class IntegrationMetrics:
 # Global metrics instance
 metrics = IntegrationMetrics()
 
+# Global RAG manager instance (lazy initialization)
+_rag_manager = None
+
 
 def _should_use_llm(
     rule_results: list[RuleCheckResult], config: AnalysisConfig, pair: MatchedPair
@@ -485,6 +488,60 @@ async def analyze_matched_pair(
 
     # Step 4: Merge results intelligently
     final_issues = _merge_results(rule_issues, llm_issues)
+
+    # Step 4.5: Build RAG corpus if enabled and no critical issues
+    if config.build_rag_corpus and pair.docstring:
+        try:
+            # Only add to corpus if documentation is good (no critical issues)
+            has_critical_issues = any(
+                issue.severity in ["critical", "high"] for issue in final_issues
+            )
+
+            if not has_critical_issues and len(final_issues) <= 1:
+                # This is a good example - add to RAG corpus
+                from ..parser.docstring_parser import DocstringParser
+                from ..suggestions.rag_corpus import RAGCorpusManager
+
+                # Get or create singleton RAG manager
+                global _rag_manager
+                if _rag_manager is None:
+                    _rag_manager = RAGCorpusManager()
+
+                # Calculate quality score based on issues
+                quality_score = 5 if len(final_issues) == 0 else 4
+
+                # Add to corpus
+                # Convert RawDocstring to ParsedDocstring if needed
+                if isinstance(pair.docstring, ParsedDocstring):
+                    parsed_docstring = pair.docstring
+                else:
+                    # Detect the actual format instead of hardcoding GOOGLE
+                    detected_format = DocstringParser.detect_format(
+                        pair.docstring.raw_text
+                    )
+                    parsed_docstring = ParsedDocstring(
+                        format=detected_format,
+                        summary="",
+                        parameters=[],
+                        returns=None,
+                        raises=[],
+                        raw_text=pair.docstring.raw_text,
+                    )
+
+                _rag_manager.add_good_example(
+                    function=pair.function,
+                    docstring=parsed_docstring,
+                    quality_score=quality_score,
+                )
+
+                logger.debug(
+                    f"Added {pair.function.signature.name} to RAG corpus "
+                    f"(quality: {quality_score})"
+                )
+
+        except Exception as e:
+            # Don't let RAG corpus building fail the analysis
+            logger.debug(f"Failed to add to RAG corpus: {e}")
 
     # Step 5: Create final result
     total_time_ms = (time.time() - start_time) * 1000
