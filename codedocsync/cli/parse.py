@@ -52,9 +52,6 @@ def parse(
         for file_path in python_files:
             try:
                 functions = parser.parse_file(str(file_path))
-                # Add file path to each function for tracking
-                for func in functions:
-                    func._parsed_file = str(file_path)  # type: ignore[attr-defined]
                 all_functions.extend(functions)
             except Exception as e:
                 console.print(
@@ -154,7 +151,9 @@ def parse(
 
                 # Add file name if parsing multiple files
                 if len(python_files) > 1:
-                    file_name = Path(getattr(func, "_parsed_file", "unknown")).name
+                    file_name = (
+                        Path(func.file_path).name if func.file_path else "unknown"
+                    )
                     row_data.append(file_name)
 
                 row_data.extend(

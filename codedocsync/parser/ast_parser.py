@@ -163,16 +163,16 @@ class ParsedFunction:
 
 
 @lru_cache(maxsize=100)
-def _get_cached_ast(file_content_hash: str, file_path: str) -> ast.AST:
-    """Cache parsed AST trees for repeated analysis."""
-    try:
-        with open(file_path, encoding="utf-8") as f:
-            source_content = f.read()
-    except UnicodeDecodeError:
-        # Try alternative encodings
-        with open(file_path, encoding="latin-1") as f:
-            source_content = f.read()
-        logger.warning(f"File {file_path} decoded using latin-1 instead of utf-8")
+def _get_cached_ast(
+    file_content_hash: str, source_content: str, file_path: str
+) -> ast.AST:
+    """Cache parsed AST trees for repeated analysis.
+
+    Args:
+        file_content_hash: Hash of the file content for cache key
+        source_content: The actual file content to parse
+        file_path: Path to the file (used for error messages)
+    """
     return ast.parse(source_content, filename=file_path)
 
 
@@ -238,7 +238,7 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
     file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
 
     try:
-        tree = _get_cached_ast(file_content_hash, file_path)
+        tree = _get_cached_ast(file_content_hash, source_content, file_path)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(
@@ -341,7 +341,7 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
     file_content_hash = hashlib.md5(source_content.encode()).hexdigest()
 
     try:
-        tree = _get_cached_ast(file_content_hash, file_path)
+        tree = _get_cached_ast(file_content_hash, source_content, file_path)
     except SyntaxError as e:
         # Attempt partial parsing up to the error line
         logger.warning(
