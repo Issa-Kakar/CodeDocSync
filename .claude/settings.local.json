@@ -109,7 +109,9 @@
       "Bash(echo $APPDATA)",
       "Bash(node:*)",
       "Bash(jq:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(source:*)",
+      "Bash(.venv/Scripts/python.exe scripts/format_file.py:*)"
     ],
     "deny": [],
     "defaultMode": "bypassPermissions",

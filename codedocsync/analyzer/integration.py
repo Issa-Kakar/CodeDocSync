@@ -499,6 +499,7 @@ async def analyze_matched_pair(
 
             if not has_critical_issues and len(final_issues) <= 1:
                 # This is a good example - add to RAG corpus
+                from ..parser.docstring_parser import DocstringParser
                 from ..suggestions.rag_corpus import RAGCorpusManager
 
                 # Get or create singleton RAG manager
@@ -511,18 +512,22 @@ async def analyze_matched_pair(
 
                 # Add to corpus
                 # Convert RawDocstring to ParsedDocstring if needed
-                parsed_docstring = (
-                    pair.docstring
-                    if isinstance(pair.docstring, ParsedDocstring)
-                    else ParsedDocstring(
-                        format=DocstringFormat.GOOGLE,  # Default to Google format
+                if isinstance(pair.docstring, ParsedDocstring):
+                    parsed_docstring = pair.docstring
+                else:
+                    # Detect the actual format instead of hardcoding GOOGLE
+                    detected_format = DocstringParser.detect_format(
+                        pair.docstring.raw_text
+                    )
+                    parsed_docstring = ParsedDocstring(
+                        format=detected_format,
                         summary="",
                         parameters=[],
                         returns=None,
                         raises=[],
-                        raw_text=pair.docstring.raw_text if pair.docstring else "",
+                        raw_text=pair.docstring.raw_text,
                     )
-                )
+
                 _rag_manager.add_good_example(
                     function=pair.function,
                     docstring=parsed_docstring,

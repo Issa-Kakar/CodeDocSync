@@ -39,9 +39,8 @@ This project supports MCP servers for enhanced Claude Desktop capabilities:
 - LLM-powered semantic analysis
 - Three-tier matching system (Direct, Contextual, Semantic)
 
-**Current Status**: Core implementation complete, Week 4 optimizations in progress
-**MyPy Compliance**: ✅ 0 errors
-**Details**: See IMPLEMENTATION_STATE.MD
+**Status**: Core complete, RAG Sprint Continuation (Week 4)
+**Code Quality**: ✅ 0 mypy errors, 97.7% tests passing
 
 ## Project Structure
 
@@ -52,9 +51,10 @@ codedocsync/
 ├── matcher/       # Code-to-doc matching algorithms
 ├── parser/        # AST and docstring parsing
 ├── storage/       # Vector store and embeddings (ChromaDB)
-├── suggestions/   # Docstring generation and formatting
+├── suggestions/   # Docstring generation and RAG enhancement
 └── utils/         # Shared utilities and configuration
 
+.github/workflows/  # CI/CD: claude.yml, pr-quality-checks.yml
 scripts/            # Development and testing utilities
 ├── memory_safe_test_runner.py     # Prevents test crashes
 ├── find_problematic_test.py       # Identifies problematic tests
@@ -157,12 +157,7 @@ python -m codedocsync analyze .
 
 ## Current Focus
 
-**RAG Sprint Continuation (16-20 hours)** - Addressing critical gaps in RAG implementation:
-- Persistence layer for accepted suggestions
-- Generator coverage (4 of 5 generators need RAG enhancement)
-- Curated examples expansion (5 → 75+)
-- Improvement measurement system
-See RAG_SPRINT_CONTINUATION.MD for detailed plan.
+**RAG Sprint Continuation** - Critical gaps: persistence, generator coverage (1/5→5/5), curated examples (5→75+)
 
 ## Architecture Highlights
 
@@ -182,25 +177,20 @@ See RAG_SPRINT_CONTINUATION.MD for detailed plan.
 5. Use LLM for semantic validation
 6. Generate fix suggestions
 
-### RAG-Enhanced Suggestions (⚠️ PARTIAL - Core infrastructure only)
-- **Bootstrap corpus**: 143 examples from CodeDocSync + 5 curated (need 75+)
-- **Self-improvement**: ❌ No persistence - accepted suggestions lost on exit
-- **Retrieval**: Basic string similarity (not semantic)
-- **Performance**: ✅ <100ms retrieval, <50MB memory
-- **Generator coverage**: Only ParameterGenerator enhanced (1 of 5)
-- **Effectiveness**: Limited impact on suggestion quality
-- **Storage**: Bootstrap in `data/bootstrap_corpus.json`, no persistence for accepted
-
-#### RAG Commands:
-- `python -m codedocsync analyze . --no-rag` - Disable RAG enhancement
-- `python -m codedocsync accept-suggestion <file> <function> <issue_type>` - Mark suggestion as accepted
-- `python -m codedocsync rag-stats` - View corpus statistics and performance metrics
+### RAG-Enhanced Suggestions (⚠️ MVP only)
+- 143 bootstrap + 5 curated examples, <100ms retrieval
+- ❌ No persistence, only ParameterGenerator enhanced (1/5)
+- Commands: `--no-rag`, `accept-suggestion`, `rag-stats`
 
 ## Configuration Files
 
 - `.codedocsync.yml`: Project-specific analysis configuration
 - `.env`: API keys and environment settings
 - `pyproject.toml`: Project dependencies and tool configs
+
+## Auto-Formatting Hook
+
+**Claude Code auto-formats Python files after edits** via `.claude/claude-code-settings.json` → `scripts/format_file.py` (black+ruff+mypy)
 
 ## Quick Command Reference
 
@@ -220,17 +210,13 @@ python -m codedocsync check . --ci --fail-on-critical
 # Run with all matching strategies (default)
 python -m codedocsync analyze .
 
-# Run without semantic matching (optional)
+# Disable semantic matching
 python -m codedocsync analyze . --no-semantic
 
-# Run without RAG enhancement (optional)
-python -m codedocsync analyze . --no-rag
-
-# Accept a suggestion (⚠️ WARNING: Not persisted across sessions)
-python -m codedocsync accept-suggestion file.py function_name issue_type
-
-# View RAG corpus statistics
-python -m codedocsync rag-stats
+# RAG commands
+python -m codedocsync analyze . --no-rag  # Disable RAG
+python -m codedocsync accept-suggestion file.py func_name issue_type  # Accept (not persisted)
+python -m codedocsync rag-stats  # View corpus stats
 
 # Get help
 python -m codedocsync --help
