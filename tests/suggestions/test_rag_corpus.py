@@ -177,7 +177,7 @@ class TestRAGCorpusManager:
         assert manager.embedding_cache is None
         assert not manager.enable_embeddings
         assert len(manager.memory_corpus) == 0
-        assert manager.metrics["examples_loaded"] == 0
+        assert manager._metrics["examples_loaded"] == 0
 
     def test_initialization_with_embeddings(
         self, temp_corpus_dir, mock_vector_store, mock_embedding_cache
@@ -220,7 +220,7 @@ class TestRAGCorpusManager:
         assert len(manager.memory_corpus) == 2
         assert manager.memory_corpus[0].function_name == "calculate_sum"
         assert manager.memory_corpus[1].function_name == "validate_email"
-        assert manager.metrics["examples_loaded"] == 2
+        assert manager._metrics["examples_loaded"] == 2
 
     def test_load_curated_examples(self, temp_corpus_dir):
         """Test loading curated examples."""
@@ -265,7 +265,7 @@ class TestRAGCorpusManager:
         )
 
         assert len(manager.memory_corpus) == 0
-        assert manager.metrics["examples_loaded"] == 0
+        assert manager._metrics["examples_loaded"] == 0
 
     def test_add_good_example(
         self, corpus_manager_no_embeddings, sample_function, sample_parsed_docstring
@@ -279,7 +279,7 @@ class TestRAGCorpusManager:
         )
 
         assert len(manager.memory_corpus) == initial_count + 1
-        assert manager.metrics["examples_added"] == 1
+        assert manager._metrics["examples_added"] == 1
 
         # Check the added example
         added = manager.memory_corpus[-1]
@@ -314,7 +314,7 @@ class TestRAGCorpusManager:
         )
 
         assert len(manager.memory_corpus) == initial_count + 1
-        assert manager.metrics["examples_added"] == 1
+        assert manager._metrics["examples_added"] == 1
 
         # Check the added example
         added = manager.memory_corpus[-1]
@@ -342,8 +342,8 @@ class TestRAGCorpusManager:
         )
 
         assert len(examples) <= 2
-        assert manager.metrics["retrievals_performed"] == 1
-        assert manager.metrics["total_retrieval_time"] > 0
+        assert manager._metrics["retrievals_performed"] == 1
+        assert manager._metrics["total_retrieval_time"] > 0
 
         # Examples should be sorted by similarity
         if len(examples) > 1:
@@ -466,10 +466,10 @@ class TestRAGCorpusManager:
         manager = corpus_manager_no_embeddings
 
         # Add some activity
-        manager.metrics["examples_loaded"] = 10
-        manager.metrics["examples_added"] = 5
-        manager.metrics["retrievals_performed"] = 3
-        manager.metrics["total_retrieval_time"] = 0.15
+        manager._metrics["examples_loaded"] = 10
+        manager._metrics["examples_added"] = 5
+        manager._metrics["retrievals_performed"] = 3
+        manager._metrics["total_retrieval_time"] = 0.15
 
         stats = manager.get_stats()
 
@@ -535,7 +535,7 @@ class TestRAGCorpusManager:
             function=bad_function, docstring=Mock(), quality_score=4
         )
 
-        assert manager.metrics["examples_added"] == 0
+        assert manager._metrics["examples_added"] == 0
 
     def test_store_example_with_embeddings_error(self, temp_corpus_dir):
         """Test storing example when embedding generation fails."""

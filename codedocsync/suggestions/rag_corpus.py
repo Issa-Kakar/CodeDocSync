@@ -126,6 +126,7 @@ class RAGCorpusManager:
         curated_file = self.corpus_dir / "curated_examples.json"
 
         loaded_count = 0
+        curated_count = 0
 
         # Load bootstrap corpus
         if bootstrap_file.exists():
@@ -158,7 +159,6 @@ class RAGCorpusManager:
                     data = json.load(f)
                     examples = data.get("examples", [])
 
-                curated_count = 0
                 for ex_data in examples:
                     example = DocstringExample(**ex_data)
                     example.source = "curated"
@@ -176,7 +176,7 @@ class RAGCorpusManager:
             except Exception as e:
                 logger.warning(f"No curated examples loaded: {e}")
 
-        self._metrics["examples_loaded"] = loaded_count
+        self._metrics["examples_loaded"] = loaded_count + curated_count
 
     def _store_example(self, example: DocstringExample) -> None:
         """Store an example in the corpus."""

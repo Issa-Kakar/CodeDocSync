@@ -5,7 +5,6 @@ description = "An intelligent tool to detect inconsistencies between Python code
 authors = [
     {name = "Issa-Kakar",email = "issakakar001@gmail.com"}
 ]
-readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "typer (>=0.16.0,<0.17.0)",
@@ -91,6 +90,7 @@ known-third-party = ["typer", "rich", "pydantic", "pytest"]
 python_version = "3.10"
 ignore_missing_imports = true
 follow_imports = "silent"
+exclude = ["tests/fixtures/edge_cases/syntax_error.py"]
 
 # Essential checks only
 check_untyped_defs = true

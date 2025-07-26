@@ -9,7 +9,7 @@ CodeDocSync core implementation is complete (Weeks 1-3). Week 4 RAG MVP complete
 **Project Status**: Core complete, Week 4 RAG MVP ✅ COMPLETED (2025-01-25)
 **Code Quality**: ✅ 0 mypy errors
 **Performance**: Targets exceeded (up to 83x faster)
-**Test Status**: 344/344 passing (100%) - All analyzer and storage tests fixed (2025-01-25)
+**Test Status**: 346/354 passing (97.7%) - 8 RAG tests marked xfail for unimplemented features
 **Next Phase**: Week 4 optimizations, reimplement suggestion tests
 **ChromaDB**: ✅ Fully functional with NumPy 2.3.1
 **RAG Status**: ⚠️ PARTIAL - Core infrastructure complete, critical gaps remain (no persistence, limited generators)
@@ -25,14 +25,14 @@ CodeDocSync core implementation is complete (Weeks 1-3). Week 4 RAG MVP complete
 | **Suggestions** | All docstring formats, issue-specific generators, ✅ RAG enhancement | 68/68 (100%)** | Memory crashes in other tests |
 | **CLI** | All commands implemented with Rich output | 30/30 (100%) | Removed all mocks, using real implementation |
 | **Integration** | Full pipeline & parser integration tests | 28/28 (100%) | Complete end-to-end testing |
-| **RAG (NEW)** | Corpus management, example retrieval, self-improvement loop | 20/20 (100%) ✅ | Hybrid bootstrap strategy with 143+ examples |
+| **RAG (NEW)** | Corpus management, example retrieval, self-improvement loop | 22/30 (8 xfailed) | Fixed test bugs, marked unimplemented features |
 
 **Other suggestion tests (155) removed pending rewrite with memory safety
 
-## Test Suite Status (2025-01-25)
+## Test Suite Status (2025-01-26)
 
-**Total**: 344 tests currently (499 tests before removing 155 problematic suggestion tests)
-**Passing**: 344/344 (100%) ✅ - All tests passing!
+**Total**: 354 tests currently (499 tests before removing 155 problematic suggestion tests)
+**Passing**: 346/354 (97.7%) - 8 xfailed for unimplemented RAG features
 **MyPy**: ✅ 0 errors
 **Breakdown**:
 - Parser: 115/115 (100%) including 15 integration tests
@@ -42,7 +42,7 @@ CodeDocSync core implementation is complete (Weeks 1-3). Week 4 RAG MVP complete
 - Suggestions: 48/48 (100% - formatters only)
 - CLI: 30/30 (100%)
 - Integration: 28/28 (100%) - 13 pipeline + 15 parser
-- RAG: 20/20 (100%) - Added 2025-01-25
+- RAG: 30 total (22 passing, 8 xfailed) - Fixed bugs 2025-01-26
 - Other: 1/4 (25%) - ChromaDB degradation tests
 
 ### Suggestion Test Crisis Resolution
