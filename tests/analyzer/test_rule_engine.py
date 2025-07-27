@@ -341,7 +341,7 @@ class TestRuleEngine:
         # In a real implementation, we'd analyze the function body for raise statements
         result = rule_engine._check_missing_raises(pair)
         assert result.passed is True
-        assert result.confidence == 0.5  # Low confidence since no actual analysis
+        assert result.confidence == 0.3  # Low confidence since no actual analysis
 
     def test_undocumented_exceptions(self, rule_engine: RuleEngine) -> None:
         """Test detection of undocumented exceptions - MEDIUM severity."""

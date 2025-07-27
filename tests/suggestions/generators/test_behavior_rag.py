@@ -163,7 +163,8 @@ class TestBehaviorGeneratorRAG:
             is_required=True,
         )
         desc = generator._describe_parameter_for_behavior(param)
-        assert desc == "the user list list"
+        # Since "list" is already in "user_list", it won't add "list" again
+        assert desc == "the user list"
 
         # Test without type
         param = FunctionParameter(

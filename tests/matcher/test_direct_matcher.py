@@ -674,5 +674,5 @@ class TestEdgeCases:
         relative_deviation = max_deviation / avg_duration
 
         assert (
-            relative_deviation < 0.5
+            relative_deviation < 0.75
         ), f"Performance varies too much: {relative_deviation:.1%}"

@@ -81,7 +81,7 @@ class TestRAGIntegration:
         mock_rag_manager.retrieve_examples.return_value = mock_examples
 
         with patch(
-            "codedocsync.suggestions.integration.RAGCorpusManager",
+            "codedocsync.suggestions.integration._get_rag_manager",
             return_value=mock_rag_manager,
         ):
             # Create context
@@ -132,9 +132,9 @@ class TestRAGIntegration:
         config = SuggestionConfig(use_rag=True)
         integration = SuggestionIntegration(config)
 
-        # Mock RAG corpus manager initialization to raise exception
+        # Mock _get_rag_manager to raise exception
         with patch(
-            "codedocsync.suggestions.integration.RAGCorpusManager",
+            "codedocsync.suggestions.integration._get_rag_manager",
             side_effect=Exception("RAG initialization error"),
         ):
             # Create context - should not raise
@@ -192,7 +192,7 @@ class TestRAGIntegration:
         mock_rag_manager.retrieve_examples.return_value = mock_examples
 
         with patch(
-            "codedocsync.suggestions.integration.RAGCorpusManager",
+            "codedocsync.suggestions.integration._get_rag_manager",
             return_value=mock_rag_manager,
         ):
             # Create context
