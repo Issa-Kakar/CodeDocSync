@@ -137,6 +137,9 @@ class SuggestionIntegration:
                 "side_effects_undocumented": BehaviorSuggestionGenerator(self.config),
                 # Example issues
                 "example_invalid": ExampleSuggestionGenerator(self.config),
+                "missing_examples": ExampleSuggestionGenerator(self.config),
+                "example_outdated": ExampleSuggestionGenerator(self.config),
+                "example_incomplete": ExampleSuggestionGenerator(self.config),
             }
         )
 

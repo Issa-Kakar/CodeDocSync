@@ -32,6 +32,7 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         """Initialize the generator."""
         super().__init__(config)
         self._used_rag = False  # Track if RAG was used
+        self._current_context: SuggestionContext | None = None
 
     def generate(self, context: SuggestionContext) -> Suggestion:
         """Generate exception documentation fixes."""
@@ -73,6 +74,16 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         if not high_confidence_exceptions and exceptions:
             # Keep top 3 most likely exceptions
             high_confidence_exceptions = exceptions[:3]
+
+        # Try to get additional exceptions from RAG examples
+        rag_exceptions = self._suggest_exceptions_from_rag(context)
+        if rag_exceptions:
+            # Merge with detected exceptions, avoiding duplicates
+            existing_types = {e.exception_type for e in high_confidence_exceptions}
+            for rag_exc in rag_exceptions:
+                if rag_exc.exception_type not in existing_types:
+                    high_confidence_exceptions.append(rag_exc)
+                    existing_types.add(rag_exc.exception_type)
 
         if not high_confidence_exceptions:
             return self._create_fallback_suggestion(
@@ -395,6 +406,161 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         return self._create_fallback_suggestion(
             context, f"Unknown raises issue type: {context.issue.issue_type}"
         )
+
+    def _suggest_exceptions_from_rag(
+        self, context: SuggestionContext
+    ) -> list[ExceptionInfo] | None:
+        """Suggest additional exceptions based on RAG examples."""
+        if not self._current_context or not self._current_context.related_functions:
+            return None
+
+        suggested_exceptions = []
+        seen_types = set()
+
+        # Get already documented exceptions to avoid duplicates
+        docstring = context.docstring
+        existing_raises = getattr(docstring, "raises", [])
+        documented_types = {
+            r.exception_type for r in existing_raises if hasattr(r, "exception_type")
+        }
+
+        # Extract all exceptions from RAG examples
+        for example in self._current_context.related_functions:
+            if example.get("similarity", 0) < 0.3:
+                continue
+
+            docstring_content = example.get("docstring", "")
+            if not docstring_content:
+                continue
+
+            # Extract exceptions from the example
+            exceptions = self._extract_all_exceptions_from_docstring(docstring_content)
+
+            for exc_type, exc_desc in exceptions:
+                # Skip if already documented or already suggested
+                if exc_type in documented_types or exc_type in seen_types:
+                    continue
+
+                # Check if this exception type is relevant to our function
+                if self._is_exception_relevant(exc_type, context):
+                    suggested_exceptions.append(
+                        ExceptionInfo(
+                            exception_type=exc_type,
+                            description=exc_desc,
+                            confidence=0.7 * example.get("similarity", 0.5),
+                        )
+                    )
+                    seen_types.add(exc_type)
+                    self._used_rag = True
+
+        return suggested_exceptions if suggested_exceptions else None
+
+    def _is_exception_relevant(
+        self, exception_type: str, context: SuggestionContext
+    ) -> bool:
+        """Check if an exception type is relevant to the current function."""
+        # Basic relevance check - can be enhanced
+        function = context.function
+        func_name = function.signature.name.lower()
+
+        # TimeoutError is relevant if function has timeout parameter
+        if exception_type == "TimeoutError":
+            params = function.signature.parameters
+            return any("timeout" in p.name.lower() for p in params)
+
+        # NetworkError is relevant for functions that might do network operations
+        if exception_type == "NetworkError":
+            network_keywords = [
+                "fetch",
+                "request",
+                "send",
+                "connect",
+                "download",
+                "upload",
+                "api",
+                "http",
+                "transaction",
+                "payment",
+            ]
+            return any(keyword in func_name for keyword in network_keywords)
+
+        # PaymentError and similar domain-specific errors
+        if (
+            "payment" in exception_type.lower()
+            or "transaction" in exception_type.lower()
+        ):
+            transaction_keywords = [
+                "payment",
+                "transaction",
+                "process",
+                "charge",
+                "billing",
+                "purchase",
+                "order",
+            ]
+            return any(keyword in func_name for keyword in transaction_keywords)
+
+        # AuthenticationError and similar
+        if "auth" in exception_type.lower() or "permission" in exception_type.lower():
+            auth_keywords = [
+                "auth",
+                "login",
+                "verify",
+                "permission",
+                "access",
+                "security",
+            ]
+            return any(keyword in func_name for keyword in auth_keywords)
+
+        # ValidationError for input validation
+        if (
+            "validation" in exception_type.lower()
+            or "invalid" in exception_type.lower()
+        ):
+            validation_keywords = [
+                "validate",
+                "check",
+                "verify",
+                "parse",
+                "process",
+                "handle",
+            ]
+            return any(keyword in func_name for keyword in validation_keywords)
+
+        # Default: consider relevant for common exceptions
+        common_exceptions = [
+            "ValueError",
+            "TypeError",
+            "RuntimeError",
+            "IOError",
+            "KeyError",
+            "AttributeError",
+            "NotImplementedError",
+        ]
+        return exception_type in common_exceptions
+
+    def _extract_all_exceptions_from_docstring(
+        self, docstring_content: str
+    ) -> list[tuple[str, str]]:
+        """Extract all exception types and descriptions from a docstring."""
+        exceptions = []
+
+        # Google style pattern
+        google_pattern = r"Raises?:\s*\n((?:\s+\w+:.*\n?)+)"
+        google_match = re.search(google_pattern, docstring_content, re.MULTILINE)
+
+        if google_match:
+            raises_content = google_match.group(1)
+            # Extract individual exceptions
+            exc_pattern = r"^\s+(\w+):\s*(.+?)(?=\n\s+\w+:|\n\s*\n|\Z)"
+            for match in re.finditer(
+                exc_pattern, raises_content, re.MULTILINE | re.DOTALL
+            ):
+                exc_type = match.group(1)
+                exc_desc = match.group(2).strip()
+                exceptions.append((exc_type, exc_desc))
+
+        return exceptions
 
     def _generate_rag_enhanced_raises_description(
         self, exception_type: str
