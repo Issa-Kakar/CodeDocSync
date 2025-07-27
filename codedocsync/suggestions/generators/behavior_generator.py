@@ -1238,17 +1238,24 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
     def _describe_parameter_for_behavior(self, param: Any) -> str:
         """Generate behavior description for a parameter."""
         param_name = param.name.replace("_", " ")
+        param_name_lower = param_name.lower()
 
         if param.type_annotation:
             type_str = str(param.type_annotation).lower()
-            if "list" in type_str:
-                return f"the {param_name} list"
-            elif "dict" in type_str:
-                return f"the {param_name} mapping"
-            elif "str" in type_str:
+            # Check for container types first (they take precedence)
+            if type_str == "list" or type_str.startswith("list["):
+                if "list" not in param_name_lower:
+                    return f"the {param_name} list"
+            elif type_str == "dict" or type_str.startswith("dict["):
+                if all(
+                    word not in param_name_lower for word in ["dict", "mapping", "map"]
+                ):
+                    return f"the {param_name} mapping"
+            # Only check for base types if not a container type
+            elif type_str == "str" and "string" not in param_name_lower:
                 return f"the {param_name} string"
-            else:
-                return f"the {param_name}"
+
+            return f"the {param_name}"
         else:
             return f"the given {param_name}"
 
