@@ -5,11 +5,11 @@ This module specializes in generating suggestions for missing exception document
 incorrect exception types, and comprehensive exception analysis.
 """
 
-import ast
+import logging
 import re
-from dataclasses import dataclass
 from typing import Any
 
+from ...analyzer.exception_analyzer import ExceptionAnalyzer, ExceptionInfo
 from ...parser.docstring_models import DocstringRaises
 from ..base import BaseSuggestionGenerator
 from ..models import (
@@ -22,226 +22,24 @@ from ..models import (
 )
 from ..templates.base import get_template
 
-
-@dataclass
-class ExceptionInfo:
-    """Information about an exception that can be raised."""
-
-    exception_type: str
-    description: str
-    condition: str | None = None
-    line_number: int | None = None
-    is_re_raised: bool = False
-    confidence: float = 1.0
-
-
-class ExceptionAnalyzer:
-    """Analyze function code to find all possible exceptions."""
-
-    def __init__(self) -> None:
-        self.builtin_exceptions = {
-            "ValueError": "When an invalid value is provided",
-            "TypeError": "When an invalid type is provided",
-            "KeyError": "When a key is not found",
-            "IndexError": "When an index is out of range",
-            "AttributeError": "When an attribute is not found",
-            "FileNotFoundError": "When a file is not found",
-            "PermissionError": "When permission is denied",
-            "RuntimeError": "When a runtime error occurs",
-            "NotImplementedError": "When functionality is not implemented",
-            "OSError": "When an OS-related error occurs",
-            "IOError": "When an I/O operation fails",
-        }
-
-    def analyze_exceptions(self, source_code: str) -> list[ExceptionInfo]:
-        """Find all exceptions that can be raised."""
-        exceptions: list[ExceptionInfo] = []
-
-        try:
-            tree = ast.parse(source_code)
-            self._analyze_ast(tree, exceptions)
-        except SyntaxError:
-            # If we can't parse, return basic exceptions
-            exceptions.append(
-                ExceptionInfo(
-                    exception_type="Exception",
-                    description="When an error occurs",
-                    confidence=0.3,
-                )
-            )
-
-        return self._deduplicate_exceptions(exceptions)
-
-    def _analyze_ast(self, tree: ast.AST, exceptions: list[ExceptionInfo]) -> None:
-        """Analyze AST for exception patterns."""
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) or isinstance(
-                node, ast.AsyncFunctionDef
-            ):
-                self._analyze_function_node(node, exceptions)
-                break
-
-    def _analyze_function_node(
-        self,
-        node: ast.FunctionDef | ast.AsyncFunctionDef,
-        exceptions: list[ExceptionInfo],
-    ) -> None:
-        """Analyze a function node for exception patterns."""
-        for child in ast.walk(node):
-            if isinstance(child, ast.Raise):
-                self._analyze_raise_statement(child, exceptions)
-            elif isinstance(child, ast.Call):
-                self._analyze_function_call(child, exceptions)
-            elif isinstance(child, ast.Subscript):
-                self._analyze_subscript(child, exceptions)
-            elif isinstance(child, ast.Attribute):
-                self._analyze_attribute_access(child, exceptions)
-
-    def _analyze_raise_statement(
-        self, node: ast.Raise, exceptions: list[ExceptionInfo]
-    ) -> None:
-        """Analyze a raise statement."""
-        if node.exc is None:
-            # Bare raise - re-raising current exception
-            exceptions.append(
-                ExceptionInfo(
-                    exception_type="Exception",
-                    description="Re-raised exception",
-                    is_re_raised=True,
-                    line_number=node.lineno,
-                    confidence=0.8,
-                )
-            )
-            return
-
-        exception_type = None
-        if isinstance(node.exc, ast.Call):
-            # raise ExceptionType(message)
-            if isinstance(node.exc.func, ast.Name):
-                exception_type = node.exc.func.id
-        elif isinstance(node.exc, ast.Name):
-            # raise exception_instance
-            exception_type = node.exc.id
-
-        if exception_type:
-            description = self.builtin_exceptions.get(
-                exception_type, f"When a {exception_type} condition occurs"
-            )
-            exceptions.append(
-                ExceptionInfo(
-                    exception_type=exception_type,
-                    description=description,
-                    line_number=node.lineno,
-                    confidence=0.95,
-                )
-            )
-
-    def _analyze_function_call(
-        self, node: ast.Call, exceptions: list[ExceptionInfo]
-    ) -> None:
-        """Analyze function calls that might raise exceptions."""
-        func_name = None
-        if isinstance(node.func, ast.Name):
-            func_name = node.func.id
-        elif isinstance(node.func, ast.Attribute):
-            func_name = node.func.attr
-
-        if func_name:
-            # Common functions that raise specific exceptions
-            function_exceptions = {
-                "open": ["FileNotFoundError", "PermissionError", "IOError"],
-                "int": ["ValueError"],
-                "float": ["ValueError"],
-                "len": ["TypeError"],
-                "max": ["ValueError"],
-                "min": ["ValueError"],
-                "next": ["StopIteration"],
-                "iter": ["TypeError"],
-                "getattr": ["AttributeError"],
-                "setattr": ["AttributeError"],
-                "delattr": ["AttributeError"],
-            }
-
-            if func_name in function_exceptions:
-                for exc_type in function_exceptions[func_name]:
-                    description = self.builtin_exceptions.get(
-                        exc_type, f"When {func_name} fails"
-                    )
-                    exceptions.append(
-                        ExceptionInfo(
-                            exception_type=exc_type,
-                            description=description,
-                            condition=f"When calling {func_name}",
-                            line_number=node.lineno,
-                            confidence=0.6,
-                        )
-                    )
-
-    def _analyze_subscript(
-        self, node: ast.Subscript, exceptions: list[ExceptionInfo]
-    ) -> None:
-        """Analyze subscript operations that might raise exceptions."""
-        # Dictionary/list access can raise KeyError/IndexError
-        exceptions.append(
-            ExceptionInfo(
-                exception_type="KeyError",
-                description="When accessing a non-existent key",
-                condition="When accessing dictionary keys",
-                line_number=node.lineno,
-                confidence=0.4,
-            )
-        )
-        exceptions.append(
-            ExceptionInfo(
-                exception_type="IndexError",
-                description="When accessing an invalid index",
-                condition="When accessing list/tuple indices",
-                line_number=node.lineno,
-                confidence=0.4,
-            )
-        )
-
-    def _analyze_attribute_access(
-        self, node: ast.Attribute, exceptions: list[ExceptionInfo]
-    ) -> None:
-        """Analyze attribute access that might raise exceptions."""
-        # Attribute access can raise AttributeError
-        exceptions.append(
-            ExceptionInfo(
-                exception_type="AttributeError",
-                description="When accessing a non-existent attribute",
-                condition="When accessing object attributes",
-                line_number=node.lineno,
-                confidence=0.3,
-            )
-        )
-
-    def _deduplicate_exceptions(
-        self, exceptions: list[ExceptionInfo]
-    ) -> list[ExceptionInfo]:
-        """Remove duplicate exceptions and merge similar ones."""
-        unique_exceptions: dict[str, ExceptionInfo] = {}
-
-        for exc in exceptions:
-            key = exc.exception_type
-            if key in unique_exceptions:
-                # Keep the one with higher confidence
-                if exc.confidence > unique_exceptions[key].confidence:
-                    unique_exceptions[key] = exc
-            else:
-                unique_exceptions[key] = exc
-
-        # Sort by confidence and exception type
-        return sorted(
-            unique_exceptions.values(), key=lambda x: (-x.confidence, x.exception_type)
-        )
+logger = logging.getLogger(__name__)
 
 
 class RaisesSuggestionGenerator(BaseSuggestionGenerator):
     """Generate suggestions for exception documentation."""
 
+    def __init__(self, config: Any | None = None) -> None:
+        """Initialize the generator."""
+        super().__init__(config)
+        self._used_rag = False  # Track if RAG was used
+        self._current_context: SuggestionContext | None = None
+
     def generate(self, context: SuggestionContext) -> Suggestion:
         """Generate exception documentation fixes."""
+        # Store context for RAG-enhanced description generation
+        self._current_context = context
+        self._used_rag = False  # Reset for each generation
+
         issue = context.issue
 
         if issue.issue_type == "missing_raises":
@@ -276,6 +74,16 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         if not high_confidence_exceptions and exceptions:
             # Keep top 3 most likely exceptions
             high_confidence_exceptions = exceptions[:3]
+
+        # Try to get additional exceptions from RAG examples
+        rag_exceptions = self._suggest_exceptions_from_rag(context)
+        if rag_exceptions:
+            # Merge with detected exceptions, avoiding duplicates
+            existing_types = {e.exception_type for e in high_confidence_exceptions}
+            for rag_exc in rag_exceptions:
+                if rag_exc.exception_type not in existing_types:
+                    high_confidence_exceptions.append(rag_exc)
+                    existing_types.add(rag_exc.exception_type)
 
         if not high_confidence_exceptions:
             return self._create_fallback_suggestion(
@@ -448,17 +256,34 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         self, exception_type: str, source_code: str, analyzer: ExceptionAnalyzer
     ) -> str:
         """Generate improved exception description based on analysis."""
+        # Try RAG-enhanced generation first
+        if hasattr(self, "_current_context") and self._current_context:
+            rag_desc = self._generate_rag_enhanced_raises_description(exception_type)
+            if rag_desc:
+                logger.info(
+                    f"Using RAG-enhanced description for exception '{exception_type}'"
+                )
+                self._used_rag = True
+                return rag_desc
+            else:
+                logger.debug(
+                    f"No RAG enhancement available for exception '{exception_type}', using basic description"
+                )
+
         # Analyze code for this specific exception
         if source_code:
             exceptions = analyzer.analyze_exceptions(source_code)
             for exc in exceptions:
                 if exc.exception_type == exception_type and exc.description:
-                    return exc.description
+                    # Apply grammar fixes to analyzed descriptions too
+                    return self._ensure_proper_exception_grammar(exc.description)
 
         # Fallback to standard descriptions
-        return analyzer.builtin_exceptions.get(
+        fallback_desc = analyzer.builtin_exceptions.get(
             exception_type, f"When a {exception_type} condition occurs"
         )
+        # Apply grammar fixes to fallback descriptions too
+        return self._ensure_proper_exception_grammar(fallback_desc)
 
     def _add_exceptions_to_docstring(
         self, context: SuggestionContext, exceptions: list[ExceptionInfo]
@@ -470,10 +295,17 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
 
         # Convert to DocstringRaises objects
         raises_docs = []
+        analyzer = ExceptionAnalyzer()
+        source_code = getattr(context.function, "source_code", "")
+
         for exc in exceptions:
+            # Try to get RAG-enhanced description
+            improved_desc = self._generate_improved_exception_description(
+                exc.exception_type, source_code, analyzer
+            )
             raises_docs.append(
                 DocstringRaises(
-                    exception_type=exc.exception_type, description=exc.description
+                    exception_type=exc.exception_type, description=improved_desc
                 )
             )
 
@@ -543,6 +375,7 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         metadata = SuggestionMetadata(
             generator_type=self.__class__.__name__,
             generator_version="1.0.0",
+            used_rag_examples=getattr(self, "_used_rag", False),
         )
 
         return Suggestion(
@@ -573,3 +406,408 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         return self._create_fallback_suggestion(
             context, f"Unknown raises issue type: {context.issue.issue_type}"
         )
+
+    def _suggest_exceptions_from_rag(
+        self, context: SuggestionContext
+    ) -> list[ExceptionInfo] | None:
+        """Suggest additional exceptions based on RAG examples."""
+        if not self._current_context or not self._current_context.related_functions:
+            return None
+
+        suggested_exceptions = []
+        seen_types = set()
+
+        # Get already documented exceptions to avoid duplicates
+        docstring = context.docstring
+        existing_raises = getattr(docstring, "raises", [])
+        documented_types = {
+            r.exception_type for r in existing_raises if hasattr(r, "exception_type")
+        }
+
+        # Extract all exceptions from RAG examples
+        for example in self._current_context.related_functions:
+            if example.get("similarity", 0) < 0.3:
+                continue
+
+            docstring_content = example.get("docstring", "")
+            if not docstring_content:
+                continue
+
+            # Extract exceptions from the example
+            exceptions = self._extract_all_exceptions_from_docstring(docstring_content)
+
+            for exc_type, exc_desc in exceptions:
+                # Skip if already documented or already suggested
+                if exc_type in documented_types or exc_type in seen_types:
+                    continue
+
+                # Check if this exception type is relevant to our function
+                if self._is_exception_relevant(exc_type, context):
+                    suggested_exceptions.append(
+                        ExceptionInfo(
+                            exception_type=exc_type,
+                            description=exc_desc,
+                            confidence=0.7 * example.get("similarity", 0.5),
+                        )
+                    )
+                    seen_types.add(exc_type)
+                    self._used_rag = True
+
+        return suggested_exceptions if suggested_exceptions else None
+
+    def _is_exception_relevant(
+        self, exception_type: str, context: SuggestionContext
+    ) -> bool:
+        """Check if an exception type is relevant to the current function."""
+        # Basic relevance check - can be enhanced
+        function = context.function
+        func_name = function.signature.name.lower()
+
+        # TimeoutError is relevant if function has timeout parameter
+        if exception_type == "TimeoutError":
+            params = function.signature.parameters
+            return any("timeout" in p.name.lower() for p in params)
+
+        # NetworkError is relevant for functions that might do network operations
+        if exception_type == "NetworkError":
+            network_keywords = [
+                "fetch",
+                "request",
+                "send",
+                "connect",
+                "download",
+                "upload",
+                "api",
+                "http",
+                "transaction",
+                "payment",
+            ]
+            return any(keyword in func_name for keyword in network_keywords)
+
+        # PaymentError and similar domain-specific errors
+        if (
+            "payment" in exception_type.lower()
+            or "transaction" in exception_type.lower()
+        ):
+            transaction_keywords = [
+                "payment",
+                "transaction",
+                "process",
+                "charge",
+                "billing",
+                "purchase",
+                "order",
+            ]
+            return any(keyword in func_name for keyword in transaction_keywords)
+
+        # AuthenticationError and similar
+        if "auth" in exception_type.lower() or "permission" in exception_type.lower():
+            auth_keywords = [
+                "auth",
+                "login",
+                "verify",
+                "permission",
+                "access",
+                "security",
+            ]
+            return any(keyword in func_name for keyword in auth_keywords)
+
+        # ValidationError for input validation
+        if (
+            "validation" in exception_type.lower()
+            or "invalid" in exception_type.lower()
+        ):
+            validation_keywords = [
+                "validate",
+                "check",
+                "verify",
+                "parse",
+                "process",
+                "handle",
+            ]
+            return any(keyword in func_name for keyword in validation_keywords)
+
+        # Default: consider relevant for common exceptions
+        common_exceptions = [
+            "ValueError",
+            "TypeError",
+            "RuntimeError",
+            "IOError",
+            "KeyError",
+            "AttributeError",
+            "NotImplementedError",
+        ]
+        return exception_type in common_exceptions
+
+    def _extract_all_exceptions_from_docstring(
+        self, docstring_content: str
+    ) -> list[tuple[str, str]]:
+        """Extract all exception types and descriptions from a docstring."""
+        exceptions = []
+
+        # Google style pattern
+        google_pattern = r"Raises?:\s*\n((?:\s+\w+:.*\n?)+)"
+        google_match = re.search(google_pattern, docstring_content, re.MULTILINE)
+
+        if google_match:
+            raises_content = google_match.group(1)
+            # Extract individual exceptions
+            exc_pattern = r"^\s+(\w+):\s*(.+?)(?=\n\s+\w+:|\n\s*\n|\Z)"
+            for match in re.finditer(
+                exc_pattern, raises_content, re.MULTILINE | re.DOTALL
+            ):
+                exc_type = match.group(1)
+                exc_desc = match.group(2).strip()
+                exceptions.append((exc_type, exc_desc))
+
+        return exceptions
+
+    def _generate_rag_enhanced_raises_description(
+        self, exception_type: str
+    ) -> str | None:
+        """Generate exception description using RAG examples."""
+        if not self._current_context or not self._current_context.related_functions:
+            return None
+
+        # Extract exception patterns from RAG examples
+        exception_patterns = self._extract_exception_patterns_from_examples(
+            exception_type, self._current_context.related_functions
+        )
+
+        if not exception_patterns:
+            return None
+
+        # Synthesize description from patterns
+        return self._synthesize_exception_description(
+            exception_patterns, exception_type
+        )
+
+    def _extract_exception_patterns_from_examples(
+        self, exception_type: str, examples: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Extract exception documentation patterns."""
+        patterns = []
+
+        for example in examples:
+            docstring_content = example.get("docstring", "")
+            if not docstring_content:
+                continue
+
+            # Parse raises section for all formats
+            raises_info = self._extract_raises_from_docstring(docstring_content)
+
+            # Find matching exception types
+            for exc_info in raises_info:
+                if self._exception_types_match(exc_info["type"], exception_type):
+                    patterns.append(
+                        {
+                            "exception": exc_info["type"],
+                            "description": exc_info["description"],
+                            "similarity": example.get("similarity", 0.0),
+                            "context": exc_info.get("context", ""),
+                        }
+                    )
+
+        # Sort by similarity
+        patterns.sort(key=lambda x: x["similarity"], reverse=True)
+        return patterns
+
+    def _extract_raises_from_docstring(
+        self, docstring_content: str
+    ) -> list[dict[str, Any]]:
+        """Extract all raises sections from a docstring."""
+        raises_info = []
+
+        # Google style pattern
+        google_pattern = r"Raises?:\s*\n((?:\s+\w+.*\n)+)"
+        google_match = re.search(google_pattern, docstring_content, re.MULTILINE)
+        if google_match:
+            raises_block = google_match.group(1)
+            # Parse individual exceptions
+            exc_pattern = r"\s+(\w+(?:\[\w+\])?)\s*:\s*(.+?)(?=\n\s+\w+|\Z)"
+            for match in re.finditer(exc_pattern, raises_block, re.DOTALL):
+                raises_info.append(
+                    {
+                        "type": match.group(1).strip(),
+                        "description": match.group(2).strip(),
+                    }
+                )
+
+        # NumPy style pattern
+        numpy_pattern = r"Raises?\s*\n\s*-+\s*\n((?:\s*\w+.*\n(?:\s+.*\n)*)+)"
+        numpy_match = re.search(numpy_pattern, docstring_content, re.MULTILINE)
+        if numpy_match:
+            raises_block = numpy_match.group(1)
+            # Parse individual exceptions
+            exc_pattern = r"^(\w+(?:\[\w+\])?)\s*\n\s+(.+?)(?=^\w+|\Z)"
+            for match in re.finditer(
+                exc_pattern, raises_block, re.MULTILINE | re.DOTALL
+            ):
+                raises_info.append(
+                    {
+                        "type": match.group(1).strip(),
+                        "description": match.group(2).strip(),
+                    }
+                )
+
+        # Sphinx style pattern
+        sphinx_pattern = r":raises?\s+(\w+(?:\[\w+\])?)\s*:\s*(.+?)(?=:|\Z)"
+        for match in re.finditer(sphinx_pattern, docstring_content, re.DOTALL):
+            raises_info.append(
+                {"type": match.group(1).strip(), "description": match.group(2).strip()}
+            )
+
+        return raises_info
+
+    def _exception_types_match(self, exc1: str, exc2: str) -> bool:
+        """Check if two exception types are semantically similar."""
+        # Exact match
+        if exc1 == exc2:
+            return True
+
+        # Normalize
+        exc1_norm = exc1.lower().replace("error", "").replace("exception", "").strip()
+        exc2_norm = exc2.lower().replace("error", "").replace("exception", "").strip()
+
+        if exc1_norm == exc2_norm:
+            return True
+
+        # Common equivalences
+        equivalences = [
+            {"value", "validation", "invalid"},
+            {"key", "lookup", "notfound"},
+            {"type", "typeof", "cast"},
+            {"io", "file", "os"},
+            {"connection", "network", "socket"},
+            {"permission", "access", "auth"},
+            {"timeout", "deadline", "expired"},
+        ]
+
+        for equiv_set in equivalences:
+            if exc1_norm in equiv_set and exc2_norm in equiv_set:
+                return True
+
+        # Substring matching for related exceptions
+        if exc1_norm in exc2_norm or exc2_norm in exc1_norm:
+            return True
+
+        return False
+
+    def _synthesize_exception_description(
+        self, patterns: list[dict[str, Any]], exception_type: str
+    ) -> str:
+        """Synthesize exception description from multiple patterns."""
+        if not patterns:
+            return f"If {exception_type.replace('Error', '').lower()} occurs."
+
+        # Take top 3 patterns
+        top_patterns = patterns[:3]
+
+        # Extract common phrases (for future use)
+        # common_phrases = self._extract_common_exception_phrases(top_patterns)
+
+        # Build description
+        if len(top_patterns) >= 2:
+            # Multiple patterns - synthesize
+            conditions = []
+            for pattern in top_patterns:
+                condition = self._extract_condition_from_description(
+                    pattern["description"]
+                )
+                if condition and condition not in conditions:
+                    conditions.append(condition)
+
+            if conditions:
+                if len(conditions) == 1:
+                    description = f"If {conditions[0]}."
+                else:
+                    # Debug logging
+                    logger.debug(
+                        f"Synthesizing from {len(conditions)} conditions: {conditions}"
+                    )
+                    description = f"If {' or '.join(conditions)}."
+            else:
+                # Fallback to best pattern
+                description = top_patterns[0]["description"]
+        else:
+            # Single pattern - adapt it
+            description = self._adapt_exception_description(
+                top_patterns[0]["description"], exception_type
+            )
+
+        return self._ensure_proper_exception_grammar(description)
+
+    def _extract_common_exception_phrases(
+        self, patterns: list[dict[str, Any]]
+    ) -> list[str]:
+        """Extract common phrases from exception descriptions."""
+        phrases = []
+
+        # Common exception phrase patterns
+        phrase_patterns = [
+            r"[Ii]f\s+(.+?)(?:\.|,|$)",
+            r"[Ww]hen\s+(.+?)(?:\.|,|$)",
+            r"[Ff]or\s+(.+?)(?:\.|,|$)",
+            r"[Oo]n\s+(.+?)(?:\.|,|$)",
+        ]
+
+        for pattern in patterns:
+            desc = pattern.get("description", "")
+            for phrase_pattern in phrase_patterns:
+                matches = re.findall(phrase_pattern, desc)
+                phrases.extend(matches)
+
+        # Count occurrences and return common ones
+        from collections import Counter
+
+        phrase_counts = Counter(phrases)
+        return [phrase for phrase, count in phrase_counts.items() if count >= 2]
+
+    def _extract_condition_from_description(self, description: str) -> str | None:
+        """Extract the condition that causes the exception."""
+        # Look for condition patterns
+        patterns = [
+            r"[Ii]f\s+(.+?)(?:\.|$)",
+            r"[Ww]hen\s+(.+?)(?:\.|$)",
+            r"(.+?)\s+(?:is|are)\s+(?:invalid|missing|not found)(?:\.|$)",
+            r"(?:invalid|missing|bad)\s+(.+?)(?:\.|$)",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, description)
+            if match:
+                return match.group(1).strip()
+
+        return None
+
+    def _adapt_exception_description(
+        self, description: str, exception_type: str
+    ) -> str:
+        """Adapt description to new exception type."""
+        # Replace old exception type references
+        desc = re.sub(r"\b\w+Error\b", exception_type, description, flags=re.IGNORECASE)
+
+        # Ensure it starts appropriately
+        if not desc.lower().startswith(("if", "when", "for", "on")):
+            # Extract core condition
+            condition = self._extract_condition_from_description(desc)
+            if condition:
+                desc = f"If {condition}."
+
+        return desc
+
+    def _ensure_proper_exception_grammar(self, description: str) -> str:
+        """Ensure proper grammar for exception descriptions."""
+        # Capitalize first letter
+        if description:
+            description = description[0].upper() + description[1:]
+
+        # Ensure ends with period
+        if not description.endswith("."):
+            description += "."
+
+        # Fix common issues
+        description = re.sub(r"\s+", " ", description)  # Multiple spaces
+        description = re.sub(r"\s+\.", ".", description)  # Space before period
+
+        return description.strip()

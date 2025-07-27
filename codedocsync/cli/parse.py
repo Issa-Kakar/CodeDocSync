@@ -87,7 +87,8 @@ def parse(
                 }
                 json_data.append(func_data)
 
-            console.print(json.dumps(json_data, indent=2))
+            # Use print for JSON output to avoid Rich formatting
+            print(json.dumps(json_data, indent=2))
         else:
             # Pretty print with Rich
             if not functions:

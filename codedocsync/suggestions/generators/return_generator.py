@@ -342,9 +342,9 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
     def _get_return_type_from_signature(self, function: Any) -> str | None:
         """Extract return type from function signature."""
         if hasattr(function, "signature") and hasattr(
-            function.signature, "return_annotation"
+            function.signature, "return_type"
         ):
-            return str(function.signature.return_annotation)
+            return str(function.signature.return_type)
         return None
 
     def _update_return_type_in_docstring(
@@ -707,6 +707,30 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
 
         # Adapt based on semantic patterns
         adapted = self._adapt_based_on_semantics(core_description, return_type)
+
+        # Special handling for object/class return types
+        if (
+            return_type
+            and return_type[0].isupper()
+            and return_type not in ["None", "Any"]
+        ):
+            # This looks like a class/object type (e.g., TransactionResult, PaymentResult)
+            # Check if original description had "object containing" pattern
+            desc_lower = description.lower()
+            if (
+                "object" in desc_lower and "containing" in desc_lower
+            ) or "object containing" in desc_lower:
+                # Preserve the "object containing" structure
+                if (
+                    "object" not in adapted.lower()
+                    and "containing" not in adapted.lower()
+                ):
+                    adapted = f"{return_type} object containing {adapted.lower()}"
+                elif return_type not in adapted:
+                    # Replace the original type with the new type
+                    adapted = re.sub(
+                        r"\b\w+Result\b", return_type, adapted, flags=re.IGNORECASE
+                    )
 
         # Ensure proper grammar
         final_description = self._ensure_proper_grammar(adapted, return_type)

@@ -128,10 +128,18 @@ class SuggestionIntegration:
                 "missing_returns": ReturnSuggestionGenerator(self.config),
                 # Exception-related issues
                 "missing_raises": RaisesSuggestionGenerator(self.config),
-                # Behavioral issues
+                # Behavioral issues - expand the existing single mapping
                 "description_outdated": BehaviorSuggestionGenerator(self.config),
+                "description_vague": BehaviorSuggestionGenerator(self.config),
+                "missing_behavior_description": BehaviorSuggestionGenerator(
+                    self.config
+                ),
+                "side_effects_undocumented": BehaviorSuggestionGenerator(self.config),
                 # Example issues
                 "example_invalid": ExampleSuggestionGenerator(self.config),
+                "missing_examples": ExampleSuggestionGenerator(self.config),
+                "example_outdated": ExampleSuggestionGenerator(self.config),
+                "example_incomplete": ExampleSuggestionGenerator(self.config),
             }
         )
 

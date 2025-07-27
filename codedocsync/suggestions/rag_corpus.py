@@ -7,8 +7,10 @@ from high-quality docstring examples to provide better suggestions.
 
 import json
 import logging
+import shutil
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +49,9 @@ class DocstringExample:
     similarity_score: float | None = (
         None  # Optional similarity score for retrieval results
     )
+    issue_types: list[str] | None = None  # Track which issues were fixed
+    original_issue: str | None = None  # The specific issue this suggestion addressed
+    improvement_score: float | None = None  # Calculated improvement metric
 
 
 class RAGCorpusManager:
@@ -116,6 +121,9 @@ class RAGCorpusManager:
 
         # Load bootstrap corpus on initialization
         self._load_bootstrap_corpus()
+
+        # Load accepted suggestions from disk
+        self.load_accepted_suggestions()
 
         # Load persisted metrics
         self._load_persisted_metrics()
@@ -305,6 +313,8 @@ class RAGCorpusManager:
                 quality_score=4,  # Accepted suggestions get quality 4
                 source="accepted",
                 timestamp=time.time(),
+                issue_types=[issue_type],  # Track the issue type
+                original_issue=issue_type,  # Store the specific issue
             )
 
             # Store the example
@@ -313,8 +323,149 @@ class RAGCorpusManager:
 
             logger.info(f"Added accepted suggestion for {example.function_name}")
 
+            # Persist to disk
+            self.save_accepted_suggestions()
+
         except Exception as e:
             logger.error(f"Failed to add accepted suggestion: {e}")
+
+    def save_accepted_suggestions(self) -> None:
+        """Persist accepted suggestions to disk with versioning."""
+        accepted_path = self.corpus_dir / "accepted_suggestions.json"
+
+        # Create backup if file exists
+        if accepted_path.exists():
+            backup_path = (
+                self.corpus_dir / f"accepted_suggestions.{int(time.time())}.backup"
+            )
+            shutil.copy2(accepted_path, backup_path)
+            self._cleanup_old_backups()
+
+        # Filter accepted suggestions from memory corpus
+        accepted_examples = [ex for ex in self.memory_corpus if ex.source == "accepted"]
+
+        # Prepare data structure
+        data = {
+            "version": "1.0.0",
+            "last_updated": datetime.now().isoformat(),
+            "total_accepted": len(accepted_examples),
+            "examples": [self._serialize_example(ex) for ex in accepted_examples],
+        }
+
+        # Atomic write
+        temp_path = accepted_path.with_suffix(".tmp")
+        try:
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            temp_path.replace(accepted_path)
+            logger.info(f"Saved {len(accepted_examples)} accepted suggestions to disk")
+        except Exception as e:
+            logger.error(f"Failed to save accepted suggestions: {e}")
+            if temp_path.exists():
+                temp_path.unlink()
+            raise
+
+    def _serialize_example(self, example: DocstringExample) -> dict[str, Any]:
+        """Serialize a DocstringExample to a dictionary."""
+        # Use asdict but exclude None values to save space
+        data = asdict(example)
+        return {k: v for k, v in data.items() if v is not None}
+
+    def _cleanup_old_backups(self) -> None:
+        """Keep only the most recent 5 backup files."""
+        backup_files = sorted(
+            self.corpus_dir.glob("accepted_suggestions.*.backup"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+
+        # Keep only the 5 most recent backups
+        for backup_file in backup_files[5:]:
+            try:
+                backup_file.unlink()
+                logger.debug(f"Removed old backup: {backup_file}")
+            except Exception as e:
+                logger.warning(f"Failed to remove backup {backup_file}: {e}")
+
+    def load_accepted_suggestions(self) -> None:
+        """Load accepted suggestions from disk with version compatibility."""
+        accepted_path = self.corpus_dir / "accepted_suggestions.json"
+
+        if not accepted_path.exists():
+            logger.debug("No accepted suggestions file found")
+            return
+
+        try:
+            with open(accepted_path, encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Check version compatibility
+            version = data.get("version", "0.0.0")
+            if not self._is_compatible_version(version):
+                logger.warning(f"Incompatible accepted suggestions version: {version}")
+                return
+
+            # Load examples
+            loaded_count = 0
+            for ex_data in data.get("examples", []):
+                try:
+                    # Ensure compatibility with new fields
+                    if "issue_types" not in ex_data and "original_issue" in ex_data:
+                        ex_data["issue_types"] = [ex_data["original_issue"]]
+
+                    example = DocstringExample(**ex_data)
+                    example.source = "accepted"  # Ensure source is correct
+
+                    # Store example
+                    self._store_example(example)
+                    loaded_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to load accepted example: {e}")
+
+            logger.info(f"Loaded {loaded_count} accepted suggestions from disk")
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Corrupted accepted suggestions file: {e}")
+            # Try to restore from backup
+            self._restore_from_backup()
+        except Exception as e:
+            logger.error(f"Failed to load accepted suggestions: {e}")
+
+    def _is_compatible_version(self, version: str) -> bool:
+        """Check if the file version is compatible."""
+        # For now, we support version 1.x.x
+        try:
+            major_version = int(version.split(".")[0])
+            return major_version == 1
+        except (ValueError, IndexError):
+            return False
+
+    def _restore_from_backup(self) -> None:
+        """Attempt to restore from the most recent backup."""
+        backup_files = sorted(
+            self.corpus_dir.glob("accepted_suggestions.*.backup"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+
+        if not backup_files:
+            logger.warning("No backup files available for restoration")
+            return
+
+        for backup_file in backup_files:
+            try:
+                # Copy backup to main file
+                accepted_path = self.corpus_dir / "accepted_suggestions.json"
+                shutil.copy2(backup_file, accepted_path)
+                logger.info(f"Restored from backup: {backup_file}")
+
+                # Try loading again
+                self.load_accepted_suggestions()
+                return
+            except Exception as e:
+                logger.warning(f"Failed to restore from backup {backup_file}: {e}")
+
+        logger.error("Failed to restore from any backup")
 
     def retrieve_examples(
         self, function: ParsedFunction, n_results: int = 3, min_similarity: float = 0.7

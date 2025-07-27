@@ -6,6 +6,7 @@ based on their signatures, behavior, and common usage patterns.
 """
 
 import ast
+import logging
 import re
 from dataclasses import dataclass
 from typing import Any, cast
@@ -21,6 +22,8 @@ from ..models import (
     SuggestionType,
 )
 from ..templates.base import get_template
+
+logger = logging.getLogger(__name__)
 
 # DocstringExample not needed - examples are stored as strings
 
@@ -469,8 +472,25 @@ class ExampleGenerator:
 class ExampleSuggestionGenerator(BaseSuggestionGenerator):
     """Generate suggestions for example-related issues."""
 
+    def __init__(self, config: Any | None = None) -> None:
+        """Initialize the generator."""
+        super().__init__(config)
+        self._used_rag = False
+        self._current_context: SuggestionContext | None = None
+
     def generate(self, context: SuggestionContext) -> Suggestion:
         """Generate example documentation fixes."""
+        self._current_context = context
+        self._used_rag = False  # Reset for each generation
+
+        # Debug log to verify related_functions
+        if context.related_functions:
+            logger.debug(
+                f"RAG: Found {len(context.related_functions)} related functions"
+            )
+        else:
+            logger.debug("RAG: No related functions available")
+
         issue = context.issue
 
         if issue.issue_type == "example_invalid":
@@ -506,27 +526,36 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         """Generate new examples for the function."""
         function = context.function
 
-        # Generate examples
-        generator = ExampleGenerator()
-        source_code = getattr(function, "source_code", "")
-        examples = generator.generate_examples(function, source_code, count=2)
+        # Try RAG-enhanced generation first
+        rag_examples = self._generate_rag_enhanced_examples(function, context.issue)
 
-        if not examples:
-            return self._create_fallback_suggestion(
-                context, "Could not generate examples for this function"
-            )
+        if rag_examples:
+            logger.debug(f"Using RAG with {len(rag_examples)} examples")
+            # Convert RAG examples to docstring format
+            docstring_examples = rag_examples
+        else:
+            # Fallback to rule-based generation
+            logger.debug("No RAG examples found, falling back to rule-based")
+            generator = ExampleGenerator()
+            source_code = getattr(function, "source_code", "")
+            examples = generator.generate_examples(function, source_code, count=2)
 
-        # Convert to formatted example strings
-        docstring_examples = []
-        for example in examples:
-            # Format example code
-            example_code = self._format_example_code(example)
-            # Combine description and code into a single example string
-            if example.description:
-                example_str = f"{example.description}\n{example_code}"
-            else:
-                example_str = example_code
-            docstring_examples.append(example_str)
+            if not examples:
+                return self._create_fallback_suggestion(
+                    context, "Could not generate examples for this function"
+                )
+
+            # Convert to formatted example strings
+            docstring_examples = []
+            for example in examples:
+                # Format example code
+                example_code = self._format_example_code(example)
+                # Combine description and code into a single example string
+                if example.description:
+                    example_str = f"{example.description}\n{example_code}"
+                else:
+                    example_str = example_code
+                docstring_examples.append(example_str)
 
         # Update docstring with examples
         updated_docstring = self._add_examples_to_docstring(context, docstring_examples)
@@ -603,7 +632,9 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
     ) -> Suggestion:
         """Create a suggestion object."""
         original_text = (
-            getattr(context.docstring, "raw_text", "") if context.docstring else ""
+            getattr(context.docstring, "raw_text", "")
+            if context.docstring
+            else '"""TODO: Add docstring"""'
         )
 
         # Create diff
@@ -620,6 +651,7 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         metadata = SuggestionMetadata(
             generator_type=self.__class__.__name__,
             generator_version="1.0.0",
+            used_rag_examples=getattr(self, "_used_rag", False),
             # Store the description in rule_triggers for now
             rule_triggers=[description] if description else [],
         )
@@ -652,3 +684,441 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         return self._create_fallback_suggestion(
             context, f"Unknown example issue type: {context.issue.issue_type}"
         )
+
+    def _generate_rag_enhanced_examples(
+        self, function: Any, issue: Any
+    ) -> list[str] | None:
+        """Generate examples using RAG corpus."""
+        if not self._current_context or not self._current_context.related_functions:
+            logger.debug("No RAG context or related functions available")
+            return None
+
+        logger.debug(
+            f"RAG context available with {len(self._current_context.related_functions)} related functions"
+        )
+
+        # Extract and analyze patterns from related functions
+        patterns = self._extract_example_patterns_from_corpus(
+            self._current_context.related_functions
+        )
+
+        logger.debug(
+            f"Extracted {len(patterns) if patterns else 0} patterns from corpus"
+        )
+
+        if not patterns:
+            return None
+
+        # Set self._used_rag = True only if patterns used
+        self._used_rag = True
+
+        # Determine complexity level based on issue type
+        complexity_level = "basic"
+        if issue.issue_type == "example_incomplete":
+            complexity_level = "intermediate"
+        elif "advanced" in issue.description.lower():
+            complexity_level = "advanced"
+
+        # Generate examples using patterns
+        generated_examples: list[str] = []
+
+        # Determine how many examples to generate based on issue type
+        target_examples = 1
+        if issue.issue_type == "example_incomplete":
+            target_examples = 3  # Generate more examples for incomplete issues
+        elif complexity_level != "basic":
+            target_examples = 2
+
+        # Generate examples at different complexity levels
+        complexities = ["basic", "intermediate", "advanced"]
+        for _i, complexity in enumerate(complexities):
+            if len(generated_examples) >= target_examples:
+                break
+
+            example = self._synthesize_example_from_patterns(
+                patterns, function, complexity
+            )
+            if example and example not in generated_examples:
+                generated_examples.append(example)
+
+        # Fallback to simple adaptation if we need more examples
+        if len(generated_examples) < target_examples:
+            logger.debug(
+                f"Need {target_examples - len(generated_examples)} more examples, using simple adaptation"
+            )
+            for pattern in patterns[len(generated_examples) : target_examples]:
+                if not pattern:
+                    continue
+                raw_text = pattern.get("raw_text", "")
+                if raw_text:
+                    adapted = self._adapt_example_code(raw_text, function)
+                    if adapted and adapted not in generated_examples:
+                        generated_examples.append(adapted)
+
+        return generated_examples if generated_examples else None
+
+    def _extract_example_patterns_from_corpus(
+        self, related_functions: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Extract example patterns from RAG corpus.
+
+        Returns a list of patterns with metadata about their usage.
+        """
+        patterns = []
+
+        for related in related_functions:
+            if related.get("similarity", 0) <= 0.3:
+                continue
+
+            docstring_text = related.get("docstring", "")
+            if not docstring_text:
+                continue
+
+            # Extract examples from this function
+            examples = self._extract_examples_from_docstring(docstring_text)
+            logger.debug(
+                f"Extracted {len(examples)} examples from docstring with similarity {related.get('similarity', 0)}"
+            )
+            if not examples:
+                continue
+
+            # Parse each example to understand its structure
+            for example in examples:
+                pattern = self._parse_example_section(example)
+                if pattern:
+                    pattern["source_similarity"] = related.get("similarity", 0)
+                    pattern["source_signature"] = related.get("signature", "")
+                    patterns.append(pattern)
+
+        # Sort by relevance
+        patterns.sort(key=lambda p: p.get("relevance", 0), reverse=True)
+        return patterns
+
+    def _parse_example_section(self, example_text: str) -> dict[str, Any] | None:
+        """Parse an example section to extract its components.
+
+        Returns a dictionary with:
+        - setup_code: List of setup lines
+        - function_calls: List of function call lines
+        - assertions: List of assertion/result lines
+        - complexity: Estimated complexity level
+        - features: List of features used (async, generators, etc.)
+        """
+        if not example_text.strip():
+            return None
+
+        lines = example_text.strip().split("\n")
+        pattern: dict[str, Any] = {
+            "setup_code": [],
+            "function_calls": [],
+            "assertions": [],
+            "complexity": "basic",
+            "features": [],
+            "raw_text": example_text,
+        }
+
+        # Analyze each line
+        for line in lines:
+            clean_line = line.strip()
+            if not clean_line or clean_line.startswith("#"):
+                continue
+
+            # Detect features
+            if "await" in clean_line:
+                pattern["features"].append("async")
+            if "yield" in clean_line:
+                pattern["features"].append("generator")
+            if "lambda" in clean_line:
+                pattern["features"].append("lambda")
+
+            # Categorize lines
+            if any(keyword in clean_line for keyword in ["import", "from"]):
+                pattern["setup_code"].append(line)
+            elif (
+                "=" in clean_line and "==" not in clean_line and "!=" not in clean_line
+            ):
+                # Assignment line - could be setup or result capture
+                if "(" in clean_line and ")" in clean_line:
+                    pattern["function_calls"].append(line)
+                else:
+                    pattern["setup_code"].append(line)
+            elif clean_line.startswith(("assert", "print", "#")):
+                pattern["assertions"].append(line)
+            elif "(" in clean_line and ")" in clean_line:
+                pattern["function_calls"].append(line)
+
+        # Estimate complexity
+        total_lines = (
+            len(pattern["setup_code"])
+            + len(pattern["function_calls"])
+            + len(pattern["assertions"])
+        )
+        if total_lines > 10 or len(pattern["features"]) > 2:
+            pattern["complexity"] = "advanced"
+        elif total_lines > 5 or len(pattern["features"]) > 0:
+            pattern["complexity"] = "intermediate"
+
+        # Calculate relevance based on content
+        pattern["relevance"] = self._calculate_example_relevance(pattern)
+
+        return pattern
+
+    def _calculate_example_relevance(self, pattern: dict[str, Any]) -> float:
+        """Calculate relevance score for an example pattern.
+
+        Factors considered:
+        - Has function calls (required)
+        - Has meaningful setup
+        - Has assertions/results
+        - Complexity matches target
+        - Source similarity score
+        """
+        score = 0.0
+
+        # Must have function calls
+        if not pattern.get("function_calls"):
+            return 0.0
+
+        score += 0.3  # Base score for having function calls
+
+        # Setup code adds value
+        if pattern.get("setup_code"):
+            score += 0.2
+
+        # Assertions/results are valuable
+        if pattern.get("assertions"):
+            score += 0.2
+
+        # Complexity scoring (prefer basic for most cases)
+        complexity = pattern.get("complexity", "basic")
+        if complexity == "basic":
+            score += 0.1
+        elif complexity == "intermediate":
+            score += 0.05
+
+        # Source similarity matters
+        source_sim = pattern.get("source_similarity", 0)
+        score += source_sim * 0.2
+
+        return min(score, 1.0)
+
+    def _synthesize_example_from_patterns(
+        self,
+        patterns: list[dict[str, Any]],
+        target_function: Any,
+        complexity_level: str = "basic",
+    ) -> str | None:
+        """Synthesize a new example from extracted patterns.
+
+        Combines the best patterns to create an example tailored
+        to the target function.
+        """
+        if not patterns:
+            return None
+
+        # Filter patterns by complexity
+        suitable_patterns = [
+            p for p in patterns if p.get("complexity", "basic") == complexity_level
+        ]
+
+        if not suitable_patterns:
+            # Fallback to any pattern
+            suitable_patterns = patterns
+
+        if not suitable_patterns:
+            return None
+
+        # Use the best pattern as base
+        best_pattern = suitable_patterns[0]
+
+        # Extract components
+        setup_lines = best_pattern.get("setup_code", [])
+        call_lines = best_pattern.get("function_calls", [])
+        result_lines = best_pattern.get("assertions", [])
+
+        # Adapt to target function
+        if hasattr(target_function, "signature"):
+            sig = target_function.signature
+            func_name = sig.name
+
+            # Replace function names in calls
+            adapted_calls = []
+            for call in call_lines:
+                # Simple name replacement - more sophisticated version would use AST
+                adapted = self._adapt_function_call(call, func_name, sig)
+                if adapted:
+                    adapted_calls.append(adapted)
+
+            if adapted_calls:
+                call_lines = adapted_calls
+
+        # Combine into example
+        example_lines: list[str] = []
+
+        # Add setup if meaningful
+        meaningful_setup = [
+            line
+            for line in setup_lines
+            if not line.strip().startswith("import") and line.strip()
+        ]
+        if meaningful_setup:
+            # Add >>> prefix to setup lines
+            example_lines.extend(f">>> {line}" for line in meaningful_setup)
+
+        # Add function calls with >>> prefix
+        if call_lines:
+            example_lines.extend(f">>> {line}" for line in call_lines)
+
+        # Add results if present (without >>> prefix)
+        if result_lines:
+            # Results typically don't have >>> prefix
+            for line in result_lines[:1]:  # Limit to one result line
+                if line.strip().startswith(("assert", "print")):
+                    example_lines.append(f">>> {line}")
+                else:
+                    # Expected output (no >>> prefix)
+                    example_lines.append(line)
+
+        return "\n".join(example_lines) if example_lines else None
+
+    def _adapt_function_call(
+        self, call_line: str, target_name: str, target_signature: Any
+    ) -> str | None:
+        """Adapt a function call line to use the target function."""
+        # Extract the pattern of the call
+
+        # Match function calls: result = func(args) or func(args)
+        match = re.search(r"(\w+)?\s*=?\s*(\w+)\s*\((.*?)\)", call_line)
+        if not match:
+            return None
+
+        result_var = match.group(1)
+        _old_func_name = match.group(2)  # Unused but needed for regex grouping
+        args_str = match.group(3)
+
+        # Build new call
+        if result_var:
+            new_call = f"{result_var} = {target_name}({args_str})"
+        else:
+            new_call = f"{target_name}({args_str})"
+
+        # Preserve indentation
+        indent = len(call_line) - len(call_line.lstrip())
+        return " " * indent + new_call
+
+    def _extract_examples_from_docstring(self, docstring_text: str) -> list[str]:
+        """Extract example code blocks from a docstring."""
+        examples = []
+        logger.debug(f"Extracting examples from docstring: {docstring_text[:100]}...")
+
+        # Try parsing with docstring_parser first
+        try:
+            from docstring_parser import parse as parse_docstring
+
+            parsed = parse_docstring(docstring_text)
+            if hasattr(parsed, "examples") and parsed.examples:
+                logger.debug(f"docstring_parser found {len(parsed.examples)} examples")
+                for example in parsed.examples:
+                    if hasattr(example, "snippet") and example.snippet:
+                        examples.append(example.snippet)
+                        logger.debug(
+                            f"Added example from parser: {example.snippet[:50]}..."
+                        )
+        except Exception as e:
+            logger.debug(f"docstring_parser failed: {e}")
+
+        # Fallback to regex patterns if parser fails
+        if not examples:
+            logger.debug("Trying regex extraction...")
+            # Try multiple patterns for Examples section
+
+            # Pattern 1: Look for Examples: section with any content after it
+            example_patterns = [
+                # Pattern for Examples: followed by content
+                r"Examples?:?\s*\n((?:.*\n)*?)(?=\n\s*\w+:|$)",
+                # Pattern for indented content after Examples:
+                r"Examples?:?\s*\n((?:\s+.*\n)*)",
+                # Pattern to capture everything after Examples: until end of string
+                r"Examples?:?\s*\n(.*?)$",
+            ]
+
+            for pattern in example_patterns:
+                example_match = re.search(
+                    pattern, docstring_text, re.MULTILINE | re.DOTALL
+                )
+                if example_match:
+                    example_text = example_match.group(1)
+                    logger.debug(
+                        f"Regex matched with pattern, example text: {example_text[:100]}..."
+                    )
+
+                    # Extract >>> code blocks
+                    code_blocks = re.findall(
+                        r">>>.*?(?=\n(?!>>>|\.\.\.)|$)", example_text, re.DOTALL
+                    )
+                    logger.debug(f"Found {len(code_blocks)} code blocks")
+
+                    for i, block in enumerate(code_blocks):
+                        logger.debug(f"Processing block {i}: {block[:50]}...")
+                        # Clean up the code block
+                        lines = []
+                        for line in block.split("\n"):
+                            if line.strip().startswith((">>>", "...")):
+                                code = line.strip()[3:].strip()
+                                if code:
+                                    lines.append(code)
+                        if lines:
+                            example_code = "\n".join(lines)
+                            examples.append(example_code)
+                            logger.debug(f"Added example {i}: {example_code[:50]}...")
+
+                    if examples:
+                        break  # Stop if we found examples
+
+        logger.debug(f"Total examples extracted: {len(examples)}")
+        return examples
+
+    def _adapt_example_code(self, example: str, function: Any) -> str | None:
+        """Adapt example code from related function to current function."""
+        if not hasattr(function, "signature"):
+            return None
+
+        sig = function.signature
+        function_name = sig.name
+
+        # Simple adaptation - replace function names
+        # In a more sophisticated implementation, we'd parse and rewrite the AST
+        adapted = example
+
+        # Try to identify function calls in the example
+        # This is a simplified approach - real implementation would be more robust
+        func_call_pattern = r"\b(\w+)\s*\("
+        matches = re.findall(func_call_pattern, example)
+
+        if matches:
+            # Replace the most common function name with our target function
+            old_func_name = max(set(matches), key=matches.count)
+            adapted = re.sub(rf"\b{old_func_name}\b", function_name, adapted)
+
+        # Add basic setup if needed
+        if "await" in adapted and "async" not in adapted:
+            adapted = f"# In an async context\n{adapted}"
+
+        # Ensure the example has >>> prefixes if it doesn't already
+        if ">>>" not in adapted:
+            lines = adapted.strip().split("\n")
+            formatted_lines = []
+            for line in lines:
+                if line.strip():
+                    # Don't add >>> to comments or expected output
+                    if line.strip().startswith("#") or (
+                        not any(c in line for c in ["(", "=", "import", "from"])
+                    ):
+                        formatted_lines.append(line)
+                    else:
+                        formatted_lines.append(f">>> {line}")
+                else:
+                    formatted_lines.append(line)
+            adapted = "\n".join(formatted_lines)
+
+        return adapted
