@@ -62,10 +62,11 @@ def test_function(x: int, y: int) -> int:
             assert result.exit_code == 0
             # Rich table may truncate function names, so check for partial match
             assert "test_funct" in result.stdout or "test_function" in result.stdout
-            assert (
-                "1 function" in result.stdout.lower()
-                or "found 1" in result.stdout.lower()
-            )
+            # Check for the output pattern (may contain ANSI codes)
+            import re
+
+            clean_output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+            assert "Found 1 functions" in clean_output
         finally:
             temp_path.unlink()
 
@@ -89,6 +90,7 @@ def example():
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(test_code)
+            f.flush()
             temp_path = Path(f.name)
 
         try:
@@ -131,10 +133,12 @@ class TestMatchCommand:
         """Test match command with confidence threshold."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("def test(): pass")
+            f.flush()
             temp_path = Path(f.name)
 
         try:
-            result = runner.invoke(app, ["match", str(temp_path), "--threshold", "0.9"])
+            # Note: threshold option was removed from match command
+            result = runner.invoke(app, ["match", str(temp_path)])
             assert result.exit_code == 0
         finally:
             temp_path.unlink()
