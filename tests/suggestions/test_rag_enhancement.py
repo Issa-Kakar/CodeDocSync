@@ -7,7 +7,6 @@ from codedocsync.parser.ast_parser import (
     FunctionParameter,
     FunctionSignature,
     ParsedFunction,
-    RawDocstring,
 )
 from codedocsync.parser.docstring_models import DocstringFormat, ParsedDocstring
 from codedocsync.suggestions.generators.parameter_generator import (
@@ -228,16 +227,16 @@ Returns:
         assert len(patterns) > 0
         assert patterns[0]["similarity"] > 0  # Should have calculated similarity
 
-    @patch("codedocsync.suggestions.rag_corpus.RAGCorpusManager")
-    def test_rag_retrieval_integration(self, mock_rag_manager):
+    @patch("codedocsync.suggestions.integration._get_rag_manager")
+    def test_rag_retrieval_integration(self, mock_get_rag_manager):
         """Test the integration with RAG corpus retrieval."""
         from codedocsync.suggestions.config import SuggestionConfig
         from codedocsync.suggestions.integration import SuggestionIntegration
         from codedocsync.suggestions.rag_corpus import DocstringExample
 
-        # Mock RAG corpus manager
+        # Mock RAG corpus manager instance
         mock_instance = Mock()
-        mock_rag_manager.return_value = mock_instance
+        mock_get_rag_manager.return_value = mock_instance
 
         # Create mock examples
         example = Mock(spec=DocstringExample)
@@ -265,9 +264,21 @@ Returns:
             name="test_function", parameters=[], return_type="list"
         )
 
+        # Create a parsed docstring instead of raw
+        parsed_doc = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Test function.",
+            description=None,
+            parameters=[],
+            returns=None,  # Missing returns to trigger the issue
+            raises=[],
+            examples=[],
+            raw_text='"""Test function."""',
+        )
+
         function = ParsedFunction(
             signature=signature,
-            docstring=RawDocstring(raw_text='"""Test function."""'),
+            docstring=parsed_doc,
             file_path="test.py",
             line_number=1,
             end_line_number=3,
@@ -288,11 +299,20 @@ Returns:
             match_reason="Direct match",
         )
 
-        # Generate suggestion
-        suggestion = integration.generate_suggestion(issue, pair)
+        # Create an AnalysisResult to use the public interface
+        from codedocsync.analyzer.models import AnalysisResult
+
+        analysis_result = AnalysisResult(
+            matched_pair=pair, issues=[issue], used_llm=False, analysis_time_ms=0.0
+        )
+
+        # Enhance the analysis result with suggestions
+        enhanced_result = integration.enhance_analysis_result(analysis_result)
 
         # Verify RAG was called
         mock_instance.retrieve_examples.assert_called_once()
 
-        # Verify suggestion includes RAG context
-        assert suggestion is not None
+        # Verify suggestion was created
+        assert len(enhanced_result.issues) == 1
+        enhanced_issue = enhanced_result.issues[0]
+        assert enhanced_issue.suggestion is not None
