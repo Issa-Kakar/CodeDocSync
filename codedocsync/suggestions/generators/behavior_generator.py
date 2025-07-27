@@ -8,6 +8,7 @@ descriptions, identifying patterns, side effects, and operational characteristic
 import ast
 import logging
 import re
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
@@ -735,6 +736,10 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             getattr(context.docstring, "raw_text", "") if context.docstring else ""
         )
 
+        # Ensure we have some original text (required by Suggestion model)
+        if not original_text:
+            original_text = f'"""TODO: Document {context.function.signature.name}."""'
+
         # Create diff
         original_lines = original_text.split("\n") if original_text else []
         suggested_lines = suggested_text.split("\n")
@@ -767,9 +772,16 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         self, context: SuggestionContext, reason: str
     ) -> Suggestion:
         """Create a low-confidence fallback suggestion."""
+        original_text = ""
+        if context.docstring:
+            original_text = getattr(context.docstring, "raw_text", "")
+        if not original_text:
+            # Provide a minimal docstring placeholder
+            original_text = f'"""TODO: Document {context.function.signature.name}."""'
+
         return self._create_suggestion(
             context,
-            getattr(context.docstring, "raw_text", "") if context.docstring else "",
+            original_text,
             f"Unable to generate specific behavior improvement: {reason}",
             confidence=0.1,
             suggestion_type=SuggestionType.DESCRIPTION_UPDATE,
@@ -818,91 +830,229 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             # Extract and categorize vocabulary
             self._extract_action_verbs(docstring, vocabulary["verbs"])
             self._extract_common_patterns(docstring, vocabulary["patterns"])
-            self._extract_technical_terms(docstring, vocabulary["technical"])
+            vocabulary["technical"].extend(self._extract_technical_terms(docstring))
 
         # Deduplicate and rank by frequency
         return self._rank_vocabulary_by_frequency(vocabulary)
 
-    def _extract_action_verbs(self, docstring: str, verbs: list[str]) -> None:
-        """Extract action verbs from docstring."""
-        # Common action verbs in documentation
-        verb_patterns = [
-            r"\b(process|processes|processing)\b",
-            r"\b(validate|validates|validating)\b",
-            r"\b(transform|transforms|transforming)\b",
-            r"\b(calculate|calculates|calculating)\b",
-            r"\b(create|creates|creating)\b",
-            r"\b(update|updates|updating)\b",
-            r"\b(retrieve|retrieves|retrieving)\b",
-            r"\b(generate|generates|generating)\b",
-            r"\b(parse|parses|parsing)\b",
-            r"\b(convert|converts|converting)\b",
-            r"\b(analyze|analyzes|analyzing)\b",
-            r"\b(extract|extracts|extracting)\b",
-        ]
-
-        for pattern in verb_patterns:
-            matches = re.findall(pattern, docstring.lower())
-            verbs.extend(matches)
-
-    def _extract_common_patterns(self, docstring: str, patterns: list[str]) -> None:
-        """Extract common phrasal patterns from docstring."""
-        phrase_patterns = [
-            r"based on [\w\s]+",
-            r"according to [\w\s]+",
-            r"using [\w\s]+",
-            r"from [\w\s]+ to [\w\s]+",
-            r"with [\w\s]+ support",
-            r"for [\w\s]+ purposes",
-        ]
-
-        for pattern in phrase_patterns:
-            matches = re.findall(pattern, docstring.lower())
-            patterns.extend([m.strip() for m in matches if len(m.strip()) < 50])
-
-    def _extract_technical_terms(self, docstring: str, terms: list[str]) -> None:
-        """Extract technical terms from docstring."""
-        # Look for capitalized terms and acronyms
-        technical_pattern = r"\b[A-Z][A-Za-z]*[A-Z]+[A-Za-z]*\b|\b[A-Z]{2,}\b"
-        matches = re.findall(technical_pattern, docstring)
-        terms.extend(matches)
-
-        # Also look for common technical terms
-        common_terms = [
-            "API",
-            "URL",
-            "JSON",
-            "XML",
-            "HTTP",
-            "SQL",
+    def _extract_action_verbs(self, description: str, verb_list: list[str]) -> None:
+        """Extract action verbs from description."""
+        # Common action verbs in documentation (both singular and plural forms)
+        action_verbs = {
+            "process",
+            "processes",
+            "validate",
+            "validates",
+            "transform",
+            "transforms",
+            "convert",
+            "converts",
+            "parse",
+            "parses",
+            "fetch",
+            "fetches",
+            "retrieve",
+            "retrieves",
+            "download",
+            "downloads",
+            "upload",
+            "uploads",
+            "send",
+            "sends",
+            "calculate",
+            "calculates",
+            "compute",
+            "computes",
+            "generate",
+            "generates",
+            "create",
+            "creates",
+            "build",
+            "builds",
+            "update",
+            "updates",
+            "modify",
+            "modifies",
+            "delete",
+            "deletes",
+            "remove",
+            "removes",
+            "clear",
+            "clears",
+            "check",
+            "checks",
+            "verify",
+            "verifies",
+            "ensure",
+            "ensures",
+            "confirm",
+            "confirms",
+            "test",
+            "tests",
+            "initialize",
+            "initializes",
+            "configure",
+            "configures",
+            "set",
+            "sets",
+            "reset",
+            "resets",
+            "load",
+            "loads",
+            "save",
+            "saves",
+            "store",
+            "stores",
             "cache",
-            "database",
-            "configuration",
-            "authentication",
-            "authorization",
-            "encryption",
+            "caches",
+            "persist",
+            "persists",
+            "write",
+            "writes",
+            "read",
+            "reads",
+            "query",
+            "queries",
+            "search",
+            "searches",
+            "find",
+            "finds",
+            "locate",
+            "locates",
+            "handle",
+            "handles",
+            "manage",
+            "manages",
+            "control",
+            "controls",
+            "coordinate",
+            "coordinates",
+            "orchestrate",
+            "orchestrates",
+            "filter",
+            "filters",
+            "sort",
+            "sorts",
+            "group",
+            "groups",
+            "aggregate",
+            "aggregates",
+            "merge",
+            "merges",
+            "encrypt",
+            "encrypts",
+            "decrypt",
+            "decrypts",
+            "hash",
+            "hashes",
+            "sign",
+            "signs",
+            "authenticate",
+            "authenticates",
+            "format",
+            "formats",
+            "render",
+            "renders",
+            "display",
+            "displays",
+            "present",
+            "presents",
+            "output",
+            "outputs",
+        }
+
+        # Split into words and check each word
+        words = description.lower().split()
+        for word in words:
+            # Remove punctuation
+            clean_word = word.strip(".,!?;:")
+            if clean_word in action_verbs:
+                # Normalize to plural form for consistency
+                if clean_word.endswith("s"):
+                    verb_list.append(clean_word)
+                else:
+                    verb_list.append(clean_word + "s")
+
+        # Also check for verbs after "This function/method"
+        patterns = [
+            r"(?:function|method)\s+(\w+)\s",  # "This function validates..."
+            r"(?:used to|will)\s+(\w+)\s",  # "Used to parse..."
+            r"(?:responsible for)\s+(\w+ing)\s",  # "Responsible for handling..."
         ]
-        for term in common_terms:
-            if term.lower() in docstring.lower():
-                terms.append(term)
+
+        for pattern in patterns:
+            matches = re.findall(pattern, description, re.IGNORECASE)
+            for match in matches:
+                if match.lower() in action_verbs:
+                    if match.lower().endswith("s"):
+                        verb_list.append(match.lower())
+                    else:
+                        verb_list.append(match.lower() + "s")
+
+    def _extract_common_patterns(
+        self, description: str, pattern_list: list[str]
+    ) -> None:
+        """Extract common phrase patterns."""
+        # Common documentation patterns
+        common_patterns = [
+            r"based on\s+(?:the\s+)?(\w+)",
+            r"according to\s+(?:the\s+)?(\w+)",
+            r"(?:with|using)\s+(?:the\s+)?(?:given|provided|specified)\s+(\w+)",
+            r"if\s+(?:the\s+)?(\w+)\s+is\s+(?:not\s+)?(?:None|empty|valid)",
+            r"returns?\s+(?:a\s+)?(?:new\s+)?(\w+)",
+            r"raises?\s+(\w+)\s+if",
+            r"for\s+(?:each|every|all)\s+(\w+)",
+            r"from\s+(?:the\s+)?(?:given|provided)\s+(\w+)",
+        ]
+
+        for pattern in common_patterns:
+            matches = re.finditer(pattern, description, re.IGNORECASE)
+            for match in matches:
+                pattern_list.append(match.group(0).lower())
+
+    def _extract_technical_terms(self, description: str) -> list[str]:
+        """Extract domain-specific technical terms."""
+        technical_terms = []
+
+        # Common technical term patterns
+        term_patterns = [
+            r"\b(?:API|REST|HTTP|URL|URI|JSON|XML|CSV)\b",
+            r"\b(?:database|cache|queue|stream|buffer)\b",
+            r"\b(?:async|sync|concurrent|parallel|thread)\b",
+            r"\b(?:configuration|settings|options|parameters)\b",
+            r"\b(?:authentication|authorization|token|credential)\b",
+            r"\b(?:encryption|decryption|hash|signature)\b",
+            r"\b(?:client|server|connection|socket|protocol)\b",
+            r"\b(?:query|filter|sort|paginate|aggregate)\b",
+        ]
+
+        for pattern in term_patterns:
+            matches = re.findall(pattern, description, re.IGNORECASE)
+            technical_terms.extend(matches)
+
+        # Also extract CamelCase terms (likely class/type names)
+        camel_case = re.findall(r"\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b", description)
+        technical_terms.extend(list(camel_case))
+
+        return technical_terms
 
     def _rank_vocabulary_by_frequency(
         self, vocabulary: dict[str, list[str]]
     ) -> dict[str, list[str]]:
         """Rank vocabulary items by frequency."""
-        for category, items in vocabulary.items():
-            # Count frequency
-            freq_dict: dict[str, int] = {}
-            for item in items:
-                freq_dict[item] = freq_dict.get(item, 0) + 1
 
-            # Sort by frequency and deduplicate
-            sorted_items = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
-            vocabulary[category] = [
-                item for item, _ in sorted_items[:10]
+        ranked = {}
+        for category, items in vocabulary.items():
+            # Count occurrences
+            counts = Counter(items)
+            # Sort by frequency, then alphabetically
+            ranked[category] = [
+                item for item, _ in sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+            ][
+                :10
             ]  # Keep top 10
 
-        return vocabulary
+        return ranked
 
     def _extract_behavior_descriptions(
         self, examples: list[dict[str, Any]]
@@ -940,6 +1090,13 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         focus_side_effects: bool,
     ) -> str | None:
         """Synthesize a behavior description from vocabulary and examples."""
+        # Use sophisticated vocabulary-based generation
+        if vocabulary and any(vocabulary.values()):
+            return self._generate_behavior_from_vocabulary(
+                context.function, vocabulary, descriptions
+            )
+
+        # Fallback to existing simple logic if no vocabulary
         function_name = getattr(context.function.signature, "name", "")
 
         # Start with the most relevant description as base
@@ -952,9 +1109,9 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             return adapted
 
         # If no good descriptions, build from vocabulary
-        if vocabulary["verbs"]:
+        if vocabulary.get("verbs"):
             verb = vocabulary["verbs"][0]
-            if vocabulary["patterns"]:
+            if vocabulary.get("patterns"):
                 pattern = vocabulary["patterns"][0]
                 return f"{verb.capitalize()} data {pattern}"
             else:
@@ -997,3 +1154,163 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             confidence=0.85,
             suggestion_type=SuggestionType.DESCRIPTION_UPDATE,
         )
+
+    def _generate_behavior_from_vocabulary(
+        self,
+        function: Any,
+        vocabulary: dict[str, list[str]],
+        description_structures: list[dict[str, Any]],
+    ) -> str:
+        """Generate behavior description using learned vocabulary."""
+        # Select appropriate verb
+        func_name_tokens = self._tokenize_function_name(function.signature.name)
+
+        # Find matching verb
+        selected_verb = None
+        for verb in vocabulary.get("verbs", []):
+            if any(token.lower() in verb for token in func_name_tokens):
+                selected_verb = verb
+                break
+
+        if not selected_verb and vocabulary.get("verbs"):
+            selected_verb = vocabulary["verbs"][0]  # Use most common
+
+        if not selected_verb:
+            selected_verb = "processes"  # Fallback
+
+        # Build description
+        description_parts = []
+
+        # Start with verb
+        description_parts.append(selected_verb.capitalize())
+
+        # Add object based on parameters
+        if function.signature.parameters:
+            first_param = function.signature.parameters[0]
+            param_desc = self._describe_parameter_for_behavior(first_param)
+            description_parts.append(param_desc)
+
+        # Add patterns if found
+        if vocabulary.get("patterns"):
+            # Use appropriate pattern
+            for pattern in vocabulary["patterns"]:
+                if "based on" in pattern or "using" in pattern:
+                    description_parts.append(pattern)
+                    break
+
+        # Add return information
+        if function.signature.return_type:
+            return_phrase = self._generate_return_phrase_for_behavior(
+                function.signature.return_type, vocabulary.get("patterns", [])
+            )
+            if return_phrase:
+                description_parts.append(f"and {return_phrase}")
+
+        # Join parts
+        description = " ".join(description_parts)
+
+        # Add technical context if available
+        tech_terms = vocabulary.get("technical", [])
+        if tech_terms:
+            relevant_terms = self._find_relevant_technical_terms(function, tech_terms)
+            if relevant_terms:
+                description += f". Works with {', '.join(relevant_terms[:2])}"
+
+        return self._ensure_behavior_grammar(description)
+
+    def _tokenize_function_name(self, name: str) -> list[str]:
+        """Tokenize function name into words."""
+        # Handle snake_case
+        tokens = name.split("_")
+
+        # Handle camelCase
+        result = []
+        for token in tokens:
+            # Split on capital letters
+            subtokens = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\b)", token)
+            if subtokens:
+                result.extend(subtokens)
+            else:
+                result.append(token)
+
+        return [t.lower() for t in result if t]
+
+    def _describe_parameter_for_behavior(self, param: Any) -> str:
+        """Generate behavior description for a parameter."""
+        param_name = param.name.replace("_", " ")
+
+        if param.type_annotation:
+            type_str = str(param.type_annotation).lower()
+            if "list" in type_str:
+                return f"the {param_name} list"
+            elif "dict" in type_str:
+                return f"the {param_name} mapping"
+            elif "str" in type_str:
+                return f"the {param_name} string"
+            else:
+                return f"the {param_name}"
+        else:
+            return f"the given {param_name}"
+
+    def _generate_return_phrase_for_behavior(
+        self, return_type: str, patterns: list[str]
+    ) -> str | None:
+        """Generate return phrase for behavior description."""
+        if not return_type or return_type == "None":
+            return None
+
+        type_lower = return_type.lower()
+
+        # Check if any patterns already mention returns
+        for pattern in patterns:
+            if "return" in pattern:
+                return None  # Don't duplicate
+
+        if "bool" in type_lower:
+            return "returns True if successful"
+        elif "list" in type_lower:
+            return "returns the resulting list"
+        elif "dict" in type_lower:
+            return "returns the results as a dictionary"
+        elif "str" in type_lower:
+            return "returns the processed string"
+        elif "int" in type_lower or "float" in type_lower:
+            return "returns the calculated value"
+        else:
+            return f"returns the {return_type.split('[')[0].split('.')[-1].lower()}"
+
+    def _find_relevant_technical_terms(
+        self, function: Any, tech_terms: list[str]
+    ) -> list[str]:
+        """Find technical terms relevant to the function."""
+        relevant = []
+
+        # Check function name and parameters
+        func_context = function.signature.name.lower()
+        for param in function.signature.parameters:
+            func_context += " " + param.name.lower()
+            if param.type_annotation:
+                func_context += " " + str(param.type_annotation).lower()
+
+        for term in tech_terms:
+            if term.lower() in func_context:
+                relevant.append(term)
+
+        return relevant
+
+    def _ensure_behavior_grammar(self, description: str) -> str:
+        """Ensure proper grammar for behavior descriptions."""
+        # Capitalize first letter
+        if description:
+            description = description[0].upper() + description[1:]
+
+        # Ensure ends with period
+        if not description.endswith("."):
+            description += "."
+
+        # Fix grammar issues
+        description = re.sub(r"\s+", " ", description)
+        description = re.sub(r"\s+([.,])", r"\1", description)
+        description = re.sub(r"\band\s+and\b", "and", description)
+
+        return description.strip()

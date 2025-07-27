@@ -342,9 +342,9 @@ class ReturnSuggestionGenerator(BaseSuggestionGenerator):
     def _get_return_type_from_signature(self, function: Any) -> str | None:
         """Extract return type from function signature."""
         if hasattr(function, "signature") and hasattr(
-            function.signature, "return_annotation"
+            function.signature, "return_type"
         ):
-            return str(function.signature.return_annotation)
+            return str(function.signature.return_type)
         return None
 
     def _update_return_type_in_docstring(

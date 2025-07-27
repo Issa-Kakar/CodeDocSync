@@ -479,12 +479,15 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
             exceptions = analyzer.analyze_exceptions(source_code)
             for exc in exceptions:
                 if exc.exception_type == exception_type and exc.description:
-                    return exc.description
+                    # Apply grammar fixes to analyzed descriptions too
+                    return self._ensure_proper_exception_grammar(exc.description)
 
         # Fallback to standard descriptions
-        return analyzer.builtin_exceptions.get(
+        fallback_desc = analyzer.builtin_exceptions.get(
             exception_type, f"When a {exception_type} condition occurs"
         )
+        # Apply grammar fixes to fallback descriptions too
+        return self._ensure_proper_exception_grammar(fallback_desc)
 
     def _add_exceptions_to_docstring(
         self, context: SuggestionContext, exceptions: list[ExceptionInfo]
@@ -496,10 +499,17 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
 
         # Convert to DocstringRaises objects
         raises_docs = []
+        analyzer = ExceptionAnalyzer()
+        source_code = getattr(context.function, "source_code", "")
+
         for exc in exceptions:
+            # Try to get RAG-enhanced description
+            improved_desc = self._generate_improved_exception_description(
+                exc.exception_type, source_code, analyzer
+            )
             raises_docs.append(
                 DocstringRaises(
-                    exception_type=exc.exception_type, description=exc.description
+                    exception_type=exc.exception_type, description=improved_desc
                 )
             )
 
@@ -698,29 +708,36 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
 
         return raises_info
 
-    def _exception_types_match(self, type1: str, type2: str) -> bool:
-        """Check if two exception types match semantically."""
+    def _exception_types_match(self, exc1: str, exc2: str) -> bool:
+        """Check if two exception types are semantically similar."""
         # Exact match
-        if type1 == type2:
+        if exc1 == exc2:
             return True
 
-        # Common aliases
-        exception_aliases = [
-            ("ValueError", "ValidationError"),
-            ("KeyError", "KeyNotFoundException"),
-            ("IOError", "FileNotFoundError"),
-            ("IOError", "PermissionError"),
-            ("Exception", "Error"),
+        # Normalize
+        exc1_norm = exc1.lower().replace("error", "").replace("exception", "").strip()
+        exc2_norm = exc2.lower().replace("error", "").replace("exception", "").strip()
+
+        if exc1_norm == exc2_norm:
+            return True
+
+        # Common equivalences
+        equivalences = [
+            {"value", "validation", "invalid"},
+            {"key", "lookup", "notfound"},
+            {"type", "typeof", "cast"},
+            {"io", "file", "os"},
+            {"connection", "network", "socket"},
+            {"permission", "access", "auth"},
+            {"timeout", "deadline", "expired"},
         ]
 
-        for alias1, alias2 in exception_aliases:
-            if (type1 == alias1 and type2 == alias2) or (
-                type1 == alias2 and type2 == alias1
-            ):
+        for equiv_set in equivalences:
+            if exc1_norm in equiv_set and exc2_norm in equiv_set:
                 return True
 
-        # Check if one is a substring of the other
-        if type1 in type2 or type2 in type1:
+        # Substring matching for related exceptions
+        if exc1_norm in exc2_norm or exc2_norm in exc1_norm:
             return True
 
         return False
@@ -728,27 +745,118 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
     def _synthesize_exception_description(
         self, patterns: list[dict[str, Any]], exception_type: str
     ) -> str:
-        """Synthesize exception description from patterns."""
+        """Synthesize exception description from multiple patterns."""
         if not patterns:
-            return f"When a {exception_type} condition occurs"
+            return f"If {exception_type.replace('Error', '').lower()} occurs."
 
-        if len(patterns) == 1:
-            return patterns[0]["description"]
+        # Take top 3 patterns
+        top_patterns = patterns[:3]
 
-        # Use the highest similarity pattern but adapt it
-        best_pattern = patterns[0]
-        description = best_pattern["description"]
+        # Extract common phrases (for future use)
+        # common_phrases = self._extract_common_exception_phrases(top_patterns)
 
-        # Remove boilerplate
-        description = re.sub(r"^(when\s+)?", "", description, flags=re.IGNORECASE)
-        description = re.sub(r"^(raised\s+)?", "", description, flags=re.IGNORECASE)
+        # Build description
+        if len(top_patterns) >= 2:
+            # Multiple patterns - synthesize
+            conditions = []
+            for pattern in top_patterns:
+                condition = self._extract_condition_from_description(
+                    pattern["description"]
+                )
+                if condition and condition not in conditions:
+                    conditions.append(condition)
 
-        # Ensure proper grammar
-        if description and not description[0].isupper():
+            if conditions:
+                if len(conditions) == 1:
+                    description = f"If {conditions[0]}."
+                else:
+                    # Debug logging
+                    logger.debug(
+                        f"Synthesizing from {len(conditions)} conditions: {conditions}"
+                    )
+                    description = f"If {' or '.join(conditions)}."
+            else:
+                # Fallback to best pattern
+                description = top_patterns[0]["description"]
+        else:
+            # Single pattern - adapt it
+            description = self._adapt_exception_description(
+                top_patterns[0]["description"], exception_type
+            )
+
+        return self._ensure_proper_exception_grammar(description)
+
+    def _extract_common_exception_phrases(
+        self, patterns: list[dict[str, Any]]
+    ) -> list[str]:
+        """Extract common phrases from exception descriptions."""
+        phrases = []
+
+        # Common exception phrase patterns
+        phrase_patterns = [
+            r"[Ii]f\s+(.+?)(?:\.|,|$)",
+            r"[Ww]hen\s+(.+?)(?:\.|,|$)",
+            r"[Ff]or\s+(.+?)(?:\.|,|$)",
+            r"[Oo]n\s+(.+?)(?:\.|,|$)",
+        ]
+
+        for pattern in patterns:
+            desc = pattern.get("description", "")
+            for phrase_pattern in phrase_patterns:
+                matches = re.findall(phrase_pattern, desc)
+                phrases.extend(matches)
+
+        # Count occurrences and return common ones
+        from collections import Counter
+
+        phrase_counts = Counter(phrases)
+        return [phrase for phrase, count in phrase_counts.items() if count >= 2]
+
+    def _extract_condition_from_description(self, description: str) -> str | None:
+        """Extract the condition that causes the exception."""
+        # Look for condition patterns
+        patterns = [
+            r"[Ii]f\s+(.+?)(?:\.|$)",
+            r"[Ww]hen\s+(.+?)(?:\.|$)",
+            r"(.+?)\s+(?:is|are)\s+(?:invalid|missing|not found)(?:\.|$)",
+            r"(?:invalid|missing|bad)\s+(.+?)(?:\.|$)",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, description)
+            if match:
+                return match.group(1).strip()
+
+        return None
+
+    def _adapt_exception_description(
+        self, description: str, exception_type: str
+    ) -> str:
+        """Adapt description to new exception type."""
+        # Replace old exception type references
+        desc = re.sub(r"\b\w+Error\b", exception_type, description, flags=re.IGNORECASE)
+
+        # Ensure it starts appropriately
+        if not desc.lower().startswith(("if", "when", "for", "on")):
+            # Extract core condition
+            condition = self._extract_condition_from_description(desc)
+            if condition:
+                desc = f"If {condition}."
+
+        return desc
+
+    def _ensure_proper_exception_grammar(self, description: str) -> str:
+        """Ensure proper grammar for exception descriptions."""
+        # Capitalize first letter
+        if description:
             description = description[0].upper() + description[1:]
 
-        # Add "When" prefix if not present
-        if not description.lower().startswith(("when", "if", "after")):
-            description = f"When {description}"
+        # Ensure ends with period
+        if not description.endswith("."):
+            description += "."
 
-        return description
+        # Fix common issues
+        description = re.sub(r"\s+", " ", description)  # Multiple spaces
+        description = re.sub(r"\s+\.", ".", description)  # Space before period
+
+        return description.strip()

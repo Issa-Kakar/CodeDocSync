@@ -452,18 +452,119 @@ class RuleEngine:
         )
 
     def _check_missing_raises(self, pair: MatchedPair) -> RuleCheckResult:
-        """Find undocumented exceptions (basic check)."""
+        """Find undocumented exceptions."""
         start_time = time.time()
         issues: list[InconsistencyIssue] = []
 
-        # This is a simplified check - full implementation would require AST analysis
-        # For now, just pass all cases (keeping it simple for performance)
-        # In a full implementation, we'd parse the function body for 'raise' statements
+        # Get source code from function
+        source_code = getattr(pair.function, "source_code", "")
+        if not source_code:
+            # Can't analyze without source code
+            return RuleCheckResult(
+                rule_name="missing_raises",
+                passed=True,
+                confidence=0.3,  # Low confidence - no source to analyze
+                issues=issues,
+                execution_time_ms=(time.time() - start_time) * 1000,
+            )
+
+        # Import and use ExceptionAnalyzer from suggestions module
+        try:
+            from codedocsync.suggestions.generators.raises_generator import (
+                ExceptionAnalyzer,
+            )
+
+            analyzer = ExceptionAnalyzer()
+            detected_exceptions = analyzer.analyze_exceptions(source_code)
+
+            # Filter out low confidence exceptions
+            actual_exceptions = [
+                exc for exc in detected_exceptions if exc.confidence >= 0.8
+            ]
+
+            if not actual_exceptions:
+                # No exceptions detected with high confidence
+                return RuleCheckResult(
+                    rule_name="missing_raises",
+                    passed=True,
+                    confidence=0.8,
+                    issues=issues,
+                    execution_time_ms=(time.time() - start_time) * 1000,
+                )
+
+            # Get documented exceptions
+            docstring = self._get_parsed_docstring(pair)
+            documented_raises = []
+            if docstring and hasattr(docstring, "raises") and docstring.raises:
+                documented_raises = [
+                    r.exception_type
+                    for r in docstring.raises
+                    if hasattr(r, "exception_type") and r.exception_type
+                ]
+
+            # Find undocumented exceptions
+            actual_types = {exc.exception_type for exc in actual_exceptions}
+            documented_types = set(documented_raises)
+            missing_exceptions = actual_types - documented_types
+
+            if missing_exceptions:
+                # Build description of missing exceptions
+                exc_list = sorted(missing_exceptions)
+                if len(exc_list) == 1:
+                    desc = f"Function raises {exc_list[0]} but it's not documented"
+                else:
+                    desc = f"Function raises {', '.join(exc_list)} but they are not documented"
+
+                # Build suggestion
+                suggestion = "Add Raises section to docstring:\n\n    Raises:\n"
+                for exc_type in exc_list:
+                    # Find description from detected exceptions
+                    exc_info = next(
+                        (e for e in actual_exceptions if e.exception_type == exc_type),
+                        None,
+                    )
+                    exc_desc = (
+                        exc_info.description if exc_info else f"When {exc_type} occurs"
+                    )
+                    suggestion += f"        {exc_type}: {exc_desc}\n"
+
+                issues.append(
+                    self._create_issue(
+                        issue_type="missing_raises",
+                        description=desc,
+                        suggestion=suggestion.rstrip(),
+                        line_number=pair.function.line_number,
+                        confidence=0.9,
+                        details={
+                            "missing_exceptions": list(missing_exceptions),
+                            "detected_count": len(actual_exceptions),
+                        },
+                    )
+                )
+
+        except ImportError:
+            # If we can't import ExceptionAnalyzer, fall back to basic check
+            return RuleCheckResult(
+                rule_name="missing_raises",
+                passed=True,
+                confidence=0.3,
+                issues=issues,
+                execution_time_ms=(time.time() - start_time) * 1000,
+            )
+        except Exception:
+            # Any other error, just pass
+            return RuleCheckResult(
+                rule_name="missing_raises",
+                passed=True,
+                confidence=0.3,
+                issues=issues,
+                execution_time_ms=(time.time() - start_time) * 1000,
+            )
 
         return RuleCheckResult(
             rule_name="missing_raises",
-            passed=True,  # Always pass for now
-            confidence=0.5,  # Low confidence since we're not doing full analysis
+            passed=len(issues) == 0,
+            confidence=0.9 if not issues else 0.8,
             issues=issues,
             execution_time_ms=(time.time() - start_time) * 1000,
         )
