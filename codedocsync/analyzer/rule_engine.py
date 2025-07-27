@@ -468,11 +468,9 @@ class RuleEngine:
                 execution_time_ms=(time.time() - start_time) * 1000,
             )
 
-        # Import and use ExceptionAnalyzer from suggestions module
+        # Import and use ExceptionAnalyzer from analyzer module
         try:
-            from codedocsync.suggestions.generators.raises_generator import (
-                ExceptionAnalyzer,
-            )
+            from .exception_analyzer import ExceptionAnalyzer
 
             analyzer = ExceptionAnalyzer()
             detected_exceptions = analyzer.analyze_exceptions(source_code)
