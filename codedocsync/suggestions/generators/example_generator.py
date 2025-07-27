@@ -482,6 +482,15 @@ class ExampleSuggestionGenerator(BaseSuggestionGenerator):
         """Generate example documentation fixes."""
         self._current_context = context
         self._used_rag = False  # Reset for each generation
+
+        # Debug log to verify related_functions
+        if context.related_functions:
+            logger.debug(
+                f"RAG: Found {len(context.related_functions)} related functions"
+            )
+        else:
+            logger.debug("RAG: No related functions available")
+
         issue = context.issue
 
         if issue.issue_type == "example_invalid":
