@@ -800,9 +800,20 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         if not context.related_functions:
             return None
 
+        # Filter out examples with low similarity scores
+        relevant_examples = [
+            example
+            for example in context.related_functions
+            if example.get("similarity", 0) >= 0.3
+        ]
+
+        if not relevant_examples:
+            logger.debug("No RAG examples with sufficient similarity (>= 0.3)")
+            return None
+
         # Extract behavior patterns and vocabulary from examples
-        vocabulary = self._extract_behavior_vocabulary(context.related_functions)
-        descriptions = self._extract_behavior_descriptions(context.related_functions)
+        vocabulary = self._extract_behavior_vocabulary(relevant_examples)
+        descriptions = self._extract_behavior_descriptions(relevant_examples)
 
         if not descriptions and not vocabulary:
             return None

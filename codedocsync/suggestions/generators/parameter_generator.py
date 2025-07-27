@@ -1197,6 +1197,22 @@ class ParameterSuggestionGenerator(BaseSuggestionGenerator):
         # Ensure proper adaptation for the parameter
         synthesized = self._adapt_based_on_semantics(param.name, synthesized)
 
+        # Special handling for dict types to preserve "containing" structure
+        if param.type_annotation and "dict" in param.type_annotation.lower():
+            # Check if we have "containing" patterns in original descriptions
+            for concept in core_concepts:
+                if (
+                    "containing" in concept["original"].lower()
+                    or "includes" in concept["original"].lower()
+                ):
+                    # Preserve the containing/includes structure
+                    if (
+                        "containing" not in synthesized.lower()
+                        and "includes" not in synthesized.lower()
+                    ):
+                        synthesized = f"Dictionary containing {synthesized.lower()}"
+                    break
+
         return self._ensure_proper_grammar(synthesized, param.name)
 
     def _merge_concepts(

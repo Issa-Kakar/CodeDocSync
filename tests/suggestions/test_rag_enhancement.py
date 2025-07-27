@@ -2,8 +2,6 @@
 
 from unittest.mock import Mock, patch
 
-import pytest
-
 from codedocsync.analyzer.models import InconsistencyIssue
 from codedocsync.parser.ast_parser import (
     FunctionParameter,
@@ -11,6 +9,7 @@ from codedocsync.parser.ast_parser import (
     ParsedFunction,
     RawDocstring,
 )
+from codedocsync.parser.docstring_models import DocstringFormat, ParsedDocstring
 from codedocsync.suggestions.generators.parameter_generator import (
     ParameterSuggestionGenerator,
 )
@@ -36,9 +35,21 @@ class TestRAGEnhancement:
             name="search_data", parameters=[param], return_type="list[dict]"
         )
 
+        # Create a parsed docstring with no parameters (to trigger parameter_missing)
+        parsed_docstring = ParsedDocstring(
+            format=DocstringFormat.GOOGLE,
+            summary="Search for data.",
+            description=None,
+            parameters=[],  # Empty parameters list
+            returns=None,
+            raises=[],
+            examples=[],
+            raw_text='"""Search for data."""',
+        )
+
         function = ParsedFunction(
             signature=signature,
-            docstring=RawDocstring(raw_text='"""Search for data."""'),
+            docstring=parsed_docstring,
             file_path="test.py",
             line_number=1,
             end_line_number=3,
@@ -64,25 +75,22 @@ class TestRAGEnhancement:
             related_functions=related_functions or [],
         )
 
-    @pytest.mark.xfail(
-        reason="RAG enhancement not yet implemented in ParameterGenerator"
-    )
     def test_parameter_generator_uses_rag_examples(self):
         """Test that parameter generator uses RAG examples when available."""
-        # Create RAG examples
+        # Create RAG examples with higher similarity for the parameter
         rag_examples = [
             {
                 "signature": "def search_documents(query: str, limit: int = 10) -> list[dict]:",
-                "docstring": '''"""Search for documents matching the query.
+                "docstring": """Search for documents matching the query.
 
-                Args:
-                    query: The search query string to match against documents.
-                    limit: Maximum number of results to return. Defaults to 10.
+Args:
+    query (str): The search query string to match against documents.
+    limit (int): Maximum number of results to return. Defaults to 10.
 
-                Returns:
-                    List of matching documents with relevance scores.
-                """''',
-                "similarity": 0.85,
+Returns:
+    list[dict]: List of matching documents with relevance scores.
+""",
+                "similarity": 0.95,  # Increased similarity
             }
         ]
 
@@ -118,7 +126,6 @@ class TestRAGEnhancement:
         # Check that basic description is used
         assert "Description for query" in suggestion.suggested_text
 
-    @pytest.mark.xfail(reason="RAG enhancement not yet implemented in ReturnGenerator")
     def test_return_generator_uses_rag_examples(self):
         """Test that return generator uses RAG examples when available."""
         # Create RAG examples
@@ -186,9 +193,6 @@ class TestRAGEnhancement:
             # RAG should not be used due to low similarity
             assert suggestion.metadata.used_rag_examples is False
 
-    @pytest.mark.xfail(
-        reason="Pattern extraction not yet implemented - _extract_parameter_patterns_from_examples returns empty"
-    )
     def test_rag_pattern_extraction(self):
         """Test the pattern extraction from RAG examples."""
         generator = ParameterSuggestionGenerator()
@@ -197,15 +201,15 @@ class TestRAGEnhancement:
         examples = [
             {
                 "signature": "def process_data(input_data: dict, validate: bool = True) -> dict:",
-                "docstring": '''"""Process input data with optional validation.
+                "docstring": """Process input data with optional validation.
 
-                Args:
-                    input_data: The data dictionary to process.
-                    validate: Whether to validate the input data. Defaults to True.
+Args:
+    input_data (dict): The data dictionary to process.
+    validate (bool): Whether to validate the input data. Defaults to True.
 
-                Returns:
-                    Processed data dictionary.
-                """''',
+Returns:
+    dict: Processed data dictionary.
+""",
                 "similarity": 0.85,
             }
         ]
@@ -224,9 +228,6 @@ class TestRAGEnhancement:
         assert len(patterns) > 0
         assert patterns[0]["similarity"] > 0  # Should have calculated similarity
 
-    @pytest.mark.xfail(
-        reason="SuggestionIntegration.generate_suggestion not yet implemented"
-    )
     @patch("codedocsync.suggestions.rag_corpus.RAGCorpusManager")
     def test_rag_retrieval_integration(self, mock_rag_manager):
         """Test the integration with RAG corpus retrieval."""
