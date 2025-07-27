@@ -6,6 +6,7 @@ descriptions, identifying patterns, side effects, and operational characteristic
 """
 
 import ast
+import logging
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -19,6 +20,8 @@ from ..models import (
     SuggestionType,
 )
 from ..templates.base import get_template
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -451,8 +454,17 @@ class BehaviorAnalyzer:
 class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
     """Generate suggestions for behavioral descriptions."""
 
+    def __init__(self, config: Any | None = None) -> None:
+        """Initialize the generator."""
+        super().__init__(config)
+        self._used_rag = False  # Track if RAG was used
+
     def generate(self, context: SuggestionContext) -> Suggestion:
         """Generate behavioral description improvements."""
+        # Store context for RAG-enhanced description generation
+        self._current_context = context
+        self._used_rag = False  # Reset for each generation
+
         issue = context.issue
 
         if issue.issue_type == "description_outdated":
@@ -491,6 +503,10 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         focus_side_effects: bool = False,
     ) -> Suggestion:
         """Enhance function description based on code analysis."""
+        # Store context for RAG
+        self._current_context = context
+        self._used_rag = False
+
         function = context.function
         docstring = context.docstring
 
@@ -501,7 +517,17 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
             else "function"
         )
 
-        # Analyze function behavior
+        # Try RAG-enhanced generation first
+        if context.related_functions:
+            rag_description = self._generate_rag_enhanced_behavior(
+                context, focus_side_effects
+            )
+            if rag_description:
+                self._used_rag = True
+                # Create suggestion with RAG description
+                return self._create_behavior_suggestion(context, rag_description)
+
+        # Fallback to code analysis
         source_code = getattr(function, "source_code", "")
         if not source_code:
             return self._create_fallback_suggestion(
@@ -723,6 +749,7 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         metadata = SuggestionMetadata(
             generator_type=self.__class__.__name__,
             generator_version="1.0.0",
+            used_rag_examples=getattr(self, "_used_rag", False),
         )
 
         return Suggestion(
@@ -752,4 +779,221 @@ class BehaviorSuggestionGenerator(BaseSuggestionGenerator):
         """Generic behavior improvement for unknown issues."""
         return self._create_fallback_suggestion(
             context, f"Unknown behavior issue type: {context.issue.issue_type}"
+        )
+
+    def _generate_rag_enhanced_behavior(
+        self, context: SuggestionContext, focus_side_effects: bool = False
+    ) -> str | None:
+        """Generate behavior description using RAG examples."""
+        if not context.related_functions:
+            return None
+
+        # Extract behavior patterns and vocabulary from examples
+        vocabulary = self._extract_behavior_vocabulary(context.related_functions)
+        descriptions = self._extract_behavior_descriptions(context.related_functions)
+
+        if not descriptions and not vocabulary:
+            return None
+
+        # Synthesize new description
+        return self._synthesize_behavior_description(
+            context, vocabulary, descriptions, focus_side_effects
+        )
+
+    def _extract_behavior_vocabulary(
+        self, examples: list[dict[str, Any]]
+    ) -> dict[str, list[str]]:
+        """Extract domain-specific vocabulary from examples."""
+        vocabulary: dict[str, list[str]] = {
+            "verbs": [],  # Action words: processes, validates, transforms
+            "patterns": [],  # Common phrases: "based on", "according to"
+            "technical": [],  # Domain terms: API, cache, configuration
+        }
+
+        for example in examples:
+            docstring = example.get("docstring", "")
+            if not docstring:
+                continue
+
+            # Extract and categorize vocabulary
+            self._extract_action_verbs(docstring, vocabulary["verbs"])
+            self._extract_common_patterns(docstring, vocabulary["patterns"])
+            self._extract_technical_terms(docstring, vocabulary["technical"])
+
+        # Deduplicate and rank by frequency
+        return self._rank_vocabulary_by_frequency(vocabulary)
+
+    def _extract_action_verbs(self, docstring: str, verbs: list[str]) -> None:
+        """Extract action verbs from docstring."""
+        # Common action verbs in documentation
+        verb_patterns = [
+            r"\b(process|processes|processing)\b",
+            r"\b(validate|validates|validating)\b",
+            r"\b(transform|transforms|transforming)\b",
+            r"\b(calculate|calculates|calculating)\b",
+            r"\b(create|creates|creating)\b",
+            r"\b(update|updates|updating)\b",
+            r"\b(retrieve|retrieves|retrieving)\b",
+            r"\b(generate|generates|generating)\b",
+            r"\b(parse|parses|parsing)\b",
+            r"\b(convert|converts|converting)\b",
+            r"\b(analyze|analyzes|analyzing)\b",
+            r"\b(extract|extracts|extracting)\b",
+        ]
+
+        for pattern in verb_patterns:
+            matches = re.findall(pattern, docstring.lower())
+            verbs.extend(matches)
+
+    def _extract_common_patterns(self, docstring: str, patterns: list[str]) -> None:
+        """Extract common phrasal patterns from docstring."""
+        phrase_patterns = [
+            r"based on [\w\s]+",
+            r"according to [\w\s]+",
+            r"using [\w\s]+",
+            r"from [\w\s]+ to [\w\s]+",
+            r"with [\w\s]+ support",
+            r"for [\w\s]+ purposes",
+        ]
+
+        for pattern in phrase_patterns:
+            matches = re.findall(pattern, docstring.lower())
+            patterns.extend([m.strip() for m in matches if len(m.strip()) < 50])
+
+    def _extract_technical_terms(self, docstring: str, terms: list[str]) -> None:
+        """Extract technical terms from docstring."""
+        # Look for capitalized terms and acronyms
+        technical_pattern = r"\b[A-Z][A-Za-z]*[A-Z]+[A-Za-z]*\b|\b[A-Z]{2,}\b"
+        matches = re.findall(technical_pattern, docstring)
+        terms.extend(matches)
+
+        # Also look for common technical terms
+        common_terms = [
+            "API",
+            "URL",
+            "JSON",
+            "XML",
+            "HTTP",
+            "SQL",
+            "cache",
+            "database",
+            "configuration",
+            "authentication",
+            "authorization",
+            "encryption",
+        ]
+        for term in common_terms:
+            if term.lower() in docstring.lower():
+                terms.append(term)
+
+    def _rank_vocabulary_by_frequency(
+        self, vocabulary: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        """Rank vocabulary items by frequency."""
+        for category, items in vocabulary.items():
+            # Count frequency
+            freq_dict: dict[str, int] = {}
+            for item in items:
+                freq_dict[item] = freq_dict.get(item, 0) + 1
+
+            # Sort by frequency and deduplicate
+            sorted_items = sorted(freq_dict.items(), key=lambda x: x[1], reverse=True)
+            vocabulary[category] = [
+                item for item, _ in sorted_items[:10]
+            ]  # Keep top 10
+
+        return vocabulary
+
+    def _extract_behavior_descriptions(
+        self, examples: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Extract behavior descriptions from examples."""
+        descriptions = []
+
+        for example in examples:
+            docstring = example.get("docstring", "")
+            if not docstring:
+                continue
+
+            # Extract summary and description
+            parts = docstring.strip().split("\n\n")
+            if parts:
+                summary = parts[0].strip()
+                if summary:
+                    descriptions.append(
+                        {
+                            "summary": summary,
+                            "similarity": example.get("similarity", 0.0),
+                            "signature": example.get("signature", ""),
+                        }
+                    )
+
+        # Sort by similarity
+        descriptions.sort(key=lambda x: x["similarity"], reverse=True)
+        return descriptions[:5]  # Keep top 5
+
+    def _synthesize_behavior_description(
+        self,
+        context: SuggestionContext,
+        vocabulary: dict[str, list[str]],
+        descriptions: list[dict[str, Any]],
+        focus_side_effects: bool,
+    ) -> str | None:
+        """Synthesize a behavior description from vocabulary and examples."""
+        function_name = getattr(context.function.signature, "name", "")
+
+        # Start with the most relevant description as base
+        if descriptions:
+            base_description = descriptions[0]["summary"]
+            # Adapt it to current context
+            adapted = self._adapt_description_to_context(
+                base_description, function_name, vocabulary
+            )
+            return adapted
+
+        # If no good descriptions, build from vocabulary
+        if vocabulary["verbs"]:
+            verb = vocabulary["verbs"][0]
+            if vocabulary["patterns"]:
+                pattern = vocabulary["patterns"][0]
+                return f"{verb.capitalize()} data {pattern}"
+            else:
+                return f"{verb.capitalize()} the input data"
+
+        # Fallback
+        return None
+
+    def _adapt_description_to_context(
+        self, description: str, function_name: str, vocabulary: dict[str, list[str]]
+    ) -> str:
+        """Adapt a description to the current context."""
+        # Simple adaptation - replace generic terms with specific ones
+        adapted = description
+
+        # If description is very generic, try to make it more specific
+        if len(adapted.split()) < 5 and vocabulary["verbs"]:
+            # Enhance with vocabulary
+            verb = vocabulary["verbs"][0]
+            if verb not in adapted.lower():
+                adapted = f"{verb.capitalize()} {adapted.lower()}"
+
+        # Ensure proper capitalization
+        if adapted and not adapted[0].isupper():
+            adapted = adapted[0].upper() + adapted[1:]
+
+        return adapted
+
+    def _create_behavior_suggestion(
+        self, context: SuggestionContext, description: str
+    ) -> Suggestion:
+        """Create a suggestion with the behavior description."""
+        # Update the docstring with new description
+        updated_docstring = self._update_description_in_docstring(context, description)
+
+        return self._create_suggestion(
+            context,
+            updated_docstring,
+            "Improve function description using RAG examples",
+            confidence=0.85,
+            suggestion_type=SuggestionType.DESCRIPTION_UPDATE,
         )

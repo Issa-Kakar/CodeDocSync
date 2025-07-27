@@ -6,6 +6,7 @@ incorrect exception types, and comprehensive exception analysis.
 """
 
 import ast
+import logging
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -21,6 +22,8 @@ from ..models import (
     SuggestionType,
 )
 from ..templates.base import get_template
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -240,8 +243,17 @@ class ExceptionAnalyzer:
 class RaisesSuggestionGenerator(BaseSuggestionGenerator):
     """Generate suggestions for exception documentation."""
 
+    def __init__(self, config: Any | None = None) -> None:
+        """Initialize the generator."""
+        super().__init__(config)
+        self._used_rag = False  # Track if RAG was used
+
     def generate(self, context: SuggestionContext) -> Suggestion:
         """Generate exception documentation fixes."""
+        # Store context for RAG-enhanced description generation
+        self._current_context = context
+        self._used_rag = False  # Reset for each generation
+
         issue = context.issue
 
         if issue.issue_type == "missing_raises":
@@ -448,6 +460,20 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         self, exception_type: str, source_code: str, analyzer: ExceptionAnalyzer
     ) -> str:
         """Generate improved exception description based on analysis."""
+        # Try RAG-enhanced generation first
+        if hasattr(self, "_current_context") and self._current_context:
+            rag_desc = self._generate_rag_enhanced_raises_description(exception_type)
+            if rag_desc:
+                logger.info(
+                    f"Using RAG-enhanced description for exception '{exception_type}'"
+                )
+                self._used_rag = True
+                return rag_desc
+            else:
+                logger.debug(
+                    f"No RAG enhancement available for exception '{exception_type}', using basic description"
+                )
+
         # Analyze code for this specific exception
         if source_code:
             exceptions = analyzer.analyze_exceptions(source_code)
@@ -543,6 +569,7 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         metadata = SuggestionMetadata(
             generator_type=self.__class__.__name__,
             generator_version="1.0.0",
+            used_rag_examples=getattr(self, "_used_rag", False),
         )
 
         return Suggestion(
@@ -573,3 +600,155 @@ class RaisesSuggestionGenerator(BaseSuggestionGenerator):
         return self._create_fallback_suggestion(
             context, f"Unknown raises issue type: {context.issue.issue_type}"
         )
+
+    def _generate_rag_enhanced_raises_description(
+        self, exception_type: str
+    ) -> str | None:
+        """Generate exception description using RAG examples."""
+        if not self._current_context or not self._current_context.related_functions:
+            return None
+
+        # Extract exception patterns from RAG examples
+        exception_patterns = self._extract_exception_patterns_from_examples(
+            exception_type, self._current_context.related_functions
+        )
+
+        if not exception_patterns:
+            return None
+
+        # Synthesize description from patterns
+        return self._synthesize_exception_description(
+            exception_patterns, exception_type
+        )
+
+    def _extract_exception_patterns_from_examples(
+        self, exception_type: str, examples: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Extract exception documentation patterns."""
+        patterns = []
+
+        for example in examples:
+            docstring_content = example.get("docstring", "")
+            if not docstring_content:
+                continue
+
+            # Parse raises section for all formats
+            raises_info = self._extract_raises_from_docstring(docstring_content)
+
+            # Find matching exception types
+            for exc_info in raises_info:
+                if self._exception_types_match(exc_info["type"], exception_type):
+                    patterns.append(
+                        {
+                            "exception": exc_info["type"],
+                            "description": exc_info["description"],
+                            "similarity": example.get("similarity", 0.0),
+                            "context": exc_info.get("context", ""),
+                        }
+                    )
+
+        # Sort by similarity
+        patterns.sort(key=lambda x: x["similarity"], reverse=True)
+        return patterns
+
+    def _extract_raises_from_docstring(
+        self, docstring_content: str
+    ) -> list[dict[str, Any]]:
+        """Extract all raises sections from a docstring."""
+        raises_info = []
+
+        # Google style pattern
+        google_pattern = r"Raises?:\s*\n((?:\s+\w+.*\n)+)"
+        google_match = re.search(google_pattern, docstring_content, re.MULTILINE)
+        if google_match:
+            raises_block = google_match.group(1)
+            # Parse individual exceptions
+            exc_pattern = r"\s+(\w+(?:\[\w+\])?)\s*:\s*(.+?)(?=\n\s+\w+|\Z)"
+            for match in re.finditer(exc_pattern, raises_block, re.DOTALL):
+                raises_info.append(
+                    {
+                        "type": match.group(1).strip(),
+                        "description": match.group(2).strip(),
+                    }
+                )
+
+        # NumPy style pattern
+        numpy_pattern = r"Raises?\s*\n\s*-+\s*\n((?:\s*\w+.*\n(?:\s+.*\n)*)+)"
+        numpy_match = re.search(numpy_pattern, docstring_content, re.MULTILINE)
+        if numpy_match:
+            raises_block = numpy_match.group(1)
+            # Parse individual exceptions
+            exc_pattern = r"^(\w+(?:\[\w+\])?)\s*\n\s+(.+?)(?=^\w+|\Z)"
+            for match in re.finditer(
+                exc_pattern, raises_block, re.MULTILINE | re.DOTALL
+            ):
+                raises_info.append(
+                    {
+                        "type": match.group(1).strip(),
+                        "description": match.group(2).strip(),
+                    }
+                )
+
+        # Sphinx style pattern
+        sphinx_pattern = r":raises?\s+(\w+(?:\[\w+\])?)\s*:\s*(.+?)(?=:|\Z)"
+        for match in re.finditer(sphinx_pattern, docstring_content, re.DOTALL):
+            raises_info.append(
+                {"type": match.group(1).strip(), "description": match.group(2).strip()}
+            )
+
+        return raises_info
+
+    def _exception_types_match(self, type1: str, type2: str) -> bool:
+        """Check if two exception types match semantically."""
+        # Exact match
+        if type1 == type2:
+            return True
+
+        # Common aliases
+        exception_aliases = [
+            ("ValueError", "ValidationError"),
+            ("KeyError", "KeyNotFoundException"),
+            ("IOError", "FileNotFoundError"),
+            ("IOError", "PermissionError"),
+            ("Exception", "Error"),
+        ]
+
+        for alias1, alias2 in exception_aliases:
+            if (type1 == alias1 and type2 == alias2) or (
+                type1 == alias2 and type2 == alias1
+            ):
+                return True
+
+        # Check if one is a substring of the other
+        if type1 in type2 or type2 in type1:
+            return True
+
+        return False
+
+    def _synthesize_exception_description(
+        self, patterns: list[dict[str, Any]], exception_type: str
+    ) -> str:
+        """Synthesize exception description from patterns."""
+        if not patterns:
+            return f"When a {exception_type} condition occurs"
+
+        if len(patterns) == 1:
+            return patterns[0]["description"]
+
+        # Use the highest similarity pattern but adapt it
+        best_pattern = patterns[0]
+        description = best_pattern["description"]
+
+        # Remove boilerplate
+        description = re.sub(r"^(when\s+)?", "", description, flags=re.IGNORECASE)
+        description = re.sub(r"^(raised\s+)?", "", description, flags=re.IGNORECASE)
+
+        # Ensure proper grammar
+        if description and not description[0].isupper():
+            description = description[0].upper() + description[1:]
+
+        # Add "When" prefix if not present
+        if not description.lower().startswith(("when", "if", "after")):
+            description = f"When {description}"
+
+        return description
