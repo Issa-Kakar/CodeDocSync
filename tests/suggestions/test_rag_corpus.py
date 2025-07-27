@@ -605,3 +605,410 @@ class TestIntegration:
         assert stats["examples_loaded"] == 2
         assert stats["examples_added"] == 1
         assert stats["retrievals_performed"] == 1
+
+
+class TestRAGPersistence:
+    """Test persistence functionality for accepted suggestions."""
+
+    @pytest.fixture
+    def temp_corpus_dir(self, tmp_path):
+        """Create a temporary corpus directory."""
+        corpus_dir = tmp_path / "test_corpus"
+        corpus_dir.mkdir(exist_ok=True)
+        return corpus_dir
+
+    @pytest.fixture
+    def sample_accepted_example(self):
+        """Create a sample accepted DocstringExample."""
+        return DocstringExample(
+            function_name="test_function",
+            module_path="test_module.py",
+            function_signature="test_function(x: int) -> str",
+            docstring_format="google",
+            docstring_content="Test function.\n\nArgs:\n    x: Test parameter.\n\nReturns:\n    Test result.",
+            has_params=True,
+            has_returns=True,
+            has_examples=False,
+            complexity_score=2,
+            quality_score=4,
+            source="accepted",
+            timestamp=time.time(),
+            issue_types=["missing_param_doc"],
+            original_issue="missing_param_doc",
+            improvement_score=0.8,
+        )
+
+    def test_save_accepted_suggestions_basic(
+        self, temp_corpus_dir, sample_accepted_example
+    ):
+        """Test basic save functionality."""
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Add an accepted example
+        manager.memory_corpus.append(sample_accepted_example)
+
+        # Save to disk
+        manager.save_accepted_suggestions()
+
+        # Verify file exists
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        assert accepted_file.exists()
+
+        # Verify content
+        with open(accepted_file, encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["version"] == "1.0.0"
+        assert data["total_accepted"] == 1
+        assert len(data["examples"]) == 1
+        assert data["examples"][0]["function_name"] == "test_function"
+        assert data["examples"][0]["issue_types"] == ["missing_param_doc"]
+
+    def test_load_accepted_suggestions(self, temp_corpus_dir):
+        """Test loading accepted suggestions from disk."""
+        # Create test data file
+        test_data = {
+            "version": "1.0.0",
+            "last_updated": "2025-01-27T12:00:00",
+            "total_accepted": 2,
+            "examples": [
+                {
+                    "function_name": "func1",
+                    "module_path": "module1.py",
+                    "function_signature": "func1() -> None",
+                    "docstring_format": "google",
+                    "docstring_content": "Function 1.",
+                    "has_params": False,
+                    "has_returns": True,
+                    "has_examples": False,
+                    "complexity_score": 1,
+                    "quality_score": 4,
+                    "source": "accepted",
+                    "timestamp": 1234567890.0,
+                    "issue_types": ["missing_returns_doc"],
+                    "original_issue": "missing_returns_doc",
+                },
+                {
+                    "function_name": "func2",
+                    "module_path": "module2.py",
+                    "function_signature": "func2(x: int) -> int",
+                    "docstring_format": "google",
+                    "docstring_content": "Function 2.\n\nArgs:\n    x: Input.\n\nReturns:\n    Output.",
+                    "has_params": True,
+                    "has_returns": True,
+                    "has_examples": False,
+                    "complexity_score": 2,
+                    "quality_score": 4,
+                    "source": "accepted",
+                    "timestamp": 1234567891.0,
+                    "issue_types": ["incorrect_param_type"],
+                    "original_issue": "incorrect_param_type",
+                },
+            ],
+        }
+
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        with open(accepted_file, "w", encoding="utf-8") as f:
+            json.dump(test_data, f)
+
+        # Create new manager
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Verify loaded
+        accepted_examples = [
+            ex for ex in manager.memory_corpus if ex.source == "accepted"
+        ]
+        assert len(accepted_examples) == 2
+        assert accepted_examples[0].function_name == "func1"
+        assert accepted_examples[1].function_name == "func2"
+        assert accepted_examples[0].issue_types == ["missing_returns_doc"]
+
+    def test_atomic_write_behavior(self, temp_corpus_dir, sample_accepted_example):
+        """Test atomic write with temporary file."""
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Add example
+        manager.memory_corpus.append(sample_accepted_example)
+
+        # Mock to simulate write failure
+        with patch("builtins.open", side_effect=Exception("Write failed")) as mock_open:
+            # Allow reading but fail on writing
+            original_open = open
+
+            def selective_open(*args, **kwargs):
+                if "w" in str(args[1:2]):
+                    raise Exception("Write failed")
+                return original_open(*args, **kwargs)
+
+            mock_open.side_effect = selective_open
+
+            # Should raise exception but not corrupt existing file
+            with pytest.raises(Exception, match="Write failed"):
+                manager.save_accepted_suggestions()
+
+        # Temp file should not exist
+        temp_file = temp_corpus_dir / "accepted_suggestions.tmp"
+        assert not temp_file.exists()
+
+    def test_backup_creation_and_cleanup(self, temp_corpus_dir):
+        """Test backup file creation and cleanup."""
+        # Create manager and add initial example
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # First save - no backup should be created as there's no existing file
+        example = DocstringExample(
+            function_name="initial_func",
+            module_path="test.py",
+            function_signature="initial_func() -> None",
+            docstring_format="google",
+            docstring_content="Initial function.",
+            has_params=False,
+            has_returns=False,
+            has_examples=False,
+            complexity_score=1,
+            quality_score=4,
+            source="accepted",
+            timestamp=time.time(),
+        )
+        manager.memory_corpus.append(example)
+        manager.save_accepted_suggestions()
+
+        # Now we have an existing file, subsequent saves should create backups
+        for i in range(7):  # Create 7 more saves to test 5-backup limit
+            example = DocstringExample(
+                function_name=f"func_{i}",
+                module_path="test.py",
+                function_signature=f"func_{i}() -> None",
+                docstring_format="google",
+                docstring_content=f"Function {i}.",
+                has_params=False,
+                has_returns=False,
+                has_examples=False,
+                complexity_score=1,
+                quality_score=4,
+                source="accepted",
+                timestamp=time.time(),
+            )
+            manager.memory_corpus.append(example)
+            manager.save_accepted_suggestions()
+            time.sleep(1.1)  # Need >1 second delay due to int(time.time()) precision
+
+        # Check backup files - should have only 5 most recent
+        backup_files = list(temp_corpus_dir.glob("accepted_suggestions.*.backup"))
+        # Debug: print backup files
+        if len(backup_files) != 5:
+            print(f"Found {len(backup_files)} backup files: {backup_files}")
+            print(f"All files in dir: {list(temp_corpus_dir.iterdir())}")
+        assert len(backup_files) == 5  # Should keep only 5 most recent
+
+        # Verify we have exactly 5 backup files (older ones should have been cleaned up)
+        # The cleanup logic in the code keeps the 5 most recent based on mtime
+
+    def test_version_compatibility(self, temp_corpus_dir):
+        """Test version compatibility checking."""
+        # Test incompatible version
+        incompatible_data = {"version": "2.0.0", "examples": []}  # Future version
+
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        with open(accepted_file, "w", encoding="utf-8") as f:
+            json.dump(incompatible_data, f)
+
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Should not load any examples due to version mismatch
+        accepted_examples = [
+            ex for ex in manager.memory_corpus if ex.source == "accepted"
+        ]
+        assert len(accepted_examples) == 0
+
+    def test_corrupted_file_recovery(self, temp_corpus_dir):
+        """Test recovery from corrupted file using backup."""
+        # Create a valid backup
+        backup_data = {
+            "version": "1.0.0",
+            "last_updated": "2025-01-27T12:00:00",
+            "total_accepted": 1,
+            "examples": [
+                {
+                    "function_name": "backup_func",
+                    "module_path": "backup.py",
+                    "function_signature": "backup_func() -> None",
+                    "docstring_format": "google",
+                    "docstring_content": "Backup function.",
+                    "has_params": False,
+                    "has_returns": False,
+                    "has_examples": False,
+                    "complexity_score": 1,
+                    "quality_score": 4,
+                    "source": "accepted",
+                    "timestamp": 1234567890.0,
+                }
+            ],
+        }
+
+        backup_file = temp_corpus_dir / "accepted_suggestions.1234567890.backup"
+        with open(backup_file, "w", encoding="utf-8") as f:
+            json.dump(backup_data, f)
+
+        # Create corrupted main file
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        with open(accepted_file, "w", encoding="utf-8") as f:
+            f.write("corrupted json{")
+
+        # Create manager - should recover from backup
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Verify recovery
+        accepted_examples = [
+            ex for ex in manager.memory_corpus if ex.source == "accepted"
+        ]
+        assert len(accepted_examples) == 1
+        assert accepted_examples[0].function_name == "backup_func"
+
+    def test_backward_compatibility_issue_types(self, temp_corpus_dir):
+        """Test backward compatibility for issue_types field."""
+        # Old format without issue_types
+        old_data = {
+            "version": "1.0.0",
+            "last_updated": "2025-01-27T12:00:00",
+            "total_accepted": 1,
+            "examples": [
+                {
+                    "function_name": "old_func",
+                    "module_path": "old.py",
+                    "function_signature": "old_func() -> None",
+                    "docstring_format": "google",
+                    "docstring_content": "Old function.",
+                    "has_params": False,
+                    "has_returns": False,
+                    "has_examples": False,
+                    "complexity_score": 1,
+                    "quality_score": 4,
+                    "source": "accepted",
+                    "timestamp": 1234567890.0,
+                    "original_issue": "missing_docstring",  # Has original_issue but no issue_types
+                }
+            ],
+        }
+
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        with open(accepted_file, "w", encoding="utf-8") as f:
+            json.dump(old_data, f)
+
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Should load and convert
+        accepted_examples = [
+            ex for ex in manager.memory_corpus if ex.source == "accepted"
+        ]
+        assert len(accepted_examples) == 1
+        assert accepted_examples[0].issue_types == ["missing_docstring"]
+
+    def test_add_accepted_suggestion_with_persistence(self, temp_corpus_dir):
+        """Test that add_accepted_suggestion triggers persistence."""
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Create test function
+        signature = FunctionSignature(
+            name="test_func",
+            parameters=[],
+            return_type="str",
+            is_async=False,
+            is_method=False,
+            decorators=[],
+        )
+
+        function = ParsedFunction(
+            signature=signature,
+            docstring=None,
+            file_path="test.py",
+            line_number=10,
+            end_line_number=12,
+        )
+
+        # Add accepted suggestion
+        manager.add_accepted_suggestion(
+            function=function,
+            suggested_docstring="Test function that returns a string.",
+            docstring_format="google",
+            issue_type="missing_docstring",
+        )
+
+        # Verify persisted
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        assert accepted_file.exists()
+
+        with open(accepted_file, encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["total_accepted"] == 1
+        assert data["examples"][0]["function_name"] == "test_func"
+        assert data["examples"][0]["issue_types"] == ["missing_docstring"]
+
+    def test_large_corpus_performance(self, temp_corpus_dir):
+        """Test performance with large corpus (200+ examples)."""
+        manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+
+        # Add 200 examples
+        for i in range(200):
+            example = DocstringExample(
+                function_name=f"func_{i}",
+                module_path=f"module_{i % 10}.py",
+                function_signature=f"func_{i}(x: int) -> str",
+                docstring_format="google",
+                docstring_content=f"Function {i}.\n\nArgs:\n    x: Input.\n\nReturns:\n    Output.",
+                has_params=True,
+                has_returns=True,
+                has_examples=False,
+                complexity_score=2,
+                quality_score=4,
+                source="accepted",
+                timestamp=time.time(),
+                issue_types=["missing_param_doc"],
+                original_issue="missing_param_doc",
+            )
+            manager.memory_corpus.append(example)
+
+        # Test save performance
+        save_start = time.time()
+        manager.save_accepted_suggestions()
+        save_time = time.time() - save_start
+
+        assert save_time < 0.1  # Should be under 100ms
+
+        # Test load performance
+        new_manager = RAGCorpusManager(
+            corpus_dir=str(temp_corpus_dir), enable_embeddings=False
+        )
+        load_time = time.time() - save_start
+
+        assert load_time < 0.2  # Should be under 200ms
+
+        # Verify all loaded
+        accepted_examples = [
+            ex for ex in new_manager.memory_corpus if ex.source == "accepted"
+        ]
+        assert len(accepted_examples) == 200
+
+        # Check file size
+        accepted_file = temp_corpus_dir / "accepted_suggestions.json"
+        file_size = accepted_file.stat().st_size
+        assert file_size < 1024 * 1024  # Should be under 1MB
