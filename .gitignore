@@ -215,6 +215,9 @@ MypyError.MD
 # CodeDocSync specific cache
 .codedocsync_cache/
 
+# Metrics data (may contain sensitive paths)
+data/metrics/
+
 # Analysis outputs
 mypy_report.txt
 mypy_full_report.txt

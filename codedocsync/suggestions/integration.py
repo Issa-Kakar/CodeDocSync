@@ -175,19 +175,19 @@ class SuggestionIntegration:
                     if suggestion:
                         # Track the suggestion
                         metrics_collector = get_metrics_collector()
+                        ab_controller = get_ab_controller()
+                        function_signature = str(result.matched_pair.function.signature)
+                        ab_group = ab_controller.get_assignment(function_signature)
+
                         suggestion_id = metrics_collector.track_suggestion(
-                            function_signature=str(
-                                result.matched_pair.function.signature
-                            ),
+                            function_signature=function_signature,
                             file_path=result.matched_pair.function.file_path,
                             issue_type=issue.issue_type,
                             generator_name=suggestion.metadata.generator_type,
                             suggestion_text=suggestion.suggested_text,
                             confidence=suggestion.confidence,
                             rag_examples=context.related_functions,
-                            ab_group=(
-                                "treatment" if context.related_functions else "control"
-                            ),
+                            ab_group=ab_group,
                         )
 
                         # Add suggestion ID to metadata

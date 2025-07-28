@@ -128,7 +128,8 @@ class MetricsCollector:
 
         # Determine A/B group if not specified
         if ab_group is None:
-            ab_group = "treatment" if rag_examples else "control"
+            ab_controller = get_ab_controller()
+            ab_group = ab_controller.get_assignment(function_signature)
 
         metric = SuggestionMetrics(
             suggestion_id=suggestion_id,
