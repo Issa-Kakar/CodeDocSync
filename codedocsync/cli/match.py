@@ -352,7 +352,9 @@ def match_unified(
         if output_format == "json":
             output = format_json_unified_result(result, show_unmatched)
         else:
-            output = format_terminal_unified_result(result, show_unmatched)
+            output = format_terminal_unified_result(
+                result, show_unmatched, enable_semantic
+            )
     except Exception as e:
         console.print(f"[red][ERROR] Error formatting output: {e}[/red]")
         raise typer.Exit(1) from None

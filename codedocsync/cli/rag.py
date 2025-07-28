@@ -4,6 +4,7 @@ RAG corpus management commands for CodeDocSync CLI.
 This module provides commands for managing the self-improving RAG corpus.
 """
 
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -14,6 +15,7 @@ from rich.table import Table
 from ..analyzer.models import ISSUE_TYPES
 from ..cli.console import console
 from ..parser import parse_python_file
+from ..suggestions.metrics import get_metrics_collector
 from ..suggestions.rag_corpus import RAGCorpusManager
 
 
@@ -178,6 +180,13 @@ def accept_suggestion(
         # Initialize RAG manager and add the accepted suggestion
         manager = RAGCorpusManager(corpus_dir=corpus_dir)
 
+        # Track acceptance (add before corpus update)
+        metrics_collector = get_metrics_collector()
+
+        # Note: Since we don't have the suggestion_id in the current flow,
+        # we need to search for it based on context
+        # This is a limitation that could be improved in the future
+
         manager.add_accepted_suggestion(
             function=target_function,
             suggested_docstring=suggested_docstring,
@@ -194,6 +203,62 @@ def accept_suggestion(
         stats = manager.get_stats()
         console.print(f"[dim]Corpus now contains {stats['corpus_size']} examples[/dim]")
 
+        # Save metrics
+        metrics_collector.save_session_metrics()
+
     except Exception as e:
         console.print(f"[red]Error: Failed to record suggestion: {str(e)}[/red]")
         raise typer.Exit(1) from e
+
+
+def metrics_report(
+    output_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Save report to file",
+        ),
+    ] = None,
+    last_days: Annotated[
+        int,
+        typer.Option(
+            "--days",
+            help="Include metrics from last N days",
+        ),
+    ] = 7,
+) -> None:
+    """Generate improvement metrics report."""
+    from ..suggestions.metrics import ImprovementCalculator, MetricsCollector
+
+    try:
+        # Load metrics
+        collector = MetricsCollector()
+
+        # Get metrics from last N days
+        cutoff = time.time() - (last_days * 86400)
+        recent_metrics = [
+            m
+            for m in (collector.historical_metrics + collector.current_session)
+            if m.timestamp > cutoff
+        ]
+
+        if not recent_metrics:
+            console.print("[yellow]No metrics found for the specified period[/yellow]")
+            return
+
+        # Calculate improvements
+        calculator = ImprovementCalculator(recent_metrics)
+        report = calculator.generate_report()
+
+        # Display report
+        console.print(report)
+
+        # Save to file if requested
+        if output_file:
+            output_file.write_text(report)
+            console.print(f"\n[green]Report saved to {output_file}[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error generating report: {e}[/red]")
+        raise typer.Exit(code=1) from e

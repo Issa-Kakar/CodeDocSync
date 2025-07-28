@@ -286,14 +286,16 @@ def format_json_unified_result(result: MatchResult, show_unmatched: bool) -> str
     return json.dumps(output, indent=2)
 
 
-def format_terminal_unified_result(result: MatchResult, show_unmatched: bool) -> str:
+def format_terminal_unified_result(
+    result: MatchResult, show_unmatched: bool, enable_semantic: bool = True
+) -> str:
     """Format unified matching result for terminal with enhanced display."""
     # Capture console output
     old_stdout = sys.stdout
     sys.stdout = captured_output = StringIO()
 
     try:
-        display_unified_results(result, show_unmatched)
+        display_unified_results(result, show_unmatched, enable_semantic)
         return captured_output.getvalue()
     finally:
         sys.stdout = old_stdout
@@ -361,17 +363,40 @@ def display_analysis_results(
             console.print(f"  • {issue.description}")
             # Check if we have an enhanced suggestion
             if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
+                # Track that the suggestion was displayed (with error handling)
+                try:
+                    from codedocsync.suggestions.metrics import get_metrics_collector
+
+                    metrics_collector = get_metrics_collector()
+                    if (
+                        hasattr(issue.rich_suggestion, "metadata")
+                        and issue.rich_suggestion.metadata
+                        and hasattr(issue.rich_suggestion.metadata, "suggestion_id")
+                        and issue.rich_suggestion.metadata.suggestion_id
+                    ):
+                        metrics_collector.mark_displayed(
+                            issue.rich_suggestion.metadata.suggestion_id
+                        )
+                except Exception:
+                    # Silently ignore metrics errors to avoid disrupting core functionality
+                    pass
+
                 console.print(
                     f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
                 )
-                console.print(
-                    f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
-                )
-                console.print(
-                    f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
-                    if len(issue.rich_suggestion.suggested_text) > 100
-                    else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
-                )
+                if hasattr(issue.rich_suggestion, "confidence"):
+                    console.print(
+                        f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
+                    )
+                if (
+                    hasattr(issue.rich_suggestion, "suggested_text")
+                    and issue.rich_suggestion.suggested_text
+                ):
+                    console.print(
+                        f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
+                        if len(issue.rich_suggestion.suggested_text) > 100
+                        else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
+                    )
             else:
                 console.print(
                     f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
@@ -388,17 +413,40 @@ def display_analysis_results(
             console.print(f"  • {issue.description}")
             # Check if we have an enhanced suggestion
             if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
+                # Track that the suggestion was displayed (with error handling)
+                try:
+                    from codedocsync.suggestions.metrics import get_metrics_collector
+
+                    metrics_collector = get_metrics_collector()
+                    if (
+                        hasattr(issue.rich_suggestion, "metadata")
+                        and issue.rich_suggestion.metadata
+                        and hasattr(issue.rich_suggestion.metadata, "suggestion_id")
+                        and issue.rich_suggestion.metadata.suggestion_id
+                    ):
+                        metrics_collector.mark_displayed(
+                            issue.rich_suggestion.metadata.suggestion_id
+                        )
+                except Exception:
+                    # Silently ignore metrics errors to avoid disrupting core functionality
+                    pass
+
                 console.print(
                     f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
                 )
-                console.print(
-                    f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
-                )
-                console.print(
-                    f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
-                    if len(issue.rich_suggestion.suggested_text) > 100
-                    else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
-                )
+                if hasattr(issue.rich_suggestion, "confidence"):
+                    console.print(
+                        f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
+                    )
+                if (
+                    hasattr(issue.rich_suggestion, "suggested_text")
+                    and issue.rich_suggestion.suggested_text
+                ):
+                    console.print(
+                        f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
+                        if len(issue.rich_suggestion.suggested_text) > 100
+                        else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
+                    )
             else:
                 console.print(
                     f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
@@ -413,10 +461,18 @@ def display_analysis_results(
         console.print(f"[dim]Low Issues: {len(low_issues)}[/dim]")
 
 
-def display_unified_results(result: MatchResult, show_unmatched: bool) -> None:
+def display_unified_results(
+    result: MatchResult, show_unmatched: bool, enable_semantic: bool = True
+) -> None:
     """Display unified matching results in terminal with comprehensive Rich formatting."""
+    # Build header based on enabled strategies
+    strategies = ["Direct", "Contextual"]
+    if enable_semantic:
+        strategies.append("Semantic")
+    header_text = " + ".join(strategies)
+
     console.print(
-        "\n[bold magenta][>>] Unified Matching Results (Direct + Contextual + Semantic)[/bold magenta]"
+        f"\n[bold magenta][>>] Unified Matching Results ({header_text})[/bold magenta]"
     )
     console.print("=" * 80)
 

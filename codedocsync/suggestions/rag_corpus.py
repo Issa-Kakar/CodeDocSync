@@ -7,6 +7,7 @@ from high-quality docstring examples to provide better suggestions.
 
 import json
 import logging
+import re
 import shutil
 import time
 from dataclasses import asdict, dataclass
@@ -14,7 +15,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from ..parser import ParsedDocstring, ParsedFunction
+from rapidfuzz import fuzz
+
+from ..parser import FunctionSignature, ParsedDocstring, ParsedFunction
 from ..storage.embedding_cache import EmbeddingCache
 from ..storage.vector_store import VectorStore
 
@@ -45,10 +48,8 @@ class DocstringExample:
     embedding_id: str | None = None
     source: str = "bootstrap"  # bootstrap, accepted, or good_example
     timestamp: float = 0.0
-    category: str | None = None  # Optional category field for compatibility
-    similarity_score: float | None = (
-        None  # Optional similarity score for retrieval results
-    )
+    category: str | None = None  # Category for organization (async_patterns, etc.)
+    similarity_score: float = 0.0  # Added to track similarity during retrieval
     issue_types: list[str] | None = None  # Track which issues were fixed
     original_issue: str | None = None  # The specific issue this suggestion addressed
     improvement_score: float | None = None  # Calculated improvement metric
@@ -299,7 +300,18 @@ class RAGCorpusManager:
                 logger.warning("Failed to parse accepted suggestion")
                 return
 
-            # Create example
+            # Calculate improvement score based on acceptance
+            improvement_score = 1.0  # Base score for being accepted
+
+            # Bonus for fixing critical issues
+            if issue_type in [
+                "missing_docstring",
+                "parameter_mismatch",
+                "return_mismatch",
+            ]:
+                improvement_score += 0.2
+
+            # Create example with improvement tracking
             example = DocstringExample(
                 function_name=function.signature.name,
                 module_path=function.file_path,
@@ -315,6 +327,7 @@ class RAGCorpusManager:
                 timestamp=time.time(),
                 issue_types=[issue_type],  # Track the issue type
                 original_issue=issue_type,  # Store the specific issue
+                improvement_score=improvement_score,  # Track improvement
             )
 
             # Store the example
@@ -569,37 +582,70 @@ class RAGCorpusManager:
             return []
 
     def _calculate_similarity_score(
-        self, function: ParsedFunction, example: DocstringExample
+        self, query_func: ParsedFunction, example: DocstringExample
     ) -> float:
-        """Calculate similarity between a function and an example using heuristics."""
-        score = 0.0
+        """Calculate similarity using advanced heuristics."""
 
-        # Name similarity (20% weight - reduced from 40%)
-        name_similarity = self._string_similarity(
-            function.signature.name, example.function_name
+        # Initialize weights
+        weights = {
+            "name_similarity": 0.25,
+            "signature_similarity": 0.20,
+            "type_compatibility": 0.15,
+            "complexity_match": 0.10,
+            "module_context": 0.10,
+            "recency_boost": 0.10,
+            "quality_weight": 0.10,
+        }
+
+        scores = {}
+
+        # 1. Enhanced name similarity with semantic understanding
+        scores["name_similarity"] = self._calculate_semantic_name_similarity(
+            query_func.signature.name, example.function_name
         )
-        score += name_similarity * 0.2
 
-        # Parameter count similarity (30% weight - increased from 20%)
-        func_param_count = len(function.signature.parameters)
-        # Parse parameter count from signature string
-        example_param_count = self._extract_parameter_count(example.function_signature)
-        param_diff = abs(func_param_count - example_param_count)
-        param_score = 1.0 / (1.0 + param_diff * 0.5)
-        score += param_score * 0.3
+        # 2. Signature similarity (parameter names and order)
+        scores["signature_similarity"] = self._calculate_signature_similarity(
+            query_func.signature, example.function_signature
+        )
 
-        # Return type presence (30% weight - increased from 20%)
-        has_return = bool(function.signature.return_type)
-        if has_return == example.has_returns:
-            score += 0.3
+        # 3. Type compatibility scoring
+        scores["type_compatibility"] = self._calculate_type_compatibility(
+            query_func, example
+        )
 
-        # Complexity similarity (20% weight - same)
-        func_complexity = self._calculate_complexity(function)
-        complexity_diff = abs(func_complexity - example.complexity_score)
-        complexity_score = 1.0 / (1.0 + complexity_diff * 0.3)
-        score += complexity_score * 0.2
+        # 4. Complexity matching (prefer similar complexity)
+        complexity_diff = abs(
+            self._calculate_complexity(query_func) - example.complexity_score
+        )
+        scores["complexity_match"] = 1.0 / (1.0 + complexity_diff * 0.5)
 
-        return score
+        # 5. Module context bonus
+        if self._same_module_context(query_func, example):
+            scores["module_context"] = 1.0
+        elif self._related_module(query_func, example):
+            scores["module_context"] = 0.5
+        else:
+            scores["module_context"] = 0.0
+
+        # 6. Recency boost for accepted suggestions
+        if example.source == "accepted":
+            days_old = (time.time() - example.timestamp) / 86400
+            scores["recency_boost"] = 1.0 / (1.0 + days_old * 0.1)  # Decay over time
+        else:
+            scores["recency_boost"] = 0.0
+
+        # 7. Quality weighting
+        scores["quality_weight"] = example.quality_score / 5.0
+
+        # Calculate weighted sum
+        total_score = sum(scores[key] * weights[key] for key in weights)
+
+        # Apply boosts
+        if example.source == "accepted":
+            total_score *= 1.2  # 20% boost for accepted suggestions
+
+        return min(total_score, 1.0)  # Cap at 1.0
 
     def _string_similarity(self, s1: str, s2: str) -> float:
         """Simple string similarity based on common substrings."""
@@ -720,6 +766,351 @@ class RAGCorpusManager:
             return signature.count(",") + (
                 1 if "(" in signature and ")" in signature else 0
             )
+
+    def _calculate_semantic_name_similarity(self, name1: str, name2: str) -> float:
+        """Calculate semantic similarity between function names."""
+        if name1 == name2:
+            return 1.0
+
+        # Tokenize both names
+        tokens1 = self._tokenize_name(name1)
+        tokens2 = self._tokenize_name(name2)
+
+        # Check for verb synonyms
+        verb_synonyms = {
+            "get": {"fetch", "retrieve", "obtain", "find", "load"},
+            "set": {"update", "modify", "change", "assign"},
+            "create": {"make", "build", "generate", "construct", "init"},
+            "delete": {"remove", "drop", "destroy", "clear"},
+            "check": {"verify", "validate", "test", "ensure"},
+            "calculate": {"compute", "determine", "evaluate"},
+            "parse": {"process", "analyze", "interpret"},
+            "save": {"store", "persist", "write"},
+            "load": {"read", "fetch", "get", "retrieve"},
+        }
+
+        # Check if first tokens are verb synonyms
+        if tokens1 and tokens2:
+            verb1 = tokens1[0]
+            verb2 = tokens2[0]
+
+            for base_verb, synonyms in verb_synonyms.items():
+                if (
+                    (verb1 == base_verb and verb2 in synonyms)
+                    or (verb2 == base_verb and verb1 in synonyms)
+                    or (verb1 in synonyms and verb2 in synonyms)
+                ):
+                    # High similarity for verb synonyms
+                    remaining_similarity = self._calculate_token_similarity(
+                        tokens1[1:], tokens2[1:]
+                    )
+                    return 0.8 + 0.2 * remaining_similarity
+
+        # Fall back to fuzzy matching
+        return fuzz.token_set_ratio(name1, name2) / 100.0
+
+    def _tokenize_name(self, name: str) -> list[str]:
+        """Tokenize function/variable name into words."""
+        # Handle snake_case
+        tokens = name.split("_")
+
+        # Handle camelCase
+        result = []
+        for token in tokens:
+            # Split on capital letters
+            subtokens = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\b)", token)
+            if subtokens:
+                result.extend(subtokens)
+            else:
+                result.append(token)
+
+        return [t.lower() for t in result if t]
+
+    def _calculate_token_similarity(
+        self, tokens1: list[str], tokens2: list[str]
+    ) -> float:
+        """Calculate similarity between two token lists."""
+        if not tokens1 and not tokens2:
+            return 1.0
+        if not tokens1 or not tokens2:
+            return 0.0
+
+        # Calculate Jaccard similarity
+        set1 = set(tokens1)
+        set2 = set(tokens2)
+        intersection = len(set1 & set2)
+        union = len(set1 | set2)
+
+        return intersection / union if union > 0 else 0.0
+
+    def _calculate_signature_similarity(
+        self, sig1: FunctionSignature, sig2_str: str
+    ) -> float:
+        """Calculate similarity between function signatures."""
+        # Parse the signature string
+        sig2_info = self._parse_signature_string(sig2_str)
+        if not sig2_info:
+            return 0.0
+
+        score = 0.0
+
+        # Parameter count similarity (40%)
+        param_diff = abs(len(sig1.parameters) - len(sig2_info.get("parameters", [])))
+        score += 0.4 * (1.0 / (1.0 + param_diff * 0.3))
+
+        # Parameter name overlap (30%)
+        if sig1.parameters and sig2_info.get("parameters"):
+            sig1_names = {p.name for p in sig1.parameters}
+            sig2_names = {p["name"] for p in sig2_info["parameters"]}
+            overlap = len(sig1_names & sig2_names)
+            max_params = max(len(sig1_names), len(sig2_names))
+            score += 0.3 * (overlap / max_params if max_params > 0 else 0)
+
+        # Parameter order bonus (30%)
+        if sig1.parameters and sig2_info.get("parameters"):
+            order_matches = sum(
+                1
+                for i, p1 in enumerate(sig1.parameters)
+                if i < len(sig2_info["parameters"])
+                and p1.name == sig2_info["parameters"][i]["name"]
+            )
+            score += 0.3 * (order_matches / len(sig1.parameters))
+
+        return score
+
+    def _parse_signature_string(self, signature: str) -> dict[str, Any]:
+        """Parse a function signature string into components."""
+        try:
+            # Extract function name and parameters
+            match = re.match(
+                r"(?:async\s+)?def\s+(\w+)\s*\((.*?)\)(?:\s*->\s*(.+))?", signature
+            )
+            if not match:
+                return {}
+
+            func_name = match.group(1)
+            params_str = match.group(2)
+            return_type = match.group(3)
+
+            # Parse parameters
+            parameters = []
+            if params_str.strip():
+                # Split by comma, handling nested brackets
+                param_parts = self._split_parameters(params_str)
+                for param in param_parts:
+                    param_info = self._parse_parameter(param.strip())
+                    if param_info:
+                        parameters.append(param_info)
+
+            return {
+                "name": func_name,
+                "parameters": parameters,
+                "return_type": return_type.strip() if return_type else None,
+            }
+        except Exception:
+            return {}
+
+    def _split_parameters(self, params_str: str) -> list[str]:
+        """Split parameter string handling nested brackets."""
+        params = []
+        current: list[str] = []
+        depth = 0
+
+        for char in params_str:
+            if char in "([{":
+                depth += 1
+            elif char in ")]}":
+                depth -= 1
+            elif char == "," and depth == 0:
+                params.append("".join(current).strip())
+                current = []
+                continue
+            current.append(char)
+
+        if current:
+            params.append("".join(current).strip())
+
+        return params
+
+    def _parse_parameter(self, param_str: str) -> dict[str, str] | None:
+        """Parse a single parameter string."""
+        # Handle various formats: name, name: type, name: type = default
+        if ":" in param_str:
+            name_part, rest = param_str.split(":", 1)
+            name = name_part.strip()
+            if "=" in rest:
+                type_part, default = rest.split("=", 1)
+                return {
+                    "name": name,
+                    "type": type_part.strip(),
+                    "default": default.strip(),
+                }
+            else:
+                return {"name": name, "type": rest.strip()}
+        elif "=" in param_str:
+            name, default = param_str.split("=", 1)
+            return {"name": name.strip(), "default": default.strip()}
+        else:
+            return {"name": param_str.strip()} if param_str.strip() else None
+
+    def _calculate_type_compatibility(
+        self, query_func: ParsedFunction, example: DocstringExample
+    ) -> float:
+        """Calculate type compatibility between query function and example."""
+        sig2_info = self._parse_signature_string(example.function_signature)
+        if not sig2_info:
+            return 0.0
+
+        score = 0.0
+
+        # Return type compatibility (50%)
+        if query_func.signature.return_type:
+            example_return = sig2_info.get("return_type")
+            if example_return:
+                if self._types_compatible(
+                    query_func.signature.return_type, example_return
+                ):
+                    score += 0.5
+                elif self._types_related(
+                    query_func.signature.return_type, example_return
+                ):
+                    score += 0.25
+
+        # Parameter type compatibility (50%)
+        if query_func.signature.parameters and sig2_info.get("parameters"):
+            param_scores = []
+
+            for p1 in query_func.signature.parameters:
+                if not p1.type_annotation:
+                    continue
+
+                # Find matching parameter by name
+                for p2 in sig2_info["parameters"]:
+                    if p1.name == p2["name"] and p2.get("type"):
+                        if self._types_compatible(p1.type_annotation, p2["type"]):
+                            param_scores.append(1.0)
+                        elif self._types_related(p1.type_annotation, p2["type"]):
+                            param_scores.append(0.5)
+                        else:
+                            param_scores.append(0.0)
+                        break
+
+            if param_scores:
+                score += 0.5 * (sum(param_scores) / len(param_scores))
+
+        return score
+
+    def _types_compatible(self, type1: str, type2: str) -> bool:
+        """Check if two types are compatible."""
+        type1 = self._normalize_type(type1)
+        type2 = self._normalize_type(type2)
+
+        if type1 == type2:
+            return True
+
+        # Common type equivalences
+        equivalences = [
+            {"str", "string"},
+            {"int", "integer"},
+            {"bool", "boolean"},
+            {"dict", "dictionary", "mapping"},
+            {"list", "array", "sequence"},
+            {"float", "number", "double"},
+            {"none", "null", "nonetype"},
+        ]
+
+        for equiv_set in equivalences:
+            if type1 in equiv_set and type2 in equiv_set:
+                return True
+
+        # Handle Optional types
+        if "| none" in type1 and "| none" in type2:
+            base1 = type1.replace("| none", "").strip()
+            base2 = type2.replace("| none", "").strip()
+            return self._types_compatible(base1, base2)
+
+        return False
+
+    def _normalize_type(self, type_str: str) -> str:
+        """Normalize a type string for comparison."""
+        if not type_str:
+            return ""
+
+        # Remove whitespace and convert to lowercase
+        normalized = type_str.strip().lower()
+
+        # Remove quotes
+        normalized = normalized.replace('"', "").replace("'", "")
+
+        # Handle Optional notation
+        if normalized.startswith("optional[") and normalized.endswith("]"):
+            normalized = normalized[9:-1] + " | none"
+
+        return normalized
+
+    def _types_related(self, type1: str, type2: str) -> bool:
+        """Check if two types are related but not identical."""
+        type1 = self._normalize_type(type1)
+        type2 = self._normalize_type(type2)
+
+        # Check for subtype relationships
+        relationships = [
+            ("int", "float"),  # int is subtype of float
+            ("list", "sequence"),
+            ("dict", "mapping"),
+            ("str", "any"),
+            ("int", "any"),
+            ("float", "any"),
+        ]
+
+        for t1, t2 in relationships:
+            if (type1 == t1 and type2 == t2) or (type1 == t2 and type2 == t1):
+                return True
+
+        # Check for generic relationships
+        base1 = type1.split("[")[0] if "[" in type1 else type1
+        base2 = type2.split("[")[0] if "[" in type2 else type2
+
+        return base1 == base2 and type1 != type2
+
+    def _same_module_context(
+        self, func: ParsedFunction, example: DocstringExample
+    ) -> bool:
+        """Check if function and example are from the same module."""
+        func_module = (
+            func.file_path.replace(".py", "").replace("/", ".").replace("\\", ".")
+        )
+        example_module = example.module_path
+
+        # Normalize paths
+        func_parts = func_module.split(".")
+        example_parts = example_module.split(".") if example_module else []
+
+        # Check for exact match or parent/child relationship
+        if not func_parts or not example_parts:
+            return False
+
+        return (
+            func_parts[: len(example_parts)] == example_parts
+            or example_parts[: len(func_parts)] == func_parts
+        )
+
+    def _related_module(self, func: ParsedFunction, example: DocstringExample) -> bool:
+        """Check if modules are related (e.g., same package)."""
+        func_module = (
+            func.file_path.replace(".py", "").replace("/", ".").replace("\\", ".")
+        )
+        example_module = example.module_path or ""
+
+        # Check if they share a common package
+        func_parts = func_module.split(".")
+        example_parts = example_module.split(".")
+
+        if len(func_parts) < 2 or len(example_parts) < 2:
+            return False
+
+        # Same top-level package
+        return func_parts[0] == example_parts[0]
 
     def get_stats(self) -> dict[str, Any]:
         """Get corpus statistics."""

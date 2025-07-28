@@ -23,6 +23,7 @@ from .generators.example_generator import ExampleSuggestionGenerator
 from .generators.parameter_generator import ParameterSuggestionGenerator
 from .generators.raises_generator import RaisesSuggestionGenerator
 from .generators.return_generator import ReturnSuggestionGenerator
+from .metrics import get_ab_controller, get_metrics_collector
 from .models import Suggestion, SuggestionBatch, SuggestionContext
 from .rag_corpus import RAGCorpusManager
 
@@ -172,6 +173,27 @@ class SuggestionIntegration:
                         suggestion = self._generate_suggestion(issue, context)
 
                     if suggestion:
+                        # Track the suggestion
+                        metrics_collector = get_metrics_collector()
+                        ab_controller = get_ab_controller()
+                        function_signature = str(result.matched_pair.function.signature)
+                        ab_group = ab_controller.get_assignment(function_signature)
+
+                        suggestion_id = metrics_collector.track_suggestion(
+                            function_signature=function_signature,
+                            file_path=result.matched_pair.function.file_path,
+                            issue_type=issue.issue_type,
+                            generator_name=suggestion.metadata.generator_type,
+                            suggestion_text=suggestion.suggested_text,
+                            confidence=suggestion.confidence,
+                            rag_examples=context.related_functions,
+                            ab_group=ab_group,
+                        )
+
+                        # Add suggestion ID to metadata
+                        suggestion.metadata.suggestion_id = suggestion_id
+
+                        # Set the enhanced suggestion
                         enhanced_issue.rich_suggestion = suggestion
                         suggestions_generated += 1
                     else:
@@ -224,9 +246,13 @@ class SuggestionIntegration:
         """Create context for suggestion generation."""
         from .models import SuggestionContext
 
-        # Retrieve RAG examples if enabled
+        # Get A/B test assignment
+        ab_controller = get_ab_controller()
+        should_use_rag = ab_controller.should_use_rag(str(pair.function.signature))
+
+        # Retrieve RAG examples if enabled by A/B test
         related_functions = []
-        if self.config.use_rag:
+        if should_use_rag and self.config.use_rag:
             try:
                 import time
 
@@ -251,6 +277,8 @@ class SuggestionIntegration:
                             "signature": example.function_signature,
                             "docstring": example.docstring_content,
                             "similarity": getattr(example, "similarity_score", 0.8),
+                            "module": example.module_path,
+                            "style": example.docstring_format,
                         }
                     )
 
@@ -276,15 +304,17 @@ class SuggestionIntegration:
                         f"RAG: No suitable examples found for {pair.function.signature.name}"
                     )
             except Exception as e:
-                logger.debug(f"RAG retrieval failed (non-critical): {e}")
+                logger.warning(f"RAG search failed: {e}")
+                # Continue without RAG examples
 
+        # Create context with issue, function, and RAG examples
         return SuggestionContext(
             issue=issue,
             function=pair.function,
             docstring=pair.docstring,
             project_style=self.config.default_style,
-            surrounding_code=None,  # Could be enhanced later
-            related_functions=related_functions,  # Now populated with RAG examples!
+            related_functions=related_functions,
+            preserve_descriptions=self.config.preserve_descriptions,
         )
 
     def _generate_suggestion(
