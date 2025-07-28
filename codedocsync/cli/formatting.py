@@ -361,6 +361,15 @@ def display_analysis_results(
             console.print(f"  • {issue.description}")
             # Check if we have an enhanced suggestion
             if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
+                # Track that the suggestion was displayed
+                from codedocsync.suggestions.metrics import get_metrics_collector
+
+                metrics_collector = get_metrics_collector()
+                if issue.rich_suggestion.metadata.suggestion_id:
+                    metrics_collector.mark_displayed(
+                        issue.rich_suggestion.metadata.suggestion_id
+                    )
+
                 console.print(
                     f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
                 )
@@ -388,6 +397,15 @@ def display_analysis_results(
             console.print(f"  • {issue.description}")
             # Check if we have an enhanced suggestion
             if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
+                # Track that the suggestion was displayed
+                from codedocsync.suggestions.metrics import get_metrics_collector
+
+                metrics_collector = get_metrics_collector()
+                if issue.rich_suggestion.metadata.suggestion_id:
+                    metrics_collector.mark_displayed(
+                        issue.rich_suggestion.metadata.suggestion_id
+                    )
+
                 console.print(
                     f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
                 )

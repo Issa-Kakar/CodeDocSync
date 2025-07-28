@@ -299,7 +299,18 @@ class RAGCorpusManager:
                 logger.warning("Failed to parse accepted suggestion")
                 return
 
-            # Create example
+            # Calculate improvement score based on acceptance
+            improvement_score = 1.0  # Base score for being accepted
+
+            # Bonus for fixing critical issues
+            if issue_type in [
+                "missing_docstring",
+                "parameter_mismatch",
+                "return_mismatch",
+            ]:
+                improvement_score += 0.2
+
+            # Create example with improvement tracking
             example = DocstringExample(
                 function_name=function.signature.name,
                 module_path=function.file_path,
@@ -315,6 +326,7 @@ class RAGCorpusManager:
                 timestamp=time.time(),
                 issue_types=[issue_type],  # Track the issue type
                 original_issue=issue_type,  # Store the specific issue
+                improvement_score=improvement_score,  # Track improvement
             )
 
             # Store the example

@@ -95,6 +95,7 @@ class SuggestionMetadata:
     generation_time_ms: float = 0.0  # Time to generate
     token_usage: int | None = None  # Tokens if LLM used
     used_rag_examples: bool = False  # Whether RAG examples were used
+    suggestion_id: str | None = None  # Unique identifier for tracking
 
     def __post_init__(self) -> None:
         """Validate metadata."""

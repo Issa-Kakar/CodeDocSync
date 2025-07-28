@@ -21,7 +21,7 @@ from codedocsync.cli.cache import clear_cache
 from codedocsync.cli.match import match, match_contextual, match_unified
 from codedocsync.cli.parse import parse
 from codedocsync.cli.placeholders import check, watch
-from codedocsync.cli.rag import accept_suggestion, rag_stats
+from codedocsync.cli.rag import accept_suggestion, metrics_report, rag_stats
 from codedocsync.cli.suggest import suggest, suggest_interactive
 
 # Create the main app
@@ -109,6 +109,7 @@ app.command("watch")(watch)
 app.command("check")(check)
 app.command("rag-stats")(rag_stats)
 app.command("accept-suggestion")(accept_suggestion)
+app.command("metrics-report")(metrics_report)
 
 
 if __name__ == "__main__":
