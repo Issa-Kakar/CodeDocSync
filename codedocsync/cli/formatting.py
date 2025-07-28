@@ -363,26 +363,40 @@ def display_analysis_results(
             console.print(f"  • {issue.description}")
             # Check if we have an enhanced suggestion
             if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
-                # Track that the suggestion was displayed
-                from codedocsync.suggestions.metrics import get_metrics_collector
+                # Track that the suggestion was displayed (with error handling)
+                try:
+                    from codedocsync.suggestions.metrics import get_metrics_collector
 
-                metrics_collector = get_metrics_collector()
-                if issue.rich_suggestion.metadata.suggestion_id:
-                    metrics_collector.mark_displayed(
-                        issue.rich_suggestion.metadata.suggestion_id
-                    )
+                    metrics_collector = get_metrics_collector()
+                    if (
+                        hasattr(issue.rich_suggestion, "metadata")
+                        and issue.rich_suggestion.metadata
+                        and hasattr(issue.rich_suggestion.metadata, "suggestion_id")
+                        and issue.rich_suggestion.metadata.suggestion_id
+                    ):
+                        metrics_collector.mark_displayed(
+                            issue.rich_suggestion.metadata.suggestion_id
+                        )
+                except Exception:
+                    # Silently ignore metrics errors to avoid disrupting core functionality
+                    pass
 
                 console.print(
                     f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
                 )
-                console.print(
-                    f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
-                )
-                console.print(
-                    f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
-                    if len(issue.rich_suggestion.suggested_text) > 100
-                    else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
-                )
+                if hasattr(issue.rich_suggestion, "confidence"):
+                    console.print(
+                        f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
+                    )
+                if (
+                    hasattr(issue.rich_suggestion, "suggested_text")
+                    and issue.rich_suggestion.suggested_text
+                ):
+                    console.print(
+                        f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
+                        if len(issue.rich_suggestion.suggested_text) > 100
+                        else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
+                    )
             else:
                 console.print(
                     f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
@@ -399,26 +413,40 @@ def display_analysis_results(
             console.print(f"  • {issue.description}")
             # Check if we have an enhanced suggestion
             if hasattr(issue, "rich_suggestion") and issue.rich_suggestion:
-                # Track that the suggestion was displayed
-                from codedocsync.suggestions.metrics import get_metrics_collector
+                # Track that the suggestion was displayed (with error handling)
+                try:
+                    from codedocsync.suggestions.metrics import get_metrics_collector
 
-                metrics_collector = get_metrics_collector()
-                if issue.rich_suggestion.metadata.suggestion_id:
-                    metrics_collector.mark_displayed(
-                        issue.rich_suggestion.metadata.suggestion_id
-                    )
+                    metrics_collector = get_metrics_collector()
+                    if (
+                        hasattr(issue.rich_suggestion, "metadata")
+                        and issue.rich_suggestion.metadata
+                        and hasattr(issue.rich_suggestion.metadata, "suggestion_id")
+                        and issue.rich_suggestion.metadata.suggestion_id
+                    ):
+                        metrics_collector.mark_displayed(
+                            issue.rich_suggestion.metadata.suggestion_id
+                        )
+                except Exception:
+                    # Silently ignore metrics errors to avoid disrupting core functionality
+                    pass
 
                 console.print(
                     f"    [dim]Line {issue.line_number}:[/dim] [green]Enhanced suggestion available[/green]"
                 )
-                console.print(
-                    f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
-                )
-                console.print(
-                    f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
-                    if len(issue.rich_suggestion.suggested_text) > 100
-                    else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
-                )
+                if hasattr(issue.rich_suggestion, "confidence"):
+                    console.print(
+                        f"    [cyan]Confidence: {issue.rich_suggestion.confidence:.0%}[/cyan]"
+                    )
+                if (
+                    hasattr(issue.rich_suggestion, "suggested_text")
+                    and issue.rich_suggestion.suggested_text
+                ):
+                    console.print(
+                        f"    [dim]{issue.rich_suggestion.suggested_text[:100]}...[/dim]"
+                        if len(issue.rich_suggestion.suggested_text) > 100
+                        else f"    [dim]{issue.rich_suggestion.suggested_text}[/dim]"
+                    )
             else:
                 console.print(
                     f"    [dim]Line {issue.line_number}: {issue.suggestion}[/dim]"
