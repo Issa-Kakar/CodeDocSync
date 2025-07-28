@@ -276,9 +276,10 @@ def parse_python_file(file_path: str) -> list[ParsedFunction]:
 
     functions = []
 
-    # Walk through all nodes in the AST
+    # Walk through all nodes in the AST to find all functions
+    # This includes nested functions and methods inside classes
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             try:
                 parsed_func = _extract_function(node, file_path, source_content)
                 functions.append(parsed_func)
@@ -380,9 +381,10 @@ def parse_python_file_lazy(file_path: str) -> Generator[ParsedFunction, None, No
 
     function_count = 0
 
-    # Walk through all nodes in the AST
+    # Walk through all nodes in the AST to find all functions
+    # This includes nested functions and methods inside classes
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             try:
                 parsed_func = _extract_function(node, file_path, source_content)
                 function_count += 1
@@ -739,10 +741,10 @@ def _is_imports_only(source_content: str) -> bool:
     try:
         tree = ast.parse(source_content)
         for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                 return False
             # Check for any substantial code beyond imports
-            if isinstance(node, ast.Assign | ast.AnnAssign | ast.AugAssign):
+            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
                 # Allow simple constant assignments like VERSION = "1.0.0"
                 if isinstance(node, ast.Assign):
                     if not isinstance(node.value, ast.Constant):
@@ -778,8 +780,9 @@ def _parse_partial_file(
         tree = ast.parse(partial_content, filename=file_path)
         functions = []
 
+        # Walk through all nodes in the AST to find all functions
         for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 try:
                     parsed_func = _extract_function(node, file_path, partial_content)
                     functions.append(parsed_func)
