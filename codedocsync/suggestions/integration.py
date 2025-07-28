@@ -191,9 +191,7 @@ class SuggestionIntegration:
                         )
 
                         # Add suggestion ID to metadata
-                        # TODO: Uncomment when suggestion_id is added to SuggestionMetadata (Step 7)
-                        # suggestion.metadata.suggestion_id = suggestion_id
-                        _ = suggestion_id  # Will be used in Step 7
+                        suggestion.metadata.suggestion_id = suggestion_id
 
                         # Set the enhanced suggestion
                         enhanced_issue.rich_suggestion = suggestion

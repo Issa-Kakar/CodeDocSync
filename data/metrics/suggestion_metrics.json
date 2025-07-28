@@ -1,0 +1,563 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-07-27T21:02:06.646927",
+  "total_suggestions": 16,
+  "metrics": [
+    {
+      "suggestion_id": "d2b5d02b-a39f-4e3c-8794-61091cfac3b3",
+      "timestamp": 1753675326.470286,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_missing",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 155,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.4702997,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.603307,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "48d21648-d2bf-43f4-96f1-2a831b17f373",
+      "timestamp": 1753675326.4882116,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_count_mismatch",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 155,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.4882197,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6046417,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "dccdf579-e3c9-4596-9c5b-cef4242248f2",
+      "timestamp": 1753675326.5062907,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_params",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 155,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5062966,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6061823,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "3f9bfcee-7831-4d2a-b45c-5806aa12e7c0",
+      "timestamp": 1753675326.523394,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_returns",
+      "generator_used": "ReturnSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 34,
+      "completeness_score": 0.2,
+      "confidence_score": 0.1,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5234046,
+          "metadata": {
+            "generator": "ReturnSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6156027,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "7b2e3d94-0cde-41ca-b5dc-42819fc0015a",
+      "timestamp": 1753675326.523666,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_missing",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 102,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5236695,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6085322,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "663946a5-1631-4b89-b380-82d05ebbf716",
+      "timestamp": 1753675326.5237706,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_count_mismatch",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 102,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5237734,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.609789,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "affbc897-03f0-4ac3-9fe4-d5556767e773",
+      "timestamp": 1753675326.5238428,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_params",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 102,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.523845,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6108968,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "01f31e16-ba55-435c-b950-311a0e9223f6",
+      "timestamp": 1753675326.5239835,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_returns",
+      "generator_used": "ReturnSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 34,
+      "completeness_score": 0.2,
+      "confidence_score": 0.1,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.523986,
+          "metadata": {
+            "generator": "ReturnSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6165333,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "31638d41-3d16-4801-b837-a740d247f8ee",
+      "timestamp": 1753675326.5415428,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_missing",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 155,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5415478,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.61258,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "8f175a5d-5315-48e7-ac0b-92e7554c7241",
+      "timestamp": 1753675326.561499,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_count_mismatch",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 155,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5615048,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6136951,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "20325cdc-166a-4607-a2b0-a6a62a2eb65c",
+      "timestamp": 1753675326.578938,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_params",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 155,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5789435,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        }
+      ],
+      "shown_to_user": false,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "de1f5fd1-30f3-4a29-8a07-e407b2e62578",
+      "timestamp": 1753675326.5962605,
+      "function_signature": "FunctionSignature(name='validate_patterns', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='patterns', type_annotation='list[dict[str, str]]', default_value=None, is_required=True)], return_type='list[dict[str, str]]', is_async=False, is_method=True, decorators=[\"field_validator('custom_patterns')\", 'classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_returns",
+      "generator_used": "ReturnSuggestionGenerator",
+      "rag_enhanced": true,
+      "examples_used": 3,
+      "similarity_scores": [
+        0.7538461538461538,
+        0.7538461538461538,
+        0.7538461538461538
+      ],
+      "suggestion_length": 34,
+      "completeness_score": 0.2,
+      "confidence_score": 0.1,
+      "ab_group": "treatment",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5962677,
+          "metadata": {
+            "generator": "ReturnSuggestionGenerator",
+            "rag_enhanced": true
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6174622,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "0b24d638-f714-434c-b916-878355e18b44",
+      "timestamp": 1753675326.5963917,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_missing",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 102,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5963943,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        }
+      ],
+      "shown_to_user": false,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "a1f64879-625d-4f2f-a7b7-de5829f81b39",
+      "timestamp": 1753675326.5964515,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "parameter_count_mismatch",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 102,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.596454,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        }
+      ],
+      "shown_to_user": false,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "69444263-3edb-4ef3-9fdc-b77afaccbf9e",
+      "timestamp": 1753675326.5965078,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_params",
+      "generator_used": "ParameterSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 102,
+      "completeness_score": 0.55,
+      "confidence_score": 0.9,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.59651,
+          "metadata": {
+            "generator": "ParameterSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        }
+      ],
+      "shown_to_user": false,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    },
+    {
+      "suggestion_id": "d74e332e-3845-4f04-b106-92fd17d03de8",
+      "timestamp": 1753675326.5966043,
+      "function_signature": "FunctionSignature(name='from_yaml', parameters=[FunctionParameter(name='cls', type_annotation=None, default_value=None, is_required=True), FunctionParameter(name='file_path', type_annotation='str', default_value=None, is_required=True)], return_type=\"'CodeDocSyncConfig'\", is_async=False, is_method=True, decorators=['classmethod'])",
+      "file_path": "C:\\Users\\issak\\CodeDocSync\\codedocsync\\utils\\config.py",
+      "issue_type": "missing_returns",
+      "generator_used": "ReturnSuggestionGenerator",
+      "rag_enhanced": false,
+      "examples_used": 0,
+      "similarity_scores": [],
+      "suggestion_length": 34,
+      "completeness_score": 0.2,
+      "confidence_score": 0.1,
+      "ab_group": "control",
+      "events": [
+        {
+          "type": "generated",
+          "timestamp": 1753675326.5966067,
+          "metadata": {
+            "generator": "ReturnSuggestionGenerator",
+            "rag_enhanced": false
+          }
+        },
+        {
+          "type": "displayed",
+          "timestamp": 1753675326.6183717,
+          "metadata": {}
+        }
+      ],
+      "shown_to_user": true,
+      "accepted": false,
+      "modified_before_accept": false,
+      "time_to_decision": null
+    }
+  ]
+}

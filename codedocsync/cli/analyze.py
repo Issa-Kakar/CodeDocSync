@@ -33,6 +33,7 @@ from codedocsync.matcher import (
 from codedocsync.parser import IntegratedParser, ParsedDocstring
 from codedocsync.suggestions.config import SuggestionConfig
 from codedocsync.suggestions.integration import enhance_multiple_with_suggestions
+from codedocsync.suggestions.metrics import get_metrics_collector
 
 
 def analyze(
@@ -345,6 +346,10 @@ def analyze(
                 console.print(
                     f"[red]{critical_count} critical issues require immediate attention[/red]"
                 )
+
+        # Save metrics
+        metrics_collector = get_metrics_collector()
+        metrics_collector.save_session_metrics()
 
     except Exception as e:
         console.print(f"[red]Error during analysis: {str(e)}[/red]")
