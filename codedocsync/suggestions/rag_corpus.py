@@ -45,10 +45,8 @@ class DocstringExample:
     embedding_id: str | None = None
     source: str = "bootstrap"  # bootstrap, accepted, or good_example
     timestamp: float = 0.0
-    category: str | None = None  # Optional category field for compatibility
-    similarity_score: float | None = (
-        None  # Optional similarity score for retrieval results
-    )
+    category: str | None = None  # Category for organization (async_patterns, etc.)
+    similarity_score: float = 0.0  # Added to track similarity during retrieval
     issue_types: list[str] | None = None  # Track which issues were fixed
     original_issue: str | None = None  # The specific issue this suggestion addressed
     improvement_score: float | None = None  # Calculated improvement metric

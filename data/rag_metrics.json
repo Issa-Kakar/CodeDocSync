@@ -1,10 +1,10 @@
 {
   "examples_loaded": 143,
   "examples_added": 0,
-  "retrievals_performed": 743,
-  "searches_performed": 743,
-  "examples_retrieved": 2223,
-  "total_retrieval_time": 10.578002452850342,
+  "retrievals_performed": 994,
+  "searches_performed": 994,
+  "examples_retrieved": 2965,
+  "total_retrieval_time": 33.342885971069336,
   "avg_retrieval_time_ms": 0.0,
-  "last_updated": 1753675326.5956514
+  "last_updated": 1753677797.0702899
 }
