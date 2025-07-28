@@ -3,7 +3,6 @@ name = "codedocsync"
 version = "0.2.0"
 description = "An intelligent tool to detect inconsistencies between Python code and documentation"
 authors = ["Issa-Kakar <issakakar001@gmail.com>"]
-readme = "README.md"
 packages = [{include = "codedocsync"}]
 
 [tool.poetry.scripts]
