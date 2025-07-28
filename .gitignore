@@ -217,6 +217,7 @@ MypyError.MD
 
 # Metrics data (may contain sensitive paths)
 data/metrics/
+data/rag_metrics.json
 
 # Analysis outputs
 mypy_report.txt

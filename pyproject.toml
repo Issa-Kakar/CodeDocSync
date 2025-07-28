@@ -1,30 +1,12 @@
-[project]
+[tool.poetry]
 name = "codedocsync"
 version = "0.2.0"
 description = "An intelligent tool to detect inconsistencies between Python code and documentation"
-authors = [
-    {name = "Issa-Kakar",email = "issakakar001@gmail.com"}
-]
-requires-python = ">=3.10"
-dependencies = [
-    "typer (>=0.16.0,<0.17.0)",
-    "rich (>=14.0.0,<15.0.0)",
-    "pydantic (>=2.11.7,<3.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)",
-    "docstring_parser (>=0.16,<1.0.0)",
-    "rapidfuzz (>=3.13.0,<4.0.0)",
-    "chromadb (>=1.0.15,<2.0.0)",
-    "posthog (<6.0.0)",
-    "multidict (>=6.0.0,<7.0.0)",
-    "openai (>=1.0.0,<2.0.0)",
-    "sentence-transformers (>=2.2.0,<3.0.0)",
-    "tenacity (>=8.0.0,<9.0.0)",
-    "psutil (>=5.9.0,<6.0.0)",
-    "PyYAML (>=6.0.0,<7.0.0)",
-    "numpy (>=2.1.0,<3.0.0)"
-]
+authors = ["Issa-Kakar <issakakar001@gmail.com>"]
+readme = "README.md"
+packages = [{include = "codedocsync"}]
 
-[project.scripts]
+[tool.poetry.scripts]
 codedocsync = "codedocsync.cli.main:app"
 
 [build-system]
@@ -33,6 +15,21 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+typer = ">=0.16.0,<0.17.0"
+rich = ">=14.0.0,<15.0.0"
+pydantic = ">=2.11.7,<3.0.0"
+python-dotenv = ">=1.1.1,<2.0.0"
+docstring_parser = ">=0.16,<1.0.0"
+rapidfuzz = ">=3.13.0,<4.0.0"
+chromadb = ">=1.0.15,<2.0.0"
+posthog = "<6.0.0"
+multidict = ">=6.0.0,<7.0.0"
+openai = ">=1.0.0,<2.0.0"
+sentence-transformers = ">=2.2.0,<3.0.0"
+tenacity = ">=8.0.0,<9.0.0"
+psutil = ">=5.9.0,<6.0.0"
+PyYAML = ">=6.0.0,<7.0.0"
+numpy = ">=2.1.0,<3.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
