@@ -34,6 +34,8 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.in-project true
+          # Install the export plugin for Poetry 1.2+
+          poetry self add poetry-plugin-export
           poetry install --no-interaction
 
       - name: Install bug scanning tools
@@ -145,16 +147,16 @@ jobs:
           echo -e "\n#### Files opened without context managers:" >> bug_report.md
           # Find open() calls that aren't part of a with statement
           FOUND_OPEN=false
-          find codedocsync -name "*.py" -type f | while read -r file; do
+          while read -r file; do
             # Get all open() calls with line numbers
-            grep -n -E "^\s*[^#]*open\(" "$file" 2>/dev/null | while IFS=: read -r linenum content; do
+            while IFS=: read -r linenum content; do
               # Check if the line is part of a with statement by looking at context
               if ! sed -n "$((linenum-2)),$((linenum+2))p" "$file" 2>/dev/null | grep -q "with.*open\("; then
                 echo "${file}:${linenum}: ${content}" >> bug_report.md
                 FOUND_OPEN=true
               fi
-            done
-          done
+            done < <(grep -n -E "^\s*[^#]*open\(" "$file" 2>/dev/null)
+          done < <(find codedocsync -name "*.py" -type f)
           [ "$FOUND_OPEN" = "false" ] && echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Potential circular imports:" >> bug_report.md
@@ -352,30 +354,155 @@ jobs:
           script: |
             const fs = require('fs');
             const reportPath = 'results/bug_report.md';
+            const MAX_COMMENT_LENGTH = 60000; // Leave buffer for GitHub's 65536 limit
 
             let comment = '# 🐛 Comprehensive Bug Scan Report\n\n';
 
             if (fs.existsSync(reportPath)) {
               const report = fs.readFileSync(reportPath, 'utf8');
+              const lines = report.split('\n');
 
-              // Extract key metrics
-              const totalMatch = report.match(/\*\*TOTAL\*\* \| \*\*(\d+)\*\*/);
-              const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+              // Extract summary statistics
+              let inStatsTable = false;
+              let statsTable = [];
+              let totalIssues = 0;
 
-              if (total > 0) {
-                comment += `## ⚠️ Found ${total} potential issues\n\n`;
-                comment += '**Action Required**: Please review the detailed findings below.\n\n';
+              for (const line of lines) {
+                if (line.includes('Bug Scan Statistics')) {
+                  inStatsTable = true;
+                  statsTable.push(line);
+                } else if (inStatsTable) {
+                  statsTable.push(line);
+                  if (line.includes('**TOTAL**')) {
+                    const match = line.match(/\*\*(\d+)\*\*/);
+                    if (match) totalIssues = parseInt(match[1]);
+                    break;
+                  }
+                }
+              }
+
+              // Build initial comment
+              if (totalIssues > 0) {
+                comment += `## ⚠️ Found ${totalIssues} potential issues\n\n`;
+                comment += '**Action Required**: Please review the critical findings below.\n\n';
               } else {
                 comment += '## ✅ No critical bugs detected\n\n';
               }
 
-              // Add summary section
-              comment += '<details>\n<summary>Click to view detailed bug scan results</summary>\n\n';
-              comment += report;
-              comment += '\n</details>\n\n';
+              // Add summary table
+              if (statsTable.length > 0) {
+                comment += '### Summary\n\n';
+                comment += statsTable.join('\n') + '\n\n';
+              }
 
-              comment += '---\n';
+              // Extract HIGH and CRITICAL severity findings
+              const criticalFindings = [];
+              const highFindings = [];
+              let currentFinding = [];
+              let currentSeverity = null;
+
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Check if this is the start of a new finding
+                if (line.startsWith('Bug type:')) {
+                  // Save previous finding if exists
+                  if (currentFinding.length > 0 && currentSeverity) {
+                    const finding = currentFinding.join('\n');
+                    if (currentSeverity === 'CRITICAL') {
+                      criticalFindings.push(finding);
+                    } else if (currentSeverity === 'HIGH') {
+                      highFindings.push(finding);
+                    }
+                  }
+
+                  // Start new finding
+                  currentFinding = [line];
+                  currentSeverity = null;
+                } else if (line.includes('Severity:')) {
+                  currentFinding.push(line);
+                  if (line.includes('[CRITICAL]')) {
+                    currentSeverity = 'CRITICAL';
+                  } else if (line.includes('[HIGH]')) {
+                    currentSeverity = 'HIGH';
+                  } else if (line.includes('Severity: High')) { // Bandit format
+                    currentSeverity = 'HIGH';
+                  }
+                } else if (currentFinding.length > 0 && line.trim() !== '' && !line.startsWith('#')) {
+                  currentFinding.push(line);
+                  // Check if this is the end of a finding (empty line or new section)
+                  if (i + 1 < lines.length && (lines[i + 1].trim() === '' || lines[i + 1].startsWith('#'))) {
+                    if (currentSeverity) {
+                      const finding = currentFinding.join('\n');
+                      if (currentSeverity === 'CRITICAL') {
+                        criticalFindings.push(finding);
+                      } else if (currentSeverity === 'HIGH') {
+                        highFindings.push(finding);
+                      }
+                    }
+                    currentFinding = [];
+                    currentSeverity = null;
+                  }
+                }
+              }
+
+              // Add last finding if exists
+              if (currentFinding.length > 0 && currentSeverity) {
+                const finding = currentFinding.join('\n');
+                if (currentSeverity === 'CRITICAL') {
+                  criticalFindings.push(finding);
+                } else if (currentSeverity === 'HIGH') {
+                  highFindings.push(finding);
+                }
+              }
+
+              // Add findings to comment with truncation if needed
+              if (criticalFindings.length > 0 || highFindings.length > 0) {
+                comment += '### Critical & High Severity Findings\n\n';
+
+                let findingsAdded = 0;
+                const maxFindings = 10;
+                let truncated = false;
+
+                // Add critical findings first
+                for (const finding of criticalFindings) {
+                  if (findingsAdded >= maxFindings || comment.length + finding.length + 500 > MAX_COMMENT_LENGTH) {
+                    truncated = true;
+                    break;
+                  }
+                  comment += finding + '\n\n---\n\n';
+                  findingsAdded++;
+                }
+
+                // Add high findings if space allows
+                for (const finding of highFindings) {
+                  if (findingsAdded >= maxFindings || comment.length + finding.length + 500 > MAX_COMMENT_LENGTH) {
+                    truncated = true;
+                    break;
+                  }
+                  comment += finding + '\n\n---\n\n';
+                  findingsAdded++;
+                }
+
+                if (truncated) {
+                  const remainingCritical = Math.max(0, criticalFindings.length - findingsAdded);
+                  const remainingHigh = Math.max(0, highFindings.length - (findingsAdded - criticalFindings.length));
+                  const remaining = remainingCritical + remainingHigh;
+                  comment += `\n... and ${remaining} more issues. See full report in artifacts.\n\n`;
+                }
+              }
+
+              // Add footer
+              comment += '\n---\n\n';
+              comment += '📄 **Full Report**: Download the complete bug scan results from the [workflow artifacts](../actions/runs/' + context.runId + ')\n\n';
               comment += '🤖 This automated bug scan checks for security vulnerabilities, code complexity, dead code, and common bug patterns.';
+
+              // Final safety check
+              if (comment.length > MAX_COMMENT_LENGTH) {
+                // Truncate the comment to fit
+                const truncateMessage = '\n\n... Content truncated to fit GitHub comment limit. See full report in artifacts.';
+                comment = comment.substring(0, MAX_COMMENT_LENGTH - truncateMessage.length) + truncateMessage;
+              }
             } else {
               comment += '❌ Bug scan failed to generate report. Please check the workflow logs.';
             }
