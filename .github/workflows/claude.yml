@@ -44,8 +44,12 @@ jobs:
         run: |
           echo "## 🔒 Bandit Security Scan" > bug_report.md
           echo "Scanning for security vulnerabilities..." >> bug_report.md
-          bandit -r codedocsync -f json -o bandit_results.json || true
-          bandit -r codedocsync -ll -i >> bug_report.md || true
+          # Run bandit and capture exit code
+          bandit -r codedocsync -f json -o bandit_results.json || BANDIT_EXIT=$?
+          # Ensure JSON file exists even if bandit fails
+          [ -f bandit_results.json ] || echo '{"errors": [], "results": []}' > bandit_results.json
+          # Run human-readable output
+          bandit -r codedocsync -ll -i >> bug_report.md 2>&1 || echo "⚠️ Bandit scan encountered issues" >> bug_report.md
           echo -e "\n---\n" >> bug_report.md
         continue-on-error: true
 
@@ -116,19 +120,19 @@ jobs:
           echo "### Dangerous Patterns Found:" >> bug_report.md
 
           echo -e "\n#### Bare except clauses (catches all exceptions):" >> bug_report.md
-          grep -n -B1 -A1 "except:" codedocsync/**/*.py >> bug_report.md || echo "✅ None found" >> bug_report.md
+          find codedocsync -name "*.py" -type f -exec grep -Hn -B1 -A1 "except:" {} \; >> bug_report.md || echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Use of eval/exec (code injection risk):" >> bug_report.md
-          grep -n -E "eval\(|exec\(" codedocsync/**/*.py >> bug_report.md || echo "✅ None found" >> bug_report.md
+          find codedocsync -name "*.py" -type f -exec grep -Hn -E "eval\(|exec\(" {} \; >> bug_report.md || echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Mutable default arguments:" >> bug_report.md
-          grep -n -E "def .+\(.*=\[\]|def .+\(.*=\{\}" codedocsync/**/*.py >> bug_report.md || echo "✅ None found" >> bug_report.md
+          find codedocsync -name "*.py" -type f -exec grep -Hn -E "def .+\(.*=\[\]|def .+\(.*=\{\}" {} \; >> bug_report.md || echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Potential type confusion (isinstance with unions):" >> bug_report.md
-          grep -n -E "isinstance\(.+\|" codedocsync/**/*.py >> bug_report.md || echo "✅ None found" >> bug_report.md
+          find codedocsync -name "*.py" -type f -exec grep -Hn -E "isinstance\(.+\\\|" {} \; >> bug_report.md || echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Assert statements (removed in optimized code):" >> bug_report.md
-          grep -n "assert " codedocsync/**/*.py | head -10 >> bug_report.md || echo "✅ None found" >> bug_report.md
+          find codedocsync -name "*.py" -type f -exec grep -Hn "assert " {} \; | head -10 >> bug_report.md || echo "✅ None found" >> bug_report.md
 
           echo -e "\n---\n" >> bug_report.md
 
@@ -138,10 +142,32 @@ jobs:
           echo "### Potential resource leaks:" >> bug_report.md
 
           echo -e "\n#### Files opened without context managers:" >> bug_report.md
-          grep -n -E "open\(.+\)" codedocsync/**/*.py | grep -v "with" | head -10 >> bug_report.md || echo "✅ None found" >> bug_report.md
+          # Look for open() calls not immediately preceded by 'with' on the same or previous line
+          find codedocsync -name "*.py" -type f -exec grep -Hn -E "^\s*[^#]*open\(.+\)" {} \; | while IFS=: read -r file line content; do
+            # Check if this open() is part of a with statement
+            if ! grep -B1 -n "^${line}:" "$file" | grep -q "with.*:"; then
+              echo "${file}:${line}:${content}" >> bug_report.md
+            fi
+          done || echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Potential circular imports:" >> bug_report.md
-          find codedocsync -name "*.py" -exec grep -l "import.*codedocsync" {} \; | xargs grep -n "from.*import" | grep -E "(from .+ import .+|import .+)" | head -10 >> bug_report.md || echo "✅ None found" >> bug_report.md
+          # Look for imports within codedocsync modules that import from other codedocsync modules
+          find codedocsync -name "*.py" -type f | while read -r file; do
+            grep -Hn "from codedocsync\|import codedocsync" "$file" | while IFS=: read -r fname lnum import_line; do
+              # Extract the module being imported
+              module=$(echo "$import_line" | grep -oE "(codedocsync\.[a-zA-Z0-9_.]+)")
+              if [ -n "$module" ]; then
+                # Check if the imported module also imports the current file's module
+                module_file=$(echo "$module" | tr '.' '/' | sed 's|$|.py|')
+                if [ -f "$module_file" ]; then
+                  current_module=$(realpath --relative-to=. "$file" | sed 's|\.py$||' | tr '/' '.')
+                  if grep -q "from $current_module\|import $current_module" "$module_file" 2>/dev/null; then
+                    echo "${fname}:${lnum}: Circular import detected with $module" >> bug_report.md
+                  fi
+                fi
+              fi
+            done
+          done || echo "✅ None found" >> bug_report.md
 
           echo -e "\n---\n" >> bug_report.md
 
@@ -167,10 +193,17 @@ jobs:
 
           echo "total_issues=$TOTAL" >> $GITHUB_OUTPUT
 
-      - name: Upload bug scan results
+      - name: Ensure bug report exists
+        run: |
+          if [ ! -f bug_report.md ]; then
+            echo "# Bug Scan Report" > bug_report.md
+            echo "Automated scan completed. Awaiting deep analysis..." >> bug_report.md
+          fi
+
+      - name: Upload initial scan results
         uses: actions/upload-artifact@v4
         with:
-          name: bug-scan-results
+          name: initial-scan-results
           path: |
             bug_report.md
             *_results.json
@@ -179,8 +212,15 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          anthropic_model: "claude-opus-4-20250514"
+          model: "claude-opus-4-20250514"
+          mode: "agent"
           timeout_minutes: "30"
+          allowed_tools: |
+            Read
+            Grep
+            Glob
+            LS
+            Task
           prompt: |
             You are a specialized bug hunter analyzing CodeDocSync. Your ONLY job is to find bugs.
 
@@ -232,16 +272,29 @@ jobs:
                - Hardcoded secrets
 
             **OUTPUT FORMAT**:
-            For each bug found, provide:
-            - Bug type: [CATEGORY]
-            - Severity: [CRITICAL/HIGH/MEDIUM/LOW]
-            - File: path/to/file.py
-            - Line: specific line number
-            - Description: what the bug is
-            - Impact: what could go wrong
-            - Fix: specific code to fix it
+            For each bug found, provide EXACTLY this format:
+
+            Bug type: [CATEGORY]
+            Severity: [CRITICAL] or [HIGH] or [MEDIUM] or [LOW]
+            File: path/to/file.py
+            Line: specific line number
+            Description: what the bug is
+            Impact: what could go wrong
+            Fix: specific code to fix it
+
+            IMPORTANT: Use square brackets for severity levels (e.g., "Severity: [CRITICAL]")
 
             Focus on REAL BUGS only. No style issues or minor warnings.
+            Report findings directly in the bug_report.md file.
+
+      - name: Upload final bug scan results with Claude analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-bug-scan-results
+          path: |
+            bug_report.md
+            *_results.json
 
   create-bug-report:
     name: Create Final Bug Report
@@ -254,11 +307,25 @@ jobs:
       issues: write
 
     steps:
-      - name: Download bug scan results
+      - name: Download all bug scan results
         uses: actions/download-artifact@v4
         with:
-          name: bug-scan-results
-          path: results
+          path: artifacts
+
+      - name: Merge bug reports
+        run: |
+          mkdir -p results
+          # Try to get the final report with Claude analysis first
+          if [ -f artifacts/final-bug-scan-results/bug_report.md ]; then
+            cp artifacts/final-bug-scan-results/bug_report.md results/
+            cp artifacts/final-bug-scan-results/*_results.json results/ 2>/dev/null || true
+          elif [ -f artifacts/initial-scan-results/bug_report.md ]; then
+            cp artifacts/initial-scan-results/bug_report.md results/
+            cp artifacts/initial-scan-results/*_results.json results/ 2>/dev/null || true
+          else
+            echo "# Bug Scan Report" > results/bug_report.md
+            echo "❌ No bug scan results found" >> results/bug_report.md
+          fi
 
       - name: Post bug report as PR comment
         if: github.event_name == 'pull_request'
@@ -305,12 +372,28 @@ jobs:
       - name: Fail if critical bugs found
         run: |
           if [ -f results/bug_report.md ]; then
-            CRITICAL_SECURITY=$(grep -c "Severity: high" results/bug_report.md || echo "0")
-            CRITICAL_BUGS=$(grep -c "CRITICAL" results/bug_report.md || echo "0")
+            # Check for Bandit's severity levels (it outputs "High", "Medium", "Low")
+            BANDIT_HIGH=$(grep -c "Severity: High" results/bug_report.md || echo "0")
+            BANDIT_MEDIUM_HIGH=$(grep -c "Confidence: High" results/bug_report.md || echo "0")
 
-            if [ $CRITICAL_SECURITY -gt 0 ] || [ $CRITICAL_BUGS -gt 0 ]; then
-              echo "❌ Critical bugs or security issues found!"
+            # Check for Claude's severity labels
+            CRITICAL_BUGS=$(grep -c "Severity: \[CRITICAL\]" results/bug_report.md || echo "0")
+            HIGH_BUGS=$(grep -c "Severity: \[HIGH\]" results/bug_report.md || echo "0")
+
+            # Check for other critical indicators
+            SECURITY_ISSUES=$(grep -c "Issue:" results/bug_report.md || echo "0")
+            TOTAL_ERRORS=$((BANDIT_HIGH + CRITICAL_BUGS + HIGH_BUGS))
+
+            if [ $TOTAL_ERRORS -gt 0 ]; then
+              echo "❌ Found $TOTAL_ERRORS critical bugs or security issues!"
+              echo "Details:"
+              [ $BANDIT_HIGH -gt 0 ] && echo "  - Bandit High Severity: $BANDIT_HIGH"
+              [ $CRITICAL_BUGS -gt 0 ] && echo "  - Critical Bugs: $CRITICAL_BUGS"
+              [ $HIGH_BUGS -gt 0 ] && echo "  - High Priority Bugs: $HIGH_BUGS"
+              echo ""
               echo "Please fix these issues before merging."
               exit 1
+            else
+              echo "✅ No critical security issues or bugs detected."
             fi
           fi
