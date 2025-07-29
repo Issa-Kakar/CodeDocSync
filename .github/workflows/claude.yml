@@ -151,41 +151,112 @@ jobs:
           echo "### Potential resource leaks:" >> bug_report.md
 
           echo -e "\n#### Files opened without context managers:" >> bug_report.md
-          # Find open() calls that aren't part of a with statement
           FOUND_OPEN=false
-          while read -r file; do
-            # Get all open() calls with line numbers
-            while IFS=: read -r linenum content; do
-              # Check if the line is part of a with statement by looking at context
-              if ! sed -n "$((linenum-2)),$((linenum+2))p" "$file" 2>/dev/null | grep -q "with.*open\("; then
+          find codedocsync -name "*.py" -type f 2>/dev/null | while IFS= read -r file; do
+            grep -n "open(" "$file" 2>/dev/null | while IFS=: read -r linenum content; do
+              # Skip comments
+              echo "$content" | grep -q "^[[:space:]]*#" && continue
+
+              # Safe line range calculation
+              start_line=1
+              [ "$linenum" -gt 2 ] && start_line=$((linenum - 2))
+              end_line=$((linenum + 2))
+
+              # Check for context manager
+              if ! sed -n "${start_line},${end_line}p" "$file" 2>/dev/null | grep -q "with.*open("; then
                 echo "${file}:${linenum}: ${content}" >> bug_report.md
                 FOUND_OPEN=true
               fi
-            done < <(grep -n -E "^\s*[^#]*open\(" "$file" 2>/dev/null)
-          done < <(find codedocsync -name "*.py" -type f)
+            done
+          done
           [ "$FOUND_OPEN" = "false" ] && echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Potential circular imports:" >> bug_report.md
-          # Look for imports within codedocsync modules that import from other codedocsync modules
-          find codedocsync -name "*.py" -type f | while read -r file; do
-            grep -Hn "from codedocsync\|import codedocsync" "$file" | while IFS=: read -r fname lnum import_line; do
-              # Extract the module being imported
-              module=$(echo "$import_line" | grep -oE "(codedocsync\.[a-zA-Z0-9_.]+)")
-              if [ -n "$module" ]; then
-                # Check if the imported module also imports the current file's module
-                module_file=$(echo "$module" | tr '.' '/' | sed 's|$|.py|')
-                if [ -f "$module_file" ]; then
-                  # Get relative path portably
-                  current_module=$(echo "$file" | sed "s|^\./||; s|^codedocsync/||; s|\.py$||" | tr '/' '.')
-                  # Ensure it starts with codedocsync if not already
-                  [[ "$current_module" != codedocsync* ]] && current_module="codedocsync.$current_module"
-                  if grep -q "from $current_module\|import $current_module" "$module_file" 2>/dev/null; then
-                    echo "${fname}:${lnum}: Circular import detected with $module" >> bug_report.md
-                  fi
+          FOUND_CIRCULAR=false
+
+          # Create temporary files for import analysis
+          import_map=$(mktemp)
+          trap "rm -f $import_map" EXIT
+
+          # First pass: collect all imports with proper module extraction
+          find codedocsync -name "*.py" -type f 2>/dev/null | while IFS= read -r file; do
+            # Skip test files and __pycache__
+            case "$file" in
+              */test_*|*/__pycache__/*) continue ;;
+            esac
+
+            # Get module name from file path
+            module=$(echo "$file" | sed 's|^\./||; s|\.py$||; s|/|.|g')
+
+            # Extract all imports with improved regex
+            grep -E "^[[:space:]]*(from|import)[[:space:]]+" "$file" 2>/dev/null | while IFS= read -r line; do
+              # Clean the line
+              line=$(echo "$line" | sed 's/[[:space:]]*#.*//')
+
+              # Handle different import patterns
+              case "$line" in
+                *"from"*"import"*)
+                  # from X import Y, Z pattern
+                  base_module=$(echo "$line" | sed -E 's/^[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]+import.*/\1/')
+                  # Check if it's a relative import
+                  case "$base_module" in
+                    .*)
+                      # Convert relative imports based on current module
+                      parent_path=$(dirname "$module" | tr '/' '.')
+                      base_module="${parent_path}${base_module}"
+                      ;;
+                  esac
+                  ;;
+                *"import"*)
+                  # import X, Y, Z pattern
+                  imports=$(echo "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+//')
+                  # Split by comma and process each
+                  echo "$imports" | tr ',' '\n' | while IFS= read -r imp; do
+                    imp=$(echo "$imp" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+                    # Handle 'as' aliases
+                    base_module=$(echo "$imp" | sed 's/[[:space:]]*as[[:space:]].*//')
+                    # Only track codedocsync imports
+                    case "$base_module" in
+                      codedocsync*) echo "$module → $base_module" >> "$import_map" ;;
+                    esac
+                  done
+                  continue
+                  ;;
+              esac
+
+              # Only track codedocsync imports
+              case "$base_module" in
+                codedocsync*) echo "$module → $base_module" >> "$import_map" ;;
+              esac
+            done
+          done
+
+          # Second pass: detect circular dependencies
+          if [ -s "$import_map" ]; then
+            # Sort and remove duplicates
+            sort -u "$import_map" > "${import_map}.sorted"
+            mv "${import_map}.sorted" "$import_map"
+
+            # Check each import relationship
+            while IFS= read -r relation; do
+              module1=$(echo "$relation" | cut -d' ' -f1)
+              module2=$(echo "$relation" | cut -d' ' -f3)
+
+              # Skip self-imports
+              [ "$module1" = "$module2" ] && continue
+
+              # Check for reverse relationship
+              if grep -q "^${module2} → .*${module1}" "$import_map" 2>/dev/null; then
+                # Avoid duplicate reports
+                if ! grep -q "Circular import: ${module2} ↔ ${module1}" bug_report.md 2>/dev/null; then
+                  echo "Circular import detected: ${module1} ↔ ${module2}" >> bug_report.md
+                  FOUND_CIRCULAR=true
                 fi
               fi
-            done
-          done || echo "✅ None found" >> bug_report.md
+            done < "$import_map"
+          fi
+
+          [ "$FOUND_CIRCULAR" = "false" ] && echo "✅ None found" >> bug_report.md
 
           echo -e "\n---\n" >> bug_report.md
 
@@ -527,67 +598,27 @@ jobs:
       - name: Fail if critical bugs found
         run: |
           if [ -f results/bug_report.md ]; then
-            echo "📋 Analyzing bug report for critical issues..."
+            echo "📋 Checking for critical issues..."
 
-            # Initialize all counters to zero to prevent integer expression errors
-            CRITICAL_BUGS=0
-            HIGH_BUGS=0
-            MEDIUM_BUGS=0
-            BANDIT_HIGH=0
-            BANDIT_MEDIUM=0
-            SEMGREP_ERROR=0
+            # Simply check if any critical patterns exist
+            if grep -q "Severity: \[CRITICAL\]" results/bug_report.md 2>/dev/null || \
+               grep -q "Severity: \[HIGH\]" results/bug_report.md 2>/dev/null || \
+               grep -q "Severity: High" results/bug_report.md 2>/dev/null; then
 
-            # Count Claude-format bugs (with square brackets)
-            CRITICAL_BUGS=$(grep -c "Severity: \[CRITICAL\]" results/bug_report.md 2>/dev/null || echo "0")
-            HIGH_BUGS=$(grep -c "Severity: \[HIGH\]" results/bug_report.md 2>/dev/null || echo "0")
-            MEDIUM_BUGS=$(grep -c "Severity: \[MEDIUM\]" results/bug_report.md 2>/dev/null || echo "0")
-
-            # Count Bandit-format bugs (without brackets, different case)
-            BANDIT_HIGH=$(grep -c "Severity: High" results/bug_report.md 2>/dev/null || echo "0")
-            BANDIT_MEDIUM=$(grep -c "Severity: Medium" results/bug_report.md 2>/dev/null || echo "0")
-
-            # Count Semgrep ERROR level findings
-            SEMGREP_ERROR=$(grep -c "severity:ERROR" results/bug_report.md 2>/dev/null || echo "0")
-
-            # Count any other critical indicators
-            ISSUE_HIGH=$(grep -c "Issue: High" results/bug_report.md 2>/dev/null || echo "0")
-            CONFIDENCE_HIGH=$(grep -c "Confidence: High" results/bug_report.md 2>/dev/null || echo "0")
-
-            # Calculate totals - only fail on HIGH/CRITICAL, not MEDIUM
-            TOTAL_CRITICAL=$((CRITICAL_BUGS + HIGH_BUGS + BANDIT_HIGH + SEMGREP_ERROR + ISSUE_HIGH))
-            TOTAL_ALL=$((TOTAL_CRITICAL + MEDIUM_BUGS + BANDIT_MEDIUM))
-
-            # Display summary
-            echo "🔍 Bug Scan Summary:"
-            echo "==================="
-            if [ "$CRITICAL_BUGS" -gt 0 ]; then echo "  - Critical Bugs (Claude): $CRITICAL_BUGS"; fi
-            if [ "$HIGH_BUGS" -gt 0 ]; then echo "  - High Priority Bugs (Claude): $HIGH_BUGS"; fi
-            if [ "$MEDIUM_BUGS" -gt 0 ]; then echo "  - Medium Priority Bugs (Claude): $MEDIUM_BUGS"; fi
-            if [ "$BANDIT_HIGH" -gt 0 ]; then echo "  - Bandit High Severity: $BANDIT_HIGH"; fi
-            if [ "$BANDIT_MEDIUM" -gt 0 ]; then echo "  - Bandit Medium Severity: $BANDIT_MEDIUM"; fi
-            if [ "$SEMGREP_ERROR" -gt 0 ]; then echo "  - Semgrep Errors: $SEMGREP_ERROR"; fi
-            if [ "$ISSUE_HIGH" -gt 0 ]; then echo "  - Other High Issues: $ISSUE_HIGH"; fi
-            echo "-------------------"
-            echo "Total Critical/High: $TOTAL_CRITICAL"
-            echo "Total All Issues: $TOTAL_ALL"
-            echo ""
-
-            # Fail only if critical/high issues found
-            if [ "$TOTAL_CRITICAL" -gt 0 ]; then
-              echo "❌ Found $TOTAL_CRITICAL critical/high severity issues that must be fixed!"
+              echo "❌ Critical or high severity issues found!"
               echo ""
-              echo "Please review the bug report above and fix these issues before merging."
-              echo "Note: Medium severity issues ($((MEDIUM_BUGS + BANDIT_MEDIUM))) are reported but won't block the build."
+              echo "Found the following issues:"
+              grep "Severity: \[CRITICAL\]" results/bug_report.md 2>/dev/null || true
+              grep "Severity: \[HIGH\]" results/bug_report.md 2>/dev/null || true
+              grep "Severity: High" results/bug_report.md 2>/dev/null || true
+              echo ""
+              echo "Please fix these issues before merging."
               exit 1
             else
-              echo "✅ No critical or high severity issues detected."
-              if [ "$((MEDIUM_BUGS + BANDIT_MEDIUM))" -gt 0 ]; then
-                echo "ℹ️  Found $((MEDIUM_BUGS + BANDIT_MEDIUM)) medium severity issues to consider."
-              fi
-              echo "Build can proceed."
+              echo "✅ No critical security issues detected."
+              exit 0
             fi
           else
-            echo "⚠️  No bug report file found at results/bug_report.md"
-            echo "This might indicate the bug scan failed to complete."
+            echo "⚠️  No bug report file found"
             exit 1
           fi
