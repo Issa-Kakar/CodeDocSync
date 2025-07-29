@@ -527,35 +527,67 @@ jobs:
       - name: Fail if critical bugs found
         run: |
           if [ -f results/bug_report.md ]; then
-            # Check for Claude's bracketed severity labels (these are what Claude outputs)
+            echo "📋 Analyzing bug report for critical issues..."
+
+            # Initialize all counters to zero to prevent integer expression errors
+            CRITICAL_BUGS=0
+            HIGH_BUGS=0
+            MEDIUM_BUGS=0
+            BANDIT_HIGH=0
+            BANDIT_MEDIUM=0
+            SEMGREP_ERROR=0
+
+            # Count Claude-format bugs (with square brackets)
             CRITICAL_BUGS=$(grep -c "Severity: \[CRITICAL\]" results/bug_report.md 2>/dev/null || echo "0")
-            [ -z "$CRITICAL_BUGS" ] && CRITICAL_BUGS=0
-
             HIGH_BUGS=$(grep -c "Severity: \[HIGH\]" results/bug_report.md 2>/dev/null || echo "0")
-            [ -z "$HIGH_BUGS" ] && HIGH_BUGS=0
+            MEDIUM_BUGS=$(grep -c "Severity: \[MEDIUM\]" results/bug_report.md 2>/dev/null || echo "0")
 
-            # Check for Bandit's severity levels (outputs "Severity: High" without brackets)
+            # Count Bandit-format bugs (without brackets, different case)
             BANDIT_HIGH=$(grep -c "Severity: High" results/bug_report.md 2>/dev/null || echo "0")
-            [ -z "$BANDIT_HIGH" ] && BANDIT_HIGH=0
+            BANDIT_MEDIUM=$(grep -c "Severity: Medium" results/bug_report.md 2>/dev/null || echo "0")
 
-            # Calculate total with defensive checks
-            TOTAL_ERRORS=0
-            [ "$CRITICAL_BUGS" -gt 0 ] 2>/dev/null && TOTAL_ERRORS=$((TOTAL_ERRORS + CRITICAL_BUGS))
-            [ "$HIGH_BUGS" -gt 0 ] 2>/dev/null && TOTAL_ERRORS=$((TOTAL_ERRORS + HIGH_BUGS))
-            [ "$BANDIT_HIGH" -gt 0 ] 2>/dev/null && TOTAL_ERRORS=$((TOTAL_ERRORS + BANDIT_HIGH))
+            # Count Semgrep ERROR level findings
+            SEMGREP_ERROR=$(grep -c "severity:ERROR" results/bug_report.md 2>/dev/null || echo "0")
 
-            if [ "$TOTAL_ERRORS" -gt 0 ]; then
-              echo "❌ Found $TOTAL_ERRORS critical bugs or security issues!"
-              echo "Details:"
-              [ "$CRITICAL_BUGS" -gt 0 ] && echo "  - Critical Bugs: $CRITICAL_BUGS"
-              [ "$HIGH_BUGS" -gt 0 ] && echo "  - High Priority Bugs: $HIGH_BUGS"
-              [ "$BANDIT_HIGH" -gt 0 ] && echo "  - Bandit High Severity: $BANDIT_HIGH"
+            # Count any other critical indicators
+            ISSUE_HIGH=$(grep -c "Issue: High" results/bug_report.md 2>/dev/null || echo "0")
+            CONFIDENCE_HIGH=$(grep -c "Confidence: High" results/bug_report.md 2>/dev/null || echo "0")
+
+            # Calculate totals - only fail on HIGH/CRITICAL, not MEDIUM
+            TOTAL_CRITICAL=$((CRITICAL_BUGS + HIGH_BUGS + BANDIT_HIGH + SEMGREP_ERROR + ISSUE_HIGH))
+            TOTAL_ALL=$((TOTAL_CRITICAL + MEDIUM_BUGS + BANDIT_MEDIUM))
+
+            # Display summary
+            echo "🔍 Bug Scan Summary:"
+            echo "==================="
+            if [ "$CRITICAL_BUGS" -gt 0 ]; then echo "  - Critical Bugs (Claude): $CRITICAL_BUGS"; fi
+            if [ "$HIGH_BUGS" -gt 0 ]; then echo "  - High Priority Bugs (Claude): $HIGH_BUGS"; fi
+            if [ "$MEDIUM_BUGS" -gt 0 ]; then echo "  - Medium Priority Bugs (Claude): $MEDIUM_BUGS"; fi
+            if [ "$BANDIT_HIGH" -gt 0 ]; then echo "  - Bandit High Severity: $BANDIT_HIGH"; fi
+            if [ "$BANDIT_MEDIUM" -gt 0 ]; then echo "  - Bandit Medium Severity: $BANDIT_MEDIUM"; fi
+            if [ "$SEMGREP_ERROR" -gt 0 ]; then echo "  - Semgrep Errors: $SEMGREP_ERROR"; fi
+            if [ "$ISSUE_HIGH" -gt 0 ]; then echo "  - Other High Issues: $ISSUE_HIGH"; fi
+            echo "-------------------"
+            echo "Total Critical/High: $TOTAL_CRITICAL"
+            echo "Total All Issues: $TOTAL_ALL"
+            echo ""
+
+            # Fail only if critical/high issues found
+            if [ "$TOTAL_CRITICAL" -gt 0 ]; then
+              echo "❌ Found $TOTAL_CRITICAL critical/high severity issues that must be fixed!"
               echo ""
-              echo "Please fix these issues before merging."
+              echo "Please review the bug report above and fix these issues before merging."
+              echo "Note: Medium severity issues ($((MEDIUM_BUGS + BANDIT_MEDIUM))) are reported but won't block the build."
               exit 1
             else
-              echo "✅ No critical security issues or bugs detected."
+              echo "✅ No critical or high severity issues detected."
+              if [ "$((MEDIUM_BUGS + BANDIT_MEDIUM))" -gt 0 ]; then
+                echo "ℹ️  Found $((MEDIUM_BUGS + BANDIT_MEDIUM)) medium severity issues to consider."
+              fi
+              echo "Build can proceed."
             fi
           else
-            echo "⚠️ No bug report found to analyze"
+            echo "⚠️  No bug report file found at results/bug_report.md"
+            echo "This might indicate the bug scan failed to complete."
+            exit 1
           fi
