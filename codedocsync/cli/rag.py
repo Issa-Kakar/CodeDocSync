@@ -15,6 +15,7 @@ from rich.table import Table
 from ..analyzer.models import ISSUE_TYPES
 from ..cli.console import console
 from ..parser import parse_python_file
+from ..suggestions.acceptance_simulator import AcceptanceSimulator
 from ..suggestions.metrics import get_metrics_collector
 from ..suggestions.rag_corpus import RAGCorpusManager
 
@@ -262,3 +263,133 @@ def metrics_report(
     except Exception as e:
         console.print(f"[red]Error generating report: {e}[/red]")
         raise typer.Exit(code=1) from e
+
+
+def simulate_acceptances(
+    count: Annotated[
+        int, typer.Argument(help="Number of acceptances to simulate")
+    ] = 100,
+    acceptance_rate_control: Annotated[
+        float,
+        typer.Option(
+            "--acceptance-rate-control",
+            help="Acceptance rate for control group",
+        ),
+    ] = 0.25,
+    acceptance_rate_treatment: Annotated[
+        float,
+        typer.Option(
+            "--acceptance-rate-treatment",
+            help="Acceptance rate for treatment group",
+        ),
+    ] = 0.40,
+    output_dir: Annotated[
+        Path,
+        typer.Option(
+            "--output-dir",
+            help="Output directory for results",
+        ),
+    ] = Path("data/simulated"),
+    seed: Annotated[
+        int,
+        typer.Option(
+            "--seed",
+            help="Random seed for reproducibility",
+        ),
+    ] = 42,
+) -> None:
+    """
+    Simulate user acceptances to validate A/B testing framework.
+
+    This command generates realistic acceptance patterns to test whether
+    the RAG-enhanced suggestion system improves acceptance rates.
+    """
+    try:
+        from rich.panel import Panel
+        from rich.progress import Progress, SpinnerColumn, TextColumn
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("[bold blue]Simulating acceptances...", total=None)
+
+            # Initialize simulator
+            simulator = AcceptanceSimulator(
+                control_acceptance_rate=acceptance_rate_control,
+                treatment_acceptance_rate=acceptance_rate_treatment,
+                output_dir=output_dir,
+                seed=seed,
+            )
+
+            # Run simulation
+            results = simulator.simulate(count)
+
+            progress.remove_task(task)
+
+        # Display results
+        console.print(
+            Panel(
+                f"[green]✓[/green] Generated {results.total_suggestions} suggestions\n"
+                f"[green]✓[/green] Control group: {results.control_accepted}/{results.control_total} "
+                f"({results.control_rate:.1%} acceptance)\n"
+                f"[green]✓[/green] Treatment group: {results.treatment_accepted}/{results.treatment_total} "
+                f"({results.treatment_rate:.1%} acceptance)\n"
+                f"[green]✓[/green] Overall improvement: [bold]{results.improvement_percentage:.1f}%[/bold]",
+                title="Simulation Complete",
+                title_align="left",
+            )
+        )
+
+        # Show quality metrics
+        metrics_table = Table(
+            title="Quality Metrics",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+        )
+        metrics_table.add_column("Metric", style="bold")
+        metrics_table.add_column("Control", justify="right")
+        metrics_table.add_column("Treatment", justify="right")
+        metrics_table.add_column("Improvement", justify="right", style="green")
+
+        # Calculate improvements
+        completeness_improvement = (
+            (
+                results.metrics["avg_completeness_treatment"]
+                - results.metrics["avg_completeness_control"]
+            )
+            / results.metrics["avg_completeness_control"]
+            * 100
+        )
+        quality_improvement = (
+            (
+                results.metrics["avg_quality_treatment"]
+                - results.metrics["avg_quality_control"]
+            )
+            / results.metrics["avg_quality_control"]
+            * 100
+        )
+
+        metrics_table.add_row(
+            "Avg Completeness",
+            f"{results.metrics['avg_completeness_control']:.2f}",
+            f"{results.metrics['avg_completeness_treatment']:.2f}",
+            f"+{completeness_improvement:.1f}%",
+        )
+        metrics_table.add_row(
+            "Avg Quality",
+            f"{results.metrics['avg_quality_control']:.2f}",
+            f"{results.metrics['avg_quality_treatment']:.2f}",
+            f"+{quality_improvement:.1f}%",
+        )
+
+        console.print(metrics_table)
+
+        # Show output location
+        console.print(f"\n[dim]Results saved to: {output_dir.absolute()}[/dim]")
+
+    except Exception as e:
+        console.print(f"[red]Error: Failed to run simulation: {str(e)}[/red]")
+        raise typer.Exit(1) from e
