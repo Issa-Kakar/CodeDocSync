@@ -176,7 +176,7 @@ def _determine_analysis_types(
         # Simple heuristic: check for if/try statements
         try:
             if any(
-                isinstance(node, ast.If | ast.Try)
+                isinstance(node, (ast.If, ast.Try))
                 for node in ast.walk(ast.parse(pair.function.body))
             ):
                 analysis_types.append("edge_cases")

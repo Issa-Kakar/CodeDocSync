@@ -178,8 +178,9 @@ class Suggestion:
             )
 
         # Validate required text fields
-        if not self.original_text:
-            raise ValueError("original_text cannot be empty")
+        # Allow empty original_text for new docstring creation
+        if self.original_text is None:
+            raise ValueError("original_text cannot be None")
 
         if not self.suggested_text:
             raise ValueError("suggested_text cannot be empty")

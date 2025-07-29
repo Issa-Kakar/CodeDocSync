@@ -196,15 +196,7 @@ class VectorStore:
     def close(self) -> None:
         """Close ChromaDB client and release resources."""
         try:
-            # Delete the collection to free resources
-            if hasattr(self, "client") and hasattr(self, "collection"):
-                try:
-                    self.client.delete_collection(self.collection_name)
-                    logger.info(f"Deleted collection: {self.collection_name}")
-                except Exception as e:
-                    logger.debug(f"Collection deletion failed (may not exist): {e}")
-
-            # Reset the client to force cleanup
+            # Reset the client to force cleanup (without deleting data)
             if hasattr(self, "client"):
                 try:
                     # Force reset to clean up resources
@@ -213,7 +205,11 @@ class VectorStore:
                 except Exception as e:
                     logger.debug(f"Client reset failed: {e}")
 
-            # Note: References will be cleared when the object is garbage collected
+            # Clear local references
+            if hasattr(self, "collection"):
+                self.collection = None
+
+            # Note: The collection data is preserved in ChromaDB storage
 
             logger.info("VectorStore closed and resources released")
         except Exception as e:

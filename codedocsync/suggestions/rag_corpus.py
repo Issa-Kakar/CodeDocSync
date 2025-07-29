@@ -120,14 +120,20 @@ class RAGCorpusManager:
             "avg_retrieval_time_ms": 0.0,
         }
 
+        # Load persisted metrics first to get historical data
+        self._load_persisted_metrics()
+
         # Load bootstrap corpus on initialization
         self._load_bootstrap_corpus()
 
         # Load accepted suggestions from disk
         self.load_accepted_suggestions()
 
-        # Load persisted metrics
-        self._load_persisted_metrics()
+        # Update examples_loaded count after loading all examples
+        self._metrics["examples_loaded"] = len(self.memory_corpus)
+
+        # Persist the updated metrics
+        self._persist_metrics()
 
     def _load_bootstrap_corpus(self) -> None:
         """Load the bootstrap corpus from JSON files."""
@@ -185,7 +191,7 @@ class RAGCorpusManager:
             except Exception as e:
                 logger.warning(f"No curated examples loaded: {e}")
 
-        self._metrics["examples_loaded"] = loaded_count + curated_count
+        # Count is now updated in __init__ after all examples are loaded
 
     def _store_example(self, example: DocstringExample) -> None:
         """Store an example in the corpus."""
