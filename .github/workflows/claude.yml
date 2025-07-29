@@ -172,14 +172,17 @@ jobs:
           [ "$FOUND_OPEN" = "false" ] && echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Potential circular imports:" >> bug_report.md
-          FOUND_CIRCULAR=false
 
-          # Create temporary files for import analysis
+          # Use a file to track whether we found any circular imports
+          circular_found_file=$(mktemp)
+          echo "false" > "$circular_found_file"
+
+          # Create a temporary file for tracking imports
           import_map=$(mktemp)
-          trap "rm -f $import_map" EXIT
+          trap "rm -f $import_map $circular_found_file" EXIT
 
-          # First pass: collect all imports with proper module extraction
-          find codedocsync -name "*.py" -type f 2>/dev/null | while IFS= read -r file; do
+          # First pass: collect all imports (using process substitution to avoid subshell)
+          while IFS= read -r file; do
             # Skip test files and __pycache__
             case "$file" in
               */test_*|*/__pycache__/*) continue ;;
@@ -188,52 +191,27 @@ jobs:
             # Get module name from file path
             module=$(echo "$file" | sed 's|^\./||; s|\.py$||; s|/|.|g')
 
-            # Extract all imports with improved regex
-            grep -E "^[[:space:]]*(from|import)[[:space:]]+" "$file" 2>/dev/null | while IFS= read -r line; do
-              # Clean the line
-              line=$(echo "$line" | sed 's/[[:space:]]*#.*//')
+            # Extract imports from this module
+            grep -E "^[[:space:]]*(from|import)[[:space:]]+" "$file" 2>/dev/null | while IFS= read -r import_line; do
+              # Extract imported module names
+              if echo "$import_line" | grep -q "^[[:space:]]*from"; then
+                # Handle 'from X import Y' format
+                imported=$(echo "$import_line" | sed 's/^[[:space:]]*from[[:space:]]\+\([^[:space:]]\+\)[[:space:]]\+import.*/\1/')
+              else
+                # Handle 'import X' format
+                imported=$(echo "$import_line" | sed 's/^[[:space:]]*import[[:space:]]\+\([^[:space:],]\+\).*/\1/')
+              fi
 
-              # Handle different import patterns
-              case "$line" in
-                *"from"*"import"*)
-                  # from X import Y, Z pattern
-                  base_module=$(echo "$line" | sed -E 's/^[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]+import.*/\1/')
-                  # Check if it's a relative import
-                  case "$base_module" in
-                    .*)
-                      # Convert relative imports based on current module
-                      parent_path=$(dirname "$module" | tr '/' '.')
-                      base_module="${parent_path}${base_module}"
-                      ;;
-                  esac
-                  ;;
-                *"import"*)
-                  # import X, Y, Z pattern
-                  imports=$(echo "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+//')
-                  # Split by comma and process each
-                  echo "$imports" | tr ',' '\n' | while IFS= read -r imp; do
-                    imp=$(echo "$imp" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-                    # Handle 'as' aliases
-                    base_module=$(echo "$imp" | sed 's/[[:space:]]*as[[:space:]].*//')
-                    # Only track codedocsync imports
-                    case "$base_module" in
-                      codedocsync*) echo "$module → $base_module" >> "$import_map" ;;
-                    esac
-                  done
-                  continue
-                  ;;
-              esac
-
-              # Only track codedocsync imports
-              case "$base_module" in
-                codedocsync*) echo "$module → $base_module" >> "$import_map" ;;
-              esac
+              # Only track imports within codedocsync
+              if echo "$imported" | grep -q "^codedocsync"; then
+                echo "$module imports $imported" >> "$import_map"
+              fi
             done
-          done
+          done < <(find codedocsync -name "*.py" -type f 2>/dev/null)
 
-          # Second pass: detect circular dependencies
+          # Second pass: check for circular dependencies (avoiding subshell)
           if [ -s "$import_map" ]; then
-            # Sort and remove duplicates
+            # Create a sorted unique list
             sort -u "$import_map" > "${import_map}.sorted"
             mv "${import_map}.sorted" "$import_map"
 
@@ -246,17 +224,22 @@ jobs:
               [ "$module1" = "$module2" ] && continue
 
               # Check for reverse relationship
-              if grep -q "^${module2} → .*${module1}" "$import_map" 2>/dev/null; then
+              if grep -q "^${module2} imports.*${module1}" "$import_map" 2>/dev/null; then
                 # Avoid duplicate reports
                 if ! grep -q "Circular import: ${module2} ↔ ${module1}" bug_report.md 2>/dev/null; then
                   echo "Circular import detected: ${module1} ↔ ${module2}" >> bug_report.md
-                  FOUND_CIRCULAR=true
+                  echo "true" > "$circular_found_file"
                 fi
               fi
             done < "$import_map"
           fi
 
-          [ "$FOUND_CIRCULAR" = "false" ] && echo "✅ None found" >> bug_report.md
+          # Check if we found any circular imports
+          if [ "$(cat $circular_found_file)" = "false" ]; then
+            echo "✅ None found" >> bug_report.md
+          fi
+
+          # Cleanup handled by trap
 
           echo -e "\n---\n" >> bug_report.md
 
