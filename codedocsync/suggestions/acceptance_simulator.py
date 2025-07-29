@@ -518,13 +518,25 @@ class AcceptanceSimulator:
             + 0.3 * confidence  # Confidence in suggestion
         )
 
-        # Apply quality threshold - suggestions below 0.5 quality rarely accepted
-        if quality_score < 0.5:
-            acceptance_prob = target_rate * 0.2  # 80% reduction for poor quality
+        # Log quality score components when below threshold
+        quality_below_05 = quality_score < 0.5
+        quality_below_03 = quality_score < 0.3
+        if quality_below_05:
+            logger.info(
+                f"Quality threshold analysis: base={base_quality:.2f}, complete={completeness:.2f}, "
+                f"conf={confidence:.2f}, total={quality_score:.2f}, below_0.5={quality_below_05}, "
+                f"below_0.3={quality_below_03}"
+            )
+
+        # Apply quality threshold - suggestions below 0.3 quality rarely accepted
+        if quality_score < 0.3:  # Lowered from 0.5 to 0.3
+            acceptance_prob = target_rate * 0.2  # 80% reduction for very poor quality
+        elif quality_score < 0.5:  # Medium quality gets partial reduction
+            acceptance_prob = target_rate * 0.6  # 40% reduction for medium quality
         else:
             # Map quality score to acceptance probability
-            # Quality 0.5-1.0 maps to 50%-150% of target rate
-            quality_multiplier = 0.5 + (quality_score - 0.5) * 2
+            # Quality 0.5-1.0 maps to 80%-120% of target rate
+            quality_multiplier = 0.8 + (quality_score - 0.5) * 0.8
             acceptance_prob = target_rate * quality_multiplier
 
         # Add small random variation (±10% instead of ±20%)
@@ -533,10 +545,12 @@ class AcceptanceSimulator:
         # Ensure probability stays in valid range
         acceptance_prob = max(0.0, min(1.0, acceptance_prob))
 
-        # Log decision factors for debugging
-        logger.debug(
+        # Enhanced logging for acceptance decisions
+        logger.info(
             f"Acceptance decision: group={ab_group}, target={target_rate:.2f}, "
-            f"quality={quality_score:.2f}, prob={acceptance_prob:.2f}"
+            f"quality={quality_score:.2f}, below_0.5={quality_below_05}, "
+            f"below_0.3={quality_below_03}, final_prob={acceptance_prob:.2f}, "
+            f"components=[base={base_quality:.2f}, complete={completeness:.2f}, conf={confidence:.2f}]"
         )
 
         return random.random() < acceptance_prob
