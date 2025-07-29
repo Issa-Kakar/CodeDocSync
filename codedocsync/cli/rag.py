@@ -8,9 +8,11 @@ import time
 from pathlib import Path
 from typing import Annotated
 
+import numpy as np
 import typer
 from rich import box
 from rich.table import Table
+from scipy import stats
 
 from ..analyzer.models import ISSUE_TYPES
 from ..cli.console import console
@@ -267,8 +269,8 @@ def metrics_report(
 
 def simulate_acceptances(
     count: Annotated[
-        int, typer.Argument(help="Number of acceptances to simulate")
-    ] = 100,
+        int, typer.Argument(help="Number of suggestions to simulate")
+    ] = 1000,
     acceptance_rate_control: Annotated[
         float,
         typer.Option(
@@ -386,6 +388,94 @@ def simulate_acceptances(
         )
 
         console.print(metrics_table)
+
+        # Calculate confidence intervals
+        def wilson_score_interval(
+            successes: int, trials: int, confidence: float = 0.95
+        ) -> tuple[float, float]:
+            """Calculate Wilson score confidence interval for proportion."""
+            if trials == 0:
+                return (0.0, 0.0)
+
+            p_hat = successes / trials
+            z = stats.norm.ppf((1 + confidence) / 2)
+
+            denominator = 1 + z**2 / trials
+            center = (p_hat + z**2 / (2 * trials)) / denominator
+            margin = (
+                z
+                * np.sqrt(p_hat * (1 - p_hat) / trials + z**2 / (4 * trials**2))
+                / denominator
+            )
+
+            return (max(0, center - margin), min(1, center + margin))
+
+        # Calculate confidence intervals
+        control_ci = wilson_score_interval(
+            results.control_accepted, results.control_total
+        )
+        treatment_ci = wilson_score_interval(
+            results.treatment_accepted, results.treatment_total
+        )
+
+        # Display statistical analysis
+        stats_table = Table(
+            title="Statistical Analysis",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+        )
+        stats_table.add_column("Metric", style="bold")
+        stats_table.add_column("Value", justify="right")
+
+        stats_table.add_row(
+            "Control 95% CI", f"[{control_ci[0]:.1%}, {control_ci[1]:.1%}]"
+        )
+        stats_table.add_row(
+            "Treatment 95% CI", f"[{treatment_ci[0]:.1%}, {treatment_ci[1]:.1%}]"
+        )
+
+        # Calculate if improvement is statistically significant
+        if results.control_total > 0 and results.treatment_total > 0:
+            # Simple z-test for proportions
+            p1 = results.control_rate
+            p2 = results.treatment_rate
+            n1 = results.control_total
+            n2 = results.treatment_total
+
+            p_pooled = (results.control_accepted + results.treatment_accepted) / (
+                n1 + n2
+            )
+            se = np.sqrt(p_pooled * (1 - p_pooled) * (1 / n1 + 1 / n2))
+            z_score = (p2 - p1) / se if se > 0 else 0
+            p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
+
+            stats_table.add_row("", "")  # Separator
+            stats_table.add_row("Z-score", f"{z_score:.3f}")
+            stats_table.add_row("P-value", f"{p_value:.4f}")
+            stats_table.add_row(
+                "Significant?",
+                "[green]Yes[/green]" if p_value < 0.05 else "[red]No[/red]",
+            )
+
+        console.print(stats_table)
+
+        # Report absolute and relative improvements correctly
+        if results.control_rate > 0:
+            absolute_improvement = results.treatment_rate - results.control_rate
+            relative_improvement = (
+                (results.treatment_rate - results.control_rate)
+                / results.control_rate
+                * 100
+            )
+
+            console.print(
+                f"\n[bold]Summary:[/bold]\n"
+                f"• Absolute improvement: {absolute_improvement:.1%} "
+                f"({results.control_rate:.1%} → {results.treatment_rate:.1%})\n"
+                f"• Relative improvement: {relative_improvement:.1f}%\n"
+                f"• Statistical significance: {'✓' if p_value < 0.05 else '✗'} (p={p_value:.4f})"
+            )
 
         # Show output location
         console.print(f"\n[dim]Results saved to: {output_dir.absolute()}[/dim]")

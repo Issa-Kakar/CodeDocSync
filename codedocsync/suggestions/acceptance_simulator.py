@@ -144,6 +144,17 @@ class AcceptanceSimulator:
             # Process enhanced issues
             for enhanced_issue in enhanced_result.issues:
                 if enhanced_issue.rich_suggestion:
+                    # Validate suggestion quality
+                    validation = self._validate_suggestion_quality(
+                        enhanced_issue.rich_suggestion, issue_type, function
+                    )
+
+                    if validation["quality_score"] < 0.6:
+                        logger.warning(
+                            f"Low quality suggestion for {function.signature.name}: "
+                            f"score={validation['quality_score']:.2f}, issues={validation['issues']}"
+                        )
+
                     suggestion_id = (
                         enhanced_issue.rich_suggestion.metadata.suggestion_id
                     )
@@ -216,8 +227,40 @@ class AcceptanceSimulator:
         # Save results
         self._save_simulation_results(suggestions_data, accepted_suggestions)
 
+        # Log generation failures for debugging
+        failed_generations = count - len(suggestions_data)
+        if failed_generations > 0:
+            logger.warning(
+                f"Failed to generate {failed_generations} suggestions ({failed_generations / count * 100:.1f}%)"
+            )
+            logger.warning(
+                f"Warning: {failed_generations} suggestions failed to generate"
+            )
+
         # Calculate metrics
-        return self._calculate_simulation_metrics(suggestions_data)
+        results = self._calculate_simulation_metrics(suggestions_data)
+
+        # Validate acceptance rates
+        control_rate_achieved = results.control_rate
+        treatment_rate_achieved = results.treatment_rate
+
+        rate_tolerance = 0.02  # ±2% tolerance
+        control_rate_ok = (
+            abs(control_rate_achieved - self.control_acceptance_rate) <= rate_tolerance
+        )
+        treatment_rate_ok = (
+            abs(treatment_rate_achieved - self.treatment_acceptance_rate)
+            <= rate_tolerance
+        )
+
+        if not control_rate_ok or not treatment_rate_ok:
+            logger.warning(
+                f"Acceptance rates outside tolerance: "
+                f"Control {control_rate_achieved:.1%} (target {self.control_acceptance_rate:.1%}), "
+                f"Treatment {treatment_rate_achieved:.1%} (target {self.treatment_acceptance_rate:.1%})"
+            )
+
+        return results
 
     def _generate_test_functions(self, count: int) -> list[tuple[ParsedFunction, str]]:
         """Generate diverse test functions with issues."""
@@ -364,15 +407,75 @@ class AcceptanceSimulator:
             return_type=template.get("returns"),
         )
 
-        # Create parsed function with minimal docstring
+        # Create parsed function with realistic docstring
         line_num = random.randint(50, 500)
 
-        # Ensure docstring is never empty
-        docstring_text = f'"""{function_name.replace("_", " ").capitalize()}."""'
-        if not docstring_text.strip() or len(docstring_text) < 10:
-            docstring_text = f'"""Function {function_name}."""'
+        # Generate more realistic docstring based on function type
+        docstring_parts = []
 
-        return ParsedFunction(
+        # Add main description
+        if "get_" in function_name:
+            docstring_parts.append(
+                f"Retrieve {function_name.replace('get_', '').replace('_', ' ')}."
+            )
+        elif "create_" in function_name:
+            docstring_parts.append(
+                f"Create a new {function_name.replace('create_', '').replace('_', ' ')}."
+            )
+        elif "process_" in function_name:
+            docstring_parts.append(
+                f"Process {function_name.replace('process_', '').replace('_', ' ')} data."
+            )
+        elif "validate_" in function_name:
+            docstring_parts.append(
+                f"Validate {function_name.replace('validate_', '').replace('_', ' ')}."
+            )
+        elif "fetch_" in function_name:
+            docstring_parts.append(
+                f"Asynchronously fetch {function_name.replace('fetch_', '').replace('_async', '')}."
+            )
+        else:
+            docstring_parts.append(f"{function_name.replace('_', ' ').capitalize()}.")
+
+        # Add parameter hints (partial documentation to trigger improvements)
+        if parameters:
+            docstring_parts.append("\nArgs:")
+            # Only document some parameters to create realistic gaps
+            for _i, param in enumerate(parameters[:2]):  # First 2 params only
+                docstring_parts.append(f"    {param.name}: TODO")
+
+        # Add return hint if present
+        if template.get("returns"):
+            docstring_parts.append("\nReturns:")
+            docstring_parts.append("    TODO")
+
+        docstring_text = f'"""{" ".join(docstring_parts)}\n"""'
+
+        # Add source code snippet for generators that need it
+        source_lines = [f"def {function_name}("]
+        for i, param in enumerate(parameters):
+            param_str = f"    {param.name}"
+            if param.type_annotation:
+                param_str += f": {param.type_annotation}"
+            if param.default_value:
+                param_str += f" = {param.default_value}"
+            param_str += "," if i < len(parameters) - 1 else ""
+            source_lines.append(param_str)
+        source_lines.append(f") -> {template.get('returns', 'None')}:")
+        # Strip quotes and add new ones to avoid f-string syntax issues
+        cleaned_docstring = docstring_text.replace('"""', "")
+        source_lines.append(f'    """{cleaned_docstring}"""')
+        source_lines.append("    # Implementation details...")
+        if "raises" in template:
+            for exc in template["raises"]:
+                source_lines.append(
+                    f"    if not {parameters[0].name if parameters else 'value'}:"
+                )
+                source_lines.append(f"        raise {exc}('Invalid input')")
+        source_lines.append("    return result")
+
+        # Create ParsedFunction with source code
+        parsed_func = ParsedFunction(
             signature=signature,
             docstring=RawDocstring(
                 raw_text=docstring_text,
@@ -380,33 +483,115 @@ class AcceptanceSimulator:
             ),
             file_path=f"{module.replace('.', '/')}.py",
             line_number=line_num,
-            end_line_number=line_num
-            + random.randint(5, 20),  # Function spans 5-20 lines
+            end_line_number=line_num + len(source_lines),
         )
 
+        # Add source_code attribute for generators that need it
+        parsed_func.source_code = "\n".join(source_lines)
+
+        return parsed_func
+
     def _simulate_acceptance_decision(self, metric: Any, ab_group: str) -> bool:
-        """Simulate whether user accepts the suggestion."""
-        # Base acceptance rate
-        base_rate = (
+        """Simulate whether user accepts the suggestion.
+
+        Fixed to achieve target acceptance rates by:
+        1. Using weighted average instead of multiplication
+        2. Applying smaller random variation
+        3. Adding baseline quality threshold
+        """
+        # Target acceptance rates
+        target_rate = (
             self.treatment_acceptance_rate
             if ab_group == "treatment"
             else self.control_acceptance_rate
         )
 
-        # Factors affecting acceptance
-        quality_factor = 0.8 if ab_group == "treatment" else 0.7
-        completeness_factor = metric.completeness_score
-        confidence_factor = metric.confidence_score
+        # Quality factors (0-1 scale)
+        base_quality = 0.8 if ab_group == "treatment" else 0.65
+        completeness = min(metric.completeness_score, 1.0)
+        confidence = min(metric.confidence_score, 1.0)
 
-        # Calculate acceptance probability
-        acceptance_prob = base_rate * (
-            0.4 * quality_factor + 0.3 * completeness_factor + 0.3 * confidence_factor
+        # Calculate weighted quality score
+        quality_score = (
+            0.4 * base_quality  # Base quality from RAG enhancement
+            + 0.3 * completeness  # Completeness of suggestion
+            + 0.3 * confidence  # Confidence in suggestion
         )
 
-        # Add some randomness for realism
-        acceptance_prob *= random.uniform(0.8, 1.2)
+        # Apply quality threshold - suggestions below 0.5 quality rarely accepted
+        if quality_score < 0.5:
+            acceptance_prob = target_rate * 0.2  # 80% reduction for poor quality
+        else:
+            # Map quality score to acceptance probability
+            # Quality 0.5-1.0 maps to 50%-150% of target rate
+            quality_multiplier = 0.5 + (quality_score - 0.5) * 2
+            acceptance_prob = target_rate * quality_multiplier
+
+        # Add small random variation (±10% instead of ±20%)
+        acceptance_prob *= random.uniform(0.9, 1.1)
+
+        # Ensure probability stays in valid range
+        acceptance_prob = max(0.0, min(1.0, acceptance_prob))
+
+        # Log decision factors for debugging
+        logger.debug(
+            f"Acceptance decision: group={ab_group}, target={target_rate:.2f}, "
+            f"quality={quality_score:.2f}, prob={acceptance_prob:.2f}"
+        )
 
         return random.random() < acceptance_prob
+
+    def _validate_suggestion_quality(
+        self, suggestion: Any, issue_type: str, function: ParsedFunction
+    ) -> dict[str, Any]:
+        """Validate suggestion quality and log issues."""
+        validation: dict[str, Any] = {
+            "is_relevant": True,
+            "has_content": True,
+            "addresses_issue": True,
+            "quality_score": 0.0,
+            "issues": [],
+        }
+
+        if not suggestion or not suggestion.suggested_text:
+            validation["has_content"] = False
+            validation["issues"].append("Empty suggestion")
+            return validation
+
+        suggested_text = suggestion.suggested_text.lower()
+
+        # Check relevance to issue type
+        relevance_checks = {
+            "missing_params": ["args:", "parameters:", "arguments:"],
+            "missing_returns": ["returns:", "return:"],
+            "missing_raises": ["raises:", "exceptions:"],
+            "missing_examples": ["example:", ">>>", "examples:"],
+        }
+
+        if issue_type in relevance_checks:
+            keywords = relevance_checks[issue_type]
+            if not any(kw in suggested_text for kw in keywords):
+                validation["addresses_issue"] = False
+                validation["issues"].append(f"Doesn't address {issue_type}")
+
+        # Check if suggestion mentions the function
+        if function.signature.name not in suggested_text:
+            validation["is_relevant"] = False
+            validation["issues"].append("Doesn't mention function name")
+
+        # Calculate quality score
+        quality_factors = [
+            validation["has_content"],
+            validation["addresses_issue"],
+            validation["is_relevant"],
+            len(suggested_text) > 50,  # Minimum length
+            len(suggested_text) < 2000,  # Not too verbose
+        ]
+        validation["quality_score"] = sum(
+            1 for factor in quality_factors if factor
+        ) / len(quality_factors)
+
+        return validation
 
     def _create_accepted_suggestion(
         self,
