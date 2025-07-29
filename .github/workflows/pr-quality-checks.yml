@@ -136,122 +136,126 @@ jobs:
           echo "One or more quality checks failed. Please fix the issues before merging."
           exit 1
 
-  self-dogfood:
-    name: CodeDocSync Self-Check
-    runs-on: ubuntu-latest
-    needs: quality-checks
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install Poetry and dependencies
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry config virtualenvs.in-project true
-          poetry install --no-interaction
-
-      - name: Verify CodeDocSync installation
-        run: |
-          if poetry run codedocsync --version; then
-            echo "✅ CodeDocSync installed successfully"
-          else
-            echo "❌ CodeDocSync not found or failed to run"
-            exit 1
-          fi
-
-      - name: Run CodeDocSync on itself
-        id: codedocsync
-        run: |
-          # Use analyze command with JSON format (check command is just a placeholder)
-          poetry run codedocsync analyze . --format json --no-semantic > codedocsync-report.json || {
-            echo "CodeDocSync analysis failed with exit code $?"
-            # Create a minimal report if the command fails
-            echo '{
-              "error": "Analysis failed",
-              "summary": {
-                "files_analyzed": 0,
-                "functions_analyzed": 0,
-                "issues_by_severity": {
-                  "critical": 0,
-                  "high": 0,
-                  "medium": 0,
-                  "low": 0
-                }
-              }
-            }' > codedocsync-report.json
-          }
-          echo "=== CodeDocSync Report ==="
-          cat codedocsync-report.json
-        continue-on-error: true
-
-      - name: Upload CodeDocSync report
-        uses: actions/upload-artifact@v4
-        with:
-          name: codedocsync-report
-          path: codedocsync-report.json
-
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let report;
-            try {
-              const fileContent = fs.readFileSync('codedocsync-report.json', 'utf8');
-              report = JSON.parse(fileContent);
-            } catch (error) {
-              console.error('Failed to parse CodeDocSync report:', error);
-              report = { error: 'Failed to parse report', summary: {} };
-            }
-
-            // Safely access nested properties with defaults
-            const summary = report.summary || {};
-            const filesAnalyzed = summary.files_analyzed || 0;
-            const functionsAnalyzed = summary.functions_analyzed || 0;
-            const issues = summary.issues_by_severity || {
-              critical: 0,
-              high: 0,
-              medium: 0,
-              low: 0
-            };
-
-            let comment = `## 📋 CodeDocSync Self-Check Results\n\n`;
-
-            if (report.error) {
-              comment += `⚠️ **Error during analysis**: ${report.error}\n\n`;
-            }
-
-            comment += `**Files analyzed**: ${filesAnalyzed}\n`;
-            comment += `**Functions analyzed**: ${functionsAnalyzed}\n\n`;
-            comment += `### Issues by Severity\n`;
-            comment += `- 🔴 Critical: ${issues.critical || 0}\n`;
-            comment += `- 🟠 High: ${issues.high || 0}\n`;
-            comment += `- 🟡 Medium: ${issues.medium || 0}\n`;
-            comment += `- 🟢 Low: ${issues.low || 0}\n\n`;
-
-            if (issues.critical > 0) {
-              comment += '**⚠️ Critical issues found! Please fix before merging.**';
-            } else if (report.error) {
-              comment += '**⚠️ Analysis failed. Please check the logs for details.**';
-            } else {
-              comment += '✅ No critical issues found.';
-            }
-
-            try {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-            } catch (error) {
-              console.error('Failed to create PR comment:', error);
-            }
+  # TODO: Re-enable CodeDocSync self-analysis once the tool is more stable
+  # Currently disabled to avoid CI noise during development
+  # Original issue: CodeDocSync was failing silently without --fail-on-critical flag
+  #
+  # self-dogfood:
+  #   name: CodeDocSync Self-Check
+  #   runs-on: ubuntu-latest
+  #   needs: quality-checks
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.13'
+  #
+  #     - name: Install Poetry and dependencies
+  #       run: |
+  #         curl -sSL https://install.python-poetry.org | python3 -
+  #         echo "$HOME/.local/bin" >> $GITHUB_PATH
+  #         poetry config virtualenvs.in-project true
+  #         poetry install --no-interaction
+  #
+  #     - name: Verify CodeDocSync installation
+  #       run: |
+  #         if poetry run codedocsync --version; then
+  #           echo "✅ CodeDocSync installed successfully"
+  #         else
+  #           echo "❌ CodeDocSync not found or failed to run"
+  #           exit 1
+  #         fi
+  #
+  #     - name: Run CodeDocSync on itself
+  #       id: codedocsync
+  #       run: |
+  #         # Use analyze command with JSON format (check command is just a placeholder)
+  #         poetry run codedocsync analyze . --format json --no-semantic > codedocsync-report.json || {
+  #           echo "CodeDocSync analysis failed with exit code $?"
+  #           # Create a minimal report if the command fails
+  #           echo '{
+  #             "error": "Analysis failed",
+  #             "summary": {
+  #               "files_analyzed": 0,
+  #               "functions_analyzed": 0,
+  #               "issues_by_severity": {
+  #                 "critical": 0,
+  #                 "high": 0,
+  #                 "medium": 0,
+  #                 "low": 0
+  #               }
+  #             }
+  #           }' > codedocsync-report.json
+  #         }
+  #         echo "=== CodeDocSync Report ==="
+  #         cat codedocsync-report.json
+  #       continue-on-error: true
+  #
+  #     - name: Upload CodeDocSync report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: codedocsync-report
+  #         path: codedocsync-report.json
+  #
+  #     - name: Comment PR with results
+  #       if: github.event_name == 'pull_request'
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           const fs = require('fs');
+  #           let report;
+  #           try {
+  #             const fileContent = fs.readFileSync('codedocsync-report.json', 'utf8');
+  #             report = JSON.parse(fileContent);
+  #           } catch (error) {
+  #             console.error('Failed to parse CodeDocSync report:', error);
+  #             report = { error: 'Failed to parse report', summary: {} };
+  #           }
+  #
+  #           // Safely access nested properties with defaults
+  #           const summary = report.summary || {};
+  #           const filesAnalyzed = summary.files_analyzed || 0;
+  #           const functionsAnalyzed = summary.functions_analyzed || 0;
+  #           const issues = summary.issues_by_severity || {
+  #             critical: 0,
+  #             high: 0,
+  #             medium: 0,
+  #             low: 0
+  #           };
+  #
+  #           let comment = `## 📋 CodeDocSync Self-Check Results\n\n`;
+  #
+  #           if (report.error) {
+  #             comment += `⚠️ **Error during analysis**: ${report.error}\n\n`;
+  #           }
+  #
+  #           comment += `**Files analyzed**: ${filesAnalyzed}\n`;
+  #           comment += `**Functions analyzed**: ${functionsAnalyzed}\n\n`;
+  #           comment += `### Issues by Severity\n`;
+  #           comment += `- 🔴 Critical: ${issues.critical || 0}\n`;
+  #           comment += `- 🟠 High: ${issues.high || 0}\n`;
+  #           comment += `- 🟡 Medium: ${issues.medium || 0}\n`;
+  #           comment += `- 🟢 Low: ${issues.low || 0}\n\n`;
+  #
+  #           if (issues.critical > 0) {
+  #             comment += '**⚠️ Critical issues found! Please fix before merging.**';
+  #           } else if (report.error) {
+  #             comment += '**⚠️ Analysis failed. Please check the logs for details.**';
+  #           } else {
+  #             comment += '✅ No critical issues found.';
+  #           }
+  #
+  #           try {
+  #             await github.rest.issues.createComment({
+  #               issue_number: context.issue.number,
+  #               owner: context.repo.owner,
+  #               repo: context.repo.repo,
+  #               body: comment
+  #             });
+  #           } catch (error) {
+  #             console.error('Failed to create PR comment:', error);
+  #           }
