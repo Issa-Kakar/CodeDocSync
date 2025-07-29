@@ -23,8 +23,9 @@ class TestSimulationIntegration:
 
         results = simulator.simulate(count=50)
 
-        # Verify corpus grew by accepted count
-        final_size = len(rag_manager.memory_corpus)
+        # Create a new RAGCorpusManager to reload the updated accepted suggestions
+        rag_manager_after = RAGCorpusManager()
+        final_size = len(rag_manager_after.memory_corpus)
         total_accepted = results.control_accepted + results.treatment_accepted
 
         # Account for potential duplicates or filtering
@@ -50,16 +51,14 @@ class TestSimulationIntegration:
         final_count = len(collector.current_session)
         assert final_count > initial_count
 
-        # Check lifecycle events
+        # Check lifecycle events - only count metrics created during this test
+        new_metrics = collector.current_session[initial_count:]
+
         accepted_count = sum(
-            1
-            for m in collector.current_session
-            if any(e["type"] == "accepted" for e in m.events)
+            1 for m in new_metrics if any(e["type"] == "accepted" for e in m.events)
         )
         rejected_count = sum(
-            1
-            for m in collector.current_session
-            if any(e["type"] == "rejected" for e in m.events)
+            1 for m in new_metrics if any(e["type"] == "rejected" for e in m.events)
         )
 
         assert accepted_count == results.control_accepted + results.treatment_accepted

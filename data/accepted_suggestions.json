@@ -1,0 +1,2781 @@
+{
+  "version": "1.0.0",
+  "last_updated": 1753777639.7269962,
+  "total_accepted": 140,
+  "examples": [
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_user_async()\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777558.850504,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.7936502366512949
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777558.8664339,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.7688980936916838
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777558.880669,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6206373942180058
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777558.9430492,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.6793397764461383
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777558.9813652,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8488044268116658
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.007577,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.7107647953536576
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string and returns the results as a dictionary.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.086702,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 0.6531157110961143
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.111987,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 0.8347159488442895
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n    >>> randin = train_linear_model(0, 2, 100)\n    >>> model = train_linear_model(X_train, y_train, model_type='random_forest')\n    >>> predic = train_linear_model(X_test)\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.1606371,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.6598718490077256
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Awaitable[Response] object containing fetched user async.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.1861446,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8613969107589025
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.2118986,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8319979912321083
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777559.2265577,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.678364558917063
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_user_async()\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777606.9964879,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0019412,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0066006,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0407808,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.060026,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.071461,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1182325,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.129536,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n    >>> randin = train_linear_model(0, 2, 100)\n    >>> model = train_linear_model(X_train, y_train, model_type='random_forest')\n    >>> predic = train_linear_model(X_test)\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1547582,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Fetched user async.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1653643,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1760886,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.180612,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_user_async()\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777606.9963887,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.7936502366512949
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0017898,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.7688980936916838
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0064664,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6206373942180058
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.040668,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.6793397764461383
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0599136,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8488044268116658
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.0713596,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.7107647953536576
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1181607,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 0.6531157110961143
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1294534,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 0.8347159488442895
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n    >>> randin = train_linear_model(0, 2, 100)\n    >>> model = train_linear_model(X_train, y_train, model_type='random_forest')\n    >>> predic = train_linear_model(X_test)\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.154669,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.6598718490077256
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Fetched user async.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1652522,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8613969107589025
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1759946,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8319979912321083
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.1805458,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.678364558917063
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.2808683,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_config",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='create_config', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.2864165,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.2983053,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_config",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='get_config', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    resource_id (str): Description for resource_id (str)\n    include_deleted (bool): Description for include_deleted (bool), defaults to False\n\nReturns:\n    dict[str, Any]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3029377,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_csv",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_csv', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    Basic usage example\n    result = process_csv(input_data=[1, 2, 3, 4, 5])\n    # Expected: \"result\"\n\n    Edge case example\n    # Edge case with boundary values\n    result = process_csv(input_data=None, config=None)\n    # Expected: \"result\"\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3227282,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3427927,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3552396,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.2807932,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.8376238093088892
+    },
+    {
+      "function_name": "create_config",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='create_config', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.2863376,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 0.8988364140720291
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.2982192,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8045131107079724
+    },
+    {
+      "function_name": "get_config",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='get_config', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    resource_id (str): Description for resource_id (str)\n    include_deleted (bool): Description for include_deleted (bool), defaults to False\n\nReturns:\n    dict[str, Any]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.30278,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.7361171118987619
+    },
+    {
+      "function_name": "process_csv",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_csv', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    Basic usage example\n    result = process_csv(input_data=[1, 2, 3, 4, 5])\n    # Expected: \"result\"\n\n    Edge case example\n    # Edge case with boundary values\n    result = process_csv(input_data=None, config=None)\n    # Expected: \"result\"\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3226364,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.7826910634314517
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3426938,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.6058430227157496
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777607.3551586,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.6207637555405151
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_user_async()\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1177547,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1247385,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1298497,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1692595,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1922185,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.2066865,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string and returns the results as a dictionary.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.258798,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.2750893,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.305159,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Fetched user async.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.3188128,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.332668,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.3395066,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_user_async()\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.117481,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.7936502366512949
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1245253,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.7688980936916838
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1297126,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6206373942180058
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1691537,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.6793397764461383
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.1921186,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8488044268116658
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.2065747,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.7107647953536576
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string and returns the results as a dictionary.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.2587283,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 0.6531157110961143
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.275005,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 0.8347159488442895
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.3050761,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.6598718490077256
+    },
+    {
+      "function_name": "fetch_user_async",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='fetch_user_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Fetched user async.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.3187082,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8613969107589025
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.3325741,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8319979912321083
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.3394327,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.678364558917063
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4440196,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_config",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='create_config', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4513001,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4669693,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_config",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='get_config', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    resource_id (str): Description for resource_id (str)\n    include_deleted (bool): Description for include_deleted (bool), defaults to False\n\nReturns:\n    dict[str, Any]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.472607,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_csv",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_csv', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    Basic usage example\n    result = process_csv(input_data=[1, 2, 3, 4, 5])\n    # Expected: \"result\"\n\n    Edge case example\n    # Edge case with boundary values\n    result = process_csv(input_data=None, config=None)\n    # Expected: \"result\"\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4950967,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.517346,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.5309813,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4439383,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.8376238093088892
+    },
+    {
+      "function_name": "create_config",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='create_config', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4512134,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_name_mismatch"
+      ],
+      "original_issue": "parameter_name_mismatch",
+      "improvement_score": 0.8988364140720291
+    },
+    {
+      "function_name": "validate_address",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='validate_address', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    bool: True if validation passes, False otherwise\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4668827,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8045131107079724
+    },
+    {
+      "function_name": "get_config",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='get_config', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    resource_id (str): Description for resource_id (str)\n    include_deleted (bool): Description for include_deleted (bool), defaults to False\n\nReturns:\n    dict[str, Any]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4724631,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.7361171118987619
+    },
+    {
+      "function_name": "process_csv",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_csv', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    Basic usage example\n    result = process_csv(input_data=[1, 2, 3, 4, 5])\n    # Expected: \"result\"\n\n    Edge case example\n    # Edge case with boundary values\n    result = process_csv(input_data=None, config=None)\n    # Expected: \"result\"\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.4949863,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.7826910634314517
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    AttributeError: When accessing a non-existent attribute.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.5172496,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.6058430227157496
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777629.5309129,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.6207637555405151
+    },
+    {
+      "function_name": "get_config",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='get_config', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    resource_id (str): Description for resource_id (str)\n    include_deleted (bool): Description for include_deleted (bool), defaults to False\n\nReturns:\n    dict[str, Any]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.0706089,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.0790603,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_csv",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_csv', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    Basic usage example\n    result = process_csv(input_data=[1, 2, 3, 4, 5])\n    # Expected: \"result\"\n\n    Edge case example\n    # Edge case with boundary values\n    result = process_csv(input_data=None, config=None)\n    # Expected: \"result\"\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1037138,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_email",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='validate_email', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1304605,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_product_async",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='fetch_product_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Fetched product async\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1462317,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1619422,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1689937,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1846826,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    tuple[dict[str, Any], int]: Mapping of results\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.2111256,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    X (np.ndarray): Description for X (np.ndarray)\n    y (np.ndarray): Description for y (np.ndarray)\n    epochs (int): Description for epochs (int), defaults to 100\n    batch_size (int): Description for batch_size (int), defaults to 32\n\nReturns:\n    TrainedModel: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.2351837,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.2530854,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.2972212,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_payment_async",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='fetch_payment_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    url (str): Description for url (str)\n    timeout (float): Description for timeout (float), defaults to 30.0\n    retries (int): Description for retries (int), defaults to 3\n\nReturns:\n    Awaitable[Response]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.3127503,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.3291857,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_report",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='create_report', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.370784,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_payment",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='create_payment', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    IndexError: When accessing an invalid index.\n    KeyError: When accessing a non-existent key.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.378086,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.4019728,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    pd.DataFrame: Processed result\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.4094107,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_product",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='create_product', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.4524438,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    IndexError: When accessing an invalid index.\n    KeyError: When accessing a non-existent key.\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.5128717,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_report_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_report_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_report_async()\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.5294816,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n\"\"\"",
+      "has_params": false,
+      "has_returns": false,
+      "has_examples": true,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.5873265,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "create_config",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='create_config', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    tuple[dict[str, Any], int]: Configuration settings\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.6117425,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "fetch_report_async",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='fetch_report_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    url (str): URL endpoint (str).\n    timeout (float): Maximum time to wait in seconds (float)., defaults to 30.0\n    retries (int): Response in seconds (int)., defaults to 3\n\nReturns:\n    Awaitable[Response]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.628815,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    TrainedModel: Operation result\n\"\"\"",
+      "has_params": false,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 4,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.653095,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.6954627,
+      "similarity_score": 0.0,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 1.0
+    },
+    {
+      "function_name": "get_config",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='get_config', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    resource_id (str): Description for resource_id (str)\n    include_deleted (bool): Description for include_deleted (bool), defaults to False\n\nReturns:\n    dict[str, Any]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.0704446,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6407098461691693
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.0789068,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6634980852634444
+    },
+    {
+      "function_name": "process_csv",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_csv', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    Basic usage example\n    result = process_csv(input_data=[1, 2, 3, 4, 5])\n    # Expected: \"result\"\n\n    Edge case example\n    # Edge case with boundary values\n    result = process_csv(input_data=None, config=None)\n    # Expected: \"result\"\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1036122,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.6058149861150032
+    },
+    {
+      "function_name": "validate_email",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='validate_email', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1303267,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6378662924622619
+    },
+    {
+      "function_name": "fetch_product_async",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='fetch_product_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    Awaitable[Response]: Fetched product async\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.146126,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.8243776955865858
+    },
+    {
+      "function_name": "process_xml",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='process_xml', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1618724,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.6935871733184086
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "ml/models.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1689312,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.8550879717266389
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    dict[str, Any]: Mapping of results.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.1845727,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.834790603908306
+    },
+    {
+      "function_name": "create_user",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='create_user', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    tuple[dict[str, Any], int]: Mapping of results\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.2110171,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.7906755318304338
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    X (np.ndarray): Description for X (np.ndarray)\n    y (np.ndarray): Description for y (np.ndarray)\n    epochs (int): Description for epochs (int), defaults to 100\n    batch_size (int): Description for batch_size (int), defaults to 32\n\nReturns:\n    TrainedModel: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.235013,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.7614518719344767
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.2530115,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 0.8492193056671811
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.297131,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.7021016529492851
+    },
+    {
+      "function_name": "fetch_payment_async",
+      "module_path": "utils/validation.py",
+      "function_signature": "FunctionSignature(name='fetch_payment_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    url (str): Description for url (str)\n    timeout (float): Description for timeout (float), defaults to 30.0\n    retries (int): Description for retries (int), defaults to 3\n\nReturns:\n    Awaitable[Response]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.312615,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6256838885874063
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.3291204,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.8075361465885605
+    },
+    {
+      "function_name": "create_report",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='create_report', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    data (dict[str, Any]): Description for data (dict[str, Any])\n    validate (bool): Description for validate (bool), defaults to True\n\nReturns:\n    tuple[dict[str, Any], int]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.3706398,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6577752880354553
+    },
+    {
+      "function_name": "create_payment",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='create_payment', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    IndexError: When accessing an invalid index.\n    KeyError: When accessing a non-existent key.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.3779469,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.7452595761638126
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\nFormats the resource id string.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.4018996,
+      "issue_types": [
+        "description_outdated"
+      ],
+      "original_issue": "description_outdated",
+      "improvement_score": 0.658235273427322
+    },
+    {
+      "function_name": "process_json",
+      "module_path": "services/payment.py",
+      "function_signature": "FunctionSignature(name='process_json', parameters=[FunctionParameter(name='input_data', type_annotation='pd.DataFrame', default_value=None, is_required=True), FunctionParameter(name='config', type_annotation='ProcessConfig | None', default_value='None', is_required=False)], return_type='pd.DataFrame', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    pd.DataFrame: Processed result\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.4092774,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.760240526780299
+    },
+    {
+      "function_name": "create_product",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='create_product', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add docstring\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.4523537,
+      "issue_types": [
+        "parameter_type_mismatch"
+      ],
+      "original_issue": "parameter_type_mismatch",
+      "improvement_score": 0.61608272228776
+    },
+    {
+      "function_name": "get_report",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='get_report', parameters=[FunctionParameter(name='resource_id', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='include_deleted', type_annotation='bool', default_value='False', is_required=False)], return_type='dict[str, Any]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nRaises:\n    IndexError: When accessing an invalid index.\n    KeyError: When accessing a non-existent key.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.5127592,
+      "issue_types": [
+        "missing_raises"
+      ],
+      "original_issue": "missing_raises",
+      "improvement_score": 0.7981284411576111
+    },
+    {
+      "function_name": "fetch_report_async",
+      "module_path": "api/endpoints/users.py",
+      "function_signature": "FunctionSignature(name='fetch_report_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> jso = fetch_report_async()\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.5293853,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.6008027167808657
+    },
+    {
+      "function_name": "train_linear_model",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='train_linear_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nExamples:\n    >>> rand = train_linear_model(100, 10)\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": true,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.5872386,
+      "issue_types": [
+        "missing_examples"
+      ],
+      "original_issue": "missing_examples",
+      "improvement_score": 0.8066033973636282
+    },
+    {
+      "function_name": "create_config",
+      "module_path": "integrations/external.py",
+      "function_signature": "FunctionSignature(name='create_config', parameters=[FunctionParameter(name='data', type_annotation='dict[str, Any]', default_value=None, is_required=True), FunctionParameter(name='validate', type_annotation='bool', default_value='True', is_required=False)], return_type='tuple[dict[str, Any], int]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    tuple[dict[str, Any], int]: Configuration settings\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.6116397,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.69669647500749
+    },
+    {
+      "function_name": "fetch_report_async",
+      "module_path": "cli/commands.py",
+      "function_signature": "FunctionSignature(name='fetch_report_async', parameters=[FunctionParameter(name='url', type_annotation='str', default_value=None, is_required=True), FunctionParameter(name='timeout', type_annotation='float', default_value='30.0', is_required=False), FunctionParameter(name='retries', type_annotation='int', default_value='3', is_required=False)], return_type='Awaitable[Response]', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    url (str): URL endpoint (str).\n    timeout (float): Maximum time to wait in seconds (float)., defaults to 30.0\n    retries (int): Response in seconds (int)., defaults to 3\n\nReturns:\n    Awaitable[Response]: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.628662,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.8507875841718544
+    },
+    {
+      "function_name": "train_neural_model",
+      "module_path": "data/processing.py",
+      "function_signature": "FunctionSignature(name='train_neural_model', parameters=[FunctionParameter(name='X', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='y', type_annotation='np.ndarray', default_value=None, is_required=True), FunctionParameter(name='epochs', type_annotation='int', default_value='100', is_required=False), FunctionParameter(name='batch_size', type_annotation='int', default_value='32', is_required=False)], return_type='TrainedModel', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"\n\nReturns:\n    TrainedModel: Operation result\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.6529791,
+      "issue_types": [
+        "missing_returns"
+      ],
+      "original_issue": "missing_returns",
+      "improvement_score": 0.74115024697549
+    },
+    {
+      "function_name": "validate_phone",
+      "module_path": "core/authentication.py",
+      "function_signature": "FunctionSignature(name='validate_phone', parameters=[FunctionParameter(name='entity', type_annotation='Any', default_value=None, is_required=True), FunctionParameter(name='strict', type_annotation='bool', default_value='False', is_required=False)], return_type='bool', is_async=False, is_method=False, decorators=[])",
+      "docstring_format": "google",
+      "docstring_content": "\"\"\"TODO: Add function description.\n\nArgs:\n    entity (Any): Description for entity (Any)\n    strict (bool): Description for strict (bool), defaults to False\n\nReturns:\n    bool: TODO: Describe return value.\n\"\"\"",
+      "has_params": true,
+      "has_returns": true,
+      "has_examples": false,
+      "complexity_score": 3,
+      "quality_score": 4,
+      "source": "accepted",
+      "timestamp": 1753777639.695324,
+      "issue_types": [
+        "missing_params"
+      ],
+      "original_issue": "missing_params",
+      "improvement_score": 0.6864653386084367
+    }
+  ]
+}

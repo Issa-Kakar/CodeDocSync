@@ -166,11 +166,17 @@ class AcceptanceSimulator:
                             metric = m
                             break
 
+                    if not suggestion_id:
+                        logger.warning(
+                            f"No suggestion_id for {function.signature.name}, skipping metrics tracking"
+                        )
+                        continue
+
                     if metric:
                         # Simulate user decision
                         accepted = self._simulate_acceptance_decision(metric, ab_group)
 
-                        if accepted and suggestion_id:
+                        if accepted:
                             # Mark as accepted
                             self.metrics_collector.mark_accepted(
                                 suggestion_id, modified=random.random() < 0.3
@@ -192,7 +198,7 @@ class AcceptanceSimulator:
                                 docstring_format="google",
                                 issue_type=issue_type,
                             )
-                        elif suggestion_id:
+                        else:
                             # Mark as rejected
                             self.metrics_collector.mark_rejected(suggestion_id)
 
@@ -223,6 +229,10 @@ class AcceptanceSimulator:
                             ],
                         }
                         suggestions_data.append(suggestion_data)
+                    else:
+                        logger.error(
+                            f"Metric not found for suggestion_id {suggestion_id} in current session"
+                        )
 
         # Save results
         self._save_simulation_results(suggestions_data, accepted_suggestions)
@@ -669,16 +679,32 @@ class AcceptanceSimulator:
                 indent=2,
             )
 
-        # Also update the real accepted_suggestions.json
+        # Also update the real accepted_suggestions.json by appending to existing
         real_accepted_path = Path("data/accepted_suggestions.json")
         real_accepted_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Load existing accepted suggestions
+        existing_examples = []
+        if real_accepted_path.exists():
+            try:
+                with open(real_accepted_path) as f:
+                    existing_data = json.load(f)
+                    existing_examples = existing_data.get("examples", [])
+            except (json.JSONDecodeError, KeyError):
+                logger.warning(
+                    "Could not load existing accepted suggestions, starting fresh"
+                )
+
+        # Combine existing and new suggestions
+        all_examples = existing_examples + accepted_suggestions
+
         with open(real_accepted_path, "w") as f:
             json.dump(
                 {
                     "version": "1.0.0",
                     "last_updated": time.time(),
-                    "total_accepted": len(accepted_suggestions),
-                    "examples": accepted_suggestions,
+                    "total_accepted": len(all_examples),
+                    "examples": all_examples,
                 },
                 f,
                 indent=2,
