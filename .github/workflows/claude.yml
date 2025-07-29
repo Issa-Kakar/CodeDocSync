@@ -16,6 +16,7 @@ jobs:
       contents: read
       security-events: write
       pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -142,13 +143,19 @@ jobs:
           echo "### Potential resource leaks:" >> bug_report.md
 
           echo -e "\n#### Files opened without context managers:" >> bug_report.md
-          # Look for open() calls not immediately preceded by 'with' on the same or previous line
-          find codedocsync -name "*.py" -type f -exec grep -Hn -E "^\s*[^#]*open\(.+\)" {} \; | while IFS=: read -r file line content; do
-            # Check if this open() is part of a with statement
-            if ! grep -B1 -n "^${line}:" "$file" | grep -q "with.*:"; then
-              echo "${file}:${line}:${content}" >> bug_report.md
-            fi
-          done || echo "✅ None found" >> bug_report.md
+          # Find open() calls that aren't part of a with statement
+          FOUND_OPEN=false
+          find codedocsync -name "*.py" -type f | while read -r file; do
+            # Get all open() calls with line numbers
+            grep -n -E "^\s*[^#]*open\(" "$file" 2>/dev/null | while IFS=: read -r linenum content; do
+              # Check if the line is part of a with statement by looking at context
+              if ! sed -n "$((linenum-2)),$((linenum+2))p" "$file" 2>/dev/null | grep -q "with.*open\("; then
+                echo "${file}:${linenum}: ${content}" >> bug_report.md
+                FOUND_OPEN=true
+              fi
+            done
+          done
+          [ "$FOUND_OPEN" = "false" ] && echo "✅ None found" >> bug_report.md
 
           echo -e "\n#### Potential circular imports:" >> bug_report.md
           # Look for imports within codedocsync modules that import from other codedocsync modules
@@ -160,7 +167,10 @@ jobs:
                 # Check if the imported module also imports the current file's module
                 module_file=$(echo "$module" | tr '.' '/' | sed 's|$|.py|')
                 if [ -f "$module_file" ]; then
-                  current_module=$(realpath --relative-to=. "$file" | sed 's|\.py$||' | tr '/' '.')
+                  # Get relative path portably
+                  current_module=$(echo "$file" | sed "s|^\./||; s|^codedocsync/||; s|\.py$||" | tr '/' '.')
+                  # Ensure it starts with codedocsync if not already
+                  [[ "$current_module" != codedocsync* ]] && current_module="codedocsync.$current_module"
                   if grep -q "from $current_module\|import $current_module" "$module_file" 2>/dev/null; then
                     echo "${fname}:${lnum}: Circular import detected with $module" >> bug_report.md
                   fi
@@ -178,10 +188,18 @@ jobs:
           echo "| Scan Type | Issues Found |" >> bug_report.md
           echo "|-----------|--------------|" >> bug_report.md
 
-          BANDIT_COUNT=$(grep -c "Issue:" bug_report.md || echo "0")
-          COMPLEXITY_COUNT=$(grep -c "is too complex" bug_report.md || echo "0")
-          DEAD_CODE_COUNT=$(grep -c "unused" bug_report.md || echo "0")
-          PYLINT_COUNT=$(grep -c "^[CE][0-9]" bug_report.md || echo "0")
+          # Ensure all counts are valid numbers
+          BANDIT_COUNT=$(grep -c "Issue:" bug_report.md 2>/dev/null || echo "0")
+          [ -z "$BANDIT_COUNT" ] && BANDIT_COUNT=0
+
+          COMPLEXITY_COUNT=$(grep -c "is too complex" bug_report.md 2>/dev/null || echo "0")
+          [ -z "$COMPLEXITY_COUNT" ] && COMPLEXITY_COUNT=0
+
+          DEAD_CODE_COUNT=$(grep -c "unused" bug_report.md 2>/dev/null || echo "0")
+          [ -z "$DEAD_CODE_COUNT" ] && DEAD_CODE_COUNT=0
+
+          PYLINT_COUNT=$(grep -c "^[CE][0-9]" bug_report.md 2>/dev/null || echo "0")
+          [ -z "$PYLINT_COUNT" ] && PYLINT_COUNT=0
 
           echo "| Security Issues | $BANDIT_COUNT |" >> bug_report.md
           echo "| High Complexity | $COMPLEXITY_COUNT |" >> bug_report.md
@@ -372,24 +390,29 @@ jobs:
       - name: Fail if critical bugs found
         run: |
           if [ -f results/bug_report.md ]; then
-            # Check for Bandit's severity levels (it outputs "High", "Medium", "Low")
-            BANDIT_HIGH=$(grep -c "Severity: High" results/bug_report.md || echo "0")
-            BANDIT_MEDIUM_HIGH=$(grep -c "Confidence: High" results/bug_report.md || echo "0")
+            # Check for Claude's bracketed severity labels (these are what Claude outputs)
+            CRITICAL_BUGS=$(grep -c "Severity: \[CRITICAL\]" results/bug_report.md 2>/dev/null || echo "0")
+            [ -z "$CRITICAL_BUGS" ] && CRITICAL_BUGS=0
 
-            # Check for Claude's severity labels
-            CRITICAL_BUGS=$(grep -c "Severity: \[CRITICAL\]" results/bug_report.md || echo "0")
-            HIGH_BUGS=$(grep -c "Severity: \[HIGH\]" results/bug_report.md || echo "0")
+            HIGH_BUGS=$(grep -c "Severity: \[HIGH\]" results/bug_report.md 2>/dev/null || echo "0")
+            [ -z "$HIGH_BUGS" ] && HIGH_BUGS=0
 
-            # Check for other critical indicators
-            SECURITY_ISSUES=$(grep -c "Issue:" results/bug_report.md || echo "0")
-            TOTAL_ERRORS=$((BANDIT_HIGH + CRITICAL_BUGS + HIGH_BUGS))
+            # Check for Bandit's severity levels (outputs "Severity: High" without brackets)
+            BANDIT_HIGH=$(grep -c "Severity: High" results/bug_report.md 2>/dev/null || echo "0")
+            [ -z "$BANDIT_HIGH" ] && BANDIT_HIGH=0
+
+            # Calculate total with defensive checks
+            TOTAL_ERRORS=0
+            [ "$CRITICAL_BUGS" -gt 0 ] && TOTAL_ERRORS=$((TOTAL_ERRORS + CRITICAL_BUGS))
+            [ "$HIGH_BUGS" -gt 0 ] && TOTAL_ERRORS=$((TOTAL_ERRORS + HIGH_BUGS))
+            [ "$BANDIT_HIGH" -gt 0 ] && TOTAL_ERRORS=$((TOTAL_ERRORS + BANDIT_HIGH))
 
             if [ $TOTAL_ERRORS -gt 0 ]; then
               echo "❌ Found $TOTAL_ERRORS critical bugs or security issues!"
               echo "Details:"
-              [ $BANDIT_HIGH -gt 0 ] && echo "  - Bandit High Severity: $BANDIT_HIGH"
               [ $CRITICAL_BUGS -gt 0 ] && echo "  - Critical Bugs: $CRITICAL_BUGS"
               [ $HIGH_BUGS -gt 0 ] && echo "  - High Priority Bugs: $HIGH_BUGS"
+              [ $BANDIT_HIGH -gt 0 ] && echo "  - Bandit High Severity: $BANDIT_HIGH"
               echo ""
               echo "Please fix these issues before merging."
               exit 1
